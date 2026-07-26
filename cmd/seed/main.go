@@ -73,6 +73,15 @@ func run() error {
 		return err
 	}
 
+	// Toàn bộ tài khoản mẫu dùng chung một mật khẩu nằm công khai trong repo, trong
+	// đó có tài khoản quản trị. Chạy nhầm vào cơ sở dữ liệu thật là mở toang hệ thống.
+	if !cfg.IsDev() {
+		return fmt.Errorf(
+			"seed tạo tài khoản mẫu với mật khẩu công khai nên chỉ chạy được khi APP_ENV=dev (hiện tại: %q)",
+			cfg.AppEnv,
+		)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
@@ -108,7 +117,7 @@ func run() error {
 	if err := execSQLFile(ctx, tx, "02_employee_skills.sql"); err != nil {
 		return err
 	}
-	fmt.Println("✓ hồ sơ năng lực (đã đánh dấu Quản trị viên xác nhận)")
+	fmt.Println("✓ hồ sơ năng lực: bản ghi đã duyệt và bản ghi chờ Quản trị viên duyệt")
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("không commit được: %w", err)
@@ -136,12 +145,17 @@ func execSQLFile(ctx context.Context, tx pgx.Tx, name string) error {
 }
 
 // seedPeople tạo tài khoản trước, rồi tạo hồ sơ nhân sự liên kết 1-1 với tài khoản đó.
-// Dùng ON CONFLICT ... DO UPDATE để luôn lấy được khóa chính dù bản ghi đã tồn tại.
+//
+// ON CONFLICT ... DO UPDATE ghi đè đúng các cột dữ liệu chứ không chỉ chạm vào
+// updated_at: bảng people dưới đây là trạng thái mong muốn, nên sửa vai trò hay
+// phòng ban ở đó rồi chạy lại seed phải thấy thay đổi thật trong cơ sở dữ liệu.
 func seedPeople(ctx context.Context, tx pgx.Tx, passwordHash string) error {
 	const insertUser = `
 		INSERT INTO users (username, password_hash, system_role)
 		VALUES ($1, $2, $3::user_system_role)
-		ON CONFLICT (username) DO UPDATE SET updated_at = now()
+		ON CONFLICT (username) DO UPDATE SET
+			password_hash = EXCLUDED.password_hash,
+			system_role   = EXCLUDED.system_role
 		RETURNING user_id`
 
 	const insertEmployee = `
@@ -155,7 +169,13 @@ func seedPeople(ctx context.Context, tx pgx.Tx, passwordHash string) error {
 			(SELECT position_id   FROM positions   WHERE position_name   = $7),
 			NULLIF($8, '')
 		)
-		ON CONFLICT (employee_code) DO UPDATE SET updated_at = now()`
+		ON CONFLICT (employee_code) DO UPDATE SET
+			fullname        = EXCLUDED.fullname,
+			email           = EXCLUDED.email,
+			phone           = EXCLUDED.phone,
+			department_id   = EXCLUDED.department_id,
+			position_id     = EXCLUDED.position_id,
+			seniority_level = EXCLUDED.seniority_level`
 
 	for _, p := range people {
 		var userID int

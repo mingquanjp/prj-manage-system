@@ -28,7 +28,7 @@ Hiện có trong repo:
 ```
 cmd/
   server/main.go              wiring, đọc config, chạy HTTP server, graceful shutdown
-  migrate/main.go             up | down | drop | version
+  migrate/main.go             up | down | down-all | version
   seed/main.go                nạp dữ liệu mẫu, idempotent
 internal/
   config/config.go            đọc env + .env; IsPooledEndpoint(), DirectURL()

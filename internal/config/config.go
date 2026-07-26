@@ -40,6 +40,13 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
+// IsDev cho biết đang chạy ở môi trường phát triển. Các thao tác phá hủy dữ liệu
+// (xóa schema, nạp tài khoản mẫu dùng chung mật khẩu công khai) chỉ được phép khi
+// hàm này trả về true.
+func (c *Config) IsDev() bool {
+	return c.AppEnv == "dev"
+}
+
 // IsPooledEndpoint báo hiệu chuỗi kết nối đang trỏ tới endpoint PgBouncer của Neon.
 // pgx dùng prepared statement nên không tương thích hoàn toàn với transaction pooling.
 func (c *Config) IsPooledEndpoint() bool {

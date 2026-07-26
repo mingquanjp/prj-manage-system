@@ -1,9 +1,13 @@
 // Command migrate chạy database migration.
 //
-//	go run ./cmd/migrate up     — áp dụng toàn bộ migration còn thiếu
-//	go run ./cmd/migrate down   — lùi lại một bước
-//	go run ./cmd/migrate drop   — xóa sạch schema (chỉ dùng khi phát triển)
+//	go run ./cmd/migrate up        — áp dụng toàn bộ migration còn thiếu
+//	go run ./cmd/migrate down      — lùi lại một bước (chỉ khi APP_ENV=dev)
+//	go run ./cmd/migrate down-all  — lùi toàn bộ, xóa sạch schema (chỉ khi APP_ENV=dev)
 //	go run ./cmd/migrate version
+//
+// Cố ý không có lệnh "drop". Drop của golang-migrate chỉ xóa bảng, không xóa
+// kiểu ENUM, nên lần "up" kế tiếp sẽ hỏng vì CREATE TYPE gặp kiểu đã tồn tại.
+// Dùng down-all để rollback qua chính file .down.sql, nơi đã xóa đủ cả 15 kiểu.
 package main
 
 import (
@@ -70,9 +74,15 @@ func run() error {
 	case "up":
 		err = m.Up()
 	case "down":
+		if err := requireDev(cfg, command); err != nil {
+			return err
+		}
 		err = m.Steps(-1)
-	case "drop":
-		err = m.Drop()
+	case "down-all":
+		if err := requireDev(cfg, command); err != nil {
+			return err
+		}
+		err = m.Down()
 	case "version":
 		version, dirty, verr := m.Version()
 		if verr != nil {
@@ -81,7 +91,7 @@ func run() error {
 		fmt.Printf("phiên bản schema: %d (dirty=%t)\n", version, dirty)
 		return nil
 	default:
-		return fmt.Errorf("lệnh không hợp lệ: %q (dùng up | down | drop | version)", command)
+		return fmt.Errorf("lệnh không hợp lệ: %q (dùng up | down | down-all | version)", command)
 	}
 
 	if errors.Is(err, migrate.ErrNoChange) {
@@ -94,4 +104,16 @@ func run() error {
 
 	fmt.Printf("migrate %s: hoàn tất\n", command)
 	return nil
+}
+
+// requireDev chặn các lệnh phá hủy dữ liệu khi không chạy ở môi trường phát triển.
+func requireDev(cfg *config.Config, command string) error {
+	if cfg.IsDev() {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"lệnh %q xóa dữ liệu nên chỉ chạy được khi APP_ENV=dev (hiện tại: %q)",
+		command, cfg.AppEnv,
+	)
 }

@@ -46,7 +46,7 @@ make migrate-up           # áp dụng migration (tự dùng endpoint trực ti�
 make seed                 # nạp dữ liệu mẫu, idempotent, chạy lại nhiều lần vẫn an toàn
 make dev                  # chạy server; kiểm tra GET /api/healthz
 make check                # fmt → tidy → vet → build → test, chạy trước khi commit
-make migrate-reset        # drop + up, CHỈ dùng khi phát triển
+make migrate-reset        # down-all + up. Lệnh phá dữ liệu chỉ chạy khi APP_ENV=dev
 ```
 
 Lint/typecheck riêng: **chưa có** (`golangci-lint` chưa cấu hình). `make check` là cổng kiểm tra

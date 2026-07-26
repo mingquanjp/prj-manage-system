@@ -98,7 +98,14 @@ lịch sử khi xoá nhân sự.
   Không cần cài CLI. Luôn đi endpoint trực tiếp, xem `architecture.md` mục 4.
 - Thêm thay đổi schema: tạo cặp file mới `000002_<tên>.up.sql` / `.down.sql`. **Không sửa
   `000001`** khi đã áp dụng lên DB thật.
-- Seed (`make seed`) idempotent, chạy trong một transaction, nạp: 5 phòng ban, 10 chức danh,
-  8 nhóm kỹ năng, 51 kỹ năng, 20 tài khoản + hồ sơ nhân sự (1 ADMIN, 2 PM, 17 EMPLOYEE),
-  96 bản ghi năng lực đã đánh dấu duyệt. Mật khẩu chung `Password@123` — chỉ dùng cho môi trường
-  phát triển.
+- Rollback dùng `make migrate-reset` (`down-all` rồi `up`). **Không dùng `Drop()` của
+  golang-migrate**: nó chỉ `DROP TABLE`, bỏ sót 15 kiểu ENUM, nên lần `up` kế tiếp sẽ chết vì
+  `CREATE TYPE ... already exists`. Lệnh `drop` đã bị gỡ khỏi `cmd/migrate` vì lý do này.
+- Seed (`make seed`) idempotent **và hội tụ** — sửa dữ liệu trong `cmd/seed` hoặc `db/seed/*.sql`
+  rồi chạy lại sẽ ghi đè đúng các cột, không chỉ chạm `updated_at`. Chạy trong một transaction.
+- Nội dung seed: 5 phòng ban, 10 chức danh, 8 nhóm kỹ năng, 51 kỹ năng, 20 tài khoản + hồ sơ nhân
+  sự (1 ADMIN, 2 PM, 17 EMPLOYEE), **96 bản ghi năng lực đã duyệt và 6 bản ghi chờ duyệt** (3
+  `source=MANUAL`, 3 `source=CV`). Khối chờ duyệt tồn tại để thử luồng duyệt ở M2 và để kiểm chứng
+  quy tắc R3 — kỹ năng chưa duyệt không được ảnh hưởng kết quả đề xuất.
+- `make seed` và các lệnh migration phá dữ liệu **chỉ chạy khi `APP_ENV=dev`**. Mật khẩu chung
+  `Password@123` nằm công khai trong repo nên không được phép chạm vào cơ sở dữ liệu thật.

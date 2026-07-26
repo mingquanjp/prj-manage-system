@@ -1,7 +1,12 @@
--- Hồ sơ năng lực chính thức của nhân sự mẫu.
+-- Hồ sơ năng lực của nhân sự mẫu, gồm hai khối.
 --
--- Tất cả bản ghi đều đánh dấu đã được Quản trị viên (EMP001) xác nhận, vì engine
--- đề xuất chỉ được phép dùng dữ liệu đã duyệt (UC003.1 dữ liệu đầu vào #3).
+-- Khối 1 là hồ sơ CHÍNH THỨC: đã được Quản trị viên (EMP001) xác nhận. Chỉ khối
+-- này mới được engine đề xuất sử dụng (UC003.1 dữ liệu đầu vào #3).
+--
+-- Khối 2 là dữ liệu CHỜ DUYỆT (approved_at IS NULL), phục vụ thử luồng duyệt ở M2
+-- và chứng minh quy tắc R3: kỹ năng chưa duyệt không được ảnh hưởng tới kết quả
+-- đề xuất. Thiếu khối này thì không có cách nào kiểm chứng luận điểm trung tâm
+-- của đề tài bằng dữ liệu mẫu.
 
 INSERT INTO employee_skills (
     employee_id, skill_id, proficiency_level, years_experience,
@@ -152,4 +157,42 @@ FROM (VALUES
 JOIN employees e   ON e.employee_code = v.employee_code
 JOIN skills    s   ON s.skill_name    = v.skill_name
 CROSS JOIN LATERAL (SELECT employee_id FROM employees WHERE employee_code = 'EMP001') AS admin
+-- Ghi đè để seed hội tụ: sửa mức độ trong file này rồi chạy lại phải thấy thay đổi thật.
+ON CONFLICT ON CONSTRAINT uq_employee_skills DO UPDATE SET
+    proficiency_level       = EXCLUDED.proficiency_level,
+    years_experience        = EXCLUDED.years_experience,
+    source                  = EXCLUDED.source,
+    approved_by_employee_id = EXCLUDED.approved_by_employee_id,
+    approved_at             = EXCLUDED.approved_at;
+
+-- ---------------------------------------------------------------------------
+-- Khối 2 — dữ liệu CHỜ DUYỆT: approved_by_employee_id và approved_at đều NULL.
+--
+-- Gồm cả hai nguồn: nhân viên tự khai (MANUAL) và trích xuất từ CV (CV). Dùng
+-- DO NOTHING để không bao giờ hạ một bản ghi đã duyệt ở khối 1 xuống chờ duyệt.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO employee_skills (
+    employee_id, skill_id, proficiency_level, years_experience, note, source
+)
+SELECT
+    e.employee_id,
+    s.skill_id,
+    v.level::proficiency_level,
+    v.years,
+    v.note,
+    v.source::skill_source
+FROM (VALUES
+    -- Nhân viên tự khai, chờ Quản trị viên kiểm tra
+    ('EMP005', 'Kubernetes',        'INTERMEDIATE', 1.0, 'Tự học qua dự án nội bộ',        'MANUAL'),
+    ('EMP009', 'TypeScript',        'INTERMEDIATE', 1.0, 'Dùng ở dự án gần nhất',          'MANUAL'),
+    ('EMP015', 'Kiểm thử tự động',  'INTERMEDIATE', 1.5, 'Đã viết bộ kiểm thử hồi quy',    'MANUAL'),
+
+    -- Trích xuất từ CV, chờ Quản trị viên đối chiếu minh chứng
+    ('EMP013', 'Flutter',           'ADVANCED',     2.0, 'Trích xuất từ CV tháng 06/2026', 'CV'),
+    ('EMP017', 'AWS',               'INTERMEDIATE', 1.5, 'Trích xuất từ CV tháng 06/2026', 'CV'),
+    ('EMP009', 'Next.js',           'BASIC',        0.5, 'Trích xuất từ CV tháng 06/2026', 'CV')
+) AS v(employee_code, skill_name, level, years, note, source)
+JOIN employees e ON e.employee_code = v.employee_code
+JOIN skills    s ON s.skill_name    = v.skill_name
 ON CONFLICT ON CONSTRAINT uq_employee_skills DO NOTHING;

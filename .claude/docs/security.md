@@ -18,8 +18,9 @@ Nguyên tắc chung: **từ chối mặc định**. Thiếu khai báo quyền th
 
 - Băm bằng bcrypt `DefaultCost`. Không bao giờ lưu bản rõ, không log, không trả `password_hash` ra API.
 - So sánh bằng `bcrypt.CompareHashAndPassword`, không tự so chuỗi.
-- Mật khẩu mẫu `Password@123` trong `cmd/seed` **chỉ dùng cho môi trường phát triển**. Nếu có bản
-  triển khai thật thì phải buộc đổi mật khẩu lần đăng nhập đầu.
+- Mật khẩu mẫu `Password@123` trong `cmd/seed` **chỉ dùng cho môi trường phát triển**. `cmd/seed`
+  và các lệnh migration phá dữ liệu đã được chặn cứng: `APP_ENV != dev` là từ chối chạy. Nếu có
+  bản triển khai thật thì phải buộc đổi mật khẩu lần đăng nhập đầu.
 - Chính sách độ dài và độ phức tạp: **chưa chốt**. Tối thiểu nên là 8 ký tự.
 
 ## 3. Token và phiên
@@ -67,6 +68,10 @@ Chi tiết đầy đủ ở `roles_permissions.md` mục 4. Những điểm bả
 ## 7. Chống dò mật khẩu
 
 - **Giới hạn tần suất `POST /api/auth/login`** theo IP và theo username. Cách hiện thực **chưa chốt**.
+- Router cố ý **không dùng `middleware.RealIP`** của chi: nó ghi đè `r.RemoteAddr` bằng
+  `X-Forwarded-For` do client gửi mà không kiểm tra proxy có tin cậy hay không, nên bất kỳ ai cũng
+  giả được địa chỉ nguồn và vượt qua giới hạn theo IP (GHSA-3fxj-6jh8-hvhx). Chỉ thêm lại khi
+  triển khai sau reverse proxy, kèm danh sách trắng proxy.
 - Thông báo lỗi đăng nhập phải mơ hồ: "Tên đăng nhập hoặc mật khẩu không đúng" — không tách riêng
   "không tồn tại tài khoản này", vì như vậy là để lộ username có thật.
 - Cân nhắc khoá tạm sau N lần sai. Nếu làm thì phải có đường mở khoá cho ADMIN.

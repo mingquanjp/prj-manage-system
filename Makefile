@@ -12,16 +12,16 @@ build: ## Biên dịch binary vào ./bin/ai-staffing
 migrate-up: ## Áp dụng toàn bộ migration còn thiếu
 	go run ./cmd/migrate up
 
-migrate-down: ## Lùi lại một bước migration
+migrate-down: ## Lùi lại một bước migration (chỉ khi APP_ENV=dev)
 	go run ./cmd/migrate down
 
 migrate-version: ## Xem phiên bản schema hiện tại
 	go run ./cmd/migrate version
 
-migrate-reset: ## Xóa sạch schema rồi tạo lại (chỉ dùng khi phát triển)
-	go run ./cmd/migrate drop && go run ./cmd/migrate up
+migrate-reset: ## Lùi toàn bộ rồi tạo lại schema (chỉ khi APP_ENV=dev)
+	go run ./cmd/migrate down-all && go run ./cmd/migrate up
 
-seed: ## Nạp dữ liệu mẫu
+seed: ## Nạp dữ liệu mẫu (chỉ khi APP_ENV=dev)
 	go run ./cmd/seed
 
 test: ## Chạy toàn bộ test
