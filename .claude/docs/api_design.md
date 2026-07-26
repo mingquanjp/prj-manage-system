@@ -26,9 +26,10 @@ Router: `chi/v5`, middleware đang bật theo thứ tự `RequestID → RealIP �
 Nhóm theo use case. Đây là kế hoạch, chưa implement — điều chỉnh khi làm từng mốc.
 
 ```
-# Xác thực (M1) — cơ chế còn TBD, xem roles_permissions.md mục 4
-POST   /api/auth/login
-POST   /api/auth/logout
+# Xác thực (M1) — JWT access 15 phút + refresh xoay vòng, xem roles_permissions.md mục 4
+POST   /api/auth/login       # đặt cả access và refresh cookie
+POST   /api/auth/refresh     # xoay vòng refresh token, cấp access token mới
+POST   /api/auth/logout      # thu hồi refresh token, xoá cookie
 GET    /api/auth/me
 
 # Tài khoản (M1, ADMIN)

@@ -73,13 +73,51 @@ Kiểm tra trạng thái tài khoản mỗi request: `users.status != ACTIVE` �
 do nghiêng về session cookie hơn JWT — khoá tài khoản có hiệu lực tức thì, JWT phải thêm blacklist
 mới làm được.
 
-## 4. Xác thực — TBD
+## 4. Xác thực — đã chốt: JWT access + refresh
 
-**Chưa chốt.** Kế hoạch giả định session cookie HttpOnly + SameSite=Lax (frontend nhúng cùng origin
-nên không cần token). Người dùng chưa xác nhận. **Không implement khi chưa hỏi.**
+Mật khẩu băm bằng bcrypt (`golang.org/x/crypto/bcrypt`, DefaultCost) — đã dùng trong `cmd/seed`.
 
-Đã chốt phần còn lại: mật khẩu băng bcrypt (`golang.org/x/crypto/bcrypt`, DefaultCost) — đã dùng
-trong `cmd/seed`.
+### Quyết định
+
+| Thành phần | Quyết định |
+|---|---|
+| Access token | JWT **HS256**, TTL **15 phút** |
+| Claims | `sub` (user_id), `employee_id`, `role`, `iat`, `exp`, `jti` |
+| Refresh token | Chuỗi ngẫu nhiên 32 byte, **lưu bản băm SHA-256** trong bảng `refresh_tokens`, TTL **7 ngày** |
+| Xoay vòng | Mỗi lần refresh sinh token mới và thu hồi token cũ |
+| Phát hiện tái sử dụng | Dùng lại token đã thu hồi → **thu hồi toàn bộ họ token** của phiên đó |
+| Nơi lưu | Cả hai là cookie **HttpOnly + Secure + SameSite=Lax**; refresh cookie giới hạn `Path=/api/auth/refresh` |
+| CSRF | SameSite=Lax cộng cùng origin là đủ; mọi thao tác ghi đều là POST/PUT |
+| Khoá tài khoản | Xoá toàn bộ refresh token của user → chậm nhất 15 phút là bị đẩy ra |
+
+### Vì sao JWT chứ không phải session opaque
+
+Độ trễ tới Neon đo được **~78ms**. Session opaque buộc mỗi request phải query DB để tra phiên,
+tức cộng thẳng một roundtrip vào mọi API call. JWT chỉ verify chữ ký trong bộ nhớ.
+
+Lợi thế thường thấy của JWT (nhiều service, nhiều domain, mobile) **không áp dụng** ở đây vì
+frontend nhúng cùng origin — lý do chọn là độ trễ, không phải tính stateless.
+
+### Đánh đổi phải nêu trong báo cáo
+
+Khoá tài khoản có **cửa sổ trễ tối đa 15 phút**, trong khi session opaque thì tức thì. Đây là đánh
+đổi có ý thức giữa độ trễ và tính tức thời của thu hồi quyền.
+
+Giảm nhẹ: các thao tác nhạy cảm (duyệt kỹ năng, xác nhận phân công, đóng dự án) đằng nào cũng đọc
+`employees` từ DB, nên **chèn kiểm tra `users.status` ngay tại đó** để chặn tức thì. Không cần làm
+với các endpoint chỉ đọc.
+
+### Lưu ý implement
+
+- **Không** lưu token trong `localStorage`. HttpOnly cookie thì JavaScript không đọc được → XSS
+  không ăn cắp được token. Vì cùng origin nên không mất gì.
+- `employee_id` và `role` nằm sẵn trong claims → tầng service không phải query lại `users`/`employees`
+  cho mỗi lần kiểm tra ABAC.
+- Khoá ký lấy từ biến môi trường `JWT_SECRET`, thêm vào `.env.example`. Không hardcode, không commit.
+- Bảng `refresh_tokens` cần **migration `000002`**: `token_id`, `user_id`, `token_hash`, `expires_at`,
+  `revoked_at`, `replaced_by_token_id`, `user_agent`, `created_at`.
+- Thêm dependency `github.com/golang-jwt/jwt/v5`.
+- Endpoint: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
 
 ## 5. Tài khoản mẫu
 

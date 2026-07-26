@@ -25,6 +25,7 @@ CSDL mục 4.2.3 trong `docs/thesis-context/DoAn.pdf`, vì báo cáo và sản p
 | CSDL | PostgreSQL trên **Neon** (serverless) | cấu hình duy nhất qua `DATABASE_URL` |
 | Hash mật khẩu | `golang.org/x/crypto/bcrypt` | dùng ở `cmd/seed` |
 | Log | `log/slog` (thư viện chuẩn) | |
+| Xác thực | **JWT access 15 phút + refresh token xoay vòng**, cả hai trong cookie HttpOnly | đã chốt, chưa implement — xem `roles_permissions.md` mục 4 |
 
 Đã chốt nhưng **chưa khởi tạo** (`web/` đang rỗng): Vite + React + TypeScript + Tailwind +
 shadcn/ui + TanStack Query + React Router; build static rồi nhúng vào binary Go bằng `embed.FS`
@@ -32,12 +33,10 @@ shadcn/ui + TanStack Query + React Router; build static rồi nhúng vào binary
 
 **TBD — cần chốt trước khi code phần liên quan:**
 
-1. **Cơ chế xác thực** (chặn M1): session cookie HttpOnly + SameSite=Lax *hay* JWT. Kế hoạch
-   đang **giả định session cookie**, người dùng chưa xác nhận. Không được tự implement.
-2. **Sinh mã truy vấn**: `sqlc` + `squirrel` mới nằm trong kế hoạch, **chưa có trong `go.mod`**.
+1. **Sinh mã truy vấn**: `sqlc` + `squirrel` mới nằm trong kế hoạch, **chưa có trong `go.mod`**.
    Hiện tại viết SQL trực tiếp bằng pgx. Đừng thêm dependency khi chưa hỏi.
-3. **Nơi lưu file CV** (chặn M7): local disk qua interface `storage.Provider` hay S3/MinIO.
-4. **Đa ngôn ngữ**: đang giả định chỉ tiếng Việt.
+2. **Nơi lưu file CV** (chặn M7): local disk qua interface `storage.Provider` hay S3/MinIO.
+3. **Đa ngôn ngữ**: đang giả định chỉ tiếng Việt.
 
 ## 3. Dev Commands
 

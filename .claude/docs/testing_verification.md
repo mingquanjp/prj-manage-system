@@ -61,7 +61,7 @@ chụp màn hình cho mục 4.3.3.
 | Mốc | Nghiệm thu |
 |---|---|
 | M0 ✅ | `make migrate-up` + `make seed` chạy sạch; `/api/healthz` trả 200; `make check` xanh |
-| M1 | Đăng nhập được cả ba vai trò; gọi API sai quyền trả **403**; khoá tài khoản có hiệu lực ngay |
+| M1 | Đăng nhập được cả ba vai trò; gọi API sai quyền trả **403**; access token hết hạn thì refresh cấp token mới; dùng lại refresh token đã thu hồi thì bị thu hồi cả họ token; khoá tài khoản thì refresh thất bại ngay |
 | M2 | Kỹ năng chỉ có `approved_at` sau khi ADMIN duyệt; kỹ năng chưa duyệt không xuất hiện ở màn hình tra cứu |
 | M3 | Tạo được cây công việc; task mặc định `PENDING_ASSIGNMENT`; đủ bảy validate 13a–13e |
 | M4 | Phân công thủ công chạy đủ luồng chính + 15a/15b; kiểm chứng rollback |

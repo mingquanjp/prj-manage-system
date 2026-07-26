@@ -56,6 +56,7 @@ khớp sản phẩm.
 | `tasks.task_code` UNIQUE `(project_id, task_code)` thay vì UNIQUE toàn cục | UC002 chỉ nói "không trùng theo quy tắc của hệ thống" | Ghi rõ trong mô tả bảng `Tasks` |
 | Bỏ `ProjectMembers.project_role` | Có ở `Hình 4.5`, không có ở `Hình 4.6`, không use case nào dùng | Xoá khỏi `Hình 4.5` |
 | Không tạo bảng `Certificates` | Ngoài phạm vi UC001–UC004 | Bỏ "chứng chỉ" khỏi biểu đồ use case 2.2.3 / 2.2.4 / 2.2.6 |
+| Thêm bảng `refresh_tokens` (migration `000002`, M1) | Xác thực dùng JWT access + refresh xoay vòng; cần lưu bản băm để thu hồi được. Xem `roles_permissions.md` mục 4 | Bổ sung vào mục 4.2.3.3 |
 | Lịch làm việc để ở file config, không vào DB | UC004 alt 9a chỉ đòi "có cấu hình" | Nêu rõ trong Chương 4 |
 
 ## 4. Quy ước đặt tên và kiểu dữ liệu
