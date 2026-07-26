@@ -55,6 +55,7 @@ khi implement thì bám theo yêu cầu phi chức năng mục 2.4.
 | Bảng riêng cho yêu cầu cập nhật kỹ năng tự khai | Dùng chính `employee_skills` với `approved_at IS NULL` để biểu diễn trạng thái chờ duyệt |
 | Lịch làm việc chuẩn lưu trong DB | UC004 alt 9a chỉ đòi "có cấu hình". Đặt ở `config/workcalendar.yaml` |
 | `ProjectMembers.project_role` | Có trong `Hình 4.5`, không có trong `Hình 4.6`, không use case nào dùng |
+| **Phân rã công việc nhiều tầng** (`parent_task_id`, `task_type`) | UC002 chỉ mô tả nhóm công việc chứa công việc. Cấu trúc chốt là đúng hai tầng `task_groups → tasks` |
 
 ## 6. Lộ trình
 

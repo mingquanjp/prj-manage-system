@@ -15,6 +15,12 @@ nhận của PM trong UC003. Neo: mục 2.4.5, UC003.1 bước 12.
 `task_groups` chỉ để gom nhóm: không có người phụ trách, không có giờ ước tính, không có yêu cầu kỹ
 năng, không xuất hiện trong bất kỳ truy vấn phân công nào. Neo: UC002 bước 7–8.
 
+Hệ quả: cấu trúc phân rã đúng **hai tầng** — `task_groups` → `tasks`. **Không có công việc con.**
+Bảng `tasks` cố ý không có `parent_task_id` lẫn `task_type`, dù tài liệu mục 4.2.3.4 có cả hai
+(xem `database_schema.md` mục 3). Có hai cơ chế nhóm chồng nhau thì R2 lập tức mơ hồ: task có con
+thì có phân công được không, và phân công task cha thì task con tính sao. Nếu về sau thật sự cần
+phân rã nhiều tầng thì phải quay lại sửa cả UC002 trong báo cáo trước, không tự thêm cột.
+
 **R3 — Kỹ năng phải được duyệt mới thành hồ sơ chính thức.**
 Kỹ năng nhân viên tự khai hoặc trích xuất từ CV chỉ là dữ liệu chờ duyệt. Engine đề xuất và chức
 năng tra cứu **chỉ đọc bản ghi đã duyệt**. Neo: mục 2.4.2, UC003.1 dữ liệu đầu vào #3.

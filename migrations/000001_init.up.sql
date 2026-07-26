@@ -172,16 +172,22 @@ CREATE TABLE task_groups (
     CONSTRAINT uq_task_groups_name UNIQUE (project_id, group_name)
 );
 
+-- Cấu trúc phân rã đúng HAI tầng: task_groups gom nhóm, tasks là công việc.
+--
+-- Tài liệu (mục 4.2.3.4) có thêm parent_task_id và task_type để biểu diễn cây
+-- công việc nhiều tầng, nhưng UC002 chỉ mô tả nhóm công việc chứa công việc, và
+-- không use case nào nói tới công việc con. Giữ cả hai cơ chế lồng nhau sẽ làm
+-- quy tắc "task là đơn vị phân công duy nhất" trở nên mơ hồ: task có con thì có
+-- phân công được không, phân công task cha thì task con tính sao. Bỏ đi để chỉ
+-- còn một cách duy nhất biểu diễn nhóm.
 CREATE TABLE tasks (
     task_id             int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     project_id          int            NOT NULL REFERENCES projects (project_id) ON DELETE CASCADE,
     task_group_id       int            REFERENCES task_groups (task_group_id) ON DELETE SET NULL,
-    parent_task_id      int            REFERENCES tasks (task_id) ON DELETE SET NULL,
     current_assignee_id int            REFERENCES employees (employee_id),
     task_code           varchar(30)    NOT NULL,
     task_name           varchar(150)   NOT NULL,
     description         text,
-    task_type           varchar(30)    NOT NULL DEFAULT 'CHILD',
     estimate_hours      decimal(10, 2) NOT NULL,
     actual_hours        decimal(10, 2) NOT NULL DEFAULT 0,
     planned_start_date  date,
@@ -199,13 +205,11 @@ CREATE TABLE tasks (
     CONSTRAINT ck_tasks_dates      CHECK (
         planned_start_date IS NULL OR planned_end_date IS NULL
         OR planned_end_date >= planned_start_date
-    ),
-    CONSTRAINT ck_tasks_not_self_parent CHECK (parent_task_id IS DISTINCT FROM task_id)
+    )
 );
 
 CREATE INDEX idx_tasks_project  ON tasks (project_id);
 CREATE INDEX idx_tasks_group    ON tasks (task_group_id);
-CREATE INDEX idx_tasks_parent   ON tasks (parent_task_id);
 CREATE INDEX idx_tasks_assignee ON tasks (current_assignee_id);
 CREATE INDEX idx_tasks_status   ON tasks (status);
 

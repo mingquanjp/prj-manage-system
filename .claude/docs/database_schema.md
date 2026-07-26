@@ -45,7 +45,7 @@ khớp sản phẩm.
 
 | Thay đổi | Lý do | Việc cần sửa trong báo cáo |
 |---|---|---|
-| Thêm bảng `task_groups` | `Hình 4.5` đã có, `Hình 4.6` thiếu. Gộp nhóm vào `tasks` bằng `task_type='GROUP'` sẽ khiến `estimate_hours NOT NULL`, `current_assignee_id`, `task_requirements`, `work_logs` vô nghĩa với dòng nhóm và phải thêm ~6 luật chặn | Bổ sung vào `Hình 4.6` và bảng liệt kê mục 4.2.3.3 |
+| Thêm bảng `task_groups` | `Hình 4.5` đã có, `Hình 4.6` thiếu. Phương án thay thế là gộp nhóm vào chính bảng `tasks` và phân biệt bằng một cột loại, nhưng như vậy `estimate_hours NOT NULL`, `current_assignee_id`, `task_requirements`, `work_logs` đều vô nghĩa với dòng nhóm và phải thêm ~6 luật chặn | Bổ sung vào `Hình 4.6` và bảng liệt kê mục 4.2.3.3 |
 | Thêm `PENDING_REVIEW` vào `task_status` | UC004 bước 5 yêu cầu trạng thái "Chờ review" | Bổ sung vào enum ở mục 4.2.3 |
 | Thêm enum `skill_source` và các cột `source`, `approved_by_employee_id`, `approved_at` vào `employee_skills` | Chứng minh luận điểm "chỉ dùng hồ sơ đã duyệt" — trọng tâm đề tài (mục 2.4.2) | Bổ sung enum và ba cột |
 | Thêm `recommendation_runs`, `recommendation_items` | Lưu tham số và kết quả để tái lập, tránh tính lại (mục 2.4.3); cũng là dữ liệu đánh giá engine ở Chương 5 | Bổ sung vào mục 4.2.3.3 |
@@ -55,6 +55,7 @@ khớp sản phẩm.
 | `user_system_role` đổi `HR` → `PM` | `HR` không xuất hiện ở bất kỳ use case nào; ba tác nhân Chương 2 là Quản trị viên / Quản lý dự án / Nhân viên | Sửa enum ở mục 4.2.3; sửa mục 2.15 "HR duyệt" → "Quản trị viên duyệt" |
 | `tasks.task_code` UNIQUE `(project_id, task_code)` thay vì UNIQUE toàn cục | UC002 chỉ nói "không trùng theo quy tắc của hệ thống" | Ghi rõ trong mô tả bảng `Tasks` |
 | Bỏ `ProjectMembers.project_role` | Có ở `Hình 4.5`, không có ở `Hình 4.6`, không use case nào dùng | Xoá khỏi `Hình 4.5` |
+| **Bỏ `Tasks.parent_task_id` và `Tasks.task_type`** | Tài liệu mục 4.2.3.4 có cả hai để biểu diễn cây công việc nhiều tầng. Nhưng UC002 chỉ mô tả nhóm công việc chứa công việc, không use case nào nói tới công việc con. Giữ chúng cùng với `task_groups` là có hai cơ chế nhóm chồng nhau, làm quy tắc R2 mơ hồ: task có con thì có phân công được không? | Xoá hai cột khỏi `Hình 4.5`, `Hình 4.6` và bảng mô tả `Tasks`; bỏ câu "Mỗi công việc có thể có công việc cha thông qua khóa ngoại tự tham chiếu" ở mục 4.2.3.2 và 4.2.3.4 |
 | Không tạo bảng `Certificates` | Ngoài phạm vi UC001–UC004 | Bỏ "chứng chỉ" khỏi biểu đồ use case 2.2.3 / 2.2.4 / 2.2.6 |
 | Thêm bảng `refresh_tokens` (migration `000002`, M1) | Xác thực dùng JWT access + refresh xoay vòng; cần lưu bản băm để thu hồi được. Xem `roles_permissions.md` mục 4 | Bổ sung vào mục 4.2.3.3 |
 | Lịch làm việc để ở file config, không vào DB | UC004 alt 9a chỉ đòi "có cấu hình" | Nêu rõ trong Chương 4 |
@@ -80,7 +81,6 @@ khớp sản phẩm.
 | `uq_tasks_code` | `tasks` | UNIQUE `(project_id, task_code)` |
 | `ck_tasks_estimate` | `tasks` | `estimate_hours > 0` |
 | `ck_tasks_dates` | `tasks` | ngày kết thúc không nhỏ hơn ngày bắt đầu nếu nhập cả hai |
-| `ck_tasks_not_self_parent` | `tasks` | task không tự làm cha của chính nó |
 | `uq_task_groups_name` | `task_groups` | UNIQUE `(project_id, group_name)` |
 | `uq_employee_skills` | `employee_skills` | UNIQUE `(employee_id, skill_id)` |
 | `uq_task_requirements` | `task_requirements` | UNIQUE `(task_id, skill_id)` |
