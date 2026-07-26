@@ -1,5 +1,60 @@
 # Thiết kế API
 
+## 0. Tài liệu API — OpenAPI 3.1 viết tay + Swagger UI nhúng
+
+**Đã chốt.** Chưa implement, thuộc M1.
+
+| Hạng mục | Quyết định |
+|---|---|
+| Nguồn chuẩn | `api/openapi.yaml`, **viết tay**, đặc tả OpenAPI **3.1** |
+| Giao diện thử | Swagger UI phục vụ tại `GET /api/docs`, spec tại `GET /api/openapi.yaml` |
+| Bật khi nào | **Chỉ khi `APP_ENV=dev`.** Ở môi trường khác thì route không được đăng ký, trả 404 |
+| Assets | Nhúng vào binary bằng `embed.FS`. **Không kéo từ CDN** — CSP ở `security.md` mục 10 chặn nguồn ngoài |
+| Chống lệch spec | Test dùng `chi.Walk` duyệt mọi route đã đăng ký, đối chiếu với đường dẫn trong spec. Thiếu hoặc thừa đều làm test đỏ |
+
+### Vì sao viết tay chứ không dùng annotation
+
+`swaggo/swag` v1 (v1.16.6) chỉ sinh được **OpenAPI 2.0**, mà 2.0 không có kiểu security scheme
+`in: cookie`. Hệ thống này xác thực bằng cookie HttpOnly, nên spec sẽ mô tả sai cơ chế xác thực —
+điều hội đồng có thể hỏi tới. Bản `swag/v2` hỗ trợ 3.1 nhưng vẫn là `v2.0.0-rc5`, không nên đưa
+bản RC vào đồ án.
+
+Viết tay đổi lại lấy: khai báo đúng `cookieAuth`, không thêm bước sinh mã, không thêm dependency
+sinh mã (giảm bề mặt chuỗi cung ứng — `security.md` mục 12). Nhược điểm duy nhất là spec có thể
+lệch khỏi code, và đó chính là thứ test `chi.Walk` canh.
+
+### Khai báo xác thực trong spec
+
+```yaml
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+security:
+  - cookieAuth: []      # mặc định cho mọi endpoint
+```
+
+Các endpoint công khai (`/api/auth/login`, `/api/healthz`) ghi đè bằng `security: []`.
+
+Swagger UI **không cần cấu hình gì thêm để thử**: nó phục vụ cùng origin với API, nên trình duyệt
+tự gắn cookie sau khi gọi `POST /api/auth/login` ngay trong giao diện. Đây cũng là lý do khác để
+nhúng UI vào chính binary thay vì mở file HTML rời.
+
+### Bố cục dự kiến
+
+```
+api/openapi.yaml                        nguồn chuẩn
+internal/transport/http/docs.go         đăng ký route /api/docs, nhúng spec + UI
+internal/transport/http/swaggerui/      dist của Swagger UI, nhúng qua embed.FS
+internal/transport/http/docs_test.go    chi.Walk đối chiếu route với spec
+```
+
+Còn một chi tiết nhỏ để lại tới lúc làm: lấy bộ Swagger UI dist bằng cách nào. Nghiêng về **tự đưa
+vào repo** bản dist chính thức thay vì phụ thuộc `swaggo/http-swagger` (bản mới nhất từ 2023), để
+tự kiểm soát phiên bản UI khi có bản vá.
+
 ## 1. Hiện trạng
 
 Endpoint duy nhất đã có: `GET /api/healthz` → `{"status":"ok","database":"ok","database_latency_ms":78}`.

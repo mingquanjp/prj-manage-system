@@ -51,6 +51,13 @@ Chương 2 → dùng luôn làm bảng ca kiểm thử trong báo cáo.
 | Phân quyền | mỗi endpoint gọi bằng cả ba vai trò; PM A đụng dự án của PM B → **403** |
 | Quy tắc R3 | kỹ năng chưa duyệt **không** ảnh hưởng kết quả engine |
 
+### Chống lệch tài liệu API
+
+`api/openapi.yaml` viết tay nên phải có test canh: dùng `chi.Walk` duyệt mọi route đã đăng ký trên
+router, đối chiếu với danh sách đường dẫn trong spec. Route có mà spec thiếu → đỏ. Spec có mà route
+không tồn tại → cũng đỏ. Test này là điều kiện để phương án viết tay đứng vững, xem `api_design.md`
+mục 0.
+
 ### Thủ công
 
 Seed data + chạy server, đi hết luồng bằng UI với ba tài khoản `admin` / `pm.hoa` / `dev.an` để

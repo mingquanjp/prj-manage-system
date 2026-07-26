@@ -25,6 +25,7 @@ CSDL mục 4.2.3 trong `docs/thesis-context/DoAn.pdf`, vì báo cáo và sản p
 | CSDL | PostgreSQL trên **Neon** (serverless) | cấu hình duy nhất qua `DATABASE_URL` |
 | Hash mật khẩu | `golang.org/x/crypto/bcrypt` | dùng ở `cmd/seed` |
 | Log | `log/slog` (thư viện chuẩn) | |
+| Tài liệu API | **OpenAPI 3.1 viết tay** + Swagger UI nhúng tại `/api/docs`, chỉ bật khi `APP_ENV=dev` | đã chốt, chưa implement — xem `api_design.md` mục 0 |
 | Xác thực | **JWT access 15 phút + refresh token xoay vòng**, cả hai trong cookie HttpOnly | đã chốt, chưa implement — xem `roles_permissions.md` mục 4 |
 
 Đã chốt nhưng **chưa khởi tạo** (`web/` đang rỗng): Vite + React + TypeScript + Tailwind +
