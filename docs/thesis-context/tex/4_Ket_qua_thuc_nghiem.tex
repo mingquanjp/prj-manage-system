@@ -1,0 +1,432 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Thiết kế kiến trúc}
+\subsection{Lựa chọn kiến trúc phần mềm}
+Mục này có độ dài từ một đến ba trang. Sinh viên cần lựa chọn kiến trúc phần mềm cho ứng dụng của mình như: kiến trúc ba lớp MVC, MVP, SOA, Microservice, v.v. rồi giải thích sơ bộ về kiến trúc đó (không giải thích chi tiết/dài dòng).
+Sử dụng kiến trúc phần mềm đã chọn ở trên, sinh viên mô tả kiến trúc cụ thể cho ứng dụng của mình. Gợi ý: sinh viên áp dụng lý thuyết chung vào hệ thống/sản phẩm của mình như thế nào, có thay đổi, bổ sung hoặc cải tiến gì không. Ví dụ, thành phần M trong kiến trúc lý thuyết MVC sẽ là những thành phần cụ thể nào (ví dụ: là interface I + class C1 + class C2, v.v.) trong kiến trúc phần mềm của sinh viên.
+
+\subsection{Thiết kế tổng quan}
+Sinh viên vẽ biểu đồ gói UML (UML package diagram), nêu rõ sự phụ thuộc giữa các gói (package). SV cần vẽ các gói sao cho chúng được phân theo các tầng rõ ràng, không được sắp đặt package lộn xộn trong hình vẽ. Sinh viên chú ý các quy tắc thiết kế (Các gói không phụ thuộc lẫn nhau, gói tầng dưới không phụ thuộc gói tầng trên, không phụ thuộc bỏ qua tầng, v.v.) và cần giải thích sơ lược về mục đích/nhiệm vụ của từng package. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig1}
+\begin{figure}[H]
+    \centering
+    \includegraphics{Hinhve/Picture1.png}
+    \caption{Ví dụ biểu đồ phụ thuộc gói}
+    \label{fig:Fig1}
+\end{figure}
+\subsection{Thiết kế chi tiết gói}
+Sinh viên thiết kế và lần lượt vẽ biểu đồ thiết kế cho từng package, hoặc một nhóm các package liên quan để giải quyết một vấn đề gì đó. Khi vẽ thiết kế gói, sinh viên chỉ cần đưa tên lớp, không cần chỉ ra các thành viên phương thức và thuộc tính. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig2}.
+
+Sinh viên cần vẽ rõ ràng quan hệ giữa các lớp trong biểu đồ. Các quan hệ bao gồm: phụ thuộc (dependency), kết hợp (association), kết tập (aggregation), hợp thành (composition), kế thừa (inheritance), và thực thi (implementation). Các quan hệ này đều đã được minh họa trong \ref{fig:Fig2}.
+
+Sau khi vẽ hình minh họa, sinh viên cần giải thích ngắn gọn về thiết kế của mình. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{Hinhve/Picture2.png}
+    \caption{Ví dụ thiết kế gói}
+    \label{fig:Fig2}
+\end{figure}
+
+\section{Thiết kế chi tiết}
+\subsection{Thiết kế giao diện}
+Phần này có độ dài từ hai đến ba trang. Sinh viên đặc tả thông tin về màn hình mà ứng dụng của mình hướng tới, bao gồm độ phân giải màn hình, kích thước màn hình, số lượng màu sắc hỗ trợ, v.v. Tiếp đến, sinh viên đưa ra các thống nhất/chuẩn hóa của mình khi thiết kế giao diện như thiết kế nút, điều khiển, vị trí hiển thị thông điệp phản hồi, phối màu, v.v. Sau cùng sinh viên đưa ra một số hình ảnh minh họa thiết kế giao diện cho các chức năng quan trọng nhất. Lưu ý, sinh viên không nhầm lẫn giao diện thiết kế với giao diện của sản phẩm sau cùng.
+\subsection{Thiết kế lớp}
+Phần thiết kế lớp tập trung vào các lớp và luồng trao đổi thông điệp phục vụ những nghiệp vụ quan trọng của hệ thống. Trong phạm vi hiện tại, đồ án trình bày trước hai biểu đồ trình tự cho nghiệp vụ phân công công việc và phân công bằng AI đề xuất. Phần mô tả chi tiết thuộc tính, phương thức của các lớp chủ đạo sẽ được bổ sung sau.
+
+Hình \ref{fig:sequence_phan_cong_cong_viec} minh họa luồng truyền thông điệp khi Quản lý dự án thực hiện phân công công việc thủ công. Biểu đồ thể hiện các bước từ việc chọn công việc, tra cứu nhân sự phù hợp, xác nhận phân công cho đến khi hệ thống lưu kết quả phân công.
+
+\begin{landscape}
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=0.96\linewidth,height=0.82\textheight,keepaspectratio]{Hinhve/Diagram/Sequence_phancongcongviec.png}
+    \caption[Bieu do trinh tu phan cong cong viec]{Biểu đồ trình tự chức năng phân công công việc}
+    \label{fig:sequence_phan_cong_cong_viec}
+\end{figure}
+\end{landscape}
+
+Hình \ref{fig:sequence_phan_cong_ai_de_xuat} trình bày luồng phân công công việc có sử dụng kết quả đề xuất của AI. Trong luồng này, hệ thống tổng hợp yêu cầu kỹ năng của công việc, đối chiếu với hồ sơ năng lực của nhân sự và trả về danh sách gợi ý để Quản lý dự án xem xét trước khi ra quyết định phân công cuối cùng.
+
+\begin{landscape}
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=0.96\linewidth,height=0.82\textheight,keepaspectratio]{Hinhve/Diagram/Sequence_phancongbanAIdexuat.png}
+    \caption[Bieu do trinh tu phan cong bang AI de xuat]{Biểu đồ trình tự chức năng phân công bằng AI đề xuất}
+    \label{fig:sequence_phan_cong_ai_de_xuat}
+\end{figure}
+\end{landscape}
+
+\subsection{Thiết kế cơ sở dữ liệu}
+\label{subsection:4.2.3}
+Cơ sở dữ liệu của hệ thống được thiết kế theo mô hình quan hệ nhằm bảo đảm khả năng quản lý nhất quán các dữ liệu về tài khoản, nhân sự, hồ sơ năng lực, dự án, công việc, phân công và ghi nhận quá trình thực hiện. Thiết kế này bám sát các nghiệp vụ đã phân tích ở Chương 2, trong đó dữ liệu kỹ năng chính thức của nhân sự là nguồn đầu vào quan trọng cho việc tra cứu và đề xuất phân công. Các bảng dữ liệu được chuẩn hóa để hạn chế trùng lặp, đồng thời sử dụng khóa ngoại để duy trì ràng buộc giữa các nhóm dữ liệu nghiệp vụ.
+
+\subsubsection{Biểu đồ thực thể liên kết}
+\label{subsubsection:4.2.3.1}
+Hình \ref{fig:database_erd} trình bày biểu đồ thực thể liên kết của hệ thống. Biểu đồ thể hiện các thực thể chính và mối quan hệ giữa chúng, bao gồm nhóm thực thể người dùng -- nhân sự, nhóm thực thể kỹ năng, nhóm thực thể dự án -- công việc -- phân công và nhóm thực thể phục vụ CV, bình luận, lịch sử trạng thái.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth,height=0.82\textheight,keepaspectratio]{Hinhve/Database/erd.png}
+    \caption[Bieu do thuc the lien ket co so du lieu]{Biểu đồ thực thể liên kết của cơ sở dữ liệu}
+    \label{fig:database_erd}
+\end{figure}
+
+Trong biểu đồ, mỗi tài khoản người dùng được liên kết với một hồ sơ nhân viên thông qua quan hệ một--một giữa bảng \texttt{Users} và \texttt{Employees}. Hồ sơ nhân viên tiếp tục liên kết với phòng ban, chức danh và tập kỹ năng thông qua các bảng \texttt{Departments}, \texttt{Positions}, \texttt{Skills} và \texttt{EmployeeSkills}. Cách tổ chức này giúp hệ thống tách riêng dữ liệu đăng nhập với dữ liệu nhân sự, đồng thời cho phép quản lý hồ sơ năng lực ở mức chi tiết theo từng kỹ năng.
+
+Đối với nghiệp vụ dự án, bảng \texttt{Projects} lưu thông tin chung của dự án và liên kết với bảng \texttt{Tasks} để quản lý các công việc thuộc dự án. Mỗi công việc có thể có công việc cha thông qua khóa ngoại tự tham chiếu \texttt{parent\_task\_id}, nhờ đó hệ thống hỗ trợ phân rã công việc theo cấu trúc phân cấp. Bảng \texttt{TaskRequirements} mô tả yêu cầu kỹ năng của từng công việc, còn bảng \texttt{Assignments} lưu kết quả phân công sau khi Quản lý dự án xác nhận. Các bảng \texttt{WorkLogs}, \texttt{TaskComments} và \texttt{TaskStatusHistory} bổ sung dữ liệu theo dõi trong quá trình thực hiện công việc.
+
+\subsubsection{Mô hình quan hệ dữ liệu}
+\label{subsubsection:4.2.3.2}
+Từ biểu đồ thực thể liên kết, mô hình quan hệ dữ liệu được xây dựng như Hình \ref{fig:database_relational_model}. Mô hình này thể hiện rõ các bảng, khóa chính, khóa ngoại và những trường dữ liệu chính được sử dụng trong hệ quản trị cơ sở dữ liệu quan hệ.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth,height=0.82\textheight,keepaspectratio]{Hinhve/Database/mo_hinh_quan_he.png}
+    \caption[Mo hinh quan he du lieu]{Mô hình quan hệ dữ liệu của hệ thống}
+    \label{fig:database_relational_model}
+\end{figure}
+
+Mô hình quan hệ dữ liệu được chia thành bốn nhóm chính. Nhóm thứ nhất quản lý tài khoản và thông tin nhân sự, gồm \texttt{Users}, \texttt{Employees}, \texttt{Departments} và \texttt{Positions}. Nhóm thứ hai quản lý hồ sơ năng lực, gồm \texttt{SkillCategories}, \texttt{Skills} và \texttt{EmployeeSkills}. Nhóm thứ ba quản lý dự án, công việc và phân công, gồm \texttt{Projects}, \texttt{ProjectMembers}, \texttt{Tasks}, \texttt{TaskRequirements}, \texttt{Assignments}, \texttt{WorkLogs}, \texttt{TaskComments} và \texttt{TaskStatusHistory}. Nhóm thứ tư phục vụ xử lý CV và dữ liệu trích xuất, gồm \texttt{EmployeeCVs}, \texttt{CVExtractions} và \texttt{CVExtractedSkills}.
+
+Các trường trạng thái và phân loại được chuẩn hóa bằng các kiểu dữ liệu liệt kê như \texttt{UserStatus}, \texttt{ProjectStatus}, \texttt{TaskStatus}, \texttt{ProficiencyLevel}, \texttt{AssignmentType}, \texttt{CvStatus}, \texttt{ExtractionStatus} và \texttt{DecisionStatus}. Việc sử dụng các giá trị trạng thái cố định giúp hạn chế dữ liệu sai định dạng, đồng thời làm rõ vòng đời của tài khoản, dự án, công việc, CV và kết quả trích xuất kỹ năng.
+
+\subsubsection{Danh sách các bảng dữ liệu}
+\label{subsubsection:4.2.3.3}
+Bảng \ref{table:database_table_list} tổng hợp các bảng dữ liệu chính của hệ thống. Mỗi bảng được thiết kế để phục vụ một nhóm nghiệp vụ cụ thể, tránh việc một bảng lưu trữ quá nhiều loại dữ liệu không cùng trách nhiệm.
+
+\setlength{\LTpre}{6pt}
+\setlength{\LTpost}{6pt}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.26\textwidth}|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.40\textwidth}|}
+    \caption{Danh sách các bảng dữ liệu chính}
+    \label{table:database_table_list}\\
+    \hline
+    \textbf{Bảng dữ liệu} & \textbf{Nhóm nghiệp vụ} & \textbf{Vai trò trong hệ thống} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{Bảng dữ liệu} & \textbf{Nhóm nghiệp vụ} & \textbf{Vai trò trong hệ thống} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{3}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    Users & Tài khoản & Lưu thông tin đăng nhập, vai trò hệ thống và trạng thái tài khoản. \\ \hline
+    Departments & Danh mục tổ chức & Lưu danh sách phòng ban trong tổ chức. \\ \hline
+    Positions & Danh mục tổ chức & Lưu danh sách vị trí hoặc chức danh của nhân sự. \\ \hline
+    Employees & Nhân sự & Lưu hồ sơ nhân viên, liên kết với tài khoản, phòng ban và chức danh. \\ \hline
+    SkillCategories & Kỹ năng & Lưu nhóm kỹ năng như backend, frontend, cơ sở dữ liệu hoặc kỹ năng mềm. \\ \hline
+    Skills & Kỹ năng & Lưu danh mục kỹ năng chi tiết được sử dụng trong hồ sơ năng lực và yêu cầu công việc. \\ \hline
+    EmployeeSkills & Hồ sơ năng lực & Lưu mức độ thành thạo, số năm kinh nghiệm và ghi chú theo từng kỹ năng của nhân viên. \\ \hline
+    Projects & Dự án & Lưu thông tin dự án, trạng thái, thời gian dự kiến và Quản lý dự án phụ trách. \\ \hline
+    ProjectMembers & Thành viên dự án & Lưu danh sách nhân sự tham gia dự án và nguồn được thêm vào dự án. \\ \hline
+    Tasks & Công việc & Lưu các công việc thuộc dự án, công việc cha, người phụ trách hiện tại và thời gian ước tính/thực tế. \\ \hline
+    TaskRequirements & Yêu cầu công việc & Lưu yêu cầu kỹ năng, mức độ yêu cầu, trọng số và tính bắt buộc của từng kỹ năng đối với công việc. \\ \hline
+    Assignments & Phân công & Lưu lịch sử phân công, người được giao, người phân công, phương thức phân công và điểm phù hợp nếu có. \\ \hline
+    WorkLogs & Theo dõi thực hiện & Lưu thời gian làm việc thực tế và ghi chú thực hiện của nhân viên theo từng công việc. \\ \hline
+    EmployeeCVs & Hồ sơ CV & Lưu thông tin tệp CV, đường dẫn lưu trữ và trạng thái hiệu lực của CV. \\ \hline
+    CVExtractions & Trích xuất CV & Lưu kết quả trích xuất nội dung từ CV và trạng thái chờ duyệt, phê duyệt hoặc từ chối. \\ \hline
+    CVExtractedSkills & Trích xuất kỹ năng từ CV & Lưu các kỹ năng được nhận diện từ CV, mức độ gợi ý, điểm tin cậy và quyết định duyệt của Quản trị viên. \\ \hline
+    TaskComments & Trao đổi công việc & Lưu bình luận hoặc trao đổi của người dùng trong phạm vi một công việc. \\ \hline
+    TaskStatusHistory & Lịch sử trạng thái & Lưu vết thay đổi trạng thái công việc để phục vụ theo dõi và kiểm tra. \\
+\end{longtable}
+
+Bảng \ref{table:database_table_list} cho thấy thiết kế dữ liệu tập trung vào chuỗi nghiệp vụ từ quản lý hồ sơ năng lực đến phân công và theo dõi công việc. Nhóm bảng CV và trích xuất kỹ năng không cập nhật trực tiếp hồ sơ năng lực chính thức, mà tạo dữ liệu chờ duyệt để Quản trị viên kiểm tra trước khi sử dụng cho các chức năng tra cứu hoặc AI đề xuất.
+
+\subsubsection{Chi tiết các bảng dữ liệu}
+\label{subsubsection:4.2.3.4}
+Phần này trình bày chi tiết các trường dữ liệu chính của một số bảng trung tâm trong hệ thống. Cách trình bày sử dụng cùng một cấu trúc gồm số thứ tự, trường dữ liệu, kiểu dữ liệu và mô tả để người đọc dễ đối chiếu với mô hình quan hệ. Các bảng còn lại có cấu trúc tương tự và được tổng hợp theo nhóm nghiệp vụ ở phần danh sách bảng.
+
+Bảng Users lưu thông tin tài khoản đăng nhập, vai trò hệ thống và trạng thái hoạt động của người dùng. Đây là bảng nền tảng để kiểm soát quyền truy cập của Quản trị viên, Quản lý dự án và Nhân viên.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng Users}
+    \label{table:database_detail_users}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & user\_id & INT & Khóa chính định danh tài khoản. \\ \hline
+    2 & username & varchar(50) & Tên đăng nhập hệ thống, không được trùng. \\ \hline
+    3 & password\_hash & varchar(255) & Mật khẩu đã được mã hóa. \\ \hline
+    4 & system\_role & UserSystemRole & Vai trò của người dùng trong hệ thống. \\ \hline
+    5 & status & UserStatus & Trạng thái hiện tại của tài khoản. \\ \hline
+    6 & created\_at & datetime & Thời điểm tạo tài khoản. \\ \hline
+    7 & updated\_at & datetime & Thời điểm cập nhật gần nhất. \\
+\end{longtable}
+
+Bảng Employees lưu hồ sơ nhân sự và liên kết một--một với tài khoản người dùng. Bảng này cũng lưu các thông tin tổ chức như phòng ban, chức danh và trạng thái làm việc, làm cơ sở cho quản lý hồ sơ năng lực.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng Employees}
+    \label{table:database_detail_employees}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & employee\_id & INT & Khóa chính định danh nhân viên. \\ \hline
+    2 & user\_id & int & Khóa ngoại liên kết với bảng Users theo quan hệ một--một. \\ \hline
+    3 & employee\_code & varchar(30) & Mã định danh nội bộ của nhân sự, không được trùng. \\ \hline
+    4 & fullname & varchar(100) & Họ và tên đầy đủ của nhân viên. \\ \hline
+    5 & email & varchar(100) & Email làm việc, không được trùng. \\ \hline
+    6 & phone & varchar(20) & Số điện thoại cá nhân. \\ \hline
+    7 & department\_id & int & Khóa ngoại tới phòng ban trực thuộc. \\ \hline
+    8 & position\_id & int & Khóa ngoại tới chức danh của nhân viên. \\ \hline
+    9 & seniority\_level & varchar(30) & Cấp bậc kinh nghiệm, ví dụ Junior hoặc Senior. \\ \hline
+    10 & employment\_status & EmploymentStatus & Trạng thái làm việc tại công ty. \\
+\end{longtable}
+
+Bảng EmployeeSkills là bảng trung gian giữa Employees và Skills, cho phép hệ thống quản lý nhiều kỹ năng cho một nhân viên và nhiều nhân viên cho một kỹ năng. Đây là nguồn dữ liệu chính cho chức năng tra cứu hồ sơ năng lực và AI đề xuất nhân sự.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng EmployeeSkills}
+    \label{table:database_detail_employee_skills}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & employee\_skill\_id & INT & Khóa chính định danh bản ghi năng lực. \\ \hline
+    2 & employee\_id & int & Khóa ngoại tới nhân viên sở hữu kỹ năng. \\ \hline
+    3 & skill\_id & int & Khóa ngoại tới kỹ năng tương ứng. \\ \hline
+    4 & proficiency\_level & ProficiencyLevel & Mức độ thành thạo của nhân viên đối với kỹ năng. \\ \hline
+    5 & years\_experience & decimal(4,1) & Số năm kinh nghiệm cụ thể nếu có. \\ \hline
+    6 & note & text & Ghi chú bổ sung về kỹ năng. \\
+\end{longtable}
+
+Bảng Projects lưu thông tin chung của dự án, bao gồm mã dự án, tên dự án, thời gian, mức độ ưu tiên, trạng thái và Quản lý dự án phụ trách. Đây là thực thể gốc của nhóm nghiệp vụ quản lý dự án và phân công công việc.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng Projects}
+    \label{table:database_detail_projects}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & project\_id & INT & Khóa chính định danh dự án. \\ \hline
+    2 & project\_code & varchar(30) & Mã quản lý dự án, không được trùng. \\ \hline
+    3 & project\_name & varchar(150) & Tên dự án. \\ \hline
+    4 & description & text & Mô tả phạm vi và mục tiêu của dự án. \\ \hline
+    5 & start\_date & date & Ngày bắt đầu dự án. \\ \hline
+    6 & planned\_end\_date & date & Ngày dự kiến kết thúc. \\ \hline
+    7 & priority & PriorityLevel & Mức độ ưu tiên của dự án. \\ \hline
+    8 & status & ProjectStatus & Trạng thái vòng đời của dự án. \\ \hline
+    9 & pm\_employee\_id & int & Khóa ngoại tới nhân viên giữ vai trò Quản lý dự án. \\
+\end{longtable}
+
+Bảng Tasks lưu các công việc thuộc dự án. Mỗi công việc có thể tham chiếu tới công việc cha để biểu diễn cấu trúc phân rã công việc, đồng thời lưu người phụ trách hiện tại và trạng thái thực hiện.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng Tasks}
+    \label{table:database_detail_tasks}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & task\_id & INT & Khóa chính định danh công việc. \\ \hline
+    2 & project\_id & int & Khóa ngoại tới dự án chứa công việc. \\ \hline
+    3 & parent\_task\_id & int & Khóa ngoại tự tham chiếu tới công việc cha. \\ \hline
+    4 & current\_assignee\_id & int & Nhân viên đang phụ trách công việc hiện tại. \\ \hline
+    5 & task\_code & varchar(30) & Mã quản lý công việc, không được trùng. \\ \hline
+    6 & task\_name & varchar(150) & Tiêu đề công việc. \\ \hline
+    7 & task\_type & varchar(30) & Loại công việc, mặc định là công việc con. \\ \hline
+    8 & estimate\_hours & decimal(10,2) & Thời lượng dự kiến hoàn thành. \\ \hline
+    9 & actual\_hours & decimal(10,2) & Thời gian thực tế đã ghi nhận. \\ \hline
+    10 & status & TaskStatus & Trạng thái tiến độ thực hiện công việc. \\
+\end{longtable}
+
+Bảng TaskRequirements mô tả các kỹ năng cần thiết cho từng công việc. Mỗi bản ghi biểu diễn một yêu cầu kỹ năng, gồm mức độ yêu cầu, trọng số và việc kỹ năng đó có bắt buộc hay không.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng TaskRequirements}
+    \label{table:database_detail_task_requirements}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & task\_req\_id & INT & Khóa chính định danh yêu cầu kỹ năng. \\ \hline
+    2 & task\_id & int & Khóa ngoại tới công việc cần kỹ năng. \\ \hline
+    3 & skill\_id & int & Khóa ngoại tới kỹ năng được yêu cầu. \\ \hline
+    4 & required\_level & ProficiencyLevel & Mức độ thành thạo tối thiểu cần có. \\ \hline
+    5 & weight & decimal(5,2) & Trọng số ưu tiên của kỹ năng trong công việc. \\ \hline
+    6 & is\_mandatory & boolean & Cho biết kỹ năng là bắt buộc hay tùy chọn. \\
+\end{longtable}
+
+Bảng Assignments lưu lịch sử phân công công việc. Việc tách bảng này khỏi Tasks giúp hệ thống giữ lại lịch sử khi công việc được phân công lại, đồng thời phân biệt phân công thủ công với phân công dựa trên gợi ý AI.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Bảng Assignments}
+    \label{table:database_detail_assignments}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & assignment\_id & INT & Khóa chính định danh lịch sử phân công. \\ \hline
+    2 & task\_id & int & Khóa ngoại tới công việc được phân công. \\ \hline
+    3 & employee\_id & int & Nhân viên được giao công việc. \\ \hline
+    4 & \begin{tabular}[t]{@{}l@{}}assigned\_by\_\\employee\_id\end{tabular} & int & Quản lý dự án hoặc nhân sự thực hiện phân công. \\ \hline
+    5 & assignment\_type & AssignmentType & Phương thức phân công, gồm thủ công hoặc theo gợi ý AI. \\ \hline
+    6 & matching\_score & decimal(5,2) & Điểm phù hợp kỹ năng nếu phân công dựa trên AI. \\
+\end{longtable}
+
+Bảng EmployeeCVs, CVExtractions và CVExtractedSkills phục vụ quy trình tiếp nhận, trích xuất và duyệt thông tin kỹ năng từ CV. Dữ liệu trích xuất từ CV chỉ trở thành dữ liệu chính thức sau khi được Quản trị viên kiểm tra và phê duyệt.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.06\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+    \caption{Các bảng xử lý CV và trích xuất kỹ năng}
+    \label{table:database_detail_cv}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endfirsthead
+
+    \caption[]{Bảng \thetable{} -- tiếp tục từ trang trước}\\
+    \hline
+    \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Kiểu dữ liệu} & \textbf{Mô tả} \\ \hline
+    \endhead
+
+    \hline
+    \multicolumn{4}{r}{Tiếp tục ở trang sau}\\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    1 & cv\_id & INT & Khóa chính định danh tệp CV. \\ \hline
+    2 & employee\_id & int & Nhân viên sở hữu CV. \\ \hline
+    3 & storage\_provider & varchar & Dịch vụ lưu trữ tệp CV. \\ \hline
+    4 & storage\_key & varchar & Khóa truy cập hoặc định danh tệp trong hệ thống lưu trữ. \\ \hline
+    5 & file\_url & text & Đường dẫn tải xuống tệp CV. \\ \hline
+    6 & original\_file\_name & varchar(255) & Tên tệp gốc khi tải lên hệ thống. \\ \hline
+    7 & status & CvStatus & Trạng thái hiệu lực của CV. \\ \hline
+    8 & extraction\_id & INT & Khóa chính định danh kết quả trích xuất CV. \\ \hline
+    9 & raw\_text & text & Văn bản thô được trích xuất từ CV. \\ \hline
+    10 & markdown\_content & text & Nội dung CV sau khi chuyển đổi sang định dạng Markdown. \\ \hline
+    11 & extracted\_skill\_id & INT & Khóa chính định danh kỹ năng được nhận diện từ CV. \\ \hline
+    12 & skill\_name & varchar(100) & Tên kỹ năng được phát hiện trong CV. \\ \hline
+    13 & suggested\_level & ProficiencyLevel & Mức độ thành thạo do hệ thống gợi ý. \\ \hline
+    14 & confidence\_score & decimal(5,2) & Điểm tin cậy của kết quả nhận diện. \\ \hline
+    15 & decision\_status & DecisionStatus & Trạng thái phê duyệt kỹ năng trích xuất. \\
+\end{longtable}
+
+Các bảng chi tiết nêu trên cho thấy cơ sở dữ liệu được tổ chức xoay quanh hai luồng dữ liệu chính. Luồng thứ nhất là hồ sơ năng lực chính thức của nhân sự, được dùng trực tiếp cho tra cứu và phân công. Luồng thứ hai là dữ liệu gợi ý từ CV và AI, luôn đi qua bước kiểm tra của Quản trị viên hoặc quyết định cuối cùng của Quản lý dự án trước khi ảnh hưởng tới nghiệp vụ chính.
+
+Nhìn chung, thiết kế cơ sở dữ liệu đáp ứng ba yêu cầu quan trọng của hệ thống. Thứ nhất, dữ liệu nhân sự và kỹ năng được quản lý có cấu trúc, có thể kiểm soát nguồn gốc và trạng thái. Thứ hai, dữ liệu dự án, công việc, yêu cầu kỹ năng và phân công được liên kết chặt chẽ, tạo cơ sở cho cả phân công thủ công và AI đề xuất. Thứ ba, các dữ liệu phát sinh trong quá trình thực hiện như thời gian làm việc, bình luận và lịch sử trạng thái được lưu lại để phục vụ theo dõi, đánh giá và cải tiến quá trình phân công ở các lần sau.
+
+\section{Xây dựng ứng dụng}
+\subsection{Thư viện và công cụ sử dụng}
+Sinh viên liệt kê các công cụ, ngôn ngữ lập trình, API, thư viện, IDE, công cụ kiểm thử, v.v. mà mình sử dụng để phát triển ứng dụng. Mỗi công cụ phải được chỉ rõ phiên bản sử dụng. SV nên kẻ bảng mô tả tương tự như Bảng \ref{table:my_label}. Nếu có nhiều nội dung trình bày, sinh viên cần xoay ngang bảng.
+
+\begin{table}[H]
+\centering{}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Mục đích} & \textbf{Công cụ}       & \textbf{Địa chỉ URL}    \\ \hline
+        IDE lập trình     & Eclipse Oxygen a64 bit & http://www.eclipse.org/ \\ \hline
+        v.v.              & v.v.                   & v.v.                    \\ \hline
+        \end{tabular}
+    \caption{Danh sách thư viện và công cụ sử dụng}
+    \label{table:my_label}
+\end{table}
+
+\subsection{Kết quả đạt được}
+Sinh viên trước tiên mô tả kết quả đạt được của mình là gì, ví dụ như các sản phẩm được đóng gói là gì, bao gồm những thành phần nào, ý nghĩa, vai trò?
+
+Sinh viên cần thống kê các thông tin về ứng dụng của mình như: số dòng code, số lớp, số gói, dung lượng toàn bộ mã nguồn, dung lượng của từng sản phẩm đóng gói, v.v. Tương tự như phần liệt kê về công cụ sử dụng, sinh viên cũng nên dùng bảng để mô tả phần thông tin thống kê này.
+
+\subsection{Minh họa các chức năng chính}
+Sinh viên lựa chọn và đưa ra màn hình cho các chức năng chính, quan trọng, và thú vị nhất. Mỗi giao diện cần phải có lời giải thích ngắn gọn. Khi giải thích, sinh viên có thể kết hợp với các chú thích ở trong hình ảnh giao diện.
+
+\section{Kiểm thử}
+Phần này có độ dài từ hai đến ba trang. Sinh viên thiết kế các trường hợp kiểm thử cho hai đến ba chức năng quan trọng nhất. Sinh viên cần chỉ rõ các kỹ thuật kiểm thử đã sử dụng. Chi tiết các trường hợp kiểm thử khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
+Sinh viên sau cùng tổng kết về số lượng các trường hợp kiểm thử và kết quả kiểm thử. Sinh viên cần phân tích lý do nếu kết quả kiểm thử không đạt.
+\section{Triển khai}
+Sinh viên trình bày mô hình và/hoặc cách thức triển khai thử nghiệm/thực tế. Ứng dụng của sinh viên được triển khai trên server/thiết bị gì, cấu hình như thế nào. Kết quả triển khai thử nghiệm nếu có (số lượng người dùng, số lượng truy cập, thời gian phản hồi, phản hồi người dùng, khả năng chịu tải, các thống kê, v.v.)
+
+\end{document}

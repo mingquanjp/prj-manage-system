@@ -1,0 +1,790 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+Chương này trình bày quá trình khảo sát hiện trạng và phân tích yêu cầu cho hệ thống hỗ trợ phân công nhân sự dự án dựa trên hồ sơ năng lực và AI. Nội dung chương bắt đầu bằng việc phân tích bối cảnh nghiệp vụ, những vấn đề thường gặp khi quản lý hồ sơ năng lực và phân công nhân sự trong dự án phần mềm. Tiếp theo, chương khảo sát một số hệ thống quản lý công việc, quản lý dự án và hướng tiếp cận gợi ý phân công hiện có để rút ra các yêu cầu phù hợp với phạm vi đồ án. Trên cơ sở đó, chương xác định các nhóm tác nhân, chức năng tổng quan, đặc tả các use case quan trọng và các yêu cầu phi chức năng cần đáp ứng.
+
+\section{Khảo sát hiện trạng}
+\label{section:2.1}
+Bài toán phân công nhân sự dự án không chỉ là thao tác gán một người vào một công việc. Trong bối cảnh dự án phần mềm gồm nhiều công việc song song, nhiều kỹ năng chuyên môn và nhân sự có thể tham gia nhiều dự án cùng lúc, quyết định phân công cần dựa trên nhiều nhóm dữ liệu như hồ sơ năng lực, yêu cầu kỹ năng của công việc, khối lượng công việc hiện tại và lịch sử thực hiện. Nếu các dữ liệu này không được quản lý tập trung, Quản lý dự án thường phải dựa vào kinh nghiệm cá nhân, trao đổi thủ công hoặc thông tin rời rạc để xác định nhân sự phù hợp.
+
+Việc khảo sát hiện trạng được thực hiện nhằm làm rõ ba vấn đề chính. Thứ nhất, cần xác định các vai trò tham gia vào quy trình quản lý hồ sơ năng lực và phân công công việc. Thứ hai, cần phân tích các hệ thống quản lý dự án, quản lý công việc và quản lý nguồn lực hiện có để nhận diện những chức năng nền tảng có thể tham khảo. Thứ ba, cần xác định khoảng trống nghiệp vụ mà hệ thống đề xuất tập trung giải quyết, cụ thể là hỗ trợ Quản lý dự án lựa chọn nhân sự phù hợp dựa trên hồ sơ năng lực đã được kiểm soát.
+
+\subsection{Nguồn khảo sát}
+\label{subsection:2.1.1}
+Hiện trạng và yêu cầu phần mềm được khảo sát từ ba nhóm nguồn chính. Nhóm thứ nhất là người dùng mục tiêu của hệ thống, gồm Quản trị viên, Quản lý dự án và Nhân viên. Nhóm thứ hai là các hệ thống phần mềm phổ biến trong quản lý công việc, quản lý dự án và quản lý nguồn lực. Nhóm thứ ba là các nghiên cứu hoặc hướng tiếp cận liên quan đến hệ gợi ý phân công nhiệm vụ trong dự án phần mềm.
+
+\begin{table}[H]
+    \centering
+    \caption{Các nguồn khảo sát phục vụ phân tích yêu cầu}
+    \label{table:nguon_khao_sat}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+        \hline
+        \textbf{Nguồn khảo sát} & \textbf{Nội dung khảo sát} & \textbf{Ý nghĩa đối với đề tài} \\ \hline
+        Người dùng mục tiêu & Vai trò, thao tác chính và khó khăn khi quản lý hồ sơ năng lực, phân rã công việc và phân công nhân sự. & Làm rõ tác nhân, use case chính và các dữ liệu cần quản lý trong hệ thống. \\ \hline
+        Hệ thống quản lý công việc và dự án & Cách các hệ thống như Jira hoặc Microsoft Project hỗ trợ quản lý task, lịch biểu, workflow, workload, báo cáo và phân quyền. & Xác định các chức năng nền tảng mà hệ thống cần có, đồng thời nhận diện khoảng trống về phân công theo hồ sơ năng lực. \\ \hline
+        Hệ thống quản lý nguồn lực và nghiên cứu AI & Các hướng tiếp cận về resource management, capacity planning, recommender system và task assignment recommendation. & Làm cơ sở cho chức năng AI đề xuất danh sách nhân sự phù hợp cho từng công việc. \\ \hline
+    \end{tabular}
+\end{table}
+
+Bảng \ref{table:nguon_khao_sat} cho thấy phần khảo sát không chỉ tập trung vào một công cụ cụ thể mà kết hợp cả góc nhìn nghiệp vụ và góc nhìn hệ thống. Cách tiếp cận này phù hợp với mục tiêu của đồ án vì hệ thống cần vừa đáp ứng quy trình quản lý dự án, vừa có dữ liệu đủ tin cậy để hỗ trợ đề xuất phân công.
+
+\subsection{Hiện trạng nghiệp vụ}
+\label{subsection:2.1.2}
+Trong các nhóm phát triển phần mềm quy mô vừa và nhỏ, thông tin về năng lực nhân sự thường nằm rải rác ở nhiều nơi như CV, trao đổi nội bộ, nhận xét của trưởng nhóm, kinh nghiệm từ các dự án trước hoặc trí nhớ của Quản lý dự án. Khi cần phân công công việc, Quản lý dự án phải tự tổng hợp các thông tin này để đánh giá ai phù hợp với công việc nào. Cách làm này có thể chấp nhận được khi số lượng nhân sự và dự án còn ít, nhưng dễ phát sinh sai lệch khi tổ chức có nhiều dự án đồng thời hoặc nhân sự liên tục thay đổi kỹ năng.
+
+Một vấn đề khác là dữ liệu kỹ năng không phải lúc nào cũng có độ tin cậy như nhau. Nhân viên có thể bổ sung kỹ năng mới hoặc tải CV lên hệ thống, nhưng nếu không có bước kiểm tra và xác nhận, hồ sơ năng lực có thể trở thành dữ liệu tự khai thiếu kiểm chứng. Điều này làm giảm độ tin cậy của quyết định phân công, đặc biệt khi hệ thống sử dụng dữ liệu đó làm đầu vào cho AI. Vì vậy, trong phạm vi đề tài, dữ liệu kỹ năng chính thức chỉ được cập nhật sau khi Quản trị viên kiểm tra và xác nhận.
+
+Ở phía dự án, nhiều hệ thống quản lý task cho phép tạo công việc, giao người phụ trách và theo dõi trạng thái. Tuy nhiên, việc lựa chọn người thực hiện thường vẫn là quyết định thủ công của Quản lý dự án. Hệ thống cần hỗ trợ tốt hơn bằng cách chuẩn hóa yêu cầu kỹ năng của từng công việc, lọc nhân sự theo điều kiện phù hợp và đưa ra danh sách đề xuất dựa trên mức độ khớp giữa hồ sơ năng lực và yêu cầu công việc.
+
+\begin{table}[H]
+    \centering
+    \caption{Các vấn đề hiện trạng và yêu cầu đặt ra}
+    \label{table:hien_trang_nghiep_vu}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.28\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.35\textwidth}|}
+        \hline
+        \textbf{Vấn đề hiện trạng} & \textbf{Ảnh hưởng} & \textbf{Yêu cầu đặt ra cho hệ thống} \\ \hline
+        Hồ sơ kỹ năng và kinh nghiệm của nhân sự chưa được tập trung hóa. & Quản lý dự án khó tra cứu nhanh nhân sự phù hợp với từng công việc. & Cần module quản lý hồ sơ nhân sự và hồ sơ năng lực chính thức. \\ \hline
+        Thông tin kỹ năng có thể đến từ CV hoặc tự khai của nhân viên. & Dữ liệu đầu vào cho phân công có thể thiếu kiểm chứng. & Cần cơ chế gửi yêu cầu cập nhật kỹ năng và duyệt dữ liệu bởi Quản trị viên. \\ \hline
+        Công việc trong dự án thường chỉ được mô tả bằng tiêu đề và mô tả ngắn. & Hệ thống không đủ dữ liệu để đánh giá ai phù hợp. & Cần khai báo yêu cầu kỹ năng, mức độ yêu cầu, trọng số và tính bắt buộc cho từng công việc. \\ \hline
+        Quản lý dự án phân công dựa nhiều vào kinh nghiệm cá nhân. & Dễ bỏ sót nhân sự phù hợp hoặc phân công chưa cân bằng. & Cần chức năng AI đề xuất nhân sự phù hợp và chức năng phân công thủ công có bộ lọc. \\ \hline
+        Dữ liệu sau phân công chưa được khai thác tốt. & Khó cải thiện quyết định phân công ở các lần sau. & Cần lưu dữ liệu phân công, trạng thái, thời gian thực hiện và lịch sử tham gia dự án. \\ \hline
+    \end{tabular}
+\end{table}
+
+Bảng \ref{table:hien_trang_nghiep_vu} cho thấy yêu cầu cốt lõi của hệ thống không chỉ nằm ở việc tạo công việc và gán người thực hiện. Hệ thống cần quản lý được nguồn dữ liệu năng lực, chuẩn hóa yêu cầu của từng công việc và bảo đảm quyết định phân công cuối cùng vẫn thuộc về Quản lý dự án.
+
+\subsection{Khảo sát một số hệ thống và hướng tiếp cận tương tự}
+\label{subsection:2.1.3}
+Các hệ thống quản lý công việc và dự án phổ biến hiện nay đã hỗ trợ nhiều chức năng quan trọng như phân rã công việc, giao việc, workflow, báo cáo tiến độ, tích hợp với công cụ làm việc khác và quản lý workload. Jira hỗ trợ lập kế hoạch, chia nhỏ công việc thành các task, theo dõi tiến độ qua nhiều dạng hiển thị như board, list, timeline hoặc calendar, đồng thời cung cấp workflow, báo cáo, tích hợp và các tính năng AI hỗ trợ quản lý công việc \cite{atlassianJiraFeatures}. Các tính năng này cho thấy quản lý task và workflow là phần nền tảng cần có trong hệ thống đề xuất.
+
+Microsoft Project là nhóm công cụ quản lý dự án tập trung mạnh vào lập kế hoạch, lịch biểu, Gantt chart, dependency, milestone, resource leveling, theo dõi chi phí và quản lý tài nguyên \cite{microsoftProjectPlans}. Nhóm hệ thống này phù hợp với bài toán quản lý tiến độ và tài nguyên dự án, nhưng trọng tâm thường nghiêng về lập lịch và điều phối nguồn lực theo kế hoạch hơn là xây dựng hồ sơ năng lực chi tiết để đề xuất người phù hợp theo từng yêu cầu kỹ năng.
+
+Bên cạnh các công cụ quản lý dự án truyền thống, một số nghiên cứu đã tiếp cận bài toán phân công nhiệm vụ dưới góc nhìn hệ gợi ý. Nghiên cứu TaskAllocator đề xuất một phương pháp khuyến nghị phân bổ task theo vai trò trong phát triển Agile, trong đó kết quả đề xuất hỗ trợ người quản lý đưa ra quyết định phân công phù hợp hơn \cite{shafiq2021taskallocator}. Các nghiên cứu về tiêu chí phân công trong phát triển phần mềm phân tán cũng chỉ ra rằng quyết định phân công chịu ảnh hưởng bởi nhiều yếu tố, không nên chỉ dựa vào một tiêu chí đơn lẻ như chi phí hoặc kinh nghiệm chung \cite{lamersdorf2013survey}. Những hướng tiếp cận này phù hợp với định hướng của đề tài, nhưng hệ thống trong đồ án được giới hạn ở mức hỗ trợ Quản lý dự án bằng danh sách đề xuất, không tự động thay thế quyết định của con người.
+
+\subsection{So sánh với các hệ thống và hướng tiếp cận hiện có}
+\label{subsection:2.1.4}
+Từ các nguồn khảo sát trên, có thể so sánh hệ thống đề xuất với một số hệ thống và hướng tiếp cận tiêu biểu theo các tiêu chí liên quan trực tiếp đến đồ án. Các tiêu chí được lựa chọn gồm quản lý công việc, quản lý hồ sơ năng lực, kiểm soát dữ liệu kỹ năng, hỗ trợ đề xuất phân công và theo dõi sau phân công.
+
+\begin{table}[H]
+    \centering
+    \caption{So sánh hệ thống đề xuất với các hệ thống và hướng tiếp cận hiện có}
+    \label{table:so_sanh_he_thong}
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|}
+        \hline
+        \textbf{Hệ thống / hướng tiếp cận} & \textbf{Chức năng nổi bật} & \textbf{Ưu điểm} & \textbf{Hạn chế so với đề tài} & \textbf{Bài học rút ra} \\ \hline
+        Jira & Quản lý task, workflow, board, timeline, calendar, báo cáo và tích hợp công cụ. & Mạnh về quản lý tiến độ, cộng tác nhóm và tùy biến quy trình làm việc. & Trọng tâm là quản lý work item. Quy trình duyệt dữ liệu kỹ năng và đánh giá nhân sự theo hồ sơ năng lực chi tiết không phải trọng tâm chính. & Hệ thống cần có quản lý task, trạng thái, thông báo và trao đổi trong công việc. \\ \hline
+        Microsoft Project & Lập lịch, Gantt chart, dependency, milestone, resource leveling và quản lý tài nguyên. & Mạnh về lập kế hoạch, lịch biểu và kiểm soát tài nguyên dự án. & Phù hợp với lập lịch và điều phối tài nguyên hơn là quy trình xác nhận hồ sơ kỹ năng, trích xuất CV và gợi ý nhân sự theo yêu cầu kỹ năng. & Cần ghi nhận thời gian ước tính, thời gian thực tế và thông tin workload ở mức phù hợp. \\ \hline
+        Các hệ thống work management tổng quát & Quản lý công việc, dashboard, automation, template và phối hợp nhóm. & Dễ tiếp cận, phù hợp với nhiều nhóm làm việc và hỗ trợ theo dõi tiến độ. & Thường tập trung vào quản lý công việc tổng quát, chưa đặt hồ sơ năng lực chính thức và matching score làm trung tâm. & Cần thiết kế luồng chức năng đơn giản nhưng vẫn giữ trọng tâm là dữ liệu năng lực. \\ \hline
+        Nghiên cứu hệ gợi ý phân công task & Dùng mô hình khuyến nghị để hỗ trợ phân bổ task hoặc vai trò phù hợp trong dự án phần mềm. & Cung cấp cơ sở cho việc áp dụng recommender system vào bài toán phân công nhiệm vụ. & Thường tập trung vào mô hình hoặc bộ dữ liệu nghiên cứu, chưa bao phủ đầy đủ quy trình quản lý hồ sơ năng lực, duyệt CV và xác nhận phân công. & Chức năng AI nên là công cụ hỗ trợ ra quyết định, có dữ liệu đầu vào rõ ràng và kết quả có thể giải thích ở mức nghiệp vụ. \\ \hline
+        Hệ thống đề xuất & Quản lý hồ sơ năng lực, phân rã dự án, khai báo yêu cầu kỹ năng, AI đề xuất nhân sự và xác nhận phân công. & Tập trung trực tiếp vào bài toán phân công nhân sự theo hồ sơ năng lực đã được kiểm soát. & Phạm vi đồ án chưa mở rộng sang tối ưu lịch biểu, cân bằng tài nguyên toàn doanh nghiệp hoặc dự báo năng lực dài hạn. & Cần giữ phạm vi rõ ràng: AI hỗ trợ đề xuất, Quản lý dự án quyết định cuối cùng. \\ \hline
+    \end{tabular}
+\end{table}
+
+Bảng \ref{table:so_sanh_he_thong} cho thấy các hệ thống hiện có đã giải quyết tốt nhiều phần của bài toán quản lý công việc và quản lý dự án, đặc biệt là lập kế hoạch, theo dõi tiến độ, gán người phụ trách, workflow và báo cáo. Tuy nhiên, khoảng trống phù hợp với đề tài nằm ở việc kết hợp ba nhóm dữ liệu: hồ sơ năng lực chính thức của nhân sự, yêu cầu kỹ năng chi tiết của từng công việc và dữ liệu thực tế về quá trình thực hiện để hỗ trợ Quản lý dự án ra quyết định phân công.
+
+\subsection{Nhận xét và các chức năng quan trọng cần phát triển}
+\label{subsection:2.1.5}
+Từ kết quả khảo sát, hệ thống cần phát triển theo hướng không thay thế hoàn toàn các công cụ quản lý dự án phổ biến, mà tập trung vào bài toán phân công nhân sự dựa trên năng lực. Hệ thống phải có dữ liệu hồ sơ năng lực đủ tin cậy, cơ chế duyệt dữ liệu kỹ năng, chức năng phân rã dự án thành công việc có yêu cầu kỹ năng, chức năng AI đề xuất danh sách nhân sự phù hợp và chức năng phân công thủ công có bộ lọc để Quản lý dự án vẫn giữ quyền quyết định cuối cùng.
+
+\begin{table}[H]
+    \centering
+    \caption{Các nhóm chức năng quan trọng rút ra từ khảo sát}
+    \label{table:chuc_nang_rut_ra}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.24\textwidth}|>{\raggedright\arraybackslash}p{0.34\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+        \hline
+        \textbf{Nhóm yêu cầu} & \textbf{Nội dung rút ra từ khảo sát} & \textbf{Chức năng tương ứng trong hệ thống} \\ \hline
+        Dữ liệu nền đáng tin cậy & AI và Quản lý dự án cần dữ liệu kỹ năng chính xác, không chỉ dựa vào tự khai. & Quản lý hồ sơ nhân sự, hồ sơ năng lực, CV, yêu cầu cập nhật kỹ năng và duyệt dữ liệu bởi Quản trị viên. \\ \hline
+        Quản lý công việc có cấu trúc & Công việc cần có thông tin đủ chi tiết để đánh giá mức độ phù hợp nhân sự. & Khởi tạo dự án, tạo nhóm công việc, phân rã dự án thành công việc, khai báo yêu cầu kỹ năng cho công việc. \\ \hline
+        Hỗ trợ ra quyết định phân công & Quản lý dự án cần giảm thời gian tìm kiếm nhân sự và có cơ sở dữ liệu để lựa chọn. & Phân công bằng AI đề xuất, trả về danh sách nhân sự phù hợp cho từng công việc. \\ \hline
+        Kiểm soát của Quản lý dự án & AI không nên tự động thay thế người quản lý trong quyết định phân công. & Quản lý dự án xác nhận phân công cuối cùng; có thể chọn nhân sự khác hoặc chuyển sang phân công thủ công. \\ \hline
+        Theo dõi sau phân công & Dữ liệu thực hiện giúp đánh giá tiến độ và cải thiện phân công về sau. & Quản lý công việc được giao, cập nhật trạng thái, trao đổi trong công việc và ghi nhận thời gian thực hiện. \\ \hline
+    \end{tabular}
+\end{table}
+
+Các nhóm chức năng trong Bảng \ref{table:chuc_nang_rut_ra} là cơ sở trực tiếp cho phần tổng quan chức năng ở mục \ref{section:2.2}. Trong các phần tiếp theo, hệ thống sẽ được mô tả thông qua các tác nhân, biểu đồ use case tổng quát, các biểu đồ use case phân rã và đặc tả chi tiết những use case có ảnh hưởng lớn đến chuỗi nghiệp vụ phân công nhân sự.
+
+\section{Tổng quan chức năng}
+\label{section:2.2}
+Hệ thống hỗ trợ phân công nhân sự dự án dựa trên hồ sơ năng lực và AI được xây dựng xoay quanh ba nhóm người dùng chính: Quản trị viên, Quản lý dự án và Nhân viên. Mỗi nhóm người dùng có phạm vi thao tác khác nhau, phản ánh vai trò của họ trong quy trình quản lý dữ liệu năng lực, tổ chức dự án và thực hiện công việc được giao. Ở mức tổng quan, hệ thống cung cấp các nhóm chức năng chính gồm đăng nhập, quản lý tài khoản, quản lý hồ sơ nhân sự, quản lý hồ sơ cá nhân, quản lý dự án, tra cứu hồ sơ nhân sự, phân công công việc và quản lý công việc được giao.
+
+Các chức năng trong phần này chỉ được mô tả ở mức nghiệp vụ tổng quát nhằm làm rõ phạm vi hệ thống và quan hệ giữa tác nhân với các use case chính. Luồng xử lý chi tiết, điều kiện trước và sau khi thực hiện, cũng như các trường hợp phát sinh của một số use case quan trọng sẽ được trình bày trong phần đặc tả chức năng ở mục \ref{section:2.3}.
+
+\subsection{Biểu đồ use case tổng quát}
+\label{subsection:2.2.1}
+Hình \ref{fig:uc_tongquan} trình bày biểu đồ use case tổng quát của hệ thống. Biểu đồ cho thấy các nhóm tác nhân chính và những nhóm chức năng mức cao mà từng tác nhân có thể sử dụng trong phạm vi hệ thống.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth,height=0.42\textheight,keepaspectratio]{Hinhve/Diagram/UC_tongquan.png}
+    \caption[Bieu do use case tong quat]{Biểu đồ use case tổng quát của hệ thống}
+    \label{fig:uc_tongquan}
+\end{figure}
+
+Tác nhân Người dùng hệ thống đại diện cho người dùng đã có tài khoản và có nhu cầu truy cập hệ thống thông qua chức năng đăng nhập. Sau khi đăng nhập, quyền sử dụng chức năng cụ thể được xác định theo vai trò. Quản trị viên chịu trách nhiệm quản lý dữ liệu nền và dữ liệu nhân sự chính thức, bao gồm tài khoản, hồ sơ nhân sự và các yêu cầu cập nhật thông tin năng lực. Quản lý dự án là tác nhân sử dụng hệ thống để quản lý dự án, tra cứu hồ sơ nhân sự và thực hiện phân công công việc. Nhân viên sử dụng hệ thống để quản lý hồ sơ cá nhân, theo dõi công việc được giao và cập nhật trạng thái thực hiện công việc.
+
+Các use case mức cao trong biểu đồ thể hiện các nhóm nghiệp vụ chính của hệ thống. Nhóm quản lý tài khoản phục vụ kiểm soát truy cập và phân quyền. Nhóm quản lý hồ sơ nhân sự bảo đảm dữ liệu năng lực chính thức được Quản trị viên kiểm soát trước khi dùng cho phân công. Nhóm quản lý hồ sơ cá nhân cho phép Nhân viên gửi yêu cầu cập nhật thông tin, CV và kỹ năng. Nhóm quản lý dự án và phân công công việc hỗ trợ Quản lý dự án phân rã dự án thành công việc, xác định yêu cầu kỹ năng và lựa chọn nhân sự phù hợp. Nhóm tra cứu hồ sơ nhân sự cung cấp thông tin tham khảo cho Quản lý dự án trước khi ra quyết định phân công. Nhóm quản lý công việc được giao giúp Nhân viên theo dõi, cập nhật và trao đổi trong quá trình thực hiện công việc.
+
+\subsection{Biểu đồ use case phân rã Quản lý tài khoản}
+\label{subsection:2.2.2}
+Hình \ref{fig:uc_pra_quanlytk} trình bày biểu đồ phân rã của use case Quản lý tài khoản. Đây là nhóm chức năng do Quản trị viên thực hiện nhằm duy trì tài khoản người dùng và kiểm soát quyền truy cập vào hệ thống.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth,height=0.38\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_quanlytk.png}
+    \caption[Bieu do use case phan ra Quan ly tai khoan]{Biểu đồ use case phân rã Quản lý tài khoản}
+    \label{fig:uc_pra_quanlytk}
+\end{figure}
+
+Use case Quản lý tài khoản được phân rã thành các chức năng tạo tài khoản, cập nhật tài khoản, khóa tài khoản, mở tài khoản và phân quyền tài khoản. Chức năng tạo tài khoản được sử dụng khi cần cấp quyền truy cập hệ thống cho người dùng mới. Chức năng cập nhật tài khoản cho phép Quản trị viên chỉnh sửa thông tin cần thiết của tài khoản người dùng. Chức năng khóa và mở tài khoản hỗ trợ kiểm soát trạng thái truy cập khi tài khoản không còn hợp lệ, bị tạm ngừng hoặc cần khôi phục quyền sử dụng. Chức năng phân quyền tài khoản bảo đảm mỗi người dùng chỉ sử dụng được các chức năng phù hợp với vai trò được gán trong hệ thống.
+
+\subsection{Biểu đồ use case phân rã Quản lý hồ sơ nhân sự}
+\label{subsection:2.2.3}
+Hình \ref{fig:uc_hsns} trình bày biểu đồ phân rã của use case Quản lý hồ sơ nhân sự. Nhóm chức năng này thuộc phạm vi của Quản trị viên và có vai trò quan trọng vì hồ sơ năng lực chính thức là nguồn dữ liệu đầu vào cho quá trình tra cứu và đề xuất phân công.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth,height=0.42\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_quanlyhosonhansu.png}
+    \caption[Bieu do use case phan ra Quan ly ho so nhan su]{Biểu đồ use case phân rã Quản lý hồ sơ nhân sự}
+    \label{fig:uc_hsns}
+\end{figure}
+
+Use case Quản lý hồ sơ nhân sự bao gồm các chức năng thêm hồ sơ nhân sự, cập nhật hồ sơ nhân sự, vô hiệu hóa hồ sơ nhân sự, xem hồ sơ năng lực, cập nhật kỹ năng và chứng chỉ, cập nhật CV nhân sự. Trong đó, các chức năng cập nhật kỹ năng, chứng chỉ và cập nhật CV có liên hệ với các use case duyệt yêu cầu cập nhật tương ứng. Cách tổ chức này phản ánh quy tắc nghiệp vụ của hệ thống: Nhân viên có thể gửi yêu cầu cập nhật, nhưng dữ liệu chỉ trở thành chính thức sau khi được Quản trị viên kiểm tra và xác nhận.
+
+\subsection{Biểu đồ use case phân rã Quản lý hồ sơ cá nhân}
+\label{subsection:2.2.4}
+Hình \ref{fig:uc_pra_quanlyhosocanhan} trình bày biểu đồ phân rã của use case Quản lý hồ sơ cá nhân. Đây là nhóm chức năng dành cho Nhân viên, cho phép nhân viên theo dõi thông tin của chính mình và gửi yêu cầu cập nhật khi có thay đổi về hồ sơ hoặc năng lực.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth,height=0.38\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_quanlyhosocanhan.png}
+    \caption[Bieu do use case phan ra Quan ly ho so ca nhan]{Biểu đồ use case phân rã Quản lý hồ sơ cá nhân}
+    \label{fig:uc_pra_quanlyhosocanhan}
+\end{figure}
+
+Use case Quản lý hồ sơ cá nhân gồm các chức năng yêu cầu cập nhật thông tin cá nhân, yêu cầu cập nhật CV, yêu cầu cập nhật kỹ năng và chứng chỉ, cùng với chức năng xem hồ sơ năng lực cá nhân. Các yêu cầu cập nhật không làm thay đổi trực tiếp hồ sơ năng lực chính thức. Thay vào đó, chúng tạo dữ liệu chờ duyệt để Quản trị viên kiểm tra, qua đó hạn chế việc dữ liệu kỹ năng bị sai lệch hoặc được cập nhật thiếu kiểm soát.
+
+\subsection{Biểu đồ use case phân rã Quản lý dự án}
+\label{subsection:2.2.5}
+Hình \ref{fig:uc_pra_quanlyduan} trình bày biểu đồ phân rã của use case Quản lý dự án. Nhóm chức năng này do Quản lý dự án thực hiện, bắt đầu từ việc tổ chức thông tin dự án và kết thúc ở việc theo dõi tiến độ thực hiện.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth,height=0.42\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_quanlyduan.png}
+    \caption[Bieu do use case phan ra Quan ly du an]{Biểu đồ use case phân rã Quản lý dự án}
+    \label{fig:uc_pra_quanlyduan}
+\end{figure}
+
+Use case Quản lý dự án được phân rã thành các chức năng khởi tạo dự án, phân rã dự án thành công việc, xác định yêu cầu kỹ năng cho công việc, phân công công việc, theo dõi tiến độ dự án và đóng dự án. Trong đó, chức năng phân rã dự án thành công việc bao gồm việc xác định yêu cầu kỹ năng cho từng công việc, bởi công việc chỉ đủ cơ sở phân công khi có thông tin về kỹ năng cần thiết. Chức năng phân công công việc có thể được mở rộng theo hai hướng là phân công bằng AI đề xuất hoặc phân công thủ công, tùy theo quyết định của Quản lý dự án. Khi dự án kết thúc hoặc không còn được triển khai, Quản lý dự án có thể thực hiện đóng dự án để kết thúc phạm vi quản lý và ngăn các thao tác phân rã hoặc phân công mới.
+
+\subsection{Biểu đồ use case phân rã Tra cứu hồ sơ nhân sự}
+\label{subsection:2.2.6}
+Hình \ref{fig:uc_pra_tracuuhosonhansu} trình bày biểu đồ phân rã của use case Tra cứu hồ sơ nhân sự. Chức năng này hỗ trợ Quản lý dự án khai thác thông tin nhân sự trước khi đưa ra quyết định phân công.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth,height=0.38\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_tracuuhosonhansu.png}
+    \caption[Bieu do use case phan ra Tra cuu ho so nhan su]{Biểu đồ use case phân rã Tra cứu hồ sơ nhân sự}
+    \label{fig:uc_pra_tracuuhosonhansu}
+\end{figure}
+
+Use case Tra cứu hồ sơ nhân sự bao gồm các chức năng xem thông tin nhân sự, xem CV và chứng chỉ, xem hồ sơ năng lực, và xem lịch sử tham gia dự án. Các thông tin này giúp Quản lý dự án đánh giá nhân sự từ nhiều góc độ như thông tin hành chính, năng lực chuyên môn, minh chứng qua CV hoặc chứng chỉ, và kinh nghiệm tham gia các dự án trước đó. Đây là cơ sở bổ trợ cho cả phân công thủ công và việc kiểm tra lại kết quả do AI đề xuất.
+
+\subsection{Biểu đồ use case phân rã Phân công công việc}
+\label{subsection:2.2.7}
+Hình \ref{fig:uc_pra_phancongcongviec} trình bày biểu đồ phân rã của use case Phân công công việc. Đây là nhóm chức năng trung tâm của hệ thống vì trực tiếp hỗ trợ Quản lý dự án lựa chọn nhân sự phù hợp cho từng công việc.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth,height=0.42\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_phancongcongviec.png}
+    \caption[Bieu do use case phan ra Phan cong cong viec]{Biểu đồ use case phân rã Phân công công việc}
+    \label{fig:uc_pra_phancongcongviec}
+\end{figure}
+
+Use case Phân công công việc được phân rã thành các chức năng phân công thủ công, phân công bằng AI đề xuất, tra cứu nhân sự phù hợp, đánh giá mức độ phù hợp nhân sự, xác nhận phân công và thêm nhân sự vào nhóm thành viên dự án. Khi phân công thủ công, Quản lý dự án chủ động lựa chọn nhân sự dựa trên thông tin tra cứu và bộ lọc của hệ thống. Khi phân công bằng AI đề xuất, hệ thống đánh giá mức độ phù hợp giữa yêu cầu kỹ năng của công việc và hồ sơ năng lực chính thức của nhân sự để đưa ra danh sách gợi ý. Sau khi Quản lý dự án xác nhận, kết quả phân công được ghi nhận và nhân sự được thêm vào nhóm thành viên dự án nếu trước đó chưa thuộc dự án.
+
+\subsection{Biểu đồ use case phân rã Quản lý công việc được giao}
+\label{subsection:2.2.8}
+Hình \ref{fig:uc_pra_quanlycongviecduocgiao} trình bày biểu đồ phân rã của use case Quản lý công việc được giao. Nhóm chức năng này dành cho Nhân viên sau khi họ được phân công phụ trách công việc trong dự án.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\linewidth,height=0.40\textheight,keepaspectratio]{Hinhve/Diagram/UC_pra_quanlycongviecduocgiao.png}
+    \caption[Bieu do use case phan ra Quan ly cong viec duoc giao]{Biểu đồ use case phân rã Quản lý công việc được giao}
+    \label{fig:uc_pra_quanlycongviecduocgiao}
+\end{figure}
+
+Use case Quản lý công việc được giao bao gồm các chức năng xem công việc được giao, xem chi tiết công việc, cập nhật trạng thái công việc, ghi nhận thời gian thực hiện và trao đổi về công việc. Nhân viên sử dụng các chức năng này để nắm nội dung công việc, cập nhật tiến độ và phối hợp với các bên liên quan trong quá trình thực hiện. Dữ liệu trạng thái và thời gian thực hiện được hệ thống ghi nhận nhằm phục vụ theo dõi tiến độ, so sánh với thời gian ước tính và tạo nguồn dữ liệu lịch sử cho việc đánh giá hiệu suất trong các lần phân công sau.
+
+\subsection{Quy trình nghiệp vụ}
+\label{subsection:2.2.9}
+Quy trình nghiệp vụ quan trọng nhất của hệ thống là quy trình phân công nhân sự cho công việc trong dự án dựa trên hồ sơ năng lực. Quy trình này không tương ứng với một use case đơn lẻ mà là chuỗi hoạt động kết hợp giữa quản lý hồ sơ năng lực, quản lý dự án, phân rã công việc, phân công công việc và quản lý công việc được giao.
+
+Ở giai đoạn chuẩn bị dữ liệu, Nhân viên có thể xem hồ sơ cá nhân, tải CV hoặc gửi yêu cầu cập nhật thông tin kỹ năng và chứng chỉ. Các yêu cầu này không làm thay đổi trực tiếp hồ sơ năng lực chính thức. Quản trị viên kiểm tra và xác nhận dữ liệu trước khi hệ thống sử dụng hồ sơ năng lực đó cho tra cứu hoặc đề xuất phân công. Cách tổ chức này giúp nguồn dữ liệu đầu vào của bài toán phân công có tính kiểm soát, hạn chế việc đề xuất nhân sự dựa trên thông tin chưa được xác thực.
+
+Sau khi dữ liệu nền đã sẵn sàng, Quản lý dự án khởi tạo dự án, phân rã dự án thành các công việc cụ thể và xác định yêu cầu kỹ năng cho từng công việc. Một công việc chỉ đủ điều kiện phân công khi có thông tin mô tả, thời gian ước tính và ít nhất một yêu cầu kỹ năng hợp lệ. Khi thực hiện phân công, Quản lý dự án có thể chọn phương thức phân công bằng AI đề xuất hoặc phân công thủ công. Với phương thức AI đề xuất, hệ thống đánh giá mức độ phù hợp giữa yêu cầu công việc và hồ sơ năng lực chính thức của nhân sự để tạo danh sách gợi ý. Với phương thức thủ công, Quản lý dự án sử dụng bộ lọc và thông tin tra cứu hồ sơ nhân sự để tự lựa chọn người phù hợp.
+
+Kết quả lựa chọn nhân sự chỉ được ghi nhận sau khi Quản lý dự án xác nhận phân công. Khi đó, hệ thống lưu thông tin phân công, cập nhật trạng thái công việc, thêm nhân sự vào nhóm thành viên dự án nếu cần và gửi thông báo cho Nhân viên được phân công. Trong quá trình thực hiện, Nhân viên theo dõi công việc được giao, cập nhật trạng thái và trao đổi trong từng công việc. Khi trạng thái công việc thay đổi theo quy trình, hệ thống ghi nhận thời gian thực hiện hợp lệ để phục vụ theo dõi tiến độ và so sánh với thời gian ước tính.
+\section{Đặc tả chức năng}
+\label{section:2.3}
+Trong phạm vi đồ án, các use case được đặc tả chi tiết là những chức năng có ảnh hưởng trực tiếp tới chuỗi nghiệp vụ quản lý dự án, phân rã công việc, phân công nhân sự và ghi nhận kết quả thực hiện. Các use case này được lựa chọn vì chúng thể hiện rõ dữ liệu đầu vào quan trọng của hệ thống, các kiểm tra nghiệp vụ cần có và trạng thái dữ liệu sau khi xử lý. Những chức năng có tính hỗ trợ như đăng nhập, xem thông tin hoặc tra cứu đơn giản không được đặc tả riêng trong mục này để tránh làm phân tán trọng tâm phân tích.
+
+\definecolor{ucLabelBg}{HTML}{C7F0E3}
+\definecolor{ucHeaderBg}{HTML}{F8C995}
+\newcommand{\ucTableText}{\small\setlength{\LTleft}{0pt}\setlength{\LTright}{0pt}}
+\newcommand{\ucDataText}{\small\setlength{\tabcolsep}{2pt}\setlength{\LTleft}{0pt}\setlength{\LTright}{0pt}}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Khởi tạo dự án}
+\label{subsection:2.3.1}
+Use case Khởi tạo dự án được đặc tả vì đây là điểm bắt đầu của chuỗi nghiệp vụ quản lý dự án. Dữ liệu dự án được tạo ở use case này là cơ sở để phân rã công việc, xác định yêu cầu kỹ năng và thực hiện phân công nhân sự ở các bước sau.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC001 \\ \hline
+Tên Use case & Khởi tạo dự án \\ \hline
+Tác nhân & Quản lý dự án \\ \hline
+Mô tả ngắn & Use case cho phép Quản lý dự án tạo mới một dự án trong hệ thống, làm cơ sở cho việc phân rã công việc, xác định yêu cầu kỹ năng, theo dõi tiến độ và phân công nhân sự. \\ \hline
+Tiền điều kiện & Quản lý dự án đã đăng nhập vào hệ thống. Tài khoản đang hoạt động và có quyền quản lý dự án. Mã dự án dự kiến tạo chưa tồn tại trong hệ thống. \\ \hline
+Hậu điều kiện & Dự án mới được tạo thành công, được lưu trữ trong cơ sở dữ liệu và được hiển thị ở màn hình chi tiết dự án. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Quản lý dự án & Chọn chức năng Quản lý dự án. \\ \hline
+2 & Hệ thống & Hiển thị danh sách dự án và các chức năng thao tác. \\ \hline
+3 & Quản lý dự án & Chọn chức năng Khởi tạo dự án. \\ \hline
+4 & Hệ thống & Hiển thị màn hình nhập thông tin dự án mới. \\ \hline
+5 & Quản lý dự án & Nhập thông tin cơ bản của dự án, gồm mã dự án, tên dự án, mô tả, ngày bắt đầu, ngày kết thúc dự kiến, mức độ ưu tiên và ghi chú nếu có. \\ \hline
+6 & Hệ thống & Tự động gán người đang đăng nhập làm Quản lý dự án phụ trách và đặt trạng thái mặc định cho dự án. \\ \hline
+7 & Quản lý dự án & Xác nhận tạo dự án. \\ \hline
+8 & Hệ thống & Kiểm tra tính đầy đủ và hợp lệ của dữ liệu đã nhập. \\ \hline
+9 & Hệ thống & Lưu thông tin dự án vào cơ sở dữ liệu. \\ \hline
+10 & Hệ thống & Thông báo tạo dự án thành công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+5a & Hệ thống & Tại bước 4, nếu Quản lý dự án hủy thao tác, hệ thống không lưu thông tin dự án mới và quay lại danh sách dự án. \\ \hline
+9a & Hệ thống & Tại bước 8, nếu thiếu thông tin bắt buộc hoặc thông tin không hợp lệ, hệ thống thông báo lỗi và yêu cầu Quản lý dự án nhập bổ sung. Quay lại bước 4. \\ \hline
+9b & Hệ thống & Tại bước 8, nếu mã dự án đã tồn tại, hệ thống thông báo mã dự án bị trùng và yêu cầu Quản lý dự án nhập mã khác. Quay lại bước 4. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Mã dự án & Mã định danh dùng để phân biệt dự án trong hệ thống. & Có & Không được để trống, không trùng mã dự án đã có. Ví dụ: PRJ001. \\ \hline
+2 & Tên dự án & Tên gọi của dự án cần khởi tạo. & Có & Không được để trống. Ví dụ: Hệ thống quản lý nhân sự nội bộ. \\ \hline
+3 & Mô tả dự án & Mô tả mục tiêu, phạm vi hoặc nội dung chính của dự án. & Không & Nhập dạng văn bản. \\ \hline
+4 & Ngày bắt đầu & Ngày dự kiến bắt đầu triển khai dự án. & Có & Đúng định dạng ngày. Ví dụ: 01/06/2026. \\ \hline
+5 & Ngày kết thúc dự kiến & Ngày dự kiến hoàn thành dự án. & Có & Đúng định dạng ngày và không nhỏ hơn ngày bắt đầu. \\ \hline
+6 & Mức độ ưu tiên & Mức độ ưu tiên của dự án trong quá trình quản lý và phân bổ nguồn lực. & Có & Chọn trong danh mục mức độ ưu tiên của hệ thống. \\ \hline
+7 & Ghi chú & Ghi chú bổ sung về dự án nếu có. & Không & Nhập dạng văn bản. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Mã dự án & Mã dự án vừa được tạo trong hệ thống. & Text & PRJ001 \\ \hline
+2 & Tên dự án & Tên dự án vừa được tạo. & Text & Hệ thống quản lý nhân sự nội bộ \\ \hline
+3 & Thời gian dự kiến & Ngày bắt đầu và ngày kết thúc dự kiến của dự án. & dd/mm/yyyy & 01/06/2026--30/09/2026 \\ \hline
+4 & Quản lý dự án phụ trách & Người phụ trách chính của dự án. & Text & Nguyễn Minh Quân \\ \hline
+5 & Trạng thái dự án & Trạng thái của dự án sau khi được khởi tạo. & Text & Đang lập kế hoạch \\ \hline
+6 & Thời điểm tạo & Thời điểm hệ thống ghi nhận dự án mới. & dd/mm/yyyy hh:mm & 21/05/2026 09:30 \\ \hline
+\end{longtable}
+}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Phân rã dự án thành công việc}
+\label{subsection:2.3.2}
+Use case Phân rã dự án thành công việc mô tả cách Quản lý dự án chuyển một dự án đã được khởi tạo thành các công việc đủ rõ để theo dõi và phân công. Nội dung đặc tả nhấn mạnh yêu cầu mỗi công việc phải có thông tin thực hiện và yêu cầu kỹ năng hợp lệ trước khi đi vào bước phân công.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC002 \\ \hline
+Tên Use case & Phân rã dự án thành công việc \\ \hline
+Tác nhân & Quản lý dự án \\ \hline
+Mô tả ngắn & Use case cho phép Quản lý dự án phân rã một dự án đã được khởi tạo thành các công việc cụ thể, xác định thông tin thực hiện và yêu cầu kỹ năng cho từng công việc, làm cơ sở cho việc theo dõi tiến độ và phân công nhân sự. \\ \hline
+Tiền điều kiện & Quản lý dự án đã đăng nhập vào hệ thống. Dự án cần phân rã đã tồn tại, thuộc phạm vi quản lý của Quản lý dự án và không ở trạng thái Đóng hoặc Hoàn thành. Danh mục kỹ năng phục vụ phân công đã được thiết lập trong hệ thống. \\ \hline
+Hậu điều kiện & Dự án được phân rã thành danh sách công việc cụ thể. Mỗi công việc có thông tin cơ bản, thời gian ước tính và yêu cầu kỹ năng để phục vụ quản lý tiến độ và phân công nhân sự. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Quản lý dự án & Chọn chức năng Quản lý dự án. \\ \hline
+2 & Hệ thống & Hiển thị danh sách dự án và các chức năng liên quan. \\ \hline
+3 & Quản lý dự án & Chọn một dự án cần phân rã công việc. \\ \hline
+4 & Hệ thống & Hiển thị thông tin chi tiết của dự án và các chức năng thao tác. \\ \hline
+5 & Quản lý dự án & Chọn chức năng Phân rã dự án thành công việc. \\ \hline
+6 & Hệ thống & Hiển thị màn hình nhập danh sách nhóm công việc và công việc thuộc dự án. \\ \hline
+7 & Quản lý dự án & Nhập thông tin nhóm công việc, gồm tên nhóm và mô tả nếu có. \\ \hline
+8 & Quản lý dự án & Thêm các công việc thuộc nhóm. \\ \hline
+9 & Quản lý dự án & Nhập thông tin cho từng công việc như tên công việc, mô tả, ngày bắt đầu dự kiến, ngày kết thúc dự kiến và thời gian ước tính. \\ \hline
+10 & Quản lý dự án & Gán yêu cầu kỹ năng cho từng công việc, gồm kỹ năng yêu cầu, mức độ yêu cầu, trọng số, tính bắt buộc và ghi chú nếu có. \\ \hline
+11 & Quản lý dự án & Xác nhận lưu cấu trúc công việc. \\ \hline
+12 & Hệ thống & Kiểm tra tính đầy đủ và hợp lệ của thông tin công việc và yêu cầu kỹ năng. \\ \hline
+13 & Hệ thống & Lưu danh sách công việc của dự án vào hệ thống. \\ \hline
+14 & Hệ thống & Đặt trạng thái mặc định cho các công việc là Chờ phân công. \\ \hline
+15 & Hệ thống & Thông báo phân rã dự án thành công việc thành công và hiển thị cây công việc của dự án. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+5a & Hệ thống & Tại bước 4, nếu dự án đang ở trạng thái Đóng hoặc Hoàn thành, hệ thống thông báo dự án không còn cho phép phân rã công việc và kết thúc use case. \\ \hline
+13a & Hệ thống & Tại bước 12, nếu thiếu thông tin bắt buộc của công việc, hệ thống thông báo lỗi và yêu cầu Quản lý dự án bổ sung. Quay lại bước 6. \\ \hline
+13b & Hệ thống & Tại bước 12, nếu công việc chưa có yêu cầu kỹ năng, hệ thống yêu cầu Quản lý dự án gán ít nhất một kỹ năng yêu cầu. Quay lại bước 9. \\ \hline
+13c & Hệ thống & Tại bước 12, nếu ngày kết thúc dự kiến nhỏ hơn ngày bắt đầu dự kiến, hệ thống yêu cầu Quản lý dự án chỉnh sửa. Quay lại bước 8. \\ \hline
+13d & Hệ thống & Tại bước 12, nếu kỹ năng được chọn không tồn tại hoặc đang bị vô hiệu hóa, hệ thống yêu cầu Quản lý dự án chọn kỹ năng hợp lệ. Quay lại bước 9. \\ \hline
+13e & Hệ thống & Tại bước 12, nếu thời gian ước tính không hợp lệ, hệ thống yêu cầu Quản lý dự án nhập lại. Quay lại bước 8. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Dự án cần phân rã & Dự án mà Quản lý dự án muốn phân rã thành các công việc cụ thể. & Có & Dự án tồn tại, thuộc quyền quản lý và chưa Đóng hoặc Hoàn thành. \\ \hline
+2 & Tên nhóm công việc & Tên nhóm dùng để gom các công việc có cùng phạm vi hoặc mục tiêu. & Có & Không được để trống, không trùng tên nhóm trong cùng dự án. \\ \hline
+3 & Mô tả nhóm công việc & Mô tả ngắn phạm vi hoặc mục tiêu của nhóm công việc. & Không & Nhập dạng văn bản. \\ \hline
+4 & Mã công việc & Mã định danh của công việc trong dự án. & Có & Không được để trống, không trùng theo quy tắc của hệ thống. \\ \hline
+5 & Tên công việc & Tên công việc cần thực hiện trong dự án. & Có & Không được để trống, thể hiện rõ nội dung công việc. \\ \hline
+6 & Thời gian dự kiến & Ngày bắt đầu và ngày kết thúc dự kiến của công việc. & Không & Nếu nhập ngày kết thúc thì không nhỏ hơn ngày bắt đầu. \\ \hline
+7 & Thời gian ước tính & Số giờ dự kiến cần để hoàn thành công việc. & Có & Phải là số lớn hơn 0. \\ \hline
+8 & Yêu cầu kỹ năng & Kỹ năng, mức độ yêu cầu, trọng số, tính bắt buộc và ghi chú. & Có & Kỹ năng tồn tại trong danh mục; mỗi công việc có ít nhất một yêu cầu kỹ năng. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Mã dự án & Mã dự án chứa danh sách công việc vừa được phân rã. & Text & PRJ001 \\ \hline
+2 & Tên nhóm công việc & Nhóm công việc chứa công việc được tạo hoặc cập nhật. & Text & Thiết kế hệ thống \\ \hline
+3 & Mã công việc & Mã công việc được tạo hoặc cập nhật trong dự án. & Text & TSK001 \\ \hline
+4 & Tên công việc & Tên công việc thuộc dự án. & Text & Thiết kế cơ sở dữ liệu \\ \hline
+5 & Thời gian ước tính & Số giờ dự kiến để hoàn thành công việc. & Number & 16 \\ \hline
+6 & Trạng thái công việc & Trạng thái hiện tại của công việc sau khi được tạo. & Text & Chờ phân công \\ \hline
+7 & Yêu cầu kỹ năng & Danh sách kỹ năng yêu cầu của công việc. & Danh sách text & SQL - Khá - Bắt buộc \\ \hline
+8 & Thông báo kết quả & Thông báo kết quả xử lý của hệ thống. & Text & Phân rã dự án thành công việc thành công \\ \hline
+\end{longtable}
+}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Phân công công việc}
+\label{subsection:2.3.3}
+Use case Phân công công việc là use case trung tâm của hệ thống vì kết nối dữ liệu dự án, yêu cầu kỹ năng, hồ sơ năng lực và quyết định phân công của Quản lý dự án. Đặc tả này giữ rõ nguyên tắc AI chỉ hỗ trợ đề xuất, còn quyết định cuối cùng thuộc về Quản lý dự án.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC003 \\ \hline
+Tên Use case & Phân công công việc \\ \hline
+Tác nhân & Quản lý dự án \\ \hline
+Mô tả ngắn & Use case cho phép Quản lý dự án phân công nhân sự cho các công việc đủ điều kiện trong dự án. Quản lý dự án có thể sử dụng phương thức phân công bằng AI đề xuất hoặc phân công thủ công. Sau khi Quản lý dự án xác nhận, hệ thống lưu thông tin phân công, cập nhật trạng thái công việc, thêm nhân sự vào nhóm dự án nếu cần và gửi thông báo phân công cho nhân sự. \\ \hline
+Tiền điều kiện & Quản lý dự án đã đăng nhập vào hệ thống. Dự án thuộc phạm vi quản lý của Quản lý dự án và không ở trạng thái Đóng hoặc Hoàn thành. Dự án có ít nhất một công việc ở trạng thái Chờ phân công. Công việc đủ điều kiện phân công đã có thời gian ước tính và yêu cầu kỹ năng. \\ \hline
+Hậu điều kiện & Công việc được gán cho nhân sự cụ thể. Thông tin phân công được lưu trong hệ thống, trạng thái công việc được cập nhật, nhân sự được thêm vào nhóm dự án nếu cần và hệ thống gửi thông báo phân công công việc. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Quản lý dự án & Chọn chức năng Quản lý dự án. \\ \hline
+2 & Hệ thống & Hiển thị danh sách dự án và các chức năng liên quan. \\ \hline
+3 & Quản lý dự án & Chọn dự án cần phân công công việc. \\ \hline
+4 & Hệ thống & Hiển thị thông tin chi tiết của dự án và danh sách công việc thuộc dự án. \\ \hline
+5 & Quản lý dự án & Chọn chức năng Phân công công việc. \\ \hline
+6 & Hệ thống & Lọc và hiển thị danh sách các công việc đủ điều kiện phân công trong dự án. \\ \hline
+7 & Hệ thống & Tự động chọn các công việc ở trạng thái Chờ phân công. \\ \hline
+8 & Quản lý dự án & Kiểm tra danh sách công việc được chọn và điều chỉnh nếu cần. \\ \hline
+9 & Quản lý dự án & Chọn phương thức phân công: Phân công bằng AI đề xuất hoặc Phân công thủ công. \\ \hline
+10 & Hệ thống & Xử lý theo phương thức phân công đã chọn. Nếu chọn AI đề xuất, hệ thống thực hiện UC003.1; nếu chọn thủ công, hệ thống thực hiện UC003.2. \\ \hline
+11 & Quản lý dự án & Kiểm tra bảng phân công dự kiến và xác nhận phân công. \\ \hline
+12 & Hệ thống & Kiểm tra lại tính hợp lệ của từng dòng phân công, bao gồm trạng thái công việc, trạng thái nhân sự, quyền phân công và khả năng tham gia dự án. \\ \hline
+13 & Hệ thống & Lưu thông tin phân công cho các công việc hợp lệ. \\ \hline
+14 & Hệ thống & Nếu nhân sự được phân công chưa thuộc nhóm dự án, hệ thống thêm nhân sự đó vào nhóm dự án với nguồn tham gia từ phân công công việc. \\ \hline
+15 & Hệ thống & Gửi thông báo phân công công việc cho nhân sự được phân công. \\ \hline
+16 & Hệ thống & Thông báo phân công công việc thành công cho Quản lý dự án. \\ \hline
+17 & Hệ thống & Hiển thị lại danh sách công việc cùng nhân sự được phân công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+5a & Hệ thống & Tại bước 4, nếu dự án đang ở trạng thái Đóng hoặc Hoàn thành, hệ thống thông báo dự án không còn cho phép phân công công việc và kết thúc use case. \\ \hline
+8a & Hệ thống & Tại bước 7, nếu không có công việc ở trạng thái Chờ phân công hoặc trạng thái tương đương, hệ thống thông báo không có công việc đủ điều kiện phân công và kết thúc use case. \\ \hline
+10a & Quản lý dự án & Tại bước 9, nếu Quản lý dự án hủy thao tác, hệ thống không lưu thông tin phân công và quay lại màn hình chi tiết dự án. \\ \hline
+11a & Quản lý dự án & Trong UC003.1, nếu Quản lý dự án không chấp nhận kết quả AI đề xuất, hệ thống cho phép chuyển sang UC003.2 - Phân công thủ công. \\ \hline
+15a & Hệ thống & Tại bước 14, nếu một hoặc nhiều dòng phân công không hợp lệ, hệ thống chỉ rõ dòng lỗi và lý do để Quản lý dự án điều chỉnh lại bảng phân công dự kiến. Quay lại bước 12. \\ \hline
+15b & Hệ thống & Tại bước 14, nếu toàn bộ dòng phân công không hợp lệ, hệ thống không lưu dữ liệu và yêu cầu Quản lý dự án thực hiện lại phân công. Quay lại bước 7. \\ \hline
+16a & Hệ thống & Tại bước 15, nếu xảy ra lỗi khi lưu dữ liệu, hệ thống thông báo phân công không thành công và giữ nguyên dữ liệu trước đó. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Dự án cần phân công & Dự án chứa các công việc cần phân công nhân sự. & Có & Dự án tồn tại, thuộc quyền quản lý và chưa Đóng hoặc Hoàn thành. \\ \hline
+2 & Công việc cần phân công & Công việc được chọn để phân công nhân sự. & Có & Công việc thuộc dự án, đang Chờ phân công và có yêu cầu kỹ năng. \\ \hline
+3 & Phương thức phân công & Cách thức Quản lý dự án sử dụng để chọn nhân sự. & Có & Phân công bằng AI đề xuất hoặc Phân công thủ công. \\ \hline
+4 & Nhân sự được chọn & Nhân sự được Quản lý dự án quyết định giao công việc. & Có & Nhân sự đang hoạt động và có thể tham gia dự án. \\ \hline
+5 & Ghi chú phân công & Ghi chú hoặc lý do phân công nếu có. & Không & Nhập dạng văn bản. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Công việc được phân công & Công việc đã được gán nhân sự phụ trách. & Text & TSK001 - Thiết kế cơ sở dữ liệu \\ \hline
+2 & Nhân sự phụ trách & Nhân sự được giao công việc. & Text & Trần Văn B \\ \hline
+3 & Phương thức phân công & Cách thức tạo ra lựa chọn nhân sự. & Text & AI đề xuất \\ \hline
+4 & Trạng thái công việc & Trạng thái công việc sau khi phân công. & Text & Đã phân công \\ \hline
+5 & ProjectMember & Kết quả thêm nhân sự vào nhóm dự án nếu cần. & Text & Đã thêm vào dự án \\ \hline
+6 & Thông báo phân công & Kết quả gửi thông báo cho nhân sự. & Text & Đã gửi thông báo phân công \\ \hline
+7 & Thời điểm phân công & Thời điểm hệ thống ghi nhận phân công. & dd/mm/yyyy hh:mm & 21/05/2026 14:30 \\ \hline
+\end{longtable}
+}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Phân công bằng AI đề xuất}
+\label{subsection:2.3.4}
+Use case Phân công bằng AI đề xuất mô tả nhánh hệ thống sử dụng dữ liệu hồ sơ năng lực chính thức để xếp hạng nhân sự phù hợp cho từng công việc. Kết quả của nhánh này không tự động tạo phân công cuối cùng mà được chuyển về UC003 để Quản lý dự án kiểm tra và xác nhận.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC003.1 \\ \hline
+Tên Use case & Phân công bằng AI đề xuất \\ \hline
+Tác nhân & Quản lý dự án \\ \hline
+Mô tả ngắn & Use case cho phép hệ thống sử dụng AI để đánh giá mức độ phù hợp của nhân sự với từng công việc. Quản lý dự án xem kết quả đề xuất và lựa chọn nhân sự phù hợp để đưa vào bảng phân công dự kiến. \\ \hline
+Tiền điều kiện & Công việc đã có yêu cầu kỹ năng hợp lệ. Hồ sơ năng lực chính thức của nhân sự đã được cập nhật và xác nhận. Hệ thống có dữ liệu nhân sự đang hoạt động để thực hiện đánh giá. \\ \hline
+Hậu điều kiện & Hệ thống tạo danh sách nhân sự đề xuất cho từng công việc. Quản lý dự án chọn nhân sự từ danh sách đề xuất hoặc chuyển sang phân công thủ công nếu kết quả không phù hợp. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Quản lý dự án & Chọn phương thức Phân công bằng AI đề xuất cho danh sách công việc đã chọn. \\ \hline
+2 & Hệ thống & Lấy thông tin chi tiết của từng công việc, bao gồm thời gian ước tính, mức độ ưu tiên và yêu cầu kỹ năng. \\ \hline
+3 & Hệ thống & Lấy hồ sơ năng lực chính thức của các nhân sự đang hoạt động. \\ \hline
+4 & Hệ thống & Lấy dữ liệu liên quan đến tình trạng tham gia dự án, khối lượng công việc hiện tại và lịch sử hiệu suất của nhân sự nếu có. \\ \hline
+5 & Hệ thống & Đánh giá mức độ phù hợp giữa yêu cầu công việc và hồ sơ năng lực của từng nhân sự. \\ \hline
+6 & Hệ thống & Tính điểm phù hợp cho từng nhân sự đối với từng công việc. \\ \hline
+7 & Hệ thống & Xếp hạng danh sách nhân sự phù hợp và chọn Top N nhân sự phù hợp nhất cho từng công việc, minh họa bằng Top 3. \\ \hline
+8 & Hệ thống & Hiển thị kết quả đề xuất cho từng công việc, gồm danh sách nhân sự đề xuất, điểm phù hợp, kỹ năng đáp ứng, tải công việc hiện tại và giải thích nếu có. \\ \hline
+9 & Quản lý dự án & Xem kết quả đề xuất của hệ thống. \\ \hline
+10 & Quản lý dự án & Chấp nhận nhân sự được hệ thống đề xuất ưu tiên hoặc chọn nhân sự khác trong danh sách đề xuất cho từng công việc. \\ \hline
+11 & Hệ thống & Ghi nhận nhân sự được chọn vào bảng phân công dự kiến. \\ \hline
+12 & Hệ thống & Chuyển kết quả về UC003 - Phân công công việc để Quản lý dự án xác nhận phân công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+3a & Hệ thống & Tại bước 2, nếu công việc chưa có yêu cầu kỹ năng, hệ thống thông báo công việc chưa đủ điều kiện phân công bằng AI và loại công việc đó khỏi danh sách đề xuất. \\ \hline
+10a & Quản lý dự án & Tại bước 9, nếu Quản lý dự án không chấp nhận kết quả AI đề xuất, hệ thống cho phép chuyển sang UC003.2 - Phân công thủ công. \\ \hline
+11a & Quản lý dự án & Tại bước 10, nếu Quản lý dự án chọn nhân sự khác với nhân sự được đề xuất ưu tiên, hệ thống yêu cầu nhập lý do điều chỉnh. \\ \hline
+12a & Hệ thống & Tại bước 11, nếu nhân sự được chọn không còn khả dụng, hệ thống thông báo lỗi và yêu cầu Quản lý dự án chọn lại nhân sự. Quay lại bước 8. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Công việc cần phân công & Công việc cần được hệ thống đề xuất nhân sự. & Có & Công việc có yêu cầu kỹ năng và đang Chờ phân công. \\ \hline
+2 & Yêu cầu kỹ năng & Danh sách kỹ năng, mức độ yêu cầu, trọng số và tính bắt buộc. & Có & Có ít nhất một kỹ năng yêu cầu tồn tại trong danh mục kỹ năng. \\ \hline
+3 & Hồ sơ năng lực nhân sự & Dữ liệu kỹ năng, kinh nghiệm và thông tin năng lực chính thức của nhân sự. & Có & Chỉ dùng hồ sơ đã được xác nhận, không dùng kết quả CV chưa duyệt. \\ \hline
+4 & Khối lượng công việc hiện tại & Thông tin các công việc nhân sự đang phụ trách. & Không & Lấy từ dữ liệu phân công hiện có trong hệ thống. \\ \hline
+5 & Dữ liệu hiệu suất quá khứ & Dữ liệu chênh lệch giữa thời gian ước tính và thời gian thực tế trong công việc trước. & Không & Có thể không tồn tại với nhân sự mới. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Tên công việc & Công việc được hệ thống đề xuất nhân sự. & Text & Thiết kế cơ sở dữ liệu \\ \hline
+2 & Danh sách nhân sự đề xuất & Danh sách Top N nhân sự phù hợp nhất với công việc. & Danh sách text & Top 1: Trần Văn B \\ \hline
+3 & Điểm phù hợp & Điểm đánh giá mức độ phù hợp giữa từng nhân sự và công việc. & Number / phần trăm & 0.86/1 \\ \hline
+4 & Kỹ năng đáp ứng & Các kỹ năng của nhân sự đáp ứng yêu cầu công việc. & Danh sách text & SQL - Khá \\ \hline
+5 & Kỹ năng còn thiếu & Các kỹ năng nhân sự chưa đáp ứng đầy đủ nếu có. & Danh sách text & Docker - Cơ bản \\ \hline
+6 & Tải công việc hiện tại & Tình trạng công việc hiện tại của nhân sự. & Text & Đang phụ trách 2 công việc \\ \hline
+7 & Giải thích đề xuất & Lý do hệ thống đề xuất nhân sự. & Text & Phù hợp kỹ năng SQL và tải công việc hiện tại thấp. \\ \hline
+\end{longtable}
+}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Phân công thủ công}
+\label{subsection:2.3.5}
+Use case Phân công thủ công được dùng khi Quản lý dự án muốn tự lựa chọn nhân sự hoặc khi kết quả AI đề xuất chưa phù hợp với bối cảnh thực tế. Use case này bảo đảm hệ thống vẫn hỗ trợ ra quyết định dựa trên dữ liệu mà không loại bỏ quyền chủ động của Quản lý dự án.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC003.2 \\ \hline
+Tên Use case & Phân công thủ công \\ \hline
+Tác nhân & Quản lý dự án \\ \hline
+Mô tả ngắn & Use case cho phép Quản lý dự án chủ động tra cứu, lọc và lựa chọn nhân sự để phân công cho công việc mà không phụ thuộc hoàn toàn vào kết quả đề xuất của AI. Use case này có thể được sử dụng trực tiếp hoặc sau khi Quản lý dự án không chấp nhận kết quả AI đề xuất. \\ \hline
+Tiền điều kiện & Quản lý dự án đã chọn một hoặc nhiều công việc cần phân công. Công việc có thông tin yêu cầu kỹ năng. Hệ thống có danh sách nhân sự đang hoạt động để tra cứu. \\ \hline
+Hậu điều kiện & Quản lý dự án chọn được nhân sự cho từng công việc cần phân công. Kết quả lựa chọn được đưa vào bảng phân công dự kiến để chờ xác nhận phân công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Quản lý dự án & Chọn phương thức Phân công thủ công cho danh sách công việc đã chọn. \\ \hline
+2 & Hệ thống & Hiển thị thông tin công việc cần phân công và yêu cầu kỹ năng tương ứng. \\ \hline
+3 & Hệ thống & Hiển thị danh sách nhân sự có thể tra cứu trong phạm vi hệ thống. \\ \hline
+4 & Quản lý dự án & Nhập hoặc chọn điều kiện lọc nhân sự, gồm kỹ năng, vị trí, cấp độ kinh nghiệm, phòng ban, trạng thái làm việc và tình trạng tham gia dự án nếu cần. \\ \hline
+5 & Hệ thống & Lọc danh sách nhân sự theo điều kiện Quản lý dự án đã chọn. \\ \hline
+6 & Hệ thống & Hiển thị danh sách nhân sự phù hợp kèm hồ sơ năng lực, kỹ năng, kinh nghiệm, tải công việc hiện tại và trạng thái tham gia dự án. \\ \hline
+7 & Quản lý dự án & Xem thông tin chi tiết của nhân sự nếu cần. \\ \hline
+8 & Quản lý dự án & Chọn nhân sự để phân công cho từng công việc. \\ \hline
+9 & Hệ thống & Kiểm tra sơ bộ mức độ đáp ứng kỹ năng bắt buộc và trạng thái khả dụng của nhân sự được chọn. \\ \hline
+10 & Hệ thống & Nếu nhân sự được chọn có cảnh báo không phù hợp, hệ thống hiển thị cảnh báo cho Quản lý dự án. \\ \hline
+11 & Quản lý dự án & Xác nhận lựa chọn nhân sự và nhập ghi chú phân công nếu cần. \\ \hline
+12 & Hệ thống & Ghi nhận nhân sự được chọn vào bảng phân công dự kiến. \\ \hline
+13 & Hệ thống & Chuyển kết quả về UC003 - Phân công công việc. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+6a & Hệ thống & Tại bước 5, nếu không có nhân sự phù hợp với điều kiện lọc, hệ thống thông báo không tìm thấy nhân sự và cho phép Quản lý dự án thay đổi điều kiện lọc. Quay lại bước 4. \\ \hline
+9a & Hệ thống & Tại bước 8, nếu Quản lý dự án chưa chọn nhân sự cho công việc, hệ thống yêu cầu chọn nhân sự trước khi đưa vào bảng phân công dự kiến. \\ \hline
+10a & Hệ thống & Tại bước 9, nếu nhân sự đã ngừng hoạt động hoặc bị khóa, hệ thống không cho phép chọn nhân sự đó và yêu cầu chọn nhân sự khác. \\ \hline
+12a & Quản lý dự án & Tại bước 11, nếu Quản lý dự án hủy thao tác, hệ thống không đưa nhân sự vào bảng phân công dự kiến và quay lại danh sách công việc cần phân công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Công việc cần phân công & Công việc cần được Quản lý dự án chọn nhân sự thủ công. & Có & Công việc đang Chờ phân công và thuộc dự án đang quản lý. \\ \hline
+2 & Yêu cầu kỹ năng & Danh sách kỹ năng cần có để thực hiện công việc. & Có & Có ít nhất một kỹ năng yêu cầu tồn tại trong danh mục kỹ năng. \\ \hline
+3 & Điều kiện lọc & Kỹ năng, vị trí, cấp độ kinh nghiệm, phòng ban hoặc trạng thái làm việc. & Không & Các giá trị lọc phải tồn tại trong danh mục tương ứng của hệ thống. \\ \hline
+4 & Nhân sự được chọn & Nhân sự được Quản lý dự án lựa chọn để phân công. & Có & Nhân sự tồn tại, đang hoạt động và có thể tham gia công việc. \\ \hline
+5 & Ghi chú phân công & Ghi chú hoặc lý do lựa chọn nhân sự. & Không & Nhập dạng văn bản. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Tên công việc & Công việc được chọn để phân công thủ công. & Text & Xây dựng API quản lý task \\ \hline
+2 & Nhân sự được chọn & Nhân sự được Quản lý dự án lựa chọn. & Text & Lê Thị C \\ \hline
+3 & Kỹ năng liên quan & Các kỹ năng của nhân sự liên quan đến công việc. & Danh sách text & Java - Khá \\ \hline
+4 & Mức độ đáp ứng & Đánh giá sơ bộ của hệ thống về yêu cầu bắt buộc. & Text & Đáp ứng \\ \hline
+5 & Tải công việc hiện tại & Thông tin công việc hiện tại của nhân sự. & Text & Đang phụ trách 1 công việc \\ \hline
+6 & Cảnh báo phân công & Cảnh báo nếu nhân sự có rủi ro khi phân công. & Text & Không có cảnh báo \\ \hline
+7 & Ghi chú phân công & Ghi chú do Quản lý dự án nhập. & Text & Đã có kinh nghiệm với module tương tự \\ \hline
+\end{longtable}
+}
+
+\Needspace{22\baselineskip}
+\subsection{Đặc tả use case Ghi nhận thời gian thực hiện}
+\label{subsection:2.3.6}
+Use case Ghi nhận thời gian thực hiện thể hiện cách hệ thống thu thập dữ liệu thực tế sau phân công. Điểm quan trọng của use case này là Nhân viên không nhập tùy ý số giờ thực hiện; thời gian được hệ thống tính dựa trên lịch làm việc chuẩn và lịch sử thay đổi trạng thái công việc.
+
+{\ucTableText
+\begin{longtable}{|>{\columncolor{ucLabelBg}\bfseries}p{0.24\textwidth}|p{0.70\textwidth}|}
+\hline
+Mã Use case & UC004 \\ \hline
+Tên Use case & Ghi nhận thời gian thực hiện \\ \hline
+Tác nhân & Nhân viên \\ \hline
+Mô tả ngắn & Use case cho phép hệ thống tự động ghi nhận thời gian thực hiện thực tế của công việc dựa trên quá trình thay đổi trạng thái công việc của Nhân viên. \\ \hline
+Tiền điều kiện & Nhân viên đã đăng nhập vào hệ thống. Nhân viên đang được phân công công việc cần ghi nhận thời gian. Công việc đang ở trạng thái Đang thực hiện. Hệ thống đã có thời điểm bắt đầu thực hiện công việc và cấu hình lịch làm việc chuẩn. \\ \hline
+Hậu điều kiện & Thời gian thực hiện thực tế của công việc được hệ thống tự động tính toán và lưu lại. Tổng thời gian thực tế của công việc được cập nhật để phục vụ theo dõi tiến độ và so sánh với thời gian ước tính. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện chính (thành công)}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+1 & Nhân viên & Chọn chức năng Quản lý công việc được giao. \\ \hline
+2 & Hệ thống & Hiển thị danh sách công việc đang được giao cho Nhân viên. \\ \hline
+3 & Nhân viên & Chọn công việc đang ở trạng thái Đang thực hiện. \\ \hline
+4 & Hệ thống & Hiển thị thông tin chi tiết công việc, gồm tên công việc, mô tả, thời gian ước tính, trạng thái hiện tại và thời điểm bắt đầu thực hiện. \\ \hline
+5 & Nhân viên & Cập nhật trạng thái công việc từ Đang thực hiện sang Chờ review hoặc trạng thái hoàn tất tương đương. \\ \hline
+6 & Hệ thống & Ghi nhận thời điểm thay đổi trạng thái công việc. \\ \hline
+7 & Hệ thống & Xác định khoảng thời gian cần tính từ thời điểm công việc bắt đầu ở trạng thái Đang thực hiện đến thời điểm kết thúc tính thời gian. \\ \hline
+8 & Hệ thống & Tính thời gian thực hiện hợp lệ theo lịch làm việc chuẩn của công ty, mặc định một ngày làm việc gồm 8 giờ từ 08:00--12:00 và 13:00--17:00. \\ \hline
+9 & Hệ thống & Loại trừ thời gian ngoài giờ làm việc chuẩn, thời gian nghỉ trưa và các khoảng thời gian không được tính theo cấu hình của hệ thống. \\ \hline
+10 & Hệ thống & Lưu bản ghi thời gian thực hiện do hệ thống tự tính. \\ \hline
+11 & Hệ thống & Cập nhật tổng thời gian thực tế của công việc. \\ \hline
+12 & Hệ thống & Đối chiếu tổng thời gian thực tế với thời gian ước tính của công việc. \\ \hline
+13 & Hệ thống & Cập nhật dữ liệu phục vụ đánh giá hiệu suất thực hiện công việc. \\ \hline
+14 & Hệ thống & Thông báo cập nhật trạng thái và ghi nhận thời gian thực hiện thành công. \\ \hline
+\end{longtable}
+}
+
+\textbf{Luồng sự kiện thay thế}
+
+{\ucTableText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.07\textwidth}|p{0.20\textwidth}|p{0.64\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
+6a & Hệ thống & Tại bước 5, nếu trạng thái chuyển đổi không hợp lệ theo quy trình công việc, hệ thống thông báo lỗi và không cập nhật trạng thái. \\ \hline
+6b & Nhân viên & Tại bước 5, nếu Nhân viên hủy thao tác cập nhật trạng thái, hệ thống không thay đổi trạng thái công việc và không ghi nhận thời gian thực hiện. \\ \hline
+9a & Hệ thống & Tại bước 8, nếu hệ thống chưa có cấu hình lịch làm việc chuẩn, hệ thống thông báo không thể tính thời gian thực hiện và không lưu bản ghi thời gian. \\ \hline
+11a & Hệ thống & Tại bước 10, nếu xảy ra lỗi khi lưu dữ liệu, hệ thống thông báo ghi nhận thời gian không thành công và giữ nguyên dữ liệu trước đó. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu vào}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.32\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Điều kiện hợp lệ / Ví dụ} \\ \hline
+1 & Công việc cần ghi nhận thời gian & Công việc được Nhân viên chuyển trạng thái để hệ thống ghi nhận thời gian thực hiện. & Có & Thuộc danh sách công việc được giao và đang ở trạng thái Đang thực hiện. \\ \hline
+2 & Nhân viên thực hiện & Nhân viên đang được phân công công việc và thực hiện thao tác cập nhật trạng thái. & Có & Là Nhân viên đang đăng nhập và là người phụ trách công việc. \\ \hline
+3 & Trạng thái trước & Trạng thái hiện tại của công việc trước khi ghi nhận thời gian. & Có & Phải là Đang thực hiện hoặc trạng thái tương đương được phép tính thời gian. \\ \hline
+4 & Trạng thái sau & Trạng thái mới của công việc sau khi Nhân viên cập nhật. & Có & Chờ review, Hoàn thành hoặc trạng thái tương đương theo quy trình. \\ \hline
+5 & Thời điểm bắt đầu & Thời điểm công việc được chuyển sang trạng thái Đang thực hiện. & Có & Lấy từ lịch sử trạng thái công việc. \\ \hline
+6 & Thời điểm kết thúc & Thời điểm hệ thống dừng tính thời gian thực hiện. & Có & Do hệ thống tự ghi nhận tại thời điểm cập nhật trạng thái. \\ \hline
+7 & Lịch làm việc chuẩn & Cấu hình thời gian làm việc hợp lệ dùng để tính thời gian thực hiện. & Có & Ví dụ: 08:00--12:00, 13:00--17:00. \\ \hline
+\end{longtable}
+}
+
+\textbf{Dữ liệu đầu ra}
+
+{\ucDataText
+\begin{longtable}{|>{\centering\arraybackslash}p{0.055\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.36\textwidth}|>{\raggedright\arraybackslash}p{0.16\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|}
+\hline
+\rowcolor{ucHeaderBg}\textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Định dạng} & \textbf{Ví dụ} \\ \hline
+1 & Tên công việc & Công việc được hệ thống ghi nhận thời gian thực hiện. & Text & Thiết kế cơ sở dữ liệu \\ \hline
+2 & Nhân viên thực hiện & Nhân viên phụ trách công việc. & Text & Trần Văn B \\ \hline
+3 & Trạng thái công việc & Trạng thái mới của công việc sau khi cập nhật. & Text & Chờ review \\ \hline
+4 & Thời điểm bắt đầu & Thời điểm công việc bắt đầu được tính thời gian. & dd/mm/yyyy hh:mm & 20/05/2026 15:00 \\ \hline
+5 & Thời điểm kết thúc & Thời điểm hệ thống dừng tính thời gian thực hiện. & dd/mm/yyyy hh:mm & 21/05/2026 10:30 \\ \hline
+6 & Thời gian thực tế được tính & Số giờ thực hiện hợp lệ do hệ thống tự tính theo lịch làm việc chuẩn. & Number & 3.5 \\ \hline
+7 & Tổng thời gian thực tế & Tổng số giờ thực tế của công việc sau khi cập nhật. & Number & 12.5 \\ \hline
+8 & Chênh lệch thời gian & Chênh lệch giữa tổng thời gian thực tế và thời gian ước tính. & Number / Text & Ít hơn 3.5 giờ so với ước tính \\ \hline
+9 & Thông báo kết quả & Thông báo kết quả xử lý của hệ thống. & Text & Ghi nhận thời gian thực hiện thành công \\ \hline
+\end{longtable}
+}
+
+\section{Yêu cầu phi chức năng}
+\label{section:2.4}
+Ngoài các yêu cầu chức năng đã trình bày ở các mục trước, hệ thống cần đáp ứng một số yêu cầu phi chức năng để có thể vận hành ổn định trong bối cảnh quản lý hồ sơ năng lực và phân công nhân sự dự án. Các yêu cầu này được xác định ở mức phù hợp với phạm vi đồ án, tập trung vào bảo mật, toàn vẹn dữ liệu, hiệu năng, tính dễ sử dụng, độ tin cậy và khả năng bảo trì.
+
+\subsection{Bảo mật}
+\label{subsection:2.4.1}
+Hệ thống phải yêu cầu người dùng đăng nhập trước khi sử dụng các chức năng nghiệp vụ. Sau khi đăng nhập, quyền thao tác được giới hạn theo vai trò của người dùng, bao gồm Quản trị viên, Quản lý dự án và Nhân viên. Người dùng chỉ được truy cập những dữ liệu và chức năng thuộc phạm vi trách nhiệm của mình.
+
+Các chức năng liên quan đến tài khoản, hồ sơ nhân sự, hồ sơ năng lực, dự án và phân công công việc cần được kiểm soát chặt chẽ hơn so với các chức năng xem thông tin thông thường. Ví dụ, Nhân viên có thể gửi yêu cầu cập nhật hồ sơ cá nhân nhưng không được tự ý thay đổi hồ sơ năng lực chính thức; Quản lý dự án có thể tra cứu hồ sơ nhân sự phục vụ phân công nhưng không thay thế vai trò duyệt dữ liệu của Quản trị viên.
+
+\subsection{Toàn vẹn dữ liệu}
+\label{subsection:2.4.2}
+Dữ liệu của hệ thống phải được kiểm tra hợp lệ trước khi lưu, đặc biệt là các nhóm dữ liệu ảnh hưởng trực tiếp đến quyết định phân công như hồ sơ năng lực, yêu cầu kỹ năng của công việc, kết quả phân công, trạng thái công việc và thời gian thực hiện. Các trường bắt buộc cần được kiểm tra đầy đủ, dữ liệu tham chiếu phải tồn tại, và các trạng thái nghiệp vụ không được chuyển sang giá trị không hợp lệ.
+
+Đối với dữ liệu kỹ năng, hệ thống cần phân biệt rõ dữ liệu đề xuất và dữ liệu chính thức. Kỹ năng do Nhân viên tự cập nhật hoặc được trích xuất từ CV chỉ được xem là thông tin chờ duyệt. Dữ liệu này chỉ trở thành hồ sơ năng lực chính thức sau khi Quản trị viên kiểm tra và xác nhận. Quy tắc này giúp bảo đảm dữ liệu đầu vào cho chức năng AI đề xuất phân công có độ tin cậy phù hợp.
+
+\subsection{Hiệu năng}
+\label{subsection:2.4.3}
+Các thao tác thường xuyên như đăng nhập, xem danh sách dự án, xem danh sách công việc, tra cứu hồ sơ nhân sự, xem hồ sơ năng lực và xem công việc được giao cần phản hồi trong thời gian phù hợp với thao tác quản trị thông thường. Giao diện không nên để người dùng phải chờ lâu đối với các thao tác chỉ đọc hoặc các thao tác cập nhật dữ liệu đơn giản.
+
+Một số xử lý có thể tốn nhiều thời gian hơn, chẳng hạn phân tích CV hoặc sinh danh sách nhân sự phù hợp bằng AI. Với các tác vụ này, hệ thống cần có cơ chế thông báo trạng thái xử lý rõ ràng để người dùng biết yêu cầu đang được thực hiện. Kết quả xử lý cần được lưu lại ở mức phù hợp để tránh tính toán lặp lại không cần thiết khi người dùng xem lại thông tin.
+
+\subsection{Tính dễ sử dụng}
+\label{subsection:2.4.4}
+Giao diện hệ thống cần thể hiện rõ vai trò người dùng, trạng thái dự án, trạng thái công việc, dữ liệu hồ sơ năng lực và kết quả phân công. Các màn hình nhập liệu như khởi tạo dự án, phân rã công việc, khai báo yêu cầu kỹ năng và xác nhận phân công cần có nhãn trường rõ ràng, thông báo lỗi cụ thể và hạn chế nhập sai định dạng.
+
+Do hệ thống phục vụ nhiều nhóm người dùng khác nhau, luồng thao tác cần được thiết kế theo đúng nghiệp vụ của từng vai trò. Quản trị viên cần dễ dàng kiểm tra và duyệt dữ liệu hồ sơ năng lực. Quản lý dự án cần nhanh chóng tìm được thông tin phục vụ phân công. Nhân viên cần theo dõi được công việc được giao, cập nhật trạng thái và ghi nhận thời gian thực hiện mà không phải thao tác qua nhiều bước không cần thiết.
+
+\subsection{Độ tin cậy}
+\label{subsection:2.4.5}
+Hệ thống cần bảo đảm các thao tác quan trọng được thực hiện nhất quán và có kết quả rõ ràng. Khi Quản lý dự án xác nhận phân công, hệ thống phải lưu kết quả phân công, cập nhật trạng thái liên quan và thêm nhân sự vào nhóm thành viên dự án nếu cần. Khi Nhân viên cập nhật trạng thái công việc hoặc ghi nhận thời gian thực hiện, hệ thống cần lưu dữ liệu đúng theo quy tắc nghiệp vụ đã xác định.
+
+Đối với chức năng AI đề xuất, hệ thống chỉ đóng vai trò hỗ trợ ra quyết định. Kết quả đề xuất không được tự động trở thành phân công chính thức nếu Quản lý dự án chưa xác nhận. Cách tổ chức này giúp giảm rủi ro khi kết quả đề xuất chưa phù hợp với bối cảnh thực tế của dự án hoặc khi Quản lý dự án có thêm thông tin ngoài hệ thống.
+
+\subsection{Khả năng bảo trì}
+\label{subsection:2.4.6}
+Mã nguồn cần được tổ chức theo các module nghiệp vụ chính như người dùng, hồ sơ nhân sự, dự án, công việc, phân công và AI đề xuất. Các quy tắc xử lý quan trọng, chẳng hạn kiểm tra quyền thao tác, kiểm tra dữ liệu kỹ năng, kiểm tra điều kiện phân công và ghi nhận thời gian thực hiện, cần được đặt ở tầng xử lý phù hợp để hạn chế lặp logic giữa nhiều màn hình.
+
+Thiết kế hệ thống cũng cần tạo điều kiện cho việc thay đổi hoặc mở rộng trong các phiên bản sau. Ví dụ, phần AI đề xuất nên được tách khỏi thao tác xác nhận phân công để có thể thay đổi thuật toán hoặc mô hình mà không làm ảnh hưởng lớn đến luồng nghiệp vụ chính. Tương tự, các danh mục như kỹ năng, nhóm kỹ năng, vị trí và phòng ban cần được quản lý theo cấu trúc rõ ràng để thuận tiện cho việc cập nhật khi dữ liệu tổ chức thay đổi.
+
+Tóm lại, Chương 2 đã trình bày kết quả khảo sát hiện trạng liên quan đến bài toán quản lý hồ sơ năng lực và phân công nhân sự trong dự án phần mềm. Qua việc phân tích hiện trạng nghiệp vụ, khảo sát các hệ thống quản lý công việc, quản lý dự án và hướng tiếp cận gợi ý phân công, chương đã xác định các khoảng trống chức năng mà hệ thống cần giải quyết. Trên cơ sở đó, chương đã mô tả tổng quan các nhóm chức năng, trình bày hệ thống use case, đặc tả chi tiết các use case quan trọng và xác định các yêu cầu phi chức năng làm nền tảng cho quá trình phân tích thiết kế ở các chương sau.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
