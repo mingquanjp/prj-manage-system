@@ -34,9 +34,9 @@ curl -s localhost:8080/api/healthz
 Tài khoản mẫu dùng chung mật khẩu `Password@123`:
 `admin` (Quản trị viên), `pm.hoa` (Quản lý dự án), `dev.an` (Nhân viên).
 
-> **Lưu ý về Neon**: `DATABASE_URL` phải trỏ tới endpoint **trực tiếp**, không phải
-> endpoint có `-pooler`. pgx dùng prepared statement nên không tương thích hoàn toàn
-> với transaction pooling, và migration cần advisory lock mà pooler không giữ được.
+> **Lưu ý về Neon**: nên dùng endpoint **trực tiếp** cho `DATABASE_URL`. Endpoint có
+> `-pooler` vẫn chạy được — migration tự chuyển sang endpoint trực tiếp vì cần advisory
+> lock mà PgBouncer không giữ được, còn runtime tự tắt prepared statement.
 
 Chạy `make help` để xem toàn bộ lệnh.
 
@@ -53,8 +53,12 @@ internal/
   matching/     engine chấm điểm đề xuất nhân sự
 migrations/     SQL migration
 db/seed/        SQL dữ liệu mẫu
-docs/           tài liệu phân tích thiết kế
+docs/           tài liệu phân tích thiết kế của đồ án (chỉ đọc)
+.claude/docs/   tài liệu kỹ thuật của dự án — nghiệp vụ, schema, API, bảo mật
 ```
+
+`CLAUDE.md` ở thư mục gốc là bản đồ dẫn tới các tài liệu trong `.claude/docs/`. Người mới
+vào dự án đọc file đó trước.
 
 Quy tắc phụ thuộc: `transport → service → repository → domain`. Gói `matching` không
 biết tới cơ sở dữ liệu hay HTTP, nhờ vậy thay thuật toán chấm điểm không ảnh hưởng
@@ -70,3 +74,4 @@ tới luồng nghiệp vụ.
 - [ ] **M5** — Engine đề xuất nhân sự (UC003.1)
 - [ ] **M6** — Vòng đời công việc và ghi nhận thời gian (UC004)
 - [ ] **M7** — Trích xuất kỹ năng từ CV
+- [ ] **M8** — Bảng ca kiểm thử, thống kê mã nguồn, đóng gói

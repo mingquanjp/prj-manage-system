@@ -50,7 +50,7 @@ internal/
   matching/                   scorer.go rules.go explain.go weights.go
   storage/                    interface lưu file CV + impl (M7)
   notify/                     tạo bản ghi notifications
-config/workcalendar.yaml      lịch làm việc chuẩn cho UC004
+  config/workcalendar.yaml    lịch làm việc chuẩn cho UC004, nằm cạnh config.go
 web/src/{pages,components,api,hooks,types}
 ```
 
@@ -78,6 +78,10 @@ tự ngủ khi không dùng; giữ connection quá lâu chỉ tổ nhận lỗi 
 - **Migration luôn đi endpoint trực tiếp.** `cmd/migrate` gọi `cfg.DirectURL()`, tự bỏ `-pooler`
   khỏi hostname. Lý do: golang-migrate cần advisory lock, PgBouncer ở chế độ transaction pooling
   không giữ được lock giữa các câu lệnh.
+- **`DATABASE_URL` trỏ vào endpoint nào cũng chạy được.** Code đã xử lý cả hai: migration tự chuyển
+  sang endpoint trực tiếp, còn runtime thì `IsPooledEndpoint()` bật `simpleProtocol` để tránh lỗi
+  prepared statement. Endpoint trực tiếp vẫn là **khuyến nghị** vì ít lớp trung gian hơn, nhưng
+  không phải điều kiện bắt buộc.
 - `sslmode=require` bắt buộc. `.env` nằm trong `.gitignore`; repo chỉ commit `.env.example`.
 - Branch `main` để phát triển, branch `test` cho integration test (`TEST_DATABASE_URL`).
 - **Hiệu năng (mục 2.4.3)**: free tier autosuspend sau ~5 phút, query đầu tiên cold start

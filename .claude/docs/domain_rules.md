@@ -82,6 +82,14 @@ PENDING_ASSIGNMENT ──phân công──▶ ASSIGNED ──nhân viên bắt �
   Neo: UC004 dữ liệu đầu vào #2.
 - `PENDING_REVIEW` là giá trị **bổ sung** so với tài liệu 4.2.3 — tài liệu cần cập nhật.
 
+**Cảnh báo về mức độ neo của sơ đồ trên.** Tài liệu chỉ đặc tả tường minh một bước duy nhất:
+`IN_PROGRESS → PENDING_REVIEW` (UC004 bước 5, cùng với "trạng thái hoàn tất tương đương").
+`PENDING_ASSIGNMENT → ASSIGNED` suy từ UC003 bước 13. Ba bước còn lại — `ASSIGNED → IN_PROGRESS`,
+`PENDING_REVIEW → DONE`, `PENDING_REVIEW → IN_PROGRESS` khi PM trả lại, và `DONE → CLOSED` — là
+**suy luận của nhóm phát triển**, không có use case nào mô tả. Chúng hợp lý và nhất quán với enum
+`task_status`, nhưng khi viết báo cáo phải bổ sung đặc tả cho chúng, nếu không hội đồng sẽ thấy
+sản phẩm có luồng mà tài liệu không nói tới. Đừng nới thêm bước mới mà không hỏi.
+
 ## 6. Phân công
 
 Khi PM xác nhận, các thao tác sau phải nằm **trong một transaction duy nhất** (UC003 bước 13–15,

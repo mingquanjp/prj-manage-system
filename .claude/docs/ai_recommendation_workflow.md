@@ -104,6 +104,15 @@ PerfScore = clamp(Σ estimate_hours / Σ actual_hours, 0, 1.2) / 1.2
 
 Đây là dữ liệu **tuỳ chọn** (UC003.1 đầu vào #5: "có thể không tồn tại với nhân sự mới").
 
+**Quy ước lưu trữ**: khi không có dữ liệu thì ghi `recommendation_items.perf_score = NULL`,
+**không ghi 0.5**. 0.5 là giá trị trung tính dùng *trong công thức*, không phải một quan sát thật.
+Ghi 0.5 xuống bảng sẽ không còn phân biệt được "người thực sự có hiệu suất trung bình" với "người
+chưa có dữ liệu nào" — mà Chương 5 cần đúng con số "bao nhiêu phần trăm ứng viên được chấm khi
+không có dữ liệu hiệu suất". Câu giải thích cũng sinh từ `perf_score IS NULL` thay vì so sánh với
+hằng số. Kết quả vẫn tái lập được vì `params` đã lưu quy ước "NULL thì dùng 0.5".
+
+`skill_score` và `workload_score` thì luôn `NOT NULL` — hai giá trị này luôn tính được.
+
 ### Bước 5 — Tổng hợp
 
 ```

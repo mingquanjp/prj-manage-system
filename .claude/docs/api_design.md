@@ -76,7 +76,8 @@ POST   /api/notifications/{id}/read
 # CV (M7)
 POST   /api/employees/{id}/cvs
 GET    /api/cv-extractions?status=PENDING_REVIEW
-POST   /api/cv-extractions/{id}/skills/{skill_id}/approve|reject
+POST   /api/cv-extractions/{extraction_id}/extracted-skills/{extracted_skill_id}/approve|reject
+       # extracted_skill_id là khoá của cv_extracted_skills, KHÔNG phải skills.skill_id
 ```
 
 ## 4. Ánh xạ lỗi sang HTTP status
