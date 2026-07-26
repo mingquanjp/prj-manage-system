@@ -92,6 +92,9 @@ Những điều **không được tự ý thay đổi hoặc giả định**:
 10. Trao đổi và bình luận code bằng **tiếng Việt**; định danh kỹ thuật (bảng, hàm, biến,
     endpoint) bằng **tiếng Anh**.
 11. **Quản lý nhánh** Trước khi thêm feature hay fix bug, luôn làm việc trên 1 branch mới. Không được commit thẳng lên main, bug thì nên được đặt là bug/[des], feature thì nên được đặt là feature/[des]
+12. **Bảo mật là ưu tiên xuyên suốt**, không phải việc làm thêm ở cuối. Từ chối mặc định; không
+    tin dữ liệu client gửi; không hardcode bí mật; không log token hay chuỗi kết nối. Đọc
+    `.claude/docs/security.md` **trước khi** làm auth, upload tệp, hoặc bất kỳ endpoint nào có `{id}`.
 
 ## 6. Additional Documentation
 
@@ -102,6 +105,7 @@ Những điều **không được tự ý thay đổi hoặc giả định**:
 | [.claude/docs/domain_rules.md](.claude/docs/domain_rules.md) | Trước khi viết bất kỳ logic nghiệp vụ nào — chứa đầy đủ ràng buộc và vòng đời trạng thái |
 | [.claude/docs/database_schema.md](.claude/docs/database_schema.md) | Khi viết truy vấn, migration, hoặc cần biết chỗ nào code cố ý lệch khỏi tài liệu |
 | [.claude/docs/roles_permissions.md](.claude/docs/roles_permissions.md) | Khi viết middleware, kiểm tra quyền, hoặc thêm endpoint mới |
+| [.claude/docs/security.md](.claude/docs/security.md) | **Trước khi** làm auth, upload tệp, truy vấn động, hoặc endpoint có `{id}` — checklist chống IDOR, SQL injection, rò rỉ bí mật |
 | [.claude/docs/project_task_assignment_workflow.md](.claude/docs/project_task_assignment_workflow.md) | Khi làm UC001 / UC002 / UC003 / UC003.2 / UC004 — có đủ luồng chính và luồng thay thế |
 | [.claude/docs/ai_recommendation_workflow.md](.claude/docs/ai_recommendation_workflow.md) | Khi làm UC003.1 và gói `internal/matching` — có công thức chấm điểm đầy đủ |
 | [.claude/docs/cv_extraction_approval_workflow.md](.claude/docs/cv_extraction_approval_workflow.md) | Khi làm M7 — luồng CV và những điểm tài liệu chưa đặc tả |
