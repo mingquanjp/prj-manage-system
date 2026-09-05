@@ -1,98 +1,59 @@
-# Kiến trúc mã nguồn
+# Kiến trúc mã nguồn — V1
 
-Neo tài liệu: mục 2.4.6 (Khả năng bảo trì) — "phần AI đề xuất nên được tách khỏi thao tác xác nhận
-phân công để có thể thay đổi thuật toán mà không làm ảnh hưởng lớn đến luồng nghiệp vụ chính".
+Thiết kế đích bám baseline; skeleton hiện tại chưa có service nghiệp vụ.
 
-## 1. Phân tầng
+## 1. Chiều phụ thuộc
 
-```
-transport (HTTP)  →  service  →  repository  →  domain
-                          ↓
-                      matching        (thuần hàm, không I/O)
-```
-
-Quy tắc phụ thuộc, **một chiều**:
-
-- `domain` không import gói nào khác trong dự án. Chỉ chứa entity, enum, và quy tắc nghiệp vụ thuần.
-- `repository` biết `domain` và pgx. Trả về struct của `domain`, không trả kiểu của pgx ra ngoài.
-- `service` điều phối use case và **quản lý transaction**. Không biết HTTP.
-- `transport` chỉ làm: parse request → validate định dạng → gọi service → map lỗi sang HTTP status.
-- `matching` nhận struct thuần từ `domain`, trả kết quả chấm điểm. **Không** biết DB, không biết HTTP.
-
-Sơ đồ này cũng chính là biểu đồ gói UML cần vẽ cho mục 4.1 của báo cáo.
-
-## 2. Cấu trúc thư mục
-
-Hiện có trong repo:
-
-```
-cmd/
-  server/main.go              wiring, đọc config, chạy HTTP server, graceful shutdown
-  migrate/main.go             up | down | drop | version
-  seed/main.go                nạp dữ liệu mẫu, idempotent
-internal/
-  config/config.go            đọc env + .env; IsPooledEndpoint(), DirectURL()
-  repository/postgres/db.go   NewPool(ctx, url, simpleProtocol)
-  transport/http/router.go    chi router, middleware, GET /api/healthz
-migrations/                   000001_init.up.sql / .down.sql + embed.go
-db/seed/                      01_reference.sql, 02_employee_skills.sql + embed.go
-web/                          rỗng — frontend chưa khởi tạo
+```text
+HTTP transport → service → domain
+                    ↓
+                 matching → domain
+PostgreSQL adapter → interface do service khai báo
+Composition root → transport + service + adapters
 ```
 
-Dự kiến bổ sung theo lộ trình:
+Sơ đồ là chiều import, không phải tất cả luồng gọi runtime.
+Domain và matching thuần dữ liệu, không DB/HTTP; matching chỉ trả đề xuất.
+Service điều phối use case, kiểm tra quyền/nghiệp vụ và transaction runner qua interface.
+Postgres adapter thực thi repository/transaction interface, không trả pgx type ra service.
+Transport parse/validate định dạng, gọi service, map DTO/lỗi theo quyền.
+Không dùng “service quản lý transaction” để buộc service import postgres adapter.
 
-```
-internal/
-  domain/{user,employee,skill,project,task,assignment}/
-  service/
-  repository/postgres/        thêm các repo cụ thể
-  transport/http/             thêm handler, middleware auth/rbac, dto, validate
-  matching/                   scorer.go rules.go explain.go weights.go
-  storage/                    interface lưu file CV + impl (M7)
-  notify/                     tạo bản ghi notifications
-config/workcalendar.yaml      lịch làm việc chuẩn cho UC004
-web/src/{pages,components,api,hooks,types}
-```
+## 2. Hiện trạng và thành phần đích
 
-Khi tạo package mới, đặt đúng tầng theo quy tắc trên. Nếu một logic không rõ thuộc tầng nào,
-mặc định đưa vào `service` — không bao giờ nhét vào handler.
+Hiện có cmd/server, cmd/migrate, cmd/seed; internal/config, repository/postgres/db.go, transport/http/router.go;
+migration 000001, seed; web chưa khởi tạo.
+Đích: domain, service, matching, adapters, DTO/auth middleware, storage.Provider, CV worker và workcalendar.
+Giữ Go + chi + pgx/PostgreSQL; SQL trực tiếp hiện tại, không tự thêm sqlc/query builder/parser dependency.
 
-## 3. Kết nối cơ sở dữ liệu
+Frontend Vite/React/TypeScript/Tailwind/shadcn/TanStack Query/React Router đã chọn, chưa khởi tạo.
+Build static nhúng embed.FS: một process, một port, cùng origin, không cần CORS.
+Auth vẫn JWT/refresh cookie và session check DB; cùng origin không loại bỏ CSRF.
 
-`postgres.NewPool(ctx, databaseURL, simpleProtocol bool)`.
+## 3. Transaction và snapshot
 
-Tham số `simpleProtocol` tắt prepared statement. Bật trong hai trường hợp:
+Unit of work cung cấp repository gắn cùng transaction.
+Confirm batch, approve request, transition/log, publish CV, project cancel/close là các transaction nghiệp vụ.
+Kiểm tra khóa/version phải phối hợp với thay role/status/skill/ownership; thứ tự khóa nhất quán, retry deadlock có giới hạn.
+Idempotency result ghi cùng transaction; không giữ transaction trong lúc người dùng xem draft.
+Recommendation đọc snapshot nhất quán (ví dụ repeatable-read), scorer chạy thuần trên snapshot, persist input/output.
+Không giữ transaction DB mở trong quá trình parse file hoặc chờ người duyệt.
 
-1. `DATABASE_URL` trỏ tới endpoint `-pooler` của Neon (PgBouncer transaction pooling tái dùng
-   connection giữa các transaction → prepared statement sinh lỗi "prepared statement already exists").
-2. Cần `Exec` một file SQL chứa **nhiều câu lệnh** — extended protocol chỉ chạy được một câu lệnh
-   mỗi lần gọi. Đây là lý do `cmd/seed` luôn truyền `true`.
+## 4. CV và lịch
 
-Pool: `MaxConns=10`, `MinConns=1`, `MaxConnIdleTime=2m`, `MaxConnLifetime=30m`. Idle ngắn vì Neon
-tự ngủ khi không dùng; giữ connection quá lâu chỉ tổ nhận lỗi khi compute tỉnh lại.
+CV local disk private qua storage.Provider; DB jobs do worker trong process nhận bằng lease.
+Retry giới hạn, trạng thái rõ; file/DB không atomic nên có cleanup/recovery.
+Work calendar nguồn cấu hình, snapshot immutable bền vững trong DB để phiên cũ còn tính được sau thay config.
+Notification nội bộ ghi DB cùng transaction, không cần email/push broker.
 
-## 4. Quy ước làm việc với Neon
+## 5. DB và vận hành
 
-- Cấu hình **duy nhất qua `DATABASE_URL`** → code chạy được với cả Neon lẫn Postgres local, không
-  hardcode Neon ở đâu cả.
-- **Migration luôn đi endpoint trực tiếp.** `cmd/migrate` gọi `cfg.DirectURL()`, tự bỏ `-pooler`
-  khỏi hostname. Lý do: golang-migrate cần advisory lock, PgBouncer ở chế độ transaction pooling
-  không giữ được lock giữa các câu lệnh.
-- `sslmode=require` bắt buộc. `.env` nằm trong `.gitignore`; repo chỉ commit `.env.example`.
-- Branch `main` để phát triển, branch `test` cho integration test (`TEST_DATABASE_URL`).
-- **Hiệu năng (mục 2.4.3)**: free tier autosuspend sau ~5 phút, query đầu tiên cold start
-  khoảng 0.5–1s. Phải nêu rõ điều này khi đo và bình luận số liệu trong báo cáo.
-- Dự phòng hôm bảo vệ: chuẩn bị Postgres chạy local, đổi `DATABASE_URL` là chạy offline được ngay.
+DATABASE_URL là cấu hình kết nối, không hardcode Neon.
+Migration dùng endpoint trực tiếp theo cmd/migrate; không chạy reset/drop DB thật để đồng bộ thiết kế.
+Cấu hình pool/protocol hiện có xem mã NewPool; không coi nhận định về pooling/độ trễ cũ là bảo đảm cho mọi phiên bản dịch vụ.
+Integration test dùng TEST_DATABASE_URL riêng, không tự trỏ DB phát triển thật.
+Cold/warm phải đo riêng; không dùng con số autosuspend/cold start cố định làm cam kết.
+Local Postgres là phương án dự phòng cần diễn tập cùng migration/config, không mặc định đã sẵn sàng.
 
-## 5. Đóng gói
-
-Frontend build static → nhúng vào binary Go bằng `embed.FS` → **một process, một port, không CORS**.
-Hệ quả cần nhớ khi làm auth: frontend và backend cùng origin, nên session cookie đủ dùng, không cần
-token đi kèm mỗi request.
-
-## 6. Xử lý lỗi và log
-
-- Log bằng `log/slog`. Không log chuỗi kết nối, mật khẩu, hay nội dung CV.
-- Lỗi nghiệp vụ định nghĩa ở `domain` (ví dụ `ErrProjectClosed`), service trả lên, transport map
-  sang HTTP status. Không dùng `panic` cho lỗi nghiệp vụ — `chi/middleware.Recoverer` chỉ là lưới an toàn.
-- Xem `api_design.md` để biết bảng ánh xạ lỗi → status code.
+Log slog có redaction; lỗi nghiệp vụ có mã, transport map HTTP, không panic.
+Health công khai trả trạng thái chung; chi tiết DB không trả err.Error() cho client.

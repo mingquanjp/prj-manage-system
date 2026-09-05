@@ -1,104 +1,81 @@
-# Thiết kế cơ sở dữ liệu
+# Thiết kế dữ liệu — hiện trạng và đích V1
 
-Nguồn chuẩn và trạng thái hiện tại của schema.
+## 1. Phân biệt nguồn
 
-## 1. Nguồn nào đáng tin
+- Hiện trạng mã migration: migrations/000001_init.up.sql, 22 bảng nghiệp vụ/15 enum.
+- Lượt kiểm tra DB trước ghi nhận version 1, dirty=false; không chứng minh mọi cột/constraint đúng chỉ từ version.
+- Thiết kế đích đã đồng ý: [baseline V1](../../docs/reviews/system-design-review-v1.md) và các tài liệu miền hiện hành.
+- DoAn.pdf/TeX trong docs/thesis-context là tài liệu gốc chỉ đọc, chưa đồng bộ V1.
 
-| Nguồn | Mức tin cậy |
+Không sửa migration 000001 đã áp dụng. Các thay đổi dưới đây CHƯA được tạo migration/chạy DB.
+Không ghi số thứ tự migration cố định trước khi chia dependency và kiểm tra dữ liệu thật.
+
+## 2. Hiện trạng 000001
+
+Users/employees/departments/positions; skills/categories/employee_skills;
+projects/project_members/task_groups/tasks/task_requirements;
+recommendation_runs/items; assignments/work_logs/comments/task_status_history;
+notifications; employee_cvs/cv_extractions/cv_extracted_skills.
+
+Hiện vẫn có parent_task_id/task_type, task group nullable, is_selected và work_date.
+Chưa có PAUSED/CANCELLED cho task; chưa có bảng yêu cầu riêng, session/refresh hoặc snapshot đầy đủ.
+Một số FK cascade có thể xóa chuỗi lịch sử. Không coi schema hiện tại đã bảo vệ đủ nghiệp vụ V1.
+
+## 3. Bảng/cột thiết kế đích
+
+| Miền | Thay đổi bắt buộc |
 |---|---|
-| `migrations/000001_init.up.sql` | **Sự thật của sản phẩm.** Đã chạy và kiểm chứng trên Neon |
-| `Hình 4.5` (ERD) và `Hình 4.6` (mô hình quan hệ) trong `DoAn.pdf` | **Nguồn chuẩn của tài liệu.** Là ảnh nhúng, chi tiết hơn hẳn file `.md` |
-| `docs/thesis-context/tex/4_Ket_qua_thuc_nghiem.tex` mục 4.2.3 | Bảng mô tả từng cột, khớp với hai hình trên |
-| `docs/thesis-context/Database Schema Specification ... .md` | ⚠️ **Bản tóm tắt thiếu cột.** Đừng dùng để kết luận "tài liệu chưa có cột X" |
+| User/employee | Tạo atomically; version cho dữ liệu cần chống ghi đè; cơ chế buộc đổi mật khẩu |
+| Official skills | Giữ unique employee/skill; approval actor/time bắt buộc; hiệu lực, version; không xóa khi REMOVE |
+| employee_skill_change_requests | request_id, employee_id, skill_id, ADD/UPDATE/REMOVE, MANUAL/CV, proposed/before values, base_version, evidence, extracted_skill_id, submitter/time, status, reviewer/time/reason |
+| employee_profile_change_requests | Trường đề nghị được allowlist, before/proposed, base_version, actor/time, quyết định/reason; không nhận role/status |
+| Projects | version, project_status_history; audit chuyển PM ghi owner cũ/mới/lý do |
+| Tasks | Group NOT NULL cùng project; bỏ parent_task_id/task_type; PAUSED/CANCELLED; version, spec_version, first_assigned_at, accepted_at |
+| Assignments | Append-only; run_id, item_id, adjust_reason, score server; truy vết task/employee/người xác nhận |
+| assignment_events | ASSIGN/REASSIGN/UNASSIGN, task, assignment cũ/mới, actor/time/reason |
+| Recommendation runs | engine_version, params, snapshot_at, spec_version, input_snapshot/output_snapshot JSONB có schema version; không chứa CV thô |
+| Recommendation items | Top-N/rank, skill/workload/perf/tổng, matched/missing, explanation; bỏ is_selected, lựa chọn suy từ assignment |
+| work_logs | assignment_id, task/employee, started_at, ended_at, valid_work_seconds, calendar_version, close_reason, history references; bỏ work_date |
+| Work calendar | Cấu hình nguồn có thể là file; snapshot bất biến lưu bền vững và truy xuất bằng version trong DB |
+| CV | cv_status thêm PENDING/REJECTED; tách processing_status và review_status; job lease/attempt/error code; suggested_level nullable |
+| auth_sessions | session_id, user_id, created_at, expires_at, revoked_at; hạn tuyệt đối 7 ngày |
+| refresh_tokens | hash unique, session_id, expiry/revoked/replacement; giữ token đã dùng để phát hiện reuse |
+| idempotency records | actor + operation + key unique, request hash, response/result; cùng transaction nghiệp vụ |
+| Audit | before/after có giới hạn dữ liệu, actor/time/reason cho spec, quyền, ownership; append-only |
 
-Hai hình trong PDF **mâu thuẫn nhau ở hai chỗ**: `Hình 4.5` có `TaskGroups` và
-`ProjectMembers.project_role`, `Hình 4.6` không có. Cách xử lý đã chốt ở mục 3 dưới đây.
+Tên vật lý/DDL cuối cùng cần được review khi viết migration; bảng trên là hợp đồng dữ liệu tối thiểu, không DDL đã chạy.
+Request skill terminal: APPROVED/REJECTED/WITHDRAWN; official update và quyết định cùng transaction.
+CV publication PENDING/ACTIVE/REPLACED/REJECTED/ARCHIVED;
+processing QUEUED/PROCESSING/SUCCEEDED/FAILED;
+review PENDING_REVIEW/APPROVED/PARTIALLY_APPROVED/REJECTED.
 
-Máy này không có `pdftotext`/`poppler`. Để đọc lại ảnh trong PDF, dùng ghostscript (`gs`) —
-xem memory `thesis-schema-source-of-truth`.
+## 4. Ràng buộc và nguồn sự thật
 
-## 2. Hiện trạng: 22 bảng, 15 enum
+- Unique project_code; unique task_code trong project; unique group_name trong project.
+- Composite FK tasks(project_id, task_group_id) → task_groups(project_id, task_group_id) với unique tương ứng.
+- Estimate >0; weight nguyên 1–5; ngày task cùng NULL hoặc đủ cặp, đúng thứ tự.
+- Task có ≥1 requirement và ngày trong project: service transaction, không CHECK truy vấn bảng khác.
+- Unique employee/skill chính thức; partial unique pending request/người/skill; extracted_skill_id liên kết request unique khi khác NULL.
+- Một CV ACTIVE/người bằng partial unique; xuất bản khóa hồ sơ người để tránh hai lần duyệt đồng thời.
+- Unique run/employee, run/rank; rank >0; mọi điểm persist 0–100.
+- Một assignment có run_id khác NULL cho mỗi run (partial unique); item phải khớp run/task/employee.
+- AI cần run/item/score; MANUAL item/score NULL, có thể có run và reason. Kiểm tra quan hệ và lý do trong service.
+- Một phiên mở/employee và /task bằng partial unique; end ≥ start; phiên đóng có seconds ≥0, phiên mở chưa có tổng.
+- current_assignee là nguồn người hiện tại; assignment/events là lịch sử. PENDING_ASSIGNMENT không người; trạng thái thực thi phải có người.
+- actual_hours là cache từ tổng seconds phiên đóng, không cộng giờ làm tròn từng đoạn; đối soát được.
+- Snapshot đầu vào scorer nhất quán trong một giao dịch đọc; confirm khóa/version kiểm tra điều kiện hiện hành.
+- Không API xóa vật lý entity có lịch sử; thay cascade nguy hiểm bằng RESTRICT/NO ACTION phù hợp, kiểm tra cả đường gián tiếp.
 
-**ENUM** — `user_system_role`, `user_status`, `employment_status`, `priority_level`,
-`project_status`, `task_status`, `skill_status`, `proficiency_level`, `join_source`,
-`assignment_type`, `cv_status`, `extraction_status`, `decision_status`, `change_source`,
-`skill_source`.
+## 5. Migration và backfill
 
-**Bảng theo nhóm:**
+1. Kiểm tra COUNT/null/duplicate/orphan/enum thật trên DB đích; không dùng ước lượng thống kê thay COUNT.
+2. Tách migrations theo auth → request/version → task/assignment/time → recommendation → CV, điều chỉnh theo FK.
+3. Add nullable/backfill/validate rồi mới NOT NULL/drop. Task group thiếu cần gán nhóm hợp lệ có kế hoạch.
+4. Official skill cũ thiếu approval cần phân loại, không tự gán ADMIN giả để vượt constraint.
+5. Work log cũ chỉ có ngày/giờ không thể tự suy start/end thật: giữ legacy/archive, không tạo lịch sử giả.
+6. Test up/down trên DB thử; rollback mất dữ liệu phải có backup/khôi phục, không quảng cáo down luôn an toàn.
+7. Sửa seed/test/OpenAPI/ERD cùng phiên bản sau khi DDL được duyệt.
 
-| Nhóm | Bảng |
-|---|---|
-| Tài khoản và nhân sự | `users`, `departments`, `positions`, `employees` |
-| Hồ sơ năng lực | `skill_categories`, `skills`, `employee_skills` |
-| Dự án và công việc | `projects`, `project_members`, `task_groups`, `tasks`, `task_requirements` |
-| Đề xuất nhân sự | `recommendation_runs`, `recommendation_items` |
-| Phân công và theo dõi | `assignments`, `work_logs`, `task_comments`, `task_status_history` |
-| Thông báo | `notifications` |
-| CV | `employee_cvs`, `cv_extractions`, `cv_extracted_skills` |
-
-Cộng bảng `schema_migrations` do golang-migrate tự tạo là 23 bảng trong CSDL.
-
-## 3. Chênh lệch có chủ đích so với tài liệu
-
-Mọi mục dưới đây đều là **quyết định đã duyệt**, kèm việc cần sửa lại trong báo cáo để tài liệu
-khớp sản phẩm.
-
-| Thay đổi | Lý do | Việc cần sửa trong báo cáo |
-|---|---|---|
-| Thêm bảng `task_groups` | `Hình 4.5` đã có, `Hình 4.6` thiếu. Gộp nhóm vào `tasks` bằng `task_type='GROUP'` sẽ khiến `estimate_hours NOT NULL`, `current_assignee_id`, `task_requirements`, `work_logs` vô nghĩa với dòng nhóm và phải thêm ~6 luật chặn | Bổ sung vào `Hình 4.6` và bảng liệt kê mục 4.2.3.3 |
-| Thêm `PENDING_REVIEW` vào `task_status` | UC004 bước 5 yêu cầu trạng thái "Chờ review" | Bổ sung vào enum ở mục 4.2.3 |
-| Thêm enum `skill_source` và các cột `source`, `approved_by_employee_id`, `approved_at` vào `employee_skills` | Chứng minh luận điểm "chỉ dùng hồ sơ đã duyệt" — trọng tâm đề tài (mục 2.4.2) | Bổ sung enum và ba cột |
-| Thêm `recommendation_runs`, `recommendation_items` | Lưu tham số và kết quả để tái lập, tránh tính lại (mục 2.4.3); cũng là dữ liệu đánh giá engine ở Chương 5 | Bổ sung vào mục 4.2.3.3 |
-| Thêm `assignments.recommendation_item_id` | Truy vết phân công về đúng đề xuất sinh ra nó | Bổ sung cột |
-| Thêm bảng `notifications` | Hậu điều kiện tường minh của UC003 bước 15 | Bổ sung vào mục 4.2.3.3 |
-| Thêm `work_logs.source` (`change_source`) | UC004 quy định hệ thống tự tính, không cho nhân viên nhập tuỳ ý | Bổ sung cột |
-| `user_system_role` đổi `HR` → `PM` | `HR` không xuất hiện ở bất kỳ use case nào; ba tác nhân Chương 2 là Quản trị viên / Quản lý dự án / Nhân viên | Sửa enum ở mục 4.2.3; sửa mục 2.15 "HR duyệt" → "Quản trị viên duyệt" |
-| `tasks.task_code` UNIQUE `(project_id, task_code)` thay vì UNIQUE toàn cục | UC002 chỉ nói "không trùng theo quy tắc của hệ thống" | Ghi rõ trong mô tả bảng `Tasks` |
-| Bỏ `ProjectMembers.project_role` | Có ở `Hình 4.5`, không có ở `Hình 4.6`, không use case nào dùng | Xoá khỏi `Hình 4.5` |
-| Không tạo bảng `Certificates` | Ngoài phạm vi UC001–UC004 | Bỏ "chứng chỉ" khỏi biểu đồ use case 2.2.3 / 2.2.4 / 2.2.6 |
-| Thêm bảng `refresh_tokens` (migration `000002`, M1) | Xác thực dùng JWT access + refresh xoay vòng; cần lưu bản băm để thu hồi được. Xem `roles_permissions.md` mục 4 | Bổ sung vào mục 4.2.3.3 |
-| Lịch làm việc để ở file config, không vào DB | UC004 alt 9a chỉ đòi "có cấu hình" | Nêu rõ trong Chương 4 |
-
-## 4. Quy ước đặt tên và kiểu dữ liệu
-
-- Tài liệu dùng PascalCase (`EmployeeSkills`), CSDL dùng snake_case (`employee_skills`). Ánh xạ 1-1,
-  không đổi ngữ nghĩa.
-- Khoá chính: `int GENERATED ALWAYS AS IDENTITY PRIMARY KEY`. Tên cột theo tài liệu
-  (`employee_id`, `task_id`, …), không dùng `id` trống.
-- `datetime` trong tài liệu → `timestamptz`. Bắt buộc, vì UC004 tính giờ theo lịch làm việc thật.
-- Enum dùng `CREATE TYPE ... AS ENUM` native của PostgreSQL, không dùng bảng tra cứu.
-- Tiền tệ/giờ: `decimal`, không dùng `float`. `estimate_hours`/`actual_hours` là `decimal(10,2)`;
-  các loại điểm là `decimal(5,2)` — nên `matching_score` lưu **theo thang 0–100**, không phải 0–1.
-- `updated_at` do trigger `set_updated_at()` tự cập nhật, áp cho 13 bảng có cột này. **Không** set
-  `updated_at` thủ công trong câu `UPDATE`.
-
-## 5. Ràng buộc quan trọng
-
-| Ràng buộc | Bảng | Ý nghĩa |
-|---|---|---|
-| `ck_projects_dates` | `projects` | `planned_end_date >= start_date` |
-| `uq_tasks_code` | `tasks` | UNIQUE `(project_id, task_code)` |
-| `ck_tasks_estimate` | `tasks` | `estimate_hours > 0` |
-| `ck_tasks_dates` | `tasks` | ngày kết thúc không nhỏ hơn ngày bắt đầu nếu nhập cả hai |
-| `ck_tasks_not_self_parent` | `tasks` | task không tự làm cha của chính nó |
-| `uq_task_groups_name` | `task_groups` | UNIQUE `(project_id, group_name)` |
-| `uq_employee_skills` | `employee_skills` | UNIQUE `(employee_id, skill_id)` |
-| `uq_task_requirements` | `task_requirements` | UNIQUE `(task_id, skill_id)` |
-| `ck_task_req_weight` | `task_requirements` | `weight > 0` |
-| `uq_project_members` | `project_members` | UNIQUE `(project_id, employee_id)` |
-| `uq_recommendation_items` | `recommendation_items` | UNIQUE `(run_id, employee_id)` |
-
-`ON DELETE CASCADE` chỉ dùng cho quan hệ sở hữu thật (task → requirement, project → task,
-extraction → extracted skill). Các FK trỏ tới `employees` cố ý **không** cascade để không mất vết
-lịch sử khi xoá nhân sự.
-
-## 6. Migration và seed
-
-- Migration chạy bằng golang-migrate **dạng thư viện** (`cmd/migrate`), file nhúng qua `embed.FS`.
-  Không cần cài CLI. Luôn đi endpoint trực tiếp, xem `architecture.md` mục 4.
-- Thêm thay đổi schema: tạo cặp file mới `000002_<tên>.up.sql` / `.down.sql`. **Không sửa
-  `000001`** khi đã áp dụng lên DB thật.
-- Seed (`make seed`) idempotent, chạy trong một transaction, nạp: 5 phòng ban, 10 chức danh,
-  8 nhóm kỹ năng, 51 kỹ năng, 20 tài khoản + hồ sơ nhân sự (1 ADMIN, 2 PM, 17 EMPLOYEE),
-  96 bản ghi năng lực đã đánh dấu duyệt. Mật khẩu chung `Password@123` — chỉ dùng cho môi trường
-  phát triển.
+Identity PK, snake_case, timestamptz; giờ/điểm decimal, thời lượng chuẩn lưu giây.
+Giữ trigger updated_at hiện có; version cập nhật atomically khác với timestamp.
+Seed Password@123 chỉ dev; không chạy seed/reset DB thật trong lượt cập nhật tài liệu này.

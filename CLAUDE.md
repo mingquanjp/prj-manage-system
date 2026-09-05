@@ -6,11 +6,14 @@ trước khi động vào miền đó.
 ## 1. Project Overview
 
 Hệ thống quản lý dự án, quản lý nhân sự, phân rã công việc và phân công công việc, trong đó
-AI đề xuất danh sách nhân sự phù hợp cho từng công việc dựa trên hồ sơ năng lực đã được duyệt.
-AI chỉ **đề xuất và giải thích**; Quản lý dự án là người xác nhận phân công cuối cùng.
+Engine dựa trên luật/công thức đề xuất nhân sự từ hồ sơ năng lực đã duyệt.
+Engine chỉ **đề xuất và giải thích**; Quản lý dự án xác nhận cuối cùng. Không bắt buộc mô hình ML.
 
 Đây là sản phẩm của một đồ án tốt nghiệp: mã nguồn phải bám sát use case Chương 2 và thiết kế
-CSDL mục 4.2.3 trong `docs/thesis-context/DoAn.pdf`, vì báo cáo và sản phẩm phải khớp nhau.
+CSDL mục 4.2.3 trong `docs/thesis-context/DoAn.pdf`, có cập nhật theo baseline V1 đã được người dùng đồng ý.
+**Thiết kế đích**: [baseline V1](docs/reviews/system-design-review-v1.md) và `.claude/docs/`.
+**Hiện trạng triển khai**: mã nguồn/migration hiện có; V1 chưa được chạy migration.
+Báo cáo gốc chỉ đọc, chưa đồng bộ V1; không dùng nội dung cũ để ghi đè quyết định mới.
 
 ## 2. Tech Stack
 
@@ -25,7 +28,7 @@ CSDL mục 4.2.3 trong `docs/thesis-context/DoAn.pdf`, vì báo cáo và sản p
 | CSDL | PostgreSQL trên **Neon** (serverless) | cấu hình duy nhất qua `DATABASE_URL` |
 | Hash mật khẩu | `golang.org/x/crypto/bcrypt` | dùng ở `cmd/seed` |
 | Log | `log/slog` (thư viện chuẩn) | |
-| Tài liệu API | **OpenAPI 3.1 viết tay** + Swagger UI nhúng tại `/api/docs`, chỉ bật khi `APP_ENV=dev` | đã chốt, chưa implement — xem `api_design.md` mục 0 |
+| Tài liệu API | **OpenAPI 3.1 viết tay** + Swagger UI nhúng tại `/api/docs`, chỉ bật khi `APP_ENV=dev` | đã chốt, chưa implement — xem `api_design.md` mục 3 |
 | Xác thực | **JWT access 15 phút + refresh token xoay vòng**, cả hai trong cookie HttpOnly | đã chốt, chưa implement — xem `roles_permissions.md` mục 4 |
 
 Đã chốt nhưng **chưa khởi tạo** (`web/` đang rỗng): Vite + React + TypeScript + Tailwind +
@@ -36,8 +39,9 @@ shadcn/ui + TanStack Query + React Router; build static rồi nhúng vào binary
 
 1. **Sinh mã truy vấn**: `sqlc` + `squirrel` mới nằm trong kế hoạch, **chưa có trong `go.mod`**.
    Hiện tại viết SQL trực tiếp bằng pgx. Đừng thêm dependency khi chưa hỏi.
-2. **Nơi lưu file CV** (chặn M7): local disk qua interface `storage.Provider` hay S3/MinIO.
-3. **Đa ngôn ngữ**: đang giả định chỉ tiếng Việt.
+2. **Thư viện parser CV**: cần review trước khi thêm dependency.
+   Nơi lưu đã chọn local disk private qua `storage.Provider`; PDF text/DOCX tối đa 10 MiB.
+3. **Ngôn ngữ**: UI tiếng Việt; CV Việt/Anh trong phạm vi thử nghiệm, không OCR.
 
 ## 3. Dev Commands
 
@@ -63,8 +67,8 @@ duy nhất hiện tại. Frontend: chưa có lệnh nào vì `web/` còn rỗng.
 - **Tasks** — `task_groups` (chỉ để gom nhóm) → `tasks` → `task_requirements` (kỹ năng, mức độ,
   trọng số, bắt buộc). Task là đơn vị được phân công duy nhất.
 - **Assignments** — kết quả phân công cuối cùng do PM xác nhận, kèm `assignment_type ∈ {AI, MANUAL}`.
-- **AI recommendation** — `recommendation_runs` + `recommendation_items` lưu Top-N kèm điểm thành
-  phần và câu giải thích, để tái lập được kết quả và đánh giá engine.
+- **Recommendation** — runs/items lưu input/output snapshot, điểm và giải thích; assignment là nguồn quyết định.
+- **Yêu cầu cập nhật** — tách profile/skill change requests khỏi hồ sơ chính thức trong thiết kế đích.
 - **CV extraction** — `employee_cvs` → `cv_extractions` → `cv_extracted_skills`; là dữ liệu **chờ
   duyệt**, không phải hồ sơ chính thức.
 - **Theo dõi thực hiện** — `work_logs` (giờ do hệ thống tự tính), `task_status_history`,
@@ -80,9 +84,9 @@ Những điều **không được tự ý thay đổi hoặc giả định**:
    giờ ước tính, không có yêu cầu kỹ năng.
 3. **Kỹ năng trích xuất từ CV phải được ADMIN duyệt** mới được ghi vào `employee_skills`. Engine
    đề xuất chỉ đọc bản ghi đã duyệt.
-4. **Phân quyền hai tầng**: RBAC theo `system_role`, cộng ABAC — mọi thao tác trên một dự án cụ
-   thể phải thoả `project.pm_employee_id == current_employee_id`.
-5. **Không đổi schema** khi chưa đối chiếu `Hình 4.5`/`Hình 4.6` trong `DoAn.pdf`. File
+4. **Phân quyền hai tầng**: RBAC theo `system_role` và ABAC: PM quản lý project của mình,
+   EMPLOYEE thực hiện task hiện được giao; ADMIN chỉ chuyển PM theo quyền riêng, không quản lý task.
+5. **Không đổi schema** khi chưa đối chiếu baseline V1 và `Hình 4.5`/`Hình 4.6` trong `DoAn.pdf`. File
    `docs/thesis-context/Database Schema Specification ... .md` là **bản tóm tắt thiếu cột**, không
    phải nguồn chuẩn.
 6. **Không tự chọn công nghệ** cho các mục TBD ở phần 2.
@@ -92,7 +96,7 @@ Những điều **không được tự ý thay đổi hoặc giả định**:
 9. Toàn bộ chuỗi ghi khi xác nhận phân công phải nằm **trong một transaction** (UC003 alt 16a).
 10. Trao đổi và bình luận code bằng **tiếng Việt**; định danh kỹ thuật (bảng, hàm, biến,
     endpoint) bằng **tiếng Anh**.
-11. **Quản lý nhánh** Trước khi thêm feature hay fix bug, luôn làm việc trên 1 branch mới. Không được commit thẳng lên main, bug thì nên được đặt là bug/[des], feature thì nên được đặt là feature/[des]
+11. **Quản lý nhánh** Trước khi thêm feature hay fix bug, luôn làm việc trên 1 branch mới. Không được commit thẳng lên main, bug thì nên được đặt là bug/[des], feature thì nên được đặt là feature/[des], nội dung commit thì ngắn gọn, phù hợp, tránh dài dòng
 12. **Bảo mật là ưu tiên xuyên suốt**, không phải việc làm thêm ở cuối. Từ chối mặc định; không
     tin dữ liệu client gửi; không hardcode bí mật; không log token hay chuỗi kết nối. Đọc
     `.claude/docs/security.md` **trước khi** làm auth, upload tệp, hoặc bất kỳ endpoint nào có `{id}`.

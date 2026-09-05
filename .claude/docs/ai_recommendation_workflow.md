@@ -1,146 +1,86 @@
-# Luồng AI đề xuất nhân sự (UC003.1)
+# Gợi ý nhân sự bằng luật và công thức — UC003.1
 
-Đây là chức năng trung tâm của đề tài. Đọc kèm `domain_rules.md` mục 1 (R1, R4).
+Thiết kế đích V1 đã đồng ý 2026-09-05. Không bắt buộc ML; tên file/enum AI giữ tương thích kỹ thuật.
+Đây là mô hình chấm điểm heuristic giải thích được, chưa được chứng minh tối ưu.
+Engine `internal/matching` thuần dữ liệu, không HTTP/DB.
 
-## 1. Định vị "AI" của đề tài
+## 1. Luồng và điều kiện
 
-Engine là **rule-based / knowledge-based recommender**: công thức tường minh, giải thích được,
-tái lập được. Cố ý **không** dùng LLM để xếp hạng, vì cần kết quả ổn định để đánh giá và cần nội
-dung định lượng cho Chương 5.
+PM chọn task PENDING_ASSIGNMENT cùng project mở, có estimate và requirements hợp lệ.
+Lấy snapshot nhất quán → lọc ứng viên → chấm điểm → Top-3 → PM chọn vào draft → UC003 xác nhận.
+Mỗi task có một run; batch xếp hạng độc lập cùng snapshot, không tối ưu phân công đồng thời.
+Draft hiển thị tổng tải sau các lựa chọn trước confirm, không tăng tải chính thức.
 
-Đây là lựa chọn có cơ sở học thuật: knowledge-based recommender không cần dữ liệu huấn luyện, phù
-hợp với bài toán cold-start của một tổ chức mới triển khai. Tài liệu đã trích dẫn
-`shafiq2021taskallocator` và `lamersdorf2013survey` cho hướng này (mục 2.1.3).
+Candidate pool toàn tổ chức: role EMPLOYEE, user/employee ACTIVE; chỉ kỹ năng chính thức còn hiệu lực.
+Thiếu hoặc dưới mức một mandatory → loại, không phạt thêm 0,7.
+Manual có thể override kỹ năng với lý do, không override trạng thái/vai trò.
+Không ứng viên hợp lệ → Top-N rỗng, không tự hạ điều kiện.
 
-Thành phần học máy / NLP thật của đề tài nằm ở **trích xuất kỹ năng từ CV** (M7) — xem
-`cv_extraction_approval_workflow.md`.
+## 2. Công thức phiên bản thử nghiệm
 
-Yêu cầu kiến trúc: engine đặt tại `internal/matching`, **không biết DB, không biết HTTP**. Đây là
-đòi hỏi trực tiếp của mục 2.4.6.
+Mã hóa BASIC=1, INTERMEDIATE=2, ADVANCED=3, EXPERT=4.
+Đây là mã hóa thang thứ bậc, không khẳng định tỷ lệ năng lực thực tế.
 
-## 2. Luồng use case
+```text
+s_i = min(employee_level_i / required_level_i, 1)  # thiếu optional: 0
+SkillScore = Σ(weight_i × s_i) / Σweight_i         # weight nguyên 1–5
 
-**Tiền điều kiện**: công việc đã có yêu cầu kỹ năng hợp lệ; hồ sơ năng lực chính thức đã được xác
-nhận; có nhân sự đang hoạt động.
+open_load = Σ estimate_hours của task hiện được giao
+            có trạng thái ASSIGNED/IN_PROGRESS/PAUSED/PENDING_REVIEW
+WorkloadScore = clamp(1 - open_load / 80, 0, 1)
 
-1. PM chọn phương thức AI đề xuất cho danh sách công việc đã chọn.
-2. Hệ thống lấy chi tiết từng công việc: **thời gian ước tính, mức độ ưu tiên, yêu cầu kỹ năng**.
-3. Lấy **hồ sơ năng lực chính thức** của nhân sự đang hoạt động.
-4. Lấy tình trạng tham gia dự án, **khối lượng công việc hiện tại**, **lịch sử hiệu suất** nếu có.
-5. Đánh giá mức độ phù hợp.
-6. Tính điểm phù hợp cho từng cặp (nhân sự, công việc).
-7. Xếp hạng và chọn **Top N**, minh hoạ bằng **Top 3**.
-8. Hiển thị kết quả.
-9. PM xem kết quả.
-10. PM chấp nhận Top-1 hoặc chọn người khác trong danh sách.
-11. Ghi nhận vào **bảng phân công dự kiến**.
-12. Chuyển về UC003 để PM xác nhận.
+PerfScore = 0.5 nếu < 3 mẫu hợp lệ
+PerfScore = clamp(Σestimate_hours / Σactual_hours, 0, 1.2) / 1.2 nếu đủ mẫu
 
-Luồng thay thế:
+Score = 0.7 × SkillScore + 0.2 × WorkloadScore + 0.1 × PerfScore
+matching_score = round_half_up(100 × Score, 2)
+```
 
-| Mã | Điều kiện | Xử lý |
+Lấy tối đa 10 task DONE/CLOSED gần nhất theo accepted_at (hòa theo task_id), actual > 0, chỉ một người thực hiện, estimate không đổi.
+Task nhiều người đóng góp không làm mẫu cá nhân. Dưới 3 mẫu giải thích rõ thiếu dữ liệu.
+80h là ngưỡng chuẩn hóa tải tồn đọng thử nghiệm; không đại diện lịch trống hai tuần.
+Không dùng estimate−actual làm remaining effort. PENDING_REVIEW vẫn giữ tải vì có thể bị trả lại, hiển thị riêng.
+Không bonus project member. Priority/deadline dùng hiển thị, không tuyên bố công thức bảo đảm deadline.
+
+Điểm nội bộ 0–1; API/DB tất cả điểm thành phần và tổng 0–100, hai chữ số.
+Phá hòa theo tổng đã làm tròn giảm dần → open_load tăng dần → employee_id tăng dần.
+Version hóa công thức, trọng số, ngưỡng, làm tròn, tie-break; alpha/beta/gamma không âm và tổng bằng 1, capacity > 0.
+Không làm tròn trung gian khi tính tổng.
+
+## 3. Kết quả và snapshot
+
+Hiển thị tên task, Top-N, điểm, kỹ năng đáp ứng, kỹ năng thiếu/dưới mức, tải (số task + giờ), giải thích.
+Run rỗng có lý do; giải thích không được khẳng định “đủ lịch” hoặc “năng suất thực tế”.
+Lưu engine_version, params, snapshot_at, task spec version; input snapshot toàn tập đã xét:
+trạng thái/role, skill/level/version, workload, các mẫu hiệu suất, lý do loại.
+Output bất biến gồm điểm thành phần, rank, matched/missing và explanation.
+Không sao chép CV thô/liên hệ vào snapshot. Params riêng không đủ replay.
+
+Khi confirm: task vẫn chờ giao, spec còn đúng, người được chọn còn active/đúng role và skill version chưa đổi.
+Skill/spec đổi → chạy lại hoặc manual có lý do; tải đổi → hiển thị tải mới, giữ nhãn thời điểm ranking.
+Cùng một run chỉ có tối đa một quyết định commit; run cũ sau thu hồi không được tái sử dụng nếu đã có quyết định.
+
+| Quyết định | assignment_type | Truy vết |
 |---|---|---|
-| 3a | Công việc chưa có yêu cầu kỹ năng | Báo chưa đủ điều kiện, **loại công việc đó khỏi danh sách đề xuất** |
-| 10a | PM không chấp nhận kết quả AI | Cho chuyển sang UC003.2 |
-| 11a | PM chọn người **khác Top-1** | **Bắt buộc nhập lý do điều chỉnh** |
-| 12a | Nhân sự được chọn không còn khả dụng | Báo lỗi, yêu cầu chọn lại, quay lại bước 8 |
+| Top-1 | AI | run_id, item_id, score từ server |
+| Hạng 2/3 | AI | như trên + adjust_reason |
+| Manual sau run | MANUAL | run_id, item_id/score NULL, adjust_reason |
+| Manual từ đầu | MANUAL | run/item/score NULL; lý do khi override |
 
-Alt 11a quan trọng gấp đôi: vừa là yêu cầu nghiệp vụ, vừa là nguồn dữ liệu đánh giá engine ở
-Chương 5 (tỉ lệ PM chấp nhận Top-1, và lý do khi không chấp nhận).
+Không dùng is_selected như nguồn ghi độc lập; lựa chọn suy từ assignment đã commit.
+Server kiểm tra item thuộc đúng run/task/employee, không nhận điểm/rank do client quyết định.
 
-## 3. Bảy trường đầu ra bắt buộc
+## 4. Vì sao phù hợp và phải đánh giá gì
 
-Màn hình kết quả phải hiển thị đủ, không thiếu trường nào:
+Kỹ năng là thành phần chính; tải là yếu tố điều chỉnh; dữ liệu thời gian ít tin cậy chỉ có trọng số nhỏ.
+Mandatory là điều kiện cứng nên điểm tải/hiệu suất không bù được thiếu bắt buộc.
+Đây là tính hợp lý về cấu trúc, chưa chứng minh bộ số 0,7/0,2/0,1, 80, 10, 3 tốt nhất.
 
-| # | Trường | Ví dụ trong tài liệu |
-|---|---|---|
-| 1 | Tên công việc | Thiết kế cơ sở dữ liệu |
-| 2 | Danh sách Top N nhân sự | Top 1: Trần Văn B |
-| 3 | Điểm phù hợp | 0.86/1 |
-| 4 | Kỹ năng đáp ứng | SQL – Khá |
-| 5 | Kỹ năng còn thiếu | Docker – Cơ bản |
-| 6 | Tải công việc hiện tại | Đang phụ trách 2 công việc |
-| 7 | Giải thích đề xuất | Phù hợp kỹ năng SQL và tải công việc hiện tại thấp |
+Phải so sánh skill-only, skill+workload và đủ ba thành phần trên bộ tình huống được người đánh giá độc lập gán mức phù hợp.
+Khảo sát độ nhạy trọng số/ngưỡng và cách mã hóa proficiency; tách tập hiệu chỉnh với tập đánh giá.
+Kiểm tra các ca rất ít dữ liệu, mọi người tải ≥80, mọi kỹ năng đều mandatory (SkillScore có thể bằng nhau).
+PerfScore bị ảnh hưởng estimate/độ khó/quên pause; không dùng để kết luận xếp hạng năng lực nhân sự.
 
-Bảy trường này ánh xạ trực tiếp vào các cột của `recommendation_items`.
-
-## 4. Công thức chấm điểm
-
-Quy đổi mức độ: `BASIC=1, INTERMEDIATE=2, ADVANCED=3, EXPERT=4`.
-
-### Bước 1 — Luật loại trừ (hard filter)
-
-- `employees.employment_status != ACTIVE` hoặc `users.status != ACTIVE` → loại.
-- **Thiếu hoàn toàn** một kỹ năng có `is_mandatory = true` → loại khỏi Top-N.
-  (Nhánh thủ công UC003.2 vẫn hiện người này kèm cảnh báo — bước 10 của UC003.2.)
-- Chỉ đọc `employee_skills` **đã duyệt** (`approved_at IS NOT NULL`). Quy tắc R3.
-
-### Bước 2 — Điểm khớp kỹ năng
-
-Với mỗi yêu cầu `i` của công việc:
-
-```
-s_i        = clamp(level_nhân_viên / level_yêu_cầu, 0, 1)     # đạt hoặc vượt đều = 1.0
-SkillScore = Σ(weight_i × s_i) / Σ(weight_i)                   ∈ [0, 1]
-```
-
-Nếu có kỹ năng bắt buộc mà **có nhưng chưa đủ mức**: `SkillScore ×= 0.7`.
-
-### Bước 3 — Điểm tải công việc
-
-```
-load(E)       = Σ estimate_hours các task của E ở trạng thái ASSIGNED | IN_PROGRESS | PENDING_REVIEW
-WorkloadScore = clamp(1 - load(E)/CAPACITY, 0, 1)              # CAPACITY mặc định 80h, để trong config
-```
-
-### Bước 4 — Điểm hiệu suất quá khứ
-
-Trên N task `DONE` gần nhất của nhân sự:
-
-```
-PerfScore = clamp(Σ estimate_hours / Σ actual_hours, 0, 1.2) / 1.2
-          = 0.5 (trung tính) nếu chưa có dữ liệu — phải nói rõ trong phần giải thích
-```
-
-Đây là dữ liệu **tuỳ chọn** (UC003.1 đầu vào #5: "có thể không tồn tại với nhân sự mới").
-
-### Bước 5 — Tổng hợp
-
-```
-Score          = α×SkillScore + β×WorkloadScore + γ×PerfScore    # α=0.7, β=0.2, γ=0.1 (config)
-matching_score = round(Score × 100, 2)                            # khớp decimal(5,2), thang 0–100
-```
-
-Bonus tuỳ chọn: đã là `project_members` của dự án → `+0.03`, cộng sau, cap ở 1.0.
-
-### Bước 6 — Sinh giải thích
-
-Từ template, ví dụ:
-
-> "Đáp ứng 4/5 kỹ năng yêu cầu. Thiếu Docker (yêu cầu Cơ bản). Đang phụ trách 2 công việc
-> (24h/80h). Chưa có dữ liệu hiệu suất."
-
-Giải thích là **bắt buộc** (`recommendation_items.explanation NOT NULL`), không được để rỗng.
-
-### Xếp hạng
-
-Sắp giảm dần theo `matching_score`. Khi bằng điểm, phải có tiêu chí phá hoà **tất định** (ví dụ
-`load` thấp hơn trước, rồi tới `employee_id` nhỏ hơn) để kết quả tái lập được — có test riêng cho
-tính ổn định của thứ tự.
-
-## 5. Lưu kết quả
-
-Mỗi lần PM bấm chạy đề xuất, mỗi công việc sinh **một** `recommendation_runs`:
-
-- `engine_version` — đổi mỗi khi công thức hoặc trọng số thay đổi.
-- `params jsonb` — lưu α, β, γ, CAPACITY, N. Có bộ tham số này thì tái lập được kết quả cũ.
-- `generated_by_employee_id`, `generated_at`.
-
-Mỗi ứng viên trong Top-N là một `recommendation_items` với đủ điểm thành phần (`skill_score`,
-`workload_score`, `perf_score`), `matched_skills`/`missing_skills` dạng jsonb, `current_workload`,
-`explanation`, và `is_selected`.
-
-Khi PM xác nhận phân công, `assignments.recommendation_item_id` trỏ về đúng dòng đã chọn và
-`assignment_type = AI`. Nhờ vậy Chương 5 tính được tỉ lệ PM chọn đúng Top-1.
-
-Lưu kết quả cũng là để **tránh tính lại** khi PM xem lại — yêu cầu tường minh của mục 2.4.3.
+Tỷ lệ chấp nhận Top-1/Top-3: mẫu số là quyết định commit có run không rỗng, gồm cả chuyển manual; tách giao đầu và giao lại.
+Run bỏ dở/chạy lại không tính là từ chối; báo riêng run rỗng.
+Đo chất lượng Top-K theo nhãn độc lập, thời gian chạy và độ ổn định. Unit test đúng công thức không chứng minh chất lượng gợi ý.

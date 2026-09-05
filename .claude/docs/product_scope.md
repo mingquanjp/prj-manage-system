@@ -1,78 +1,44 @@
-# Phạm vi sản phẩm
+# Phạm vi sản phẩm — baseline V1
 
-Nguồn: `docs/thesis-context/tex/2_Khao_sat.tex` (Chương 2) và `4_Ket_qua_thuc_nghiem.tex` (mục 4.2).
+Đã được người dùng đồng ý ngày 2026-09-05. Đây là thiết kế đích, không phải danh sách chức năng đã implement.
+Chi tiết và truy vết D01–D38: [baseline V1](../../docs/reviews/system-design-review-v1.md).
+Tài liệu gốc trong `docs/thesis-context/` chỉ đọc; các điểm khác phải được cập nhật vào bản báo cáo làm việc sau.
 
-## 1. Bài toán
+## 1. Mục tiêu
 
-Trong các nhóm phát triển phần mềm vừa và nhỏ, thông tin năng lực nằm rải rác ở CV, trao đổi nội
-bộ và trí nhớ của Quản lý dự án (mục 2.1.2). Hệ quả: phân công dựa vào kinh nghiệm cá nhân, dễ bỏ
-sót người phù hợp, và dữ liệu kỹ năng tự khai thiếu kiểm chứng.
+Một tổ chức, giao diện tiếng Việt: hồ sơ năng lực đã duyệt → yêu cầu task → gợi ý/tra cứu → PM xác nhận → thực hiện và nghiệm thu.
+Gợi ý dùng luật và công thức chấm điểm giải thích được; không bắt buộc mô hình học máy.
+Không tuyên bố công thức tối ưu khi chưa có thực nghiệm. Tên kỹ thuật `AI` trong enum/file cũ là nhãn tương thích cho nhánh gợi ý, không chứng minh sử dụng ML.
 
-Hệ thống giải quyết đúng khoảng trống đó: gom ba nguồn dữ liệu — **hồ sơ năng lực đã được duyệt**,
-**yêu cầu kỹ năng chi tiết của từng công việc**, **dữ liệu thực hiện thực tế** — để hỗ trợ PM ra
-quyết định phân công.
+## 2. Tác nhân và chức năng
 
-Hệ thống **không** nhằm thay thế Jira hay Microsoft Project. Không làm tối ưu lịch biểu, không cân
-bằng tài nguyên toàn doanh nghiệp, không dự báo năng lực dài hạn (mục 2.1.4).
-
-## 2. Tác nhân
-
-| Tác nhân | Vai trò trong hệ thống |
+| Actor | Chức năng và ranh giới |
 |---|---|
-| Quản trị viên (ADMIN) | Quản lý tài khoản và phân quyền; quản lý danh mục nền; quản lý hồ sơ nhân sự; **duyệt dữ liệu năng lực và kết quả trích xuất CV** |
-| Quản lý dự án (PM) | Khởi tạo dự án, phân rã công việc, khai báo yêu cầu kỹ năng, tra cứu nhân sự, phân công, theo dõi tiến độ, đóng dự án |
-| Nhân viên (EMPLOYEE) | Hồ sơ cá nhân, gửi yêu cầu cập nhật, xem và cập nhật công việc được giao |
+| ADMIN | Tạo tài khoản kèm hồ sơ, danh mục, duyệt hồ sơ/kỹ năng/CV, khóa tài khoản, chuyển PM có audit; không mặc định đọc toàn bộ nội dung dự án |
+| PM | Quản lý dự án của mình, tra cứu năng lực chính thức toàn tổ chức, phân công, nghiệm thu; không duyệt năng lực |
+| EMPLOYEE | Hồ sơ của mình, gửi yêu cầu sửa/CV, thực hiện task hiện được giao; là vai trò duy nhất nhận task |
 
-## 3. Nhóm chức năng (mục 2.2)
+Mỗi tài khoản một vai trò. Project → TaskGroup → Task, không cây task nhiều cấp.
+Gồm yêu cầu cập nhật hồ sơ và kỹ năng riêng, vòng đời dự án/task, pause/resume, trả việc, thay người/thu hồi, thông báo nội bộ, tính giờ theo lịch và trích xuất CV có duyệt.
 
-1. Đăng nhập và quản lý tài khoản — tạo, cập nhật, khoá, mở, phân quyền.
-2. Quản lý hồ sơ nhân sự — thêm/sửa/vô hiệu hoá hồ sơ, xem hồ sơ năng lực, cập nhật kỹ năng và CV.
-3. Quản lý hồ sơ cá nhân — nhân viên gửi **yêu cầu** cập nhật, không sửa trực tiếp hồ sơ chính thức.
-4. Quản lý dự án — khởi tạo, phân rã công việc, xác định yêu cầu kỹ năng, phân công, theo dõi, đóng dự án.
-5. Tra cứu hồ sơ nhân sự — thông tin nhân sự, CV, hồ sơ năng lực, lịch sử tham gia dự án.
-6. Phân công công việc — thủ công hoặc bằng AI đề xuất, luôn kết thúc bằng bước PM xác nhận.
-7. Quản lý công việc được giao — xem, cập nhật trạng thái, ghi nhận thời gian, trao đổi.
+## 3. Ngoài phạm vi
 
-## 4. Use case được đặc tả chi tiết
+Chứng chỉ riêng, đa tổ chức, PM kiêm người thực thi, task dependency, tối ưu lịch/nguồn lực theo ngày, nghỉ phép, chấm công/lương, overtime, OCR, tự động giao việc, email/push và mở lại task đã nghiệm thu hoặc project terminal.
+Tải công việc là tải tồn đọng, không phải khả năng đáp ứng deadline.
 
-| Mã | Tên | Tác nhân | Tài liệu |
-|---|---|---|---|
-| UC001 | Khởi tạo dự án | PM | mục 2.3.1 |
-| UC002 | Phân rã dự án thành công việc | PM | mục 2.3.2 |
-| UC003 | Phân công công việc | PM | mục 2.3.3 |
-| UC003.1 | Phân công bằng AI đề xuất | PM | mục 2.3.4 |
-| UC003.2 | Phân công thủ công | PM | mục 2.3.5 |
-| UC004 | Ghi nhận thời gian thực hiện | Nhân viên | mục 2.3.6 |
+## 4. Lộ trình và hiện trạng
 
-Các chức năng hỗ trợ (đăng nhập, xem, tra cứu đơn giản) cố ý không đặc tả riêng trong tài liệu —
-khi implement thì bám theo yêu cầu phi chức năng mục 2.4.
-
-## 5. Cố ý nằm ngoài phạm vi
-
-| Hạng mục | Lý do |
+| Mốc | Nội dung thiết kế đích |
 |---|---|
-| Quản lý **chứng chỉ** (`Certificates`) | Xuất hiện trong biểu đồ 2.2.3/2.2.4/2.2.6 nhưng không thuộc UC001–UC004. Cần **xoá khỏi báo cáo** cho khớp sản phẩm |
-| Bảng riêng cho yêu cầu cập nhật kỹ năng tự khai | Dùng chính `employee_skills` với `approved_at IS NULL` để biểu diễn trạng thái chờ duyệt |
-| Lịch làm việc chuẩn lưu trong DB | UC004 alt 9a chỉ đòi "có cấu hình". Đặt ở `config/workcalendar.yaml` |
-| `ProjectMembers.project_role` | Có trong `Hình 4.5`, không có trong `Hình 4.6`, không use case nào dùng |
+| M0 | Skeleton và migration 000001 hiện có; chưa có service nghiệp vụ |
+| M1 | JWT/refresh/session revocation, CSRF, RBAC/ABAC, tài khoản kèm nhân sự, đổi/reset mật khẩu |
+| M2 | Danh mục; yêu cầu hồ sơ/kỹ năng; phê duyệt có version/audit |
+| M3 | UC001/UC002, nhóm–task, requirements; start/complete/close/cancel project |
+| M4 | UC003/UC003.2, batch atomic, reassign/unassign và retry an toàn |
+| M5 | UC003.1, công thức Top-3, snapshot và truy vết quyết định |
+| M6 | UC004, pause/resume/review, phiên làm việc không chồng lấn |
+| M7 | PDF text/DOCX → trích xuất dựa trên luật → duyệt CV và kỹ năng độc lập |
+| M8 | Kiểm thử liên miền, đánh giá công thức, đồng bộ báo cáo và đóng gói |
 
-## 6. Lộ trình
-
-| Mốc | Nội dung | Tiêu chí xong |
-|---|---|---|
-| **M0** ✅ | Skeleton Go, kết nối Neon, migration 22 bảng + 15 enum, config, logger, seed | `make migrate-up` + `make seed` + `/api/healthz` trả 200 |
-| **M1** | Xác thực, middleware RBAC + ABAC, CRUD tài khoản, khoá/mở | Đăng nhập 3 vai trò; gọi API sai quyền trả 403 |
-| **M2** | Danh mục nền, hồ sơ nhân sự, hồ sơ năng lực, **luồng duyệt kỹ năng** | ADMIN duyệt xong `employee_skills` mới có `approved_at` |
-| **M3** | UC001 + UC002 | Tạo được cây công việc, task mặc định `PENDING_ASSIGNMENT` |
-| **M4** | UC003 + UC003.2 | Phân công thủ công chạy đủ luồng chính + 15a/15b |
-| **M5** | UC003.1 + engine `matching` + màn hình Top-3 | Unit test engine xanh, hiển thị đủ 7 trường đầu ra |
-| **M6** | UC004, `task_status_history`, tính giờ theo `workcalendar.yaml` | Đổi trạng thái sinh đúng số giờ, loại trừ nghỉ trưa và ngoài giờ |
-| **M7** | Trích xuất CV → duyệt → vào hồ sơ chính thức | Upload 1 CV thật, duyệt xong thấy kỹ năng `source=CV` |
-| **M8** | Bảng ca kiểm thử, thống kê mã nguồn, đóng gói, viết Chương 3 / 4.1 / 4.5 | Có số liệu điền vào báo cáo |
-
-M0–M6 là MVP. M7 vẫn nằm trong đồ án vì đó là phần học máy thật của đề tài.
-
-## 7. Việc cần sửa phía tài liệu
-
-Những chỗ sản phẩm cố ý lệch khỏi báo cáo, người viết báo cáo phải cập nhật ngược lại — xem
-`database_schema.md` mục "Chênh lệch so với tài liệu" để có danh sách đầy đủ.
+M1–M6 là lõi; bản đồ án đầy đủ gồm M7–M8. Không coi M7 là “phần học máy bắt buộc”.
+Local disk private qua storage interface đã chọn cho V1; thư viện parser cần kiểm tra và duyệt trước khi thêm.

@@ -1,119 +1,97 @@
-# Quy tắc nghiệp vụ
+# Quy tắc nghiệp vụ — baseline V1
 
-Đọc file này **trước khi viết bất kỳ logic nghiệp vụ nào**. Mọi quy tắc ở đây đều có neo vào tài
-liệu; phần nào không có neo được ghi rõ là suy ra hoặc TBD.
+Thiết kế đích đã đồng ý 2026-09-05. [Quyết định và truy vết](../../docs/reviews/system-design-review-v1.md).
+Schema 000001 chưa đáp ứng toàn bộ; xem `database_schema.md`.
 
-## 1. Quy tắc bất biến
+## 1. Bất biến
 
-Bốn quy tắc dưới đây là trọng tâm của đề tài. Không được nới lỏng, không được đi tắt.
+- R1: Engine chỉ gợi ý; chỉ PM phụ trách dự án được xác nhận phân công.
+- R2: Task là đơn vị phân công duy nhất. Group chỉ gom nhóm.
+- R3: Tra cứu và engine chỉ dùng kỹ năng chính thức đã duyệt, còn hiệu lực.
+- R4: Một batch hoặc ghi toàn bộ hoặc không ghi gì; draft không đặt chỗ.
+- R5: Mọi thay đổi trạng thái/người phụ trách/năng lực giữ audit; không API xóa vật lý lịch sử.
+- R6: Một EMPLOYEE chỉ có một task IN_PROGRESS và một phiên mở trên toàn hệ thống.
+- R7: Quyền, version và điều kiện cuối phải kiểm tra trong transaction có kiểm soát cạnh tranh.
 
-**R1 — AI chỉ đề xuất, không tự phân công.**
-Kết quả UC003.1 chỉ đi vào *bảng phân công dự kiến*. Bản ghi `assignments` chỉ được tạo ở bước xác
-nhận của PM trong UC003. Neo: mục 2.4.5, UC003.1 bước 12.
+## 2. Tài khoản và năng lực
 
-**R2 — Task là đơn vị phân công duy nhất.**
-`task_groups` chỉ để gom nhóm: không có người phụ trách, không có giờ ước tính, không có yêu cầu kỹ
-năng, không xuất hiện trong bất kỳ truy vấn phân công nào. Neo: UC002 bước 7–8.
+Tạo user + employee trong một transaction. Cả user và employee phải ACTIVE để sử dụng API nghiệp vụ.
+Chỉ role EMPLOYEE active được nhận việc. Không hạ quyền/vô hiệu hóa ADMIN active cuối cùng.
+Chặn đổi role nếu còn task mở của EMPLOYEE hoặc dự án mở do PM phụ trách; khóa khẩn cấp vẫn được phép, liệt kê việc cần bàn giao.
 
-**R3 — Kỹ năng phải được duyệt mới thành hồ sơ chính thức.**
-Kỹ năng nhân viên tự khai hoặc trích xuất từ CV chỉ là dữ liệu chờ duyệt. Engine đề xuất và chức
-năng tra cứu **chỉ đọc bản ghi đã duyệt**. Neo: mục 2.4.2, UC003.1 dữ liệu đầu vào #3.
+`employee_skills` unique người/kỹ năng chỉ lưu chính thức; giữ phiên bản và trạng thái hiệu lực, đầy đủ người/ngày duyệt.
+`employee_skill_change_requests`: ADD/UPDATE/REMOVE, MANUAL/CV; PENDING → APPROVED/REJECTED/WITHDRAWN.
+Một pending/người/kỹ năng; duyệt kiểm tra version, ghi quyết định và cập nhật chính thức atomically.
+Pending không thay giá trị đang dùng. Reject/remove bắt buộc lý do. ADMIN nhập trực tiếp cũng qua service này với audit.
 
-**R4 — Quyết định cuối cùng thuộc về Quản lý dự án.**
-Kể cả khi Top-1 rõ ràng vượt trội, hệ thống vẫn phải để PM chọn và xác nhận. Neo: mục 2.1.5, 2.4.5.
+`employee_profile_change_requests` chỉ cho tên/email/điện thoại; không nhận role, trạng thái, phòng ban, chức danh qua yêu cầu cá nhân.
+Duyệt kiểm tra version và email unique. Các trường quản trị chỉ ADMIN thay đổi.
 
-## 2. Tài khoản và nhân sự
+Rubric BASIC: có hướng dẫn; INTERMEDIATE: độc lập việc thường gặp; ADVANCED: xử lý phức tạp; EXPERT: thiết kế/định hướng/hỗ trợ người khác.
+Không tự suy mức từ số năm hoặc từ tên kỹ năng trong CV.
+Skill catalog INACTIVE chặn sử dụng mới, không tự thu hồi năng lực đã duyệt.
+Task chưa từng giao phải thay skill inactive trước giao; task từng giao giữ requirements cũ và cảnh báo khi giao lại.
 
-- Mỗi `employees` gắn với đúng một `users` (`user_id UNIQUE`). Không có nhân viên không tài khoản
-  và ngược lại.
-- `users.status`: `ACTIVE` | `LOCKED` | `DISABLED`. Chỉ `ACTIVE` mới đăng nhập được.
-- `employees.employment_status`: `ACTIVE` | `INACTIVE` | `RESIGNED`.
-- Nhân sự chỉ được **chọn để phân công** khi `employment_status = ACTIVE` **và** `users.status = ACTIVE`.
-  Neo: UC003.2 alt 10a, UC003 bước 12.
-- Nhân viên không được tự sửa `employee_skills` đã duyệt. Neo: mục 2.4.1.
+## 3. Dự án và task
 
-## 3. Hồ sơ năng lực
+Project code unique toàn hệ thống; ngày kết thúc ≥ ngày bắt đầu. PM tạo tự làm chủ.
+Mỗi task bắt buộc thuộc một group cùng project, mã unique trong project, estimate > 0, ít nhất một requirement.
+Tạo task và requirements cùng transaction. Requirement unique task/skill, weight nguyên 1–5, required level 1–4.
+Ngày task hoặc cùng trống hoặc cùng có, đúng thứ tự và trong ngày project; sửa ngày project không làm task ra ngoài.
+Không chuyển task sang project khác. Chuyển group trong cùng project có audit, chỉ task chưa kết thúc.
 
-- `employee_skills` UNIQUE `(employee_id, skill_id)` — mỗi người mỗi kỹ năng một bản ghi.
-- `source ∈ {MANUAL, CV}` cho biết dữ liệu đến từ đâu.
-- **Đã duyệt** ⇔ `approved_by_employee_id IS NOT NULL AND approved_at IS NOT NULL`. Đây là điều kiện
-  lọc bắt buộc của engine đề xuất và của mọi màn hình tra cứu năng lực.
-- Người duyệt phải có `system_role = ADMIN`. Neo: mục 2.1.2, 2.2.3.
-- `skills.status = INACTIVE` thì không được chọn làm yêu cầu kỹ năng mới. Neo: UC002 alt 13d.
+| Project transition | Điều kiện |
+|---|---|
+| Tạo → PLANNING | PM |
+| PLANNING → IN_PROGRESS | PM, có ít nhất một task ASSIGNED |
+| IN_PROGRESS → COMPLETED | PM xác nhận, có ≥1 DONE, mọi task còn lại DONE/CANCELLED |
+| COMPLETED → CLOSED | PM; DONE → CLOSED cùng transaction |
+| PLANNING/IN_PROGRESS → CANCELLED | PM có lý do; đóng phiên, hủy task chưa DONE, giữ DONE |
 
-## 4. Dự án
+PLANNING cho phân rã/phân công nhưng không start task; IN_PROGRESS cho thực thi.
+COMPLETED chỉ xem/đóng; CLOSED/CANCELLED chỉ đọc, không mở lại.
+Tiến độ = số DONE/CLOSED chia số task không CANCELLED; mẫu số 0 hiển thị chưa có task hiệu lực, không tự hoàn thành project.
 
-- `projects.status`: `PLANNING` | `IN_PROGRESS` | `COMPLETED` | `CLOSED` | `CANCELLED`.
-  Mặc định khi tạo: `PLANNING`. Neo: UC001 bước 6.
-- `project_code` UNIQUE toàn hệ thống. Neo: UC001 alt 9b.
-- `planned_end_date >= start_date`. Neo: UC001 dữ liệu đầu vào #5, ràng buộc `ck_projects_dates`.
-- Người tạo dự án tự động thành `pm_employee_id`. Neo: UC001 bước 6.
-- Dự án ở `COMPLETED` hoặc `CLOSED` **không cho phân rã công việc mới và không cho phân công mới**.
-  Neo: UC002 alt 5a, UC003 alt 5a.
-- `project_members` UNIQUE `(project_id, employee_id)`, `join_source ∈ {MANUAL, FROM_ASSIGNMENT}`.
+| Task transition | Actor và tác động |
+|---|---|
+| Tạo → PENDING_ASSIGNMENT | PM, chưa tính giờ |
+| PENDING_ASSIGNMENT → ASSIGNED | PM confirm |
+| ASSIGNED/PAUSED → IN_PROGRESS | Người đang được giao; project IN_PROGRESS; mở phiên |
+| IN_PROGRESS → PAUSED | Người được giao, lý do; đóng phiên |
+| IN_PROGRESS → PENDING_REVIEW | Người được giao nộp; đóng phiên |
+| PENDING_REVIEW → ASSIGNED | PM trả có lý do; không mở phiên |
+| PENDING_REVIEW → DONE | PM nghiệm thu, lưu accepted_at |
+| DONE → CLOSED | Cùng lúc đóng project |
+| PENDING_ASSIGNMENT/ASSIGNED/IN_PROGRESS/PAUSED/PENDING_REVIEW → CANCELLED | PM có lý do; đóng phiên nếu có |
 
-## 5. Công việc
+Thu hồi: ASSIGNED/IN_PROGRESS/PAUSED → PENDING_ASSIGNMENT, xóa current assignee.
+Thay người: các trạng thái trên → ASSIGNED với assignment mới; đóng phiên người cũ.
+PENDING_REVIEW phải trả lại trước khi thay người/thu hồi. Không reopen DONE.
+Estimate/requirements đóng băng sau lần giao đầu, kể cả đã thu hồi; không sửa mô tả để lách thay đổi scope.
+Scope mới tạo task mới và hủy task cũ khi phù hợp. Ghi chú làm rõ không đổi scope được phép, có audit.
 
-- `task_code` UNIQUE theo `(project_id, task_code)` — trùng mã giữa hai dự án khác nhau là hợp lệ.
-- `estimate_hours > 0`, bắt buộc. Neo: UC002 alt 13e, ràng buộc `ck_tasks_estimate`.
-- Nếu nhập cả hai ngày thì `planned_end_date >= planned_start_date`. Neo: UC002 alt 13c.
-- **Mỗi task phải có ít nhất một `task_requirements`** mới đủ điều kiện phân công. Neo: UC002 alt 13b,
-  UC003 tiền điều kiện, UC003.1 alt 3a.
-- `task_requirements`: UNIQUE `(task_id, skill_id)`, `weight > 0`, `is_mandatory` mặc định `false`.
+## 4. Phân công, quyền và lịch sử
 
-### Vòng đời trạng thái công việc
+Batch cùng project, không trùng task. Kiểm tra PM, task, candidate, spec/skill version và run; khóa/version phối hợp mọi đường cập nhật liên quan.
+Ghi assignments + current assignee/status + membership + history/events + notifications trong một transaction.
+Lỗi một dòng rollback toàn bộ, trả danh sách lỗi; retry với idempotency key không tạo lại.
+MANUAL cho override thiếu/dưới mức mandatory với cảnh báo và lý do; không override role/status.
+AI chọn hạng khác Top-1 bắt buộc lý do; chuyển manual sau run lưu run_id + lý do.
 
-```
-PENDING_ASSIGNMENT ──phân công──▶ ASSIGNED ──nhân viên bắt đầu──▶ IN_PROGRESS
-                                                                      │
-                                                       nhân viên nộp  ▼
-                                                                PENDING_REVIEW
-                                                                 │         │
-                                                        PM duyệt ▼         ▼ PM trả lại
-                                                               DONE    IN_PROGRESS
-                                                                 │
-                                                        PM đóng  ▼
-                                                              CLOSED
-```
+Assignments append-only. Assignment events ASSIGN/REASSIGN/UNASSIGN; history lưu cả chuyển người không đổi trạng thái (qua event).
+`project_members` là “đã tham gia”, không cấp quyền đọc toàn dự án, không xóa khi thay người.
+Nhân viên cũ chỉ đọc lịch sử đóng góp của mình qua DTO riêng, không đọc nội dung mới của task.
+Task terminal có thể giữ current_assignee_id là người phụ trách cuối; không tính vào tải và không cho thực thi.
 
-- Mọi chuyển trạng thái phải ghi một dòng `task_status_history`. Bản ghi đầu tiên có `old_status = NULL`.
-- Chuyển trạng thái không đúng sơ đồ → báo lỗi, **không** cập nhật. Neo: UC004 alt 6a.
-- Chỉ người đang phụ trách (`current_assignee_id`) mới được chuyển `IN_PROGRESS → PENDING_REVIEW`.
-  Neo: UC004 dữ liệu đầu vào #2.
-- `PENDING_REVIEW` là giá trị **bổ sung** so với tài liệu 4.2.3 — tài liệu cần cập nhật.
+## 5. Thời gian và thông báo
 
-## 6. Phân công
+Work log là phiên start/end gắn employee/task/assignment và snapshot lịch.
+Asia/Ho_Chi_Minh, thứ Hai–Sáu, 08–12 và 13–17, trừ ngày nghỉ; thiếu lịch thì chặn start.
+Tính giây giao lịch; tổng actual_hours từ tổng giây phiên đóng, làm tròn khi hiển thị.
+Không tính pause/review; chuyển người giữ giờ của người cũ. Không nhập tay giờ.
+Đây là thời gian theo trạng thái, không phải giờ lao động được xác minh.
+Ví dụ 20/05/2026 15:00 → 21/05/2026 10:30 = 4,5h nếu không có ngày nghỉ.
 
-Khi PM xác nhận, các thao tác sau phải nằm **trong một transaction duy nhất** (UC003 bước 13–15,
-alt 16a — lỗi một dòng thì rollback trọn vẹn, giữ nguyên dữ liệu trước đó):
-
-1. Kiểm tra lại từng dòng: trạng thái task, trạng thái nhân sự, quyền của PM trên dự án.
-2. Tạo `assignments` (kèm `assignment_type`, `note`, `matching_score`, `recommendation_item_id` nếu có).
-3. Cập nhật `tasks.status = ASSIGNED` và `tasks.current_assignee_id`.
-4. Thêm `project_members` với `join_source = FROM_ASSIGNMENT` nếu người đó chưa thuộc dự án.
-5. Ghi `task_status_history`.
-6. Tạo `notifications` cho nhân sự được phân công.
-
-Luồng thay thế:
-
-- **15a** — một vài dòng lỗi: chỉ rõ dòng nào, lý do gì; PM sửa lại bảng dự kiến.
-- **15b** — toàn bộ dòng lỗi: không lưu gì, yêu cầu phân công lại từ đầu.
-
-`assignments` là bảng **append-only** về mặt nghiệp vụ: phân công lại thì thêm dòng mới, không sửa
-dòng cũ — cần giữ vết để đánh giá engine.
-
-## 7. Ghi nhận thời gian (UC004)
-
-- Nhân viên **không nhập tay số giờ**. Hệ thống tự tính từ lịch sử trạng thái. Neo: mục 2.3.6 mở đầu.
-- Khoảng tính: từ thời điểm task vào `IN_PROGRESS` đến thời điểm chuyển sang `PENDING_REVIEW`
-  (hoặc trạng thái hoàn tất tương đương).
-- Lịch làm việc chuẩn mặc định: 08:00–12:00 và 13:00–17:00, tức 8 giờ một ngày. Loại trừ nghỉ trưa,
-  ngoài giờ và các khoảng cấu hình không tính. Neo: UC004 bước 8–9.
-- Chưa có cấu hình lịch làm việc → **không tính, không lưu**, báo lỗi. Neo: UC004 alt 9a.
-- Bản ghi ghi vào `work_logs` với `source = SYSTEM`, rồi cộng dồn vào `tasks.actual_hours`.
-- Sau đó đối chiếu `actual_hours` với `estimate_hours` — đây là nguồn dữ liệu cho `PerfScore` của engine.
-
-## 8. Thông báo
-
-`notifications` được tạo khi phân công công việc (UC003 bước 15). Các sự kiện khác (đổi trạng thái,
-bình luận mới) chưa được tài liệu yêu cầu — **TBD**, đừng tự thêm khi chưa hỏi.
+Thông báo nội bộ cho giao/thay/thu hồi, nộp/trả review, kết quả duyệt yêu cầu; cùng transaction nghiệp vụ.
+Không bình luận mới khi project COMPLETED/CLOSED/CANCELLED hoặc task terminal.
+Đánh dấu notification đã đọc vẫn được; notification không vượt quyền tài nguyên.

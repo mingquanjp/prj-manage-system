@@ -1,79 +1,52 @@
-# Luồng xử lý CV và duyệt kỹ năng
+# CV → trích xuất → duyệt — V1
 
-Thuộc mốc **M7**. Tài liệu đặc tả luồng này **mỏng hơn** UC001–UC004 (không có bảng use case chi
-tiết), nên phần dưới đây tách rõ *cái gì có trong tài liệu* và *cái gì còn phải chốt*.
+Thiết kế đích đã đồng ý 2026-09-05; không yêu cầu mô hình học máy.
+Xem [baseline](../../docs/reviews/system-design-review-v1.md) và `database_schema.md`.
 
-## 1. Nguyên tắc
+## 1. Tiếp nhận và xử lý
 
-Dữ liệu CV và kết quả trích xuất **không bao giờ** cập nhật trực tiếp hồ sơ năng lực chính thức.
-Chúng tạo dữ liệu chờ duyệt để Quản trị viên kiểm tra trước khi được dùng cho tra cứu hoặc AI đề
-xuất (mục 4.2.3.4, mục 2.4.2, mục 2.1.2). Đây là quy tắc **R3** trong `domain_rules.md`.
+EMPLOYEE upload của mình; ADMIN có thể upload thay mặt, ghi actor.
+PDF có text/DOCX, tối đa 10 MiB; không OCR/PDF mã hóa. CV Việt/Anh là phạm vi thử nghiệm phải đo riêng.
+Local disk private qua storage.Provider, server sinh tên, download phân quyền, không URL công khai.
+Kiểm tra kiểu nội dung thật, giới hạn giải nén DOCX, thời gian/bộ nhớ parser; không chỉ kiểm tra đuôi file.
 
-Hệ quả kiểm thử: sau khi upload và trích xuất mà **chưa** duyệt, engine đề xuất phải cho ra kết quả
-**y hệt** như trước khi upload.
+Tạo CV PENDING, không thay CV ACTIVE cũ.
+processing_status: QUEUED → PROCESSING → SUCCEEDED/FAILED.
+Worker trong process nhận job DB, có lease/retry giới hạn; cập nhật idempotent.
+Lưu file bền vững trước enqueue; DB/file không cùng transaction, dọn file tạm/orphan khi thất bại.
+Retry không tạo trùng dòng kỹ năng; lỗi không làm mất CV chính thức.
 
-## 2. Ba bảng
+## 2. Nhận diện kỹ năng
 
-```
-employee_cvs  ──1:n──▶  cv_extractions  ──1:n──▶  cv_extracted_skills
-   (tệp CV)              (nội dung trích xuất)      (từng kỹ năng nhận diện được)
-```
+Parse text → normalize → exact/alias danh mục → fuzzy candidate → ADMIN map hoặc reject.
+Không tự suy proficiency/năm kinh nghiệm từ việc có tên skill.
+suggested_level có thể NULL; muốn approve phải có skill_id, mức và căn cứ do ADMIN xác nhận.
+confidence_score chưa hiệu chỉnh chỉ là điểm tương đồng, không hiển thị xác suất đúng.
 
-**`employee_cvs`** — `storage_provider`, `storage_key`, `file_url`, `original_file_name`,
-`mime_type`, `uploaded_at`, `status ∈ {ACTIVE, ARCHIVED, REPLACED}`.
+Dòng map sang skill dùng cùng employee_skill_change_requests, source=CV, extracted_skill_id unique.
+Nhiều dòng map cùng skill phải hợp nhất minh chứng, không ghi đè tuần tự.
+Đã có pending manual cùng người/skill → báo conflict; giải quyết/rút trước.
+Approval kiểm tra version, ghi quyết định + official skill cùng transaction.
+WITHDRAWN được xem là dòng đã bỏ qua, không phải approved, khi tổng hợp kết quả review.
 
-**`cv_extractions`** — `extracted_text` (văn bản thô), `extracted_markdown`,
-`extraction_status ∈ {PENDING_REVIEW, APPROVED, REJECTED}`, `extracted_at`, `reviewed_at`,
-`reviewed_by_employee_id`, `review_note`.
+## 3. Ba trạng thái độc lập
 
-**`cv_extracted_skills`** — `raw_skill_name` (tên đọc được từ CV), `skill_id` (**cho phép NULL**),
-`suggested_level`, `suggested_years_experience`, `confidence_score`,
-`decision_status ∈ {PENDING, APPROVED, REJECTED}`, `evidence_text`.
+- Publication ở employee_cvs: PENDING/ACTIVE/REPLACED/REJECTED/ARCHIVED.
+- Processing ở cv_extractions: QUEUED/PROCESSING/SUCCEEDED/FAILED.
+- Review kỹ năng: PENDING_REVIEW/APPROVED/PARTIALLY_APPROVED/REJECTED.
 
-`skill_id NULL` nghĩa là tên kỹ năng đọc được **chưa khớp** với danh mục `skills`. Quản trị viên
-phải map thủ công sang một `skill_id` hợp lệ **trước khi** duyệt — không được ghi vào
-`employee_skills` khi `skill_id` còn NULL.
+Chỉ SUCCEEDED được review/xuất bản. ADMIN duyệt publication: CV mới ACTIVE, cũ REPLACED atomically; tối đa một ACTIVE/người.
+Duyệt CV không tự duyệt skill; từ chối CV không âm thầm thu hồi skill đã duyệt, muốn thu hồi phải có yêu cầu REMOVE.
+CV parse lỗi vẫn PENDING với processing FAILED, có thể retry/rút ARCHIVED; CV cũ không đổi.
 
-`evidence_text` giữ đoạn văn bản gốc trong CV làm căn cứ, để ADMIN duyệt có cơ sở thay vì tin
-confidence score suông.
+Review còn dòng chưa xử lý → PENDING_REVIEW; hết dòng:
+toàn approved → APPROVED; approved và bị từ chối/bỏ qua → PARTIALLY_APPROVED; không approved → REJECTED.
+Extraction rỗng vẫn SUCCEEDED; ADMIN đóng review với NO_SKILLS_FOUND, UI “Không có kỹ năng để cập nhật”.
+Request là nguồn quyết định chính; trạng thái dòng/review là dữ liệu suy ra, không cập nhật độc lập trái nhau.
 
-## 3. Luồng dự kiến
+## 4. Nghiệm thu
 
-1. Nhân viên (hoặc ADMIN thay mặt) upload tệp CV → tạo `employee_cvs` với `status = ACTIVE`.
-   CV cũ của cùng người chuyển sang `REPLACED`.
-2. Hệ thống trích xuất văn bản → tạo `cv_extractions` với `extraction_status = PENDING_REVIEW`.
-3. Nhận diện kỹ năng → tạo nhiều `cv_extracted_skills`, mỗi dòng `decision_status = PENDING`,
-   kèm `confidence_score` và `evidence_text`.
-4. ADMIN mở màn hình duyệt: xem văn bản trích xuất, từng kỹ năng đề xuất, mức độ gợi ý, điểm tin
-   cậy và đoạn minh chứng.
-5. ADMIN map `skill_id` cho dòng nào còn NULL, chỉnh `suggested_level` nếu cần, rồi duyệt hoặc từ
-   chối **từng dòng**.
-6. Với mỗi dòng được duyệt, ghi vào `employee_skills` với `source = CV`,
-   `approved_by_employee_id` = ADMIN, `approved_at = now()`. Nếu cặp `(employee_id, skill_id)` đã
-   tồn tại thì cập nhật, do có ràng buộc UNIQUE.
-7. Cập nhật `cv_extractions.extraction_status`, `reviewed_at`, `reviewed_by_employee_id`,
-   `review_note`.
-
-Bước 5–7 nằm trong một transaction.
-
-## 4. Còn phải chốt (TBD)
-
-| Hạng mục | Tình trạng |
-|---|---|
-| **Nơi lưu file CV** | Mặc định local disk qua interface `storage.Provider`; đổi sang S3/MinIO sau mà không sửa nghiệp vụ. **Chưa chốt.** |
-| **Thư viện parse PDF/DOCX** | Chưa chọn. Chưa có dependency nào trong `go.mod`. |
-| **Cách nhận diện kỹ năng** | Đối sánh với danh mục `skills` (khớp chuỗi, chuẩn hoá, bí danh) hay dùng mô hình NLP. Đây là **thành phần học máy thật của đề tài** nên cần bàn kỹ trước khi code. |
-| **Cách tính `confidence_score`** | Phụ thuộc lựa chọn trên. |
-| **Giới hạn kích thước và định dạng tệp** | Tài liệu không nêu. |
-| **Ai được upload CV** | Tài liệu có cả "Nhân viên yêu cầu cập nhật CV" (2.2.4) và "ADMIN cập nhật CV nhân sự" (2.2.3). Cần chốt luồng chính. |
-
-Không tự quyết những mục trên. Hỏi trước khi implement.
-
-## 5. Duyệt kỹ năng nhập tay
-
-Song song với luồng CV, nhân viên có thể gửi yêu cầu cập nhật kỹ năng tự khai (mục 2.2.4). Luồng
-này **không có bảng riêng**: dùng chính `employee_skills` với `source = MANUAL` và
-`approved_at IS NULL` để biểu diễn trạng thái chờ duyệt. ADMIN duyệt bằng cách điền
-`approved_by_employee_id` và `approved_at`.
-
-Mọi truy vấn phục vụ tra cứu và đề xuất phải lọc `approved_at IS NOT NULL` — không có ngoại lệ.
+Upload mới/parse lỗi không đổi kỹ năng và CV cũ.
+Không approve dòng chưa map/thiếu mức; concurrent approve chỉ một quyết định.
+Đo precision/recall/F1 nhận diện skill trên CV có nhãn và được phép sử dụng, không lấy proficiency chưa có căn cứ làm nhãn.
+Thư viện parser chưa chọn; kiểm tra bảo trì/bảo mật trước khi thêm dependency.
