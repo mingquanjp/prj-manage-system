@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #fff;
+  --color-sidebar: #fbfaf8;
+  --color-border: #e5e1db;
+  --color-accent: #f1efeb;
+  --color-muted-foreground: #625e58;
+  --color-success: #166534;
+  --color-success-soft: #f0fdf4;
+  --color-warning: #92400e;
+  --color-warning-soft: #fffbeb;
+  --color-destructive: #b91c1c;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root { --background: #f7f6f3; --foreground: #26231f; --primary: #26231f; font-family: var(--font-sans); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: light; }
+body { margin: 0; }
+button, input, select, textarea { font: inherit; }
+button, summary, select { cursor: pointer; }
+button:disabled, input:disabled { cursor: not-allowed; }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: #26231f; }
+svg { flex-shrink: 0; }
+:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+::selection { background: #e5e1db; }
+
+@layer components {
+  .field { @apply h-10 rounded-md border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground; }
+  textarea.field { @apply h-auto py-2.5; }
+  .eyebrow { @apply text-xs font-medium tracking-wider text-muted-foreground; }
+  .table-heading { @apply bg-background/60 text-xs font-medium text-muted-foreground; }
+  .table-heading th { @apply font-medium; }
+  .filter-chip { @apply inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground; }
+  .filter-active { @apply bg-accent font-medium text-foreground; }
+  .tab-button { @apply relative flex h-12 items-center gap-2 px-3 text-sm text-muted-foreground; }
+  .tab-selected { @apply font-medium text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary; }
+  .count { @apply inline-flex min-w-5 items-center justify-center rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums; }
+}
+
+@media (min-width: 1280px) {
+  .assignment-grid { grid-template-columns: 176px minmax(0, 1fr) 232px; }
+  .assignment-draft { position: sticky; top: 24px; }
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .assignment-grid { grid-template-columns: 180px minmax(0, 1fr); }
+  .assignment-draft { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

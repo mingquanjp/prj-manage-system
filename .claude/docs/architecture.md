@@ -27,12 +27,12 @@ Không dùng “service quản lý transaction” để buộc service import po
 ## 2. Hiện trạng và thành phần đích
 
 Hiện có cmd/server, cmd/migrate, cmd/seed; internal/config, repository/postgres/db.go, transport/http/router.go;
-migration 000001, seed; web chưa khởi tạo.
+migration 000001, seed. Web đã có pilot local được duyệt visual 20/10/2026; xem [báo cáo pilot](../../web/DESIGN-PILOT.md). Không đồng nghĩa các service nghiệp vụ đã có.
 Đích: domain, service, matching, adapters, DTO/auth middleware, storage.Provider, CV worker và dịch vụ work effort/audit.
 Giữ Go + chi + pgx/PostgreSQL; SQL trực tiếp hiện tại, không tự thêm sqlc/query builder/parser dependency.
 
-Frontend Vite/React/TypeScript/Tailwind/shadcn/TanStack Query/React Router đã chọn, chưa khởi tạo.
-Đích build static nhúng embed.FS: một process, một port, cùng origin, không cần CORS.
+Frontend đã có Vite/React/TypeScript/Tailwind/React Router và primitives tùy biến shadcn/Radix. Pilot chỉ mock trong bộ nhớ; TanStack Query/API/auth chưa triển khai.
+Đích build static nhúng embed.FS: một process, một port, cùng origin, không cần CORS; pilot local chưa tích hợp Go.
 Auth dùng cookie secret và server-side session check DB; cùng origin không loại bỏ CSRF.
 
 ## 3. Transaction và snapshot

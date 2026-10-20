@@ -18,7 +18,20 @@ Thiết kế DB hiện hành: [32 bảng và các quan hệ](docs/design/databas
 | Backend | Go 1.26, chi, pgx v5 |
 | Cơ sở dữ liệu | PostgreSQL (Neon serverless) |
 | Migration | golang-migrate dạng thư viện, SQL nhúng bằng `embed.FS` |
-| Frontend | Vite + React + TypeScript *(chưa bắt đầu)* |
+| Frontend | Vite + React + TypeScript + Tailwind + React Router; primitives shadcn/Radix; pilot local đã duyệt, chưa API/auth |
+
+## Chạy frontend mock — không cần DB
+
+Node 24.x, pnpm; phiên bản đã kiểm tra và giới hạn tại [báo cáo pilot](web/DESIGN-PILOT.md).
+
+```bash
+cd web
+pnpm install --frozen-lockfile
+pnpm dev                 # http://localhost:5173
+pnpm check               # typecheck → test demo → build
+```
+
+Pilot chưa phải toàn bộ sản phẩm; reload khôi phục dữ liệu mẫu. Không cần chạy migration/seed để xem UI.
 
 ## Backend skeleton — lệnh vận hành, không tự chạy để sửa UI
 
@@ -60,6 +73,7 @@ internal/
 migrations/     SQL migration
 db/seed/        SQL dữ liệu mẫu
 docs/           tài liệu phân tích thiết kế
+web/            frontend local và pilot thiết kế
 ```
 
 Quy tắc phụ thuộc chi tiết theo [architecture](.claude/docs/architecture.md): transport gọi service; service/domain không import Postgres adapter, adapter triển khai interface do service khai báo. Gói `matching` không biết tới cơ sở dữ liệu hay HTTP.
