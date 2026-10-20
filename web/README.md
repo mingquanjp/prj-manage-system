@@ -68,6 +68,38 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 
 ## Sổ công việc
 
+### Sửa điều hướng bản nháp và tạo nhóm trước task — 21/10/2026 — hoàn tất
+
+- Mục tiêu/nguồn: sửa hai điểm review được người dùng duyệt; giữ vòng nháp → xác nhận của UC003/UI-12 và nhóm bắt buộc cùng dự án ở UC002/UI-11.
+- Phạm vi: ProjectWorkspace, AssignmentWorkspace và sổ này. Không đổi nghiệp vụ/schema/dependency; chưa xử lý chặn điều hướng toàn app, browser back/reload hoặc lưu nháp bền vững.
+- Tiêu chí: hai tab và nút quay lại dùng chung cảnh báo bỏ nháp; tiếp tục chọn giữ nguyên dữ liệu, xác nhận bỏ mới chuyển tab; không có lựa chọn thì đi thẳng. Tạo task khi chưa có nhóm dẫn sang Cấu trúc kèm hướng dẫn, có nhóm vẫn mở form bình thường.
+- Đã sửa: draft được giữ tại ProjectWorkspace và truyền có kiểm soát vào AssignmentWorkspace; hai tab/nút quay lại đi qua cùng hộp bỏ nháp. Chưa có nhóm thì nút Tạo công việc mở Cấu trúc với hướng dẫn tạo nhóm, không mở form không thể lưu.
+- Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 63 file, typecheck, 16 test model và build; `git diff --check` qua. Browser kiểm tra cảnh báo ở cả hai tab và nút quay lại; tiếp tục giữ người đã chọn, bỏ nháp mới chuyển đúng tab; nháp rỗng không hỏi. Tạo dự án mẫu chưa có nhóm → hướng dẫn → tạo nhóm → form task có nhóm để chọn. Không xác nhận phân công thử; đã khôi phục fixture sau kiểm tra.
+- Giới hạn/bàn giao: tương tác trên được kiểm tra browser thủ công, chưa có test React/E2E tự động hoặc cổng mới; không thêm dependency. Chưa chặn sidebar/browser back/reload, không lưu nháp bền vững. Nhánh `bug/project-workspace-navigation`; giữ thay đổi các đợt trước/ngoài phạm vi, không stage/commit/push.
+
+### Khởi tạo dự án và thiết lập trách nhiệm — 21/10/2026 — hoàn tất phạm vi, chờ duyệt UI
+
+- Mục tiêu: Giám đốc tạo dự án kèm PM; PM chỉ định PTCM và bắt đầu khi có task ASSIGNED; state dự án dùng chung. Giữ visual đã duyệt.
+- Nguồn: project_task_assignment_workflow UC001; screen-contracts UI-10 và trạng thái PLANNING; dictionary 5A mục 2. Không tự đổi nghiệp vụ/schema.
+- Ngoài phạm vi: đổi PM, hoàn thành/đóng/hủy dự án, thực hiện task/nhật ký/nghiệm thu, API/auth/DB/persistence, dependency mới.
+- File dự kiến: App, demo/model và test, ProjectList/ProjectWorkspace, form tạo dự án và khu vực trách nhiệm.
+- Tiêu chí: tạo có validation/hủy, không tự gán creator; PM-only/PTCM-only/kiêm nhiệm tách quyền; chặn PTCM còn việc mở hoặc xung đột đầu ra cũ, không thu hồi ngầm; bắt đầu cập nhật danh sách/workspace cùng state.
+- Đã code: form tạo dự án có PM bắt buộc, lỗi theo trường và hủy không lưu; dự án mới PLANNING chưa có PTCM/nhóm/task. Dự án dùng chung state ở shell/danh sách/workspace; danh tính mô phỏng khai báo quyền hệ thống riêng với trách nhiệm dự án, đổi danh tính về danh sách đúng phạm vi. PM chỉ định PTCM/kiêm nhiệm, có kiểm tra việc mở và đầu ra cũ; bắt đầu bằng xác nhận khi có ASSIGNED. Lịch sử trước/sau/actor trong bộ nhớ chỉ minh họa, không audit server.
+- Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 63 file, typecheck, 16 test model và build; `git diff --check` qua. Browser: tạo dự án/lỗi bắt buộc, Giám đốc không tự có quyền chuyên môn; chặn PTCM còn việc mở hoặc đầu ra cũ; PM kiêm PTCM hợp lệ ở dự án khác; bắt đầu cập nhật danh sách; hủy form không tạo. Xem workspace desktop 1440px và form 390px, không tràn ngang trang/modal.
+- Giới hạn: bộ nhớ mất khi reload; không API/auth/DB/persistence/audit thật hoặc E2E tự động. Projection xung đột đầu ra là fixture từ đóng góp cũ (Thanh/T007), không thêm bảng/cột DB hoặc tự xây luồng đóng góp/nghiệm thu. Trạng thái terminal chỉ được chặn theo model, chưa dựng UI hoàn thành/đóng/hủy. Giữ nguyên task và lịch sử khi thay PTCM, không cấp quyền cá nhân thực hiện task trong đợt này.
+- Bàn giao: nhánh `feature/project-setup-ui`, giữ thay đổi có sẵn của đợt cấu trúc và ngoài `web/`; không stage/commit/push. Không dependency/lockfile mới. Chờ duyệt UI đợt này trước khi mở phạm vi tiếp theo.
+
+### Cấu trúc nhóm và công việc — 21/10/2026 — hoàn tất phạm vi, UI được người dùng duyệt
+
+- Mục tiêu: PTCM tạo/sửa nhóm và đặc tả task trước lần giao đầu; dữ liệu dùng chung với danh sách/phân công. Giữ visual pilot; không API/DB, xóa task/nhóm, gia hạn/làm rõ đặc tả sau giao hoặc vòng đời dự án.
+- Nguồn: screen-contracts UI-11, bảng trạng thái dự án; project_task_assignment_workflow UC002; dictionary 5A mục 3–5. Miền weight chưa chốt: giá trị nhập chỉ minh họa, không ràng buộc 1–5 hoặc đưa vào công thức.
+- File dự kiến: demo/model và test; App; ProjectWorkspace; component form/cấu trúc dự án; Dialog dùng chung nếu cần mở rộng kích thước.
+- Tiêu chí: nhóm trống vẫn hiển thị, tên nhóm/mã task/kỹ năng không trùng trong phạm vi; form có hủy/lỗi; ngày đủ cặp trong dự án; task tạo mới chờ phân công; PM-only chỉ xem; task từng giao không mở lại form sửa spec.
+- Đã code: tab Cấu trúc với nhóm độc lập (kể cả nhóm trống); tạo/sửa tên/mô tả nhóm; form task có yêu cầu kỹ năng động, bốn mức, trọng số minh họa; task mới vào cùng state với danh sách/phân công. Lưu mốc giao đầu trong mock để thu hồi không mở lại spec. Fixture gợi ý không phụ thuộc tên nhóm, vẫn chỉ là mẫu chứ không engine.
+- Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 61 file, typecheck, 11 test model và build; `git diff --check` qua. Browser: tạo nhóm/trùng tên, tạo task/lỗi bắt buộc, sửa và hủy sửa, chọn task mới sang manual, PM-only không có nút chuyên môn. Đã xem desktop 1440px, form/trang cấu trúc 390px; sửa tràn ngang từ nhãn ẩn của cột thao tác, bảng/tab cuộn trong vùng riêng.
+- Giới hạn: chưa API/auth/persistence/audit server; chưa E2E tự động hoặc kiểm thử mọi thiết bị. Kỹ năng trong danh mục demo chỉ có bốn mục; gợi ý có thể rỗng với task mới, không giả engine. Không dựng xóa nhóm/task, gia hạn có lý do/lịch sử hoặc sửa làm rõ sau giao. Cặp ngày đã lưu giữ nguyên trong form này; task chưa có ngày được khai báo lần đầu, không ghi đè kế hoạch cũ bằng thao tác sửa spec.
+- Bàn giao: giữ palette/font/components đã duyệt, không thêm dependency dự án hoặc đổi lockfile. Prettier chỉ chạy tạm để định dạng file của đợt, chưa tạo cổng formatter mới. Chưa stage/commit/push; các thay đổi có sẵn ngoài `web/` giữ nguyên. Bước kế tiếp là người dùng duyệt tab/form trước khi giao đợt mới.
+
 ### Pilot thiết kế — hoàn tất phạm vi, visual được duyệt
 
 - Phạm vi/bằng chứng chi tiết tại DESIGN-PILOT; không gọi chức năng ngoài pilot là hoàn thiện.

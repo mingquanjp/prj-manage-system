@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type Dispatch, type SetStateAction } from "react"
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -35,6 +35,8 @@ export function AssignmentWorkspace({
   tasks,
   selectedIds,
   initialMode,
+  draft,
+  onDraftChange: setDraft,
   onBack,
   onCommit,
 }: {
@@ -43,6 +45,8 @@ export function AssignmentWorkspace({
   tasks: Task[]
   selectedIds: string[]
   initialMode: Mode
+  draft: Draft
+  onDraftChange: Dispatch<SetStateAction<Draft>>
   onBack: () => void
   onCommit: (tasks: Task[]) => void
 }) {
@@ -56,10 +60,8 @@ export function AssignmentWorkspace({
         )
       : {},
   )
-  const [draft, setDraft] = useState<Draft>({})
   const [query, setQuery] = useState("")
   const [confirm, setConfirm] = useState(false)
-  const [discard, setDiscard] = useState(false)
   const [error, setError] = useState("")
   const task = tasks.find((t) => t.id === activeId)!
   const selectedTasks = ids
@@ -134,9 +136,7 @@ export function AssignmentWorkspace({
         <div>
           <button
             type="button"
-            onClick={() =>
-              Object.keys(draft).length ? setDiscard(true) : onBack()
-            }
+            onClick={onBack}
             className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeftIcon />
@@ -235,10 +235,12 @@ export function AssignmentWorkspace({
               </div>
               <div className="p-5">
                 <div className="flex flex-wrap gap-1 rounded-md bg-background p-1">
-                  {([
-                    ["recommended", "Theo gợi ý"],
-                    ["manual", "Tra cứu thủ công"],
-                  ] as const).map(([value, label]) => (
+                  {(
+                    [
+                      ["recommended", "Theo gợi ý"],
+                      ["manual", "Tra cứu thủ công"],
+                    ] as const
+                  ).map(([value, label]) => (
                     <button
                       type="button"
                       key={value}
@@ -580,19 +582,6 @@ export function AssignmentWorkspace({
           >
             Xác nhận mô phỏng
           </Button>
-        </div>
-      </Dialog>
-      <Dialog
-        open={discard}
-        onOpenChange={setDiscard}
-        title="Bỏ bản nháp phân công?"
-        description="Các lựa chọn chưa xác nhận sẽ không được lưu. Công việc vẫn giữ nguyên người phụ trách và trạng thái hiện tại."
-      >
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setDiscard(false)}>
-            Tiếp tục chọn
-          </Button>
-          <Button onClick={onBack}>Bỏ bản nháp</Button>
         </div>
       </Dialog>
     </section>

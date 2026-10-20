@@ -21,8 +21,17 @@ export function Avatar({
     </span>
   )
 }
-export function StatusBadge({ status }: { status: TaskStatus | "PLANNING" }) {
-  const label = status === "PLANNING" ? "Lập kế hoạch" : statusLabels[status]
+export function StatusBadge({
+  status,
+}: {
+  status: TaskStatus | "PLANNING" | "COMPLETED"
+}) {
+  const label =
+    status === "PLANNING"
+      ? "Lập kế hoạch"
+      : status === "COMPLETED"
+        ? "Đã hoàn thành"
+        : statusLabels[status]
   return (
     <span
       className={cn(

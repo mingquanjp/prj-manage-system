@@ -11,6 +11,7 @@ export function Dialog({
   description,
   children,
   side = false,
+  wide = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -18,6 +19,7 @@ export function Dialog({
   description: string
   children: ReactNode
   side?: boolean
+  wide?: boolean
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -28,7 +30,10 @@ export function Dialog({
             "fixed z-40 overflow-auto border border-border bg-white shadow-xl outline-none",
             side
               ? "inset-y-0 right-0 w-full max-w-xl border-y-0 border-r-0 p-7"
-              : "left-1/2 top-1/2 max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-xl p-7",
+              : cn(
+                  "left-1/2 top-1/2 max-h-[90dvh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl p-5 sm:p-7",
+                  wide ? "max-w-3xl" : "max-w-xl",
+                ),
           )}
         >
           <div className="mb-6 flex items-start justify-between gap-4">

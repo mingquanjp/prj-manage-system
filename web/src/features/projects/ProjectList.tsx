@@ -1,15 +1,32 @@
 import { useState } from "react"
 import { Link } from "react-router"
-import { ArrowTopRightIcon, CubeIcon } from "@radix-ui/react-icons"
+import { ArrowTopRightIcon, CubeIcon, PlusIcon } from "@radix-ui/react-icons"
 import {
   Avatar,
   EmptyState,
   SearchInput,
   StatusBadge,
 } from "@/components/shared"
-import { getPerson, progress, projects, type Task } from "@/demo/model"
+import {
+  getPerson,
+  progress,
+  isDirector,
+  type Project,
+  type Task,
+} from "@/demo/model"
+import { Button } from "@/components/ui/button"
 
-export function ProjectList({ tasks }: { tasks: Task[] }) {
+export function ProjectList({
+  tasks,
+  projects,
+  actorId,
+  onCreate,
+}: {
+  tasks: Task[]
+  projects: Project[]
+  actorId: string
+  onCreate: () => void
+}) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const filtered = projects.filter(
@@ -21,15 +38,25 @@ export function ProjectList({ tasks }: { tasks: Task[] }) {
   )
   return (
     <>
-      <div className="mb-8">
-        <p className="eyebrow">KHÔNG GIAN LÀM VIỆC</p>
-        <h1 className="mt-2 text-2xl font-semibold">Dự án của tôi</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Theo dõi công việc và điều phối chuyên môn trong từng dự án.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="eyebrow">KHÔNG GIAN LÀM VIỆC</p>
+          <h1 className="mt-2 text-2xl font-semibold">
+            {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Theo dõi công việc và điều phối chuyên môn trong từng dự án.
+          </p>
+        </div>
+        {isDirector(actorId) && (
+          <Button onClick={onCreate}>
+            <PlusIcon />
+            Tạo dự án
+          </Button>
+        )}
       </div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-1" aria-label="Lọc trạng thái dự án">
+        <div className="flex flex-wrap gap-1" aria-label="Lọc trạng thái dự án">
           {[
             ["all", "Tất cả"],
             ["IN_PROGRESS", "Đang thực hiện"],
@@ -135,7 +162,11 @@ export function ProjectList({ tasks }: { tasks: Task[] }) {
         {!filtered.length && (
           <EmptyState
             title="Không tìm thấy dự án"
-            detail="Thử tên khác hoặc thay đổi bộ lọc."
+            detail={
+              projects.length
+                ? "Thử tên khác hoặc thay đổi bộ lọc."
+                : "Chưa có dự án thuộc phạm vi trách nhiệm của bạn trong phiên mô phỏng."
+            }
           />
         )}
       </div>

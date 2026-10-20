@@ -11,6 +11,10 @@ import {
   ListBulletIcon,
   MixerHorizontalIcon,
   RowsIcon,
+  LayersIcon,
+  PlusIcon,
+  Pencil1Icon,
+  LockClosedIcon,
 } from "@radix-ui/react-icons"
 import {
   Avatar,
@@ -19,25 +23,48 @@ import {
   StatusBadge,
 } from "@/components/shared"
 import { Button } from "@/components/ui/button"
+import { Dialog } from "@/components/ui/dialog"
 import {
   canAssign,
+  isTaskFrozen,
   getPerson,
   levels,
   progress,
-  projects,
+  canViewProject,
+  isDirector,
+  type Project,
+  type ProjectEvent,
+  type OutputConflict,
   type Task,
+  type TaskGroup,
+  type Draft,
 } from "@/demo/model"
 import { AssignmentWorkspace } from "@/features/assignment/AssignmentWorkspace"
+import { ProjectStructure } from "./ProjectStructure"
+import { TaskEditor } from "./TaskEditor"
+import { ProjectResponsibilities } from "./ProjectResponsibilities"
 import { cn } from "@/lib/utils"
 
 export function ProjectWorkspace({
   actorId,
+  projects,
+  conflicts,
+  events,
+  onProjectChange,
   tasks,
+  groups: allGroups,
+  onGroupsChange,
   onTasksChange,
   onNotice,
 }: {
   actorId: string
+  projects: Project[]
+  conflicts: OutputConflict[]
+  events: ProjectEvent[]
+  onProjectChange: (project: Project, action: string) => void
   tasks: Task[]
+  groups: TaskGroup[]
+  onGroupsChange: (groups: TaskGroup[]) => void
   onTasksChange: (tasks: Task[]) => void
   onNotice: (notice: string) => void
 }) {
@@ -47,14 +74,23 @@ export function ProjectWorkspace({
   const [filter, setFilter] = useState("all")
   const [group, setGroup] = useState("all")
   const [view, setView] = useState<"list" | "groups">("list")
+  const [tab, setTab] = useState<"tasks" | "structure">("tasks")
+  const [editor, setEditor] = useState<{
+    task?: Task
+    groupId?: string
+  } | null>(null)
   const [info, setInfo] = useState(true)
   const [detail, setDetail] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
+  const [draft, setDraft] = useState<Draft>({})
+  const [discardTab, setDiscardTab] = useState<"tasks" | "structure" | null>(
+    null,
+  )
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(
     null,
   )
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
-  if (!project)
+  if (!project || !canViewProject(project, actorId))
     return (
       <EmptyState
         title="Không tìm thấy dự án"
@@ -62,7 +98,9 @@ export function ProjectWorkspace({
       />
     )
   const related = tasks.filter((t) => t.projectId === project.id)
-  const groups = [...new Set(related.map((t) => t.group))]
+  const groups = allGroups
+    .filter((g) => g.projectId === project.id)
+    .map((g) => g.name)
   const filtered = related.filter(
     (t) =>
       `${t.name} ${t.code}`
@@ -75,6 +113,17 @@ export function ProjectWorkspace({
   const currentTask = related.find((t) => t.id === detail)
   const allowed = canAssign(project, actorId)
   const percent = progress(related)
+  const openTab = (next: "tasks" | "structure") => {
+    setDraft({})
+    setAssignMode(null)
+    setTab(next)
+    setView("list")
+    if (next === "structure") setSelected([])
+  }
+  const requestTab = (next: "tasks" | "structure") => {
+    if (assignMode && Object.keys(draft).length) setDiscardTab(next)
+    else openTab(next)
+  }
   const closeDetail = () => {
     setDetail(null)
     detailTrigger.current?.focus()
@@ -209,35 +258,69 @@ export function ProjectWorkspace({
             <h1 className="mt-1 text-2xl font-semibold">{project.name}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <StatusBadge status={project.status} />
-              <span>PM: {getPerson(project.pmId)?.name}</span>
-              <span>PTCM: {getPerson(project.ptcmId)?.name}</span>
             </div>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setInfo(!info)
-            setDetail(null)
-          }}
-          aria-pressed={info}
-        >
-          <InfoCircledIcon />
-          Thông tin
-        </Button>
+        <div className="flex gap-2">
+          {allowed && !assignMode && (
+            <Button
+              onClick={() => {
+                if (!groups.length) {
+                  setTab("structure")
+                  onNotice(
+                    "Bạn cần tạo nhóm công việc trước. Nhấn Tạo nhóm để bắt đầu, sau đó thêm công việc vào nhóm.",
+                  )
+                } else setEditor({})
+              }}
+            >
+              <PlusIcon />
+              Tạo công việc
+            </Button>
+          )}
+          {tab === "tasks" && !assignMode && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setInfo(!info)
+                setDetail(null)
+              }}
+              aria-pressed={info}
+            >
+              <InfoCircledIcon />
+              Thông tin
+            </Button>
+          )}
+        </div>
       </div>
+      {!assignMode && (
+        <ProjectResponsibilities
+          project={project}
+          actorId={actorId}
+          tasks={tasks}
+          conflicts={conflicts}
+          events={events}
+          onChange={onProjectChange}
+        />
+      )}
       <div className="mb-6 flex items-center justify-between gap-4 border-b border-border">
-        <div className="flex">
+        <div className="flex min-w-0 overflow-x-auto">
           <button
             type="button"
-            onClick={() => {
-              setAssignMode(null)
-              setView("list")
-            }}
-            className="tab-button tab-selected"
+            onClick={() => requestTab("tasks")}
+            className={cn("tab-button", tab === "tasks" && "tab-selected")}
+            aria-pressed={tab === "tasks"}
           >
             <ListBulletIcon />
             Công việc <span className="count">{related.length}</span>
+          </button>
+          <button
+            type="button"
+            className={cn("tab-button", tab === "structure" && "tab-selected")}
+            aria-pressed={tab === "structure"}
+            onClick={() => requestTab("structure")}
+          >
+            <LayersIcon />
+            Cấu trúc <span className="count">{groups.length}</span>
           </button>
           <button
             type="button"
@@ -254,20 +337,53 @@ export function ProjectWorkspace({
         </div>
         <span className="hidden text-xs text-muted-foreground md:block">
           Bạn đang có trách nhiệm{" "}
-          {allowed ? "PTCM" : "PM · chỉ theo dõi chuyên môn"}
+          {project.pmId === actorId && project.ptcmId === actorId
+            ? "PM + PTCM"
+            : project.ptcmId === actorId
+              ? "PTCM"
+              : project.pmId === actorId
+                ? "PM · chỉ theo dõi chuyên môn"
+                : isDirector(actorId)
+                  ? "Giám đốc · chỉ theo dõi"
+                  : "Chỉ xem"}
         </span>
       </div>
-      {assignMode && allowed ? (
+      {tab === "structure" ? (
+        <ProjectStructure
+          project={project}
+          actorId={actorId}
+          groups={allGroups}
+          tasks={tasks}
+          onChange={(nextGroups, nextTasks) => {
+            onGroupsChange(nextGroups)
+            onTasksChange(nextTasks)
+          }}
+          onNotice={onNotice}
+          onCreateTask={(groupId) => setEditor({ groupId })}
+          onEditTask={(task) => setEditor({ task })}
+          onViewTask={(task) => {
+            setTab("tasks")
+            setDetail(task.id)
+            setInfo(false)
+            setSearch("")
+            setFilter("all")
+            setGroup("all")
+          }}
+        />
+      ) : assignMode && allowed ? (
         <AssignmentWorkspace
           project={project}
           actorId={actorId}
           tasks={tasks}
           selectedIds={selected}
           initialMode={assignMode}
-          onBack={() => setAssignMode(null)}
+          draft={draft}
+          onDraftChange={setDraft}
+          onBack={() => requestTab("tasks")}
           onCommit={(next) => {
             onTasksChange(next)
             setAssignMode(null)
+            setDraft({})
             setSelected([])
             onNotice(
               "Đã xác nhận phân công mô phỏng. Tải và danh sách công việc đã được cập nhật trong phiên.",
@@ -365,8 +481,18 @@ export function ProjectWorkspace({
               <div className="overflow-hidden rounded-lg border border-border bg-white">
                 {!filtered.length ? (
                   <EmptyState
-                    title="Không có công việc phù hợp"
-                    detail="Thử thay đổi từ khóa hoặc bộ lọc."
+                    title={
+                      related.length
+                        ? "Không có công việc phù hợp"
+                        : "Dự án chưa có công việc"
+                    }
+                    detail={
+                      related.length
+                        ? "Thử thay đổi từ khóa hoặc bộ lọc."
+                        : allowed
+                          ? "Mở tab Cấu trúc để tạo nhóm, sau đó thêm công việc đầu tiên."
+                          : "PTCM sẽ thiết lập nhóm và công việc cho dự án."
+                    }
                   />
                 ) : view === "list" ? (
                   renderTable(filtered)
@@ -425,13 +551,31 @@ export function ProjectWorkspace({
                     <div className="mt-3">
                       <StatusBadge status={currentTask.status} />
                     </div>
-                    <p className="mt-5 text-sm leading-6 text-muted-foreground">
+                    {allowed &&
+                      (isTaskFrozen(currentTask) ? (
+                        <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
+                          <LockClosedIcon className="mt-0.5" />
+                          Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa làm
+                          rõ/gia hạn chưa dựng trong đợt này.
+                        </p>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => setEditor({ task: currentTask })}
+                        >
+                          <Pencil1Icon />
+                          Chỉnh sửa công việc
+                        </Button>
+                      ))}
+                    <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
                       {currentTask.description}
                     </p>
                     <h3 className="mt-5 text-sm font-medium">
                       Tiêu chí nghiệm thu
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
                       {currentTask.criteria}
                     </p>
                     <h3 className="mt-5 text-sm font-medium">
@@ -448,10 +592,29 @@ export function ProjectWorkspace({
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {r.mandatory ? "Bắt buộc" : "Bổ trợ"}
+                            {" · "}Trọng số {r.weight} (minh họa)
                           </p>
                         </div>
                       ))}
                     </div>
+                    <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Nhóm</dt>
+                        <dd className="text-right">{currentTask.group}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Ưu tiên</dt>
+                        <dd>{currentTask.priority}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">Kế hoạch</dt>
+                        <dd className="text-right">
+                          {currentTask.start && currentTask.end
+                            ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
+                            : "Chưa đặt ngày"}
+                        </dd>
+                      </div>
+                    </dl>
                     <div className="mt-5 border-t border-border pt-4 text-sm">
                       Ước tính{" "}
                       <span className="float-right font-medium">
@@ -545,6 +708,55 @@ export function ProjectWorkspace({
             </div>
           )}
         </>
+      )}
+      <Dialog
+        open={discardTab !== null}
+        onOpenChange={(open) => {
+          if (!open) setDiscardTab(null)
+        }}
+        title="Bỏ bản nháp phân công?"
+        description="Các lựa chọn chưa xác nhận sẽ không được lưu. Công việc vẫn giữ nguyên người phụ trách và trạng thái hiện tại."
+      >
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setDiscardTab(null)}>
+            Tiếp tục chọn
+          </Button>
+          <Button
+            onClick={() => {
+              if (discardTab) openTab(discardTab)
+              setDiscardTab(null)
+            }}
+          >
+            Bỏ bản nháp
+          </Button>
+        </div>
+      </Dialog>
+      {editor && allowed && (
+        <TaskEditor
+          project={project}
+          actorId={actorId}
+          groups={allGroups}
+          tasks={tasks}
+          task={editor.task}
+          defaultGroupId={editor.groupId}
+          onClose={() => setEditor(null)}
+          onSave={(nextTasks, taskId) => {
+            onTasksChange(nextTasks)
+            setEditor(null)
+            setTab("tasks")
+            setAssignMode(null)
+            setSearch("")
+            setFilter("all")
+            setGroup("all")
+            setSelected([])
+            setDetail(taskId)
+            onNotice(
+              editor.task
+                ? "Đã lưu thay đổi công việc trong phiên mô phỏng."
+                : "Đã tạo công việc chờ phân công trong phiên mô phỏng.",
+            )
+          }}
+        />
       )}
     </>
   )

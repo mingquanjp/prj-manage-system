@@ -35,7 +35,7 @@ svg { flex-shrink: 0; }
   .table-heading th { @apply font-medium; }
   .filter-chip { @apply inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground; }
   .filter-active { @apply bg-accent font-medium text-foreground; }
-  .tab-button { @apply relative flex h-12 items-center gap-2 px-3 text-sm text-muted-foreground; }
+  .tab-button { @apply relative flex h-12 shrink-0 items-center gap-2 px-3 text-sm text-muted-foreground; }
   .tab-selected { @apply font-medium text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary; }
   .count { @apply inline-flex min-w-5 items-center justify-center rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums; }
 }

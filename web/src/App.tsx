@@ -1,5 +1,12 @@
 import { useState } from "react"
-import { Link, NavLink, Route, Routes, useLocation } from "react-router"
+import {
+  Link,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router"
 import {
   ArchiveIcon,
   ChevronDownIcon,
@@ -12,23 +19,60 @@ import {
 import { Avatar } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { getPerson, initialTasks, projects, type Task } from "@/demo/model"
+import {
+  getPerson,
+  initialGroups,
+  initialTasks,
+  projects as initialProjects,
+  canViewProject,
+  demoUsers,
+  isDirector,
+  initialOutputConflicts,
+  type Project,
+  type ProjectEvent,
+  type Task,
+  type TaskGroup,
+} from "@/demo/model"
 import { ProjectList } from "@/features/projects/ProjectList"
 import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
+import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog"
 import { cn } from "@/lib/utils"
 
 export default function App() {
   const [actorId, setActorId] = useState("khoa")
+  const [projects, setProjects] = useState<Project[]>(() =>
+    structuredClone(initialProjects),
+  )
+  const [events, setEvents] = useState<ProjectEvent[]>([])
+  const [creating, setCreating] = useState(false)
   const [tasks, setTasks] = useState<Task[]>(() =>
     structuredClone(initialTasks),
+  )
+  const [groups, setGroups] = useState<TaskGroup[]>(() =>
+    structuredClone(initialGroups),
   )
   const [resetOpen, setResetOpen] = useState(false)
   const [notice, setNotice] = useState("")
   const location = useLocation()
-  const currentProject = projects.find((p) =>
-    location.pathname.startsWith(`/projects/${p.id}`),
+  const navigate = useNavigate()
+  const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
+  const currentProject = projects.find(
+    (p) =>
+      location.pathname === `/projects/${p.id}` && canViewProject(p, actorId),
   )
   const person = getPerson(actorId)!
+  const identityOptions = demoUsers.map((u) => (
+    <option key={u.personId} value={u.personId}>
+      {getPerson(u.personId)?.name}
+      {u.systemRoles.includes("DIRECTOR") ? " · Giám đốc" : ""}
+    </option>
+  ))
+  const switchIdentity = (id: string) => {
+    setActorId(id)
+    setNotice("")
+    setCreating(false)
+    navigate("/")
+  }
 
   return (
     <div className="min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
@@ -59,16 +103,16 @@ export default function App() {
             }
           >
             <DashboardIcon />
-            Dự án của tôi
+            {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
             <span className="ml-auto text-muted-foreground">
-              {projects.length}
+              {visibleProjects.length}
             </span>
           </NavLink>
           <nav
             aria-label="Dự án"
             className="mt-3 space-y-1 border-l border-border ml-5 pl-3"
           >
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <NavLink
                 key={project.id}
                 to={`/projects/${project.id}`}
@@ -112,13 +156,9 @@ export default function App() {
               id="identity"
               className="field mt-1 w-full text-sm"
               value={actorId}
-              onChange={(e) => {
-                setActorId(e.target.value)
-                setNotice("")
-              }}
+              onChange={(e) => switchIdentity(e.target.value)}
             >
-              <option value="khoa">Ngô Minh Khoa · PTCM</option>
-              <option value="thanh">Phan Thị Thanh · PM</option>
+              {identityOptions}
             </select>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Chỉ kiểm thử giao diện, không phải tính năng tự cấp quyền.
@@ -138,7 +178,9 @@ export default function App() {
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{person.name}</p>
               <p className="text-xs text-muted-foreground">
-                {actorId === "khoa" ? "Phụ trách chuyên môn" : "Quản lý dự án"}
+                {isDirector(actorId)
+                  ? "Giám đốc"
+                  : "Trách nhiệm theo từng dự án"}
               </p>
             </div>
           </div>
@@ -176,10 +218,10 @@ export default function App() {
               aria-label="Danh tính mô phỏng trên màn hình nhỏ"
               className="field max-w-48"
               value={actorId}
-              onChange={(e) => setActorId(e.target.value)}
+              title="Điều khiển prototype, không phải tính năng tự cấp quyền"
+              onChange={(e) => switchIdentity(e.target.value)}
             >
-              <option value="khoa">Ngô Minh Khoa · PTCM</option>
-              <option value="thanh">Phan Thị Thanh · PM</option>
+              {identityOptions}
             </select>
           </label>
         </div>
@@ -196,14 +238,52 @@ export default function App() {
             </div>
           )}
           <Routes>
-            <Route path="/" element={<ProjectList tasks={tasks} />} />
+            <Route
+              path="/"
+              element={
+                <ProjectList
+                  key={actorId}
+                  projects={visibleProjects}
+                  actorId={actorId}
+                  tasks={tasks}
+                  onCreate={() => setCreating(true)}
+                />
+              }
+            />
             <Route
               path="/projects/:projectId"
               element={
                 <ProjectWorkspace
                   key={`${currentProject?.id}-${actorId}`}
                   actorId={actorId}
+                  projects={projects}
+                  conflicts={initialOutputConflicts}
+                  events={events}
+                  onProjectChange={(next, action) => {
+                    const before = projects.find((p) => p.id === next.id)
+                    setProjects((prev) =>
+                      prev.map((p) => (p.id === next.id ? next : p)),
+                    )
+                    setEvents((prev) => [
+                      ...prev,
+                      {
+                        projectId: next.id,
+                        actorId,
+                        at: new Date().toISOString(),
+                        action,
+                        before: structuredClone(before),
+                        after: structuredClone(next),
+                      },
+                    ])
+                    setNotice(
+                      action === "Chỉ định PTCM"
+                        ? "Đã cập nhật phụ trách chuyên môn."
+                        : "Đã bắt đầu triển khai dự án.",
+                    )
+                  }}
                   tasks={tasks}
+                  groups={groups}
+                  onGroupsChange={setGroups}
                   onTasksChange={setTasks}
                   onNotice={setNotice}
                 />
@@ -225,11 +305,35 @@ export default function App() {
           </Routes>
         </main>
       </div>
+      {creating && isDirector(actorId) && (
+        <CreateProjectDialog
+          projects={projects}
+          actorId={actorId}
+          onClose={() => setCreating(false)}
+          onSave={(next) => {
+            const created = next[next.length - 1]
+            setProjects(next)
+            setEvents((prev) => [
+              ...prev,
+              {
+                projectId: created.id,
+                actorId,
+                at: new Date().toISOString(),
+                action: "Tạo dự án",
+                after: structuredClone(created),
+              },
+            ])
+            setCreating(false)
+            setNotice("Đã tạo dự án và giao PM quản lý.")
+            navigate(`/projects/${created.id}`)
+          }}
+        />
+      )}
       <Dialog
         open={resetOpen}
         onOpenChange={setResetOpen}
         title="Khôi phục dữ liệu mẫu?"
-        description="Các phân công mô phỏng trong phiên này sẽ được xóa. Không có dữ liệu máy chủ bị thay đổi."
+        description="Các dự án, trách nhiệm, nhóm, công việc và phân công trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
       >
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setResetOpen(false)}>
@@ -238,6 +342,10 @@ export default function App() {
           <Button
             onClick={() => {
               setTasks(structuredClone(initialTasks))
+              setGroups(structuredClone(initialGroups))
+              setProjects(structuredClone(initialProjects))
+              setEvents([])
+              navigate("/")
               setResetOpen(false)
               setNotice("Đã khôi phục dữ liệu mẫu.")
             }}
