@@ -1,6 +1,6 @@
 # Lát cắt thiết kế — 20/10/2026
 
-> **Đã hoàn tất phạm vi; người dùng đã duyệt visual 20/10/2026.** Đây là bằng chứng pilot, không phải kế hoạch mở rộng còn chờ duyệt. Đợt mở rộng tiếp theo cần phạm vi được người dùng xác nhận.
+> **Đã hoàn tất phạm vi; người dùng đã duyệt visual 20/10/2026.** Đây là bằng chứng pilot, không phải kế hoạch mở rộng còn chờ duyệt. Quy trình và đợt tiếp theo xem [README](README.md).
 
 ## Phạm vi đã được duyệt
 

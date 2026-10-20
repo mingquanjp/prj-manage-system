@@ -12,9 +12,10 @@
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/demo/model.test.ts",
+    "check:harness": "node --test ../scripts/check-harness.test.mjs && node ../scripts/check-harness.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "check": "pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm check:harness && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

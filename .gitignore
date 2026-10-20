@@ -41,15 +41,21 @@ web/dist/
 /docs/reviews/*
 !/docs/reviews/business-sync-2026-10-12.md
 
-# Nguồn nghiệp vụ và thiết kế hiện hành
+# Nguồn trực tiếp của harness — allowlist có chủ đích, không mở toàn bộ docs/thesis
+!/docs/README.md
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md
-!/docs/design/database-proposal-2026-10-14.dbml
-!/docs/design/database-proposal-2026-10-14.md
 !/docs/design/database-review-decisions-2026-10-14.md
+!/docs/design/database-proposal-2026-10-14.md
+!/docs/design/database-proposal-2026-10-14.dbml
 !/docs/design/database-step5a-core-dictionary-2026-10-14.md
 !/docs/design/database-step5b-supporting-dictionary-2026-10-14.md
 !/docs/design/database-step5c-migration-map-2026-10-14.md
+!/docs/design/agent-harness-research-2026-10-20.md
+!/docs/design/frontend-readiness-2026-10-20.md
+!/docs/archive/
+/docs/archive/*
+!/docs/archive/agent-context-before-harness-2026-10-20.md
 
 # Cấu hình cá nhân của Claude Code — CLAUDE.md và .claude/docs/ vẫn được commit
 .claude/settings.local.json

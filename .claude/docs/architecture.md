@@ -27,7 +27,7 @@ Không dùng “service quản lý transaction” để buộc service import po
 ## 2. Hiện trạng và thành phần đích
 
 Hiện có cmd/server, cmd/migrate, cmd/seed; internal/config, repository/postgres/db.go, transport/http/router.go;
-migration 000001, seed. Web đã có pilot local được duyệt visual 20/10/2026; xem [báo cáo pilot](../../web/DESIGN-PILOT.md). Không đồng nghĩa các service nghiệp vụ đã có.
+migration 000001, seed. Web đã có pilot local được duyệt visual 20/10/2026; xem [hiện trạng và harness frontend](../../web/README.md). Không đồng nghĩa các service nghiệp vụ đã có.
 Đích: domain, service, matching, adapters, DTO/auth middleware, storage.Provider, CV worker và dịch vụ work effort/audit.
 Giữ Go + chi + pgx/PostgreSQL; SQL trực tiếp hiện tại, không tự thêm sqlc/query builder/parser dependency.
 

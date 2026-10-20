@@ -13,6 +13,8 @@ Thiết kế DB hiện hành: [32 bảng và các quan hệ](docs/design/databas
 
 ## Công nghệ
 
+Nguồn chuẩn và hướng dẫn phát triển: [bản đồ tài liệu](docs/README.md), [harness frontend/thiết kế đã duyệt](web/README.md). `AGENTS.md` là chỉ dẫn chung; `CLAUDE.md` trỏ cùng file, không duy trì hai bản nghiệp vụ.
+
 | Thành phần | Lựa chọn |
 |---|---|
 | Backend | Go 1.26, chi, pgx v5 |
@@ -22,13 +24,14 @@ Thiết kế DB hiện hành: [32 bảng và các quan hệ](docs/design/databas
 
 ## Chạy frontend mock — không cần DB
 
-Node 24.x, pnpm; phiên bản đã kiểm tra và giới hạn tại [báo cáo pilot](web/DESIGN-PILOT.md).
+Node 24.x, pnpm; phiên bản đã kiểm tra và giới hạn tại [web/README.md](web/README.md).
 
 ```bash
 cd web
 pnpm install --frozen-lockfile
 pnpm dev                 # http://localhost:5173
-pnpm check               # typecheck → test demo → build
+pnpm check               # test/kiểm kê harness → typecheck → test demo → build
+node ../scripts/check-harness.mjs
 ```
 
 Pilot chưa phải toàn bộ sản phẩm; reload khôi phục dữ liệu mẫu. Không cần chạy migration/seed để xem UI.
@@ -73,7 +76,8 @@ internal/
 migrations/     SQL migration
 db/seed/        SQL dữ liệu mẫu
 docs/           tài liệu phân tích thiết kế
-web/            frontend local và pilot thiết kế
+web/            frontend local và harness theo từng đợt
+scripts/        kiểm tra điểm vào/nguồn tài liệu, không truy cập DB
 ```
 
 Quy tắc phụ thuộc chi tiết theo [architecture](.claude/docs/architecture.md): transport gọi service; service/domain không import Postgres adapter, adapter triển khai interface do service khai báo. Gói `matching` không biết tới cơ sở dữ liệu hay HTTP.
