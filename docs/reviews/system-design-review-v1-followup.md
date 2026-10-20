@@ -1,5 +1,7 @@
 # Review sau cập nhật baseline V1
 
+> LỊCH SỬ — nội dung bên dưới phản ánh thời điểm V1, đã có các quyết định thay thế. Không dùng để triển khai các quy định cũ về timer, giới hạn một task đang làm, công thức lịch sử hoặc sửa effort. Nguồn hiện hành: [mục lục tài liệu](../README.md), ưu tiên quyết định/Bàn giao và các chốt tiếp nối được dẫn ở đó.
+
 Ngày 2026-09-06. Phạm vi: CLAUDE.md, 11 tài liệu miền, baseline D01–D38, đối chiếu schema 000001 và skeleton.
 Đây là review thiết kế bằng walkthrough, không phải kết quả chạy nghiệp vụ trên sản phẩm.
 Người dùng đã đồng ý V1 và xác nhận không bắt buộc ML; không cần xác nhận lại toàn bộ bộ quyết định.

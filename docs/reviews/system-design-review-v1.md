@@ -1,5 +1,7 @@
 # Phân tích thiết kế hệ thống — baseline V1 đã xác nhận
 
+> LỊCH SỬ — nội dung bên dưới phản ánh thời điểm V1, đã có các quyết định thay thế. Không dùng để triển khai các quy định cũ về timer, giới hạn một task đang làm, công thức lịch sử hoặc sửa effort. Nguồn hiện hành: [mục lục tài liệu](../README.md), ưu tiên quyết định/Bàn giao và các chốt tiếp nối được dẫn ở đó.
+
 Ngày lập: 2026-09-05. Trạng thái: **CONFIRMED — người dùng đồng ý bộ đề xuất V1**. Rà soát tiếp: 2026-09-06.
 
 Đây là baseline thiết kế đích từ tài liệu gốc, `.claude/docs`, migration và D01–D38. Người dùng đã đồng ý các đề xuất và xác nhận giảng viên không bắt buộc AI/ML, chấp nhận công thức phù hợp. Tài liệu miền đã được cập nhật theo baseline; code/DB và báo cáo gốc chưa triển khai các thay đổi. Từ “đề xuất” trong phần lập luận bên dưới mô tả nguồn gốc quyết định, không còn là yêu cầu xác nhận lại. Các chi tiết phát hiện thêm và phần chưa có bằng chứng được ghi trong [review sau cập nhật](system-design-review-v1-followup.md).
@@ -12,13 +14,13 @@ Repository chỉ có skeleton M0 và migration 000001; chưa có service nghiệ
 
 Nguồn bằng chứng chính:
 
-- [Quy tắc hiện tại](/Users/quanjp/Projects/ai-staffing/.claude/docs/domain_rules.md).
-- [Quyền hiện tại](/Users/quanjp/Projects/ai-staffing/.claude/docs/roles_permissions.md).
-- [Recommendation hiện tại](/Users/quanjp/Projects/ai-staffing/.claude/docs/ai_recommendation_workflow.md).
-- [Luồng CV hiện tại](/Users/quanjp/Projects/ai-staffing/.claude/docs/cv_extraction_approval_workflow.md).
-- [Schema hiện tại](/Users/quanjp/Projects/ai-staffing/migrations/000001_init.up.sql).
-- [Use case gốc](/Users/quanjp/Projects/ai-staffing/docs/thesis-context/tex/2_Khao_sat.tex).
-- [Thiết kế gốc](/Users/quanjp/Projects/ai-staffing/docs/thesis-context/tex/4_Ket_qua_thuc_nghiem.tex).
+- [Quy tắc](../../.claude/docs/domain_rules.md).
+- [Phân quyền](../../.claude/docs/roles_permissions.md).
+- [Recommendation](../../.claude/docs/ai_recommendation_workflow.md).
+- [Luồng CV](../../.claude/docs/cv_extraction_approval_workflow.md).
+- [Schema legacy](../../migrations/000001_init.up.sql).
+- Use case gốc: `docs/thesis-context/tex/2_Khao_sat.tex` (tham khảo local, không nằm trong bộ nguồn Git).
+- Thiết kế gốc: `docs/thesis-context/tex/4_Ket_qua_thuc_nghiem.tex` (tham khảo local, không nằm trong bộ nguồn Git).
 
 ## 2. Những kết luận trước cần sửa hoặc giới hạn lại
 
