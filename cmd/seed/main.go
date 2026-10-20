@@ -68,6 +68,9 @@ func main() {
 }
 
 func run() error {
+	if err := config.RequireDev("seed dữ liệu mẫu"); err != nil {
+		return err
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return err

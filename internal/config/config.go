@@ -17,6 +17,15 @@ type Config struct {
 	DatabaseURL string
 }
 
+// RequireDev yêu cầu chọn môi trường dev tường minh trước thao tác phá dữ liệu.
+// Không dùng giá trị mặc định hoặc nạp .env để vô tình cho phép seed/reset.
+func RequireDev(operation string) error {
+	if os.Getenv("APP_ENV") != "dev" {
+		return fmt.Errorf("%s chỉ được phép khi đặt APP_ENV=dev tường minh", operation)
+	}
+	return nil
+}
+
 // Load đọc cấu hình, ưu tiên biến môi trường thật. Nếu chưa có thì thử nạp
 // từ file .env ở thư mục gốc (chỉ dùng khi phát triển).
 func Load() (*Config, error) {

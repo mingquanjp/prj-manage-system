@@ -1,8 +1,8 @@
 // Command migrate chạy database migration.
 //
-//	go run ./cmd/migrate up     — áp dụng toàn bộ migration còn thiếu
-//	go run ./cmd/migrate down   — lùi lại một bước
-//	go run ./cmd/migrate drop   — xóa sạch schema (chỉ dùng khi phát triển)
+//	go run ./cmd/migrate up        — áp dụng toàn bộ migration còn thiếu
+//	go run ./cmd/migrate down      — lùi lại một bước (APP_ENV=dev tường minh)
+//	go run ./cmd/migrate down-all  — lùi toàn bộ (APP_ENV=dev tường minh)
 //	go run ./cmd/migrate version
 package main
 
@@ -32,6 +32,9 @@ func run() error {
 	command := "up"
 	if len(os.Args) > 1 {
 		command = os.Args[1]
+	}
+	if err := validateCommand(command); err != nil {
+		return err
 	}
 
 	cfg, err := config.Load()
@@ -71,8 +74,9 @@ func run() error {
 		err = m.Up()
 	case "down":
 		err = m.Steps(-1)
-	case "drop":
-		err = m.Drop()
+	case "down-all":
+		// Rollback qua file down để dọn cả ENUM, không chỉ bảng như Drop().
+		err = m.Down()
 	case "version":
 		version, dirty, verr := m.Version()
 		if verr != nil {
@@ -81,7 +85,7 @@ func run() error {
 		fmt.Printf("phiên bản schema: %d (dirty=%t)\n", version, dirty)
 		return nil
 	default:
-		return fmt.Errorf("lệnh không hợp lệ: %q (dùng up | down | drop | version)", command)
+		return fmt.Errorf("lệnh không hợp lệ: %q", command)
 	}
 
 	if errors.Is(err, migrate.ErrNoChange) {
@@ -94,4 +98,16 @@ func run() error {
 
 	fmt.Printf("migrate %s: hoàn tất\n", command)
 	return nil
+}
+
+// validateCommand chặn lệnh không hợp lệ/nguy hiểm trước khi đọc cấu hình DB.
+func validateCommand(command string) error {
+	switch command {
+	case "up", "version":
+		return nil
+	case "down", "down-all":
+		return config.RequireDev("migrate " + command)
+	default:
+		return fmt.Errorf("lệnh không hợp lệ: %q (dùng up | down | down-all | version)", command)
+	}
 }

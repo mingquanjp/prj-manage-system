@@ -56,9 +56,23 @@ curl -s localhost:8080/api/healthz
 Tài khoản mẫu dùng chung mật khẩu `Password@123`:
 `admin` (Quản trị viên), `pm.hoa` (Quản lý dự án), `dev.an` (Nhân viên).
 
-> **Lưu ý về Neon**: `DATABASE_URL` phải trỏ tới endpoint **trực tiếp**, không phải
-> endpoint có `-pooler`. pgx dùng prepared statement nên không tương thích hoàn toàn
-> với transaction pooling, và migration cần advisory lock mà pooler không giữ được.
+> **Lưu ý về Neon**: khuyến nghị endpoint trực tiếp. Code hiện có nhận endpoint
+> `-pooler`: runtime chọn simple protocol, migration chuyển sang endpoint trực tiếp.
+> Đây là cơ chế hiện có, không phải bảo đảm cho mọi cấu hình pooler.
+
+Lệnh `seed`, `migrate down` và `migrate down-all` yêu cầu đặt `APP_ENV=dev` tường minh
+trong môi trường tiến trình (ví dụ `APP_ENV=dev make seed`); không lấy giá trị mặc định
+hoặc tự nạp `.env` để cấp phép. Vẫn phải tự xác nhận đúng DB phát triển: cờ dev không
+chứng minh DB đích an toàn. `migrate-reset` dùng rollback `down-all` rồi `up` để dọn cả
+ENUM; lệnh `drop` không còn được hỗ trợ. Không chạy các lệnh này để đồng bộ thiết kế DB mới.
+
+### Bảo toàn các nhánh cũ — 21/10/2026
+
+- `archive/documentation-inconsistencies-2026-10-21` giữ commit `cfa26cd`: phần tài liệu cũ đã được thay thế; chỉ sửa riêng mô tả pooling còn phù hợp.
+- `archive/two-level-task-hierarchy-2026-10-21` giữ commit `704b8e7`: cấu trúc nhóm → task đã có trong thiết kế hiện hành; không lấy lại thay đổi trực tiếp migration 000001.
+- `archive/migrate-reset-and-seed-hardening-2026-10-21` giữ commit `1ff7b0e`: áp dụng lại có chọn lọc guard dev, rollback đầy đủ, health tổng quát và không tin forwarded IP; không lấy seed/role/quy trình duyệt cũ hoặc ghi đè mật khẩu khi seed lại.
+
+Các tag chỉ để truy vết/khôi phục, không phải nguồn nghiệp vụ hiện hành. Sửa an toàn đã có test không DB cho guard, health và forwarded IP; vet/test/build qua. Chưa kiểm tra reset/seed trên DB, không đổi migration/schema/dependency và không tuyên bố DB thật đã đồng bộ.
 
 Chạy `make help` để xem toàn bộ lệnh.
 
