@@ -39,7 +39,7 @@ Actor lấy từ phiên; ID người được chọn trong request là resource 
 403/404 khác nhau có thể tiết lộ sự tồn tại; không trả nội dung trái quyền.
 Duyệt/phân công/chuyển trạng thái kiểm tra lại quyền và giá trị nền trong transaction.
 Effort không cho client giả actor/employee/assignment; chỉ người thực hiện tự ghi/gửi, PTCM áp dụng yêu cầu đã duyệt.
-R01 không duyệt riêng quên Start/Resume; assignment/ngày/tổng/khóa vẫn kiểm tra. Nhật ký đã khóa theo hiệu chỉnh chung, không backdate history.
+R01 (21/10): ghi/sửa/xóa nhật ký trực tiếp kiểm tra lại đúng người hiện được giao, task/project IN_PROGRESS tại thời điểm lưu; ASSIGNED/PAUSED phải Bắt đầu/Tiếp tục trước. Assignment/ngày/tổng/khóa vẫn kiểm tra. Nhật ký đã khóa theo hiệu chỉnh chung, không backdate history hoặc duyệt ngoại lệ quên Start/Resume.
 R02 cho nộp khi thiếu nhật ký, không có nộp kết quả thay; không ép khai giờ giả.
 R03 không mở lại mục CV/attempt; R04 bổ sung lại bằng yêu cầu kỹ năng mới. Kiểm tra quyền/dữ liệu nền và request.version kỹ năng, không sửa/xóa quyết định đã kết thúc.
 R05 không có history acknowledgement; snapshot bất biến, kiểm tra điều kiện phân công hiện hành trong transaction, không tin điểm client.

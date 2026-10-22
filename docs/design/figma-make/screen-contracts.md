@@ -39,15 +39,19 @@ PM hoàn thành khi ≥1 task DONE và mọi task còn lại DONE/CANCELLED. PM 
 | Trạng thái / nhãn | Người thực hiện | PTCM / PM |
 |---|---|---|
 | PENDING_ASSIGNMENT — Chờ phân công | Không thực hiện | PTCM phân công nếu project PLANNING/IN_PROGRESS |
-| ASSIGNED — Đã phân công | Start khi project IN_PROGRESS; ghi bổ sung phần thực tế theo R01 khi còn quyền | PTCM thay/thu hồi; PM hủy có lý do |
+| ASSIGNED — Đã phân công | Start khi project IN_PROGRESS; chỉ đọc nhật ký, chưa tạo/sửa/xóa | PTCM thay/thu hồi; PM hủy có lý do |
 | IN_PROGRESS — Đang thực hiện | Pause có lý do; ghi/sửa/xóa log theo quyền; nộp | PTCM thay/thu hồi; PM hủy |
-| PAUSED — Tạm dừng | Resume; bổ sung log thực tế theo R01 khi còn quyền | PTCM thay/thu hồi; PM hủy |
+| PAUSED — Tạm dừng | Resume trước khi ghi/sửa/xóa nhật ký; vẫn đọc log đã có | PTCM thay/thu hồi; PM hủy |
 | PENDING_REVIEW — Chờ nghiệm thu | Xem kết quả đã nộp; log khóa, dùng hiệu chỉnh | PTCM chấp nhận → DONE hoặc yêu cầu chỉnh sửa → IN_PROGRESS; phải trả lại trước thay/thu hồi; PM hủy |
 | DONE — Đã nghiệm thu | Xem đóng góp, hiệu chỉnh dữ liệu cũ qua yêu cầu khi project cho phép | Không mở lại; đóng dự án đổi sang CLOSED |
 | CLOSED — Đã đóng | Chỉ đọc | Chỉ đọc |
 | CANCELLED — Đã hủy | Hiệu chỉnh dữ liệu cũ qua yêu cầu nếu project IN_PROGRESS/COMPLETED | Không thực hiện tiếp; giữ lịch sử |
 
 Mọi hàng chịu quyền/trạng thái dự án ở bảng trên. Nhánh “Yêu cầu chỉnh sửa” khác “Thu hồi phân công”; không nút nhân viên tự “Trả việc”. Kéo thả Kanban không tự chuyển trạng thái.
+
+Chốt tiếp nối 21/10 cho UI-14/UI-15: Bắt đầu là xác nhận bắt tay thực hiện, không thêm bước xác nhận nhận việc. Chỉ thao tác nhật ký trực tiếp khi task/project IN_PROGRESS; Start/Resume không sinh giờ, không timer. Quy tắc này thay quyền ghi khi ASSIGNED/PAUSED của R01 cũ.
+
+Chốt bố cục tiếp nối 21/10 cho UI-10/UI-14: PM và PTCM có Danh sách/Kanban toàn dự án, cùng tìm/lọc và chi tiết task. Năm cột: Chờ phân công / Đã phân công / Đang xử lý (IN_PROGRESS + PAUSED có nhãn Tạm dừng) / Chờ nghiệm thu / Đã nghiệm thu. CLOSED/CANCELLED xem qua danh sách; không kéo thả chuyển trạng thái. Kanban không cấp thêm quyền phân công/nghiệm thu cho PM-only. Hàng chờ nghiệm thu nằm trong dự án; trả sửa/nộp lại giữ lịch sử, snapshot cũ chỉ đọc, chấp nhận không tự hoàn thành dự án.
 
 ## 4. Form và cách hiện dữ liệu
 

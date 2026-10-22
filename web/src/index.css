@@ -40,13 +40,19 @@ svg { flex-shrink: 0; }
   .count { @apply inline-flex min-w-5 items-center justify-center rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums; }
 }
 
-@media (min-width: 1280px) {
-  .assignment-grid { grid-template-columns: 176px minmax(0, 1fr) 232px; }
-  .assignment-draft { position: sticky; top: 24px; }
+.assignment-shell { container-type: inline-size; }
+.assignment-task-list { display: flex; gap: 4px; overflow-x: auto; }
+.assignment-task { flex: 0 0 220px; }
+@container (min-width: 800px) {
+  .assignment-grid { grid-template-columns: minmax(0, 1fr) 260px; }
+  .assignment-tasks { grid-column: 1 / -1; }
+  .assignment-draft { position: sticky; top: 112px; }
 }
-@media (min-width: 768px) and (max-width: 1279px) {
-  .assignment-grid { grid-template-columns: 180px minmax(0, 1fr); }
-  .assignment-draft { grid-column: 1 / -1; }
+@container (min-width: 1180px) {
+  .assignment-grid { grid-template-columns: 184px minmax(0, 1fr) 260px; }
+  .assignment-tasks { grid-column: auto; }
+  .assignment-task-list { display: block; max-height: 65dvh; overflow-y: auto; }
+  .assignment-task { margin-bottom: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }

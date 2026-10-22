@@ -2,9 +2,7 @@ import { useRef, useState } from "react"
 import { Link, useParams } from "react-router"
 import {
   ArrowLeftIcon,
-  CheckCircledIcon,
   ChevronDownIcon,
-  Cross2Icon,
   CubeIcon,
   FileTextIcon,
   InfoCircledIcon,
@@ -15,6 +13,8 @@ import {
   PlusIcon,
   Pencil1Icon,
   LockClosedIcon,
+  ViewVerticalIcon,
+  CheckCircledIcon,
 } from "@radix-ui/react-icons"
 import {
   Avatar,
@@ -24,14 +24,15 @@ import {
 } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
+import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
 import {
   canAssign,
   isTaskFrozen,
   getPerson,
-  levels,
   progress,
   canViewProject,
   isDirector,
+  statusLabels,
   type Project,
   type ProjectEvent,
   type OutputConflict,
@@ -43,6 +44,9 @@ import { AssignmentWorkspace } from "@/features/assignment/AssignmentWorkspace"
 import { ProjectStructure } from "./ProjectStructure"
 import { TaskEditor } from "./TaskEditor"
 import { ProjectResponsibilities } from "./ProjectResponsibilities"
+import { ProjectKanban } from "./ProjectKanban"
+import { TaskReviewPanel } from "./TaskReviewPanel"
+import type { ReviewResult, WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
 
 export function ProjectWorkspace({
@@ -56,6 +60,8 @@ export function ProjectWorkspace({
   onGroupsChange,
   onTasksChange,
   onNotice,
+  work,
+  onReview,
 }: {
   actorId: string
   projects: Project[]
@@ -67,25 +73,32 @@ export function ProjectWorkspace({
   onGroupsChange: (groups: TaskGroup[]) => void
   onTasksChange: (tasks: Task[]) => void
   onNotice: (notice: string) => void
+  work: WorkState
+  onReview: (
+    submissionId: string,
+    result: ReviewResult,
+    comment: string,
+  ) => void
 }) {
   const { projectId } = useParams()
   const project = projects.find((p) => p.id === projectId)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [group, setGroup] = useState("all")
-  const [view, setView] = useState<"list" | "groups">("list")
-  const [tab, setTab] = useState<"tasks" | "structure">("tasks")
+  const [view, setView] = useState<"list" | "groups" | "kanban">("list")
+  const [tab, setTab] = useState<"tasks" | "structure" | "reviews">("tasks")
+  const [detailTab, setDetailTab] = useState<"details" | "results">("details")
   const [editor, setEditor] = useState<{
     task?: Task
     groupId?: string
   } | null>(null)
-  const [info, setInfo] = useState(true)
+  const [info, setInfo] = useState(false)
   const [detail, setDetail] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
   const [draft, setDraft] = useState<Draft>({})
-  const [discardTab, setDiscardTab] = useState<"tasks" | "structure" | null>(
-    null,
-  )
+  const [discardTab, setDiscardTab] = useState<
+    "tasks" | "structure" | "reviews" | null
+  >(null)
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(
     null,
   )
@@ -106,21 +119,32 @@ export function ProjectWorkspace({
       `${t.name} ${t.code}`
         .toLocaleLowerCase("vi")
         .includes(search.toLocaleLowerCase("vi")) &&
-      (filter === "all" || t.status === filter) &&
+      (tab === "reviews"
+        ? project.status === "IN_PROGRESS" && t.status === "PENDING_REVIEW"
+        : filter === "all" || t.status === filter) &&
       (group === "all" || t.group === group),
   )
   const eligible = filtered.filter((t) => t.status === "PENDING_ASSIGNMENT")
   const currentTask = related.find((t) => t.id === detail)
   const allowed = canAssign(project, actorId)
+  const canSelectAssignments = allowed && tab === "tasks"
+  const canReadResults = project.ptcmId === actorId || project.pmId === actorId
+  const waiting =
+    project.status === "IN_PROGRESS"
+      ? related.filter((t) => t.status === "PENDING_REVIEW").length
+      : 0
   const percent = progress(related)
-  const openTab = (next: "tasks" | "structure") => {
+  const openTab = (next: "tasks" | "structure" | "reviews") => {
     setDraft({})
     setAssignMode(null)
     setTab(next)
     setView("list")
-    if (next === "structure") setSelected([])
+    if (next !== "tasks") {
+      setSelected([])
+      setDetail(null)
+    }
   }
-  const requestTab = (next: "tasks" | "structure") => {
+  const requestTab = (next: "tasks" | "structure" | "reviews") => {
     if (assignMode && Object.keys(draft).length) setDiscardTab(next)
     else openTab(next)
   }
@@ -140,7 +164,7 @@ export function ProjectWorkspace({
         <thead>
           <tr className="table-heading">
             <th className="w-10 py-3 pl-4">
-              {allowed && (
+              {canSelectAssignments && (
                 <input
                   type="checkbox"
                   aria-label="Chọn tất cả công việc đủ điều kiện theo bộ lọc"
@@ -177,7 +201,7 @@ export function ProjectWorkspace({
                 )}
               >
                 <td className="pl-4">
-                  {allowed && (
+                  {canSelectAssignments && (
                     <input
                       type="checkbox"
                       aria-label={`Chọn ${task.name}`}
@@ -200,6 +224,11 @@ export function ProjectWorkspace({
                     onClick={(e) => {
                       detailTrigger.current = e.currentTarget
                       setDetail(task.id)
+                      setDetailTab(
+                        task.status === "PENDING_REVIEW" && canReadResults
+                          ? "results"
+                          : "details",
+                      )
                     }}
                   >
                     <FileTextIcon className="mt-0.5 shrink-0 text-muted-foreground" />
@@ -243,26 +272,28 @@ export function ProjectWorkspace({
     <>
       <Link
         to="/"
-        className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className="mb-3 inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon />
         Tất cả dự án
       </Link>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-border bg-white">
-            <CubeIcon className="size-7" />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-white">
+            <CubeIcon className="size-5" />
           </span>
           <div>
             <p className="eyebrow">{project.code}</p>
-            <h1 className="mt-1 text-2xl font-semibold">{project.name}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-xl font-semibold sm:text-2xl">
+                {project.name}
+              </h1>
               <StatusBadge status={project.status} />
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          {allowed && !assignMode && (
+          {allowed && !assignMode && tab !== "reviews" && (
             <Button
               onClick={() => {
                 if (!groups.length) {
@@ -292,17 +323,15 @@ export function ProjectWorkspace({
           )}
         </div>
       </div>
-      {!assignMode && (
-        <ProjectResponsibilities
-          project={project}
-          actorId={actorId}
-          tasks={tasks}
-          conflicts={conflicts}
-          events={events}
-          onChange={onProjectChange}
-        />
-      )}
-      <div className="mb-6 flex items-center justify-between gap-4 border-b border-border">
+      <ProjectResponsibilities
+        project={project}
+        actorId={actorId}
+        tasks={tasks}
+        conflicts={conflicts}
+        events={events}
+        onChange={onProjectChange}
+      />
+      <div className="mb-4 flex items-center justify-between gap-4 border-b border-border">
         <div className="flex min-w-0 overflow-x-auto">
           <button
             type="button"
@@ -322,18 +351,17 @@ export function ProjectWorkspace({
             <LayersIcon />
             Cấu trúc <span className="count">{groups.length}</span>
           </button>
-          <button
-            type="button"
-            disabled
-            title="Nghiệm thu chưa dựng trong lát cắt thiết kế này"
-            className="tab-button opacity-45"
-          >
-            <CheckCircledIcon />
-            Nghiệm thu{" "}
-            <span className="count">
-              {related.filter((t) => t.status === "PENDING_REVIEW").length}
-            </span>
-          </button>
+          {canReadResults && (
+            <button
+              type="button"
+              onClick={() => requestTab("reviews")}
+              className={cn("tab-button", tab === "reviews" && "tab-selected")}
+              aria-pressed={tab === "reviews"}
+            >
+              <CheckCircledIcon />
+              Nghiệm thu <span className="count">{waiting}</span>
+            </button>
+          )}
         </div>
         <span className="hidden text-xs text-muted-foreground md:block">
           Bạn đang có trách nhiệm{" "}
@@ -364,6 +392,7 @@ export function ProjectWorkspace({
           onViewTask={(task) => {
             setTab("tasks")
             setDetail(task.id)
+            setDetailTab("details")
             setInfo(false)
             setSearch("")
             setFilter("all")
@@ -395,38 +424,45 @@ export function ProjectWorkspace({
           <div
             className={cn(
               "grid items-start gap-6",
-              (info || currentTask) && "xl:grid-cols-[minmax(0,1fr)_280px]",
+              (info || currentTask) && "xl:grid-cols-[minmax(0,1fr)_360px]",
             )}
           >
             <section className="min-w-0">
               <div className="mb-4 flex flex-wrap items-center gap-2">
-                <div className="mr-auto flex flex-wrap gap-1">
-                  {[
-                    ["all", "Tất cả"],
-                    ["PENDING_ASSIGNMENT", "Chờ phân công"],
-                    ["IN_PROGRESS", "Đang thực hiện"],
-                  ].map(([value, label]) => (
-                    <button
-                      type="button"
-                      key={value}
-                      aria-pressed={filter === value}
-                      className={cn(
-                        "filter-chip",
-                        filter === value && "filter-active",
-                      )}
-                      onClick={() => setFilter(value)}
-                    >
-                      {label}
-                      <span className="ml-1 text-xs text-muted-foreground">
-                        {
-                          related.filter(
-                            (t) => value === "all" || t.status === value,
-                          ).length
-                        }
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                {tab !== "reviews" && (
+                  <div className="mr-auto flex flex-wrap gap-1">
+                    {[
+                      ["all", "Tất cả"],
+                      ["PENDING_ASSIGNMENT", "Chờ phân công"],
+                      ["IN_PROGRESS", "Đang thực hiện"],
+                    ].map(([value, label]) => (
+                      <button
+                        type="button"
+                        key={value}
+                        aria-pressed={filter === value}
+                        className={cn(
+                          "filter-chip",
+                          filter === value && "filter-active",
+                        )}
+                        onClick={() => setFilter(value)}
+                      >
+                        {label}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          {
+                            related.filter(
+                              (t) => value === "all" || t.status === value,
+                            ).length
+                          }
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {tab === "reviews" && (
+                  <p className="mr-auto text-sm text-muted-foreground">
+                    Công việc đang chờ · {waiting}
+                  </p>
+                )}
                 <div
                   className="flex rounded-md border border-border bg-white p-0.5"
                   aria-label="Cách xem"
@@ -455,6 +491,18 @@ export function ProjectWorkspace({
                   >
                     <RowsIcon />
                   </button>
+                  <button
+                    type="button"
+                    aria-label="Xem Kanban"
+                    aria-pressed={view === "kanban"}
+                    className={cn(
+                      "rounded p-2",
+                      view === "kanban" && "bg-accent",
+                    )}
+                    onClick={() => setView("kanban")}
+                  >
+                    <ViewVerticalIcon />
+                  </button>
                 </div>
               </div>
               <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -478,45 +526,117 @@ export function ProjectWorkspace({
                   </select>
                 </label>
               </div>
-              <div className="overflow-hidden rounded-lg border border-border bg-white">
-                {!filtered.length ? (
-                  <EmptyState
-                    title={
-                      related.length
-                        ? "Không có công việc phù hợp"
-                        : "Dự án chưa có công việc"
-                    }
-                    detail={
-                      related.length
-                        ? "Thử thay đổi từ khóa hoặc bộ lọc."
-                        : allowed
-                          ? "Mở tab Cấu trúc để tạo nhóm, sau đó thêm công việc đầu tiên."
-                          : "PTCM sẽ thiết lập nhóm và công việc cho dự án."
-                    }
-                  />
-                ) : view === "list" ? (
-                  renderTable(filtered)
-                ) : (
-                  groups
-                    .filter((g) => filtered.some((t) => t.group === g))
-                    .map((g) => (
-                      <details
-                        key={g}
-                        open
-                        className="border-b border-border last:border-0"
+              {tab === "tasks" && (
+                <label className="mb-4 flex w-fit items-center gap-2 text-sm text-muted-foreground">
+                  Trạng thái
+                  <select
+                    className="field"
+                    aria-label="Trạng thái công việc dự án"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    {Object.entries(statusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {tab === "reviews" && (
+                <p className="mb-4 text-xs leading-5 text-muted-foreground">
+                  Chọn công việc để xem lần nộp và tiêu chí.{" "}
+                  {project.ptcmId === actorId
+                    ? "Bạn xử lý theo trách nhiệm PTCM."
+                    : "Bạn chỉ theo dõi; quyết định thuộc PTCM."}
+                </p>
+              )}
+              {view === "kanban" && (
+                <>
+                  {filtered.some((t) =>
+                    ["CLOSED", "CANCELLED"].includes(t.status),
+                  ) && (
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      {
+                        filtered.filter((t) =>
+                          ["CLOSED", "CANCELLED"].includes(t.status),
+                        ).length
+                      }{" "}
+                      công việc đã đóng/hủy không nằm trên Kanban.{" "}
+                      <button
+                        type="button"
+                        className="underline"
+                        onClick={() => setView("list")}
                       >
-                        <summary className="flex cursor-pointer list-none items-center gap-2 bg-background/70 px-4 py-3 text-sm font-medium">
-                          <ChevronDownIcon />
-                          {g}
-                          <span className="count">
-                            {filtered.filter((t) => t.group === g).length}
-                          </span>
-                        </summary>
-                        {renderTable(filtered.filter((t) => t.group === g))}
-                      </details>
-                    ))
-                )}
-              </div>
+                        Xem danh sách
+                      </button>
+                    </p>
+                  )}
+                  <ProjectKanban
+                    tasks={filtered}
+                    selectedId={detail}
+                    selectedAssignments={selected}
+                    canSelect={canSelectAssignments}
+                    onToggle={toggle}
+                    onSelect={(task, trigger) => {
+                      detailTrigger.current = trigger
+                      setDetail(task.id)
+                      setInfo(false)
+                      setDetailTab(
+                        task.status === "PENDING_REVIEW" && canReadResults
+                          ? "results"
+                          : "details",
+                      )
+                    }}
+                  />
+                </>
+              )}
+              {view !== "kanban" && (
+                <div className="overflow-hidden rounded-lg border border-border bg-white">
+                  {!filtered.length ? (
+                    <EmptyState
+                      title={
+                        tab === "reviews"
+                          ? "Không có công việc chờ nghiệm thu"
+                          : related.length
+                            ? "Không có công việc phù hợp"
+                            : "Dự án chưa có công việc"
+                      }
+                      detail={
+                        tab === "reviews"
+                          ? "Thử thay đổi từ khóa/nhóm hoặc chờ người thực hiện nộp kết quả."
+                          : related.length
+                            ? "Thử thay đổi từ khóa hoặc bộ lọc."
+                            : allowed
+                              ? "Mở tab Cấu trúc để tạo nhóm, sau đó thêm công việc đầu tiên."
+                              : "PTCM sẽ thiết lập nhóm và công việc cho dự án."
+                      }
+                    />
+                  ) : view === "list" ? (
+                    renderTable(filtered)
+                  ) : (
+                    groups
+                      .filter((g) => filtered.some((t) => t.group === g))
+                      .map((g) => (
+                        <details
+                          key={g}
+                          open
+                          className="border-b border-border last:border-0"
+                        >
+                          <summary className="flex cursor-pointer list-none items-center gap-2 bg-background/70 px-4 py-3 text-sm font-medium">
+                            <ChevronDownIcon />
+                            {g}
+                            <span className="count">
+                              {filtered.filter((t) => t.group === g).length}
+                            </span>
+                          </summary>
+                          {renderTable(filtered.filter((t) => t.group === g))}
+                        </details>
+                      ))
+                  )}
+                </div>
+              )}
               <p className="mt-3 text-xs text-muted-foreground">
                 {filtered.length} / {related.length} công việc · Nhấn tên để xem
                 chi tiết mà không rời danh sách.
@@ -524,103 +644,140 @@ export function ProjectWorkspace({
             </section>
             {(info || currentTask) && (
               <aside
-                className="rounded-lg border border-border bg-white p-5 xl:sticky xl:top-6"
+                className={cn(
+                  "min-w-0 rounded-lg border border-border bg-white p-5 xl:sticky xl:top-6",
+                  currentTask &&
+                    "xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto",
+                )}
                 aria-label={
                   currentTask ? "Chi tiết công việc" : "Thông tin dự án"
                 }
                 onKeyDown={(e) => {
-                  if (e.key === "Escape" && currentTask) closeDetail()
+                  if (
+                    e.key === "Escape" &&
+                    currentTask &&
+                    !(e.target as HTMLElement).closest('[role="dialog"]')
+                  )
+                    closeDetail()
                 }}
               >
                 {currentTask ? (
                   <>
-                    <div className="mb-4 flex items-center justify-between">
-                      <p className="eyebrow">{currentTask.code}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Đóng chi tiết công việc"
-                        onClick={closeDetail}
+                    <TaskDetailHeader
+                      task={currentTask}
+                      onClose={closeDetail}
+                    />
+                    {canReadResults && (
+                      <div
+                        className="mt-4 flex gap-1"
+                        role="group"
+                        aria-label="Nội dung công việc dự án"
                       >
-                        <Cross2Icon />
-                      </Button>
-                    </div>
-                    <h2 className="text-lg font-semibold leading-7">
-                      {currentTask.name}
-                    </h2>
-                    <div className="mt-3">
-                      <StatusBadge status={currentTask.status} />
-                    </div>
-                    {allowed &&
-                      (isTaskFrozen(currentTask) ? (
-                        <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
-                          <LockClosedIcon className="mt-0.5" />
-                          Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa làm
-                          rõ/gia hạn chưa dựng trong đợt này.
-                        </p>
-                      ) : (
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="mt-4"
-                          onClick={() => setEditor({ task: currentTask })}
+                          variant={
+                            detailTab === "details" ? "default" : "ghost"
+                          }
+                          aria-pressed={detailTab === "details"}
+                          onClick={() => setDetailTab("details")}
                         >
-                          <Pencil1Icon />
-                          Chỉnh sửa công việc
+                          Chi tiết
                         </Button>
-                      ))}
-                    <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                      {currentTask.description}
-                    </p>
-                    <h3 className="mt-5 text-sm font-medium">
-                      Tiêu chí nghiệm thu
-                    </h3>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                      {currentTask.criteria}
-                    </p>
-                    <h3 className="mt-5 text-sm font-medium">
-                      Yêu cầu kỹ năng
-                    </h3>
-                    <div className="mt-3 space-y-3">
-                      {currentTask.requirements.map((r) => (
-                        <div key={r.skill} className="text-sm">
-                          <div className="flex justify-between gap-2">
-                            <span>{r.skill}</span>
-                            <span className="text-muted-foreground">
-                              {levels[r.level]}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {r.mandatory ? "Bắt buộc" : "Bổ trợ"}
-                            {" · "}Trọng số {r.weight} (minh họa)
+                        <Button
+                          size="sm"
+                          variant={
+                            detailTab === "results" ? "default" : "ghost"
+                          }
+                          aria-pressed={detailTab === "results"}
+                          onClick={() => setDetailTab("results")}
+                        >
+                          Kết quả
+                        </Button>
+                      </div>
+                    )}
+                    {detailTab === "results" && canReadResults ? (
+                      <>
+                        <details
+                          className="mt-4 rounded-md border border-border p-3 text-sm"
+                          open
+                        >
+                          <summary className="cursor-pointer font-medium">
+                            Tiêu chí nghiệm thu
+                          </summary>
+                          <p className="mt-2 whitespace-pre-wrap break-words leading-6 text-muted-foreground">
+                            {currentTask.criteria}
                           </p>
+                        </details>
+                        <TaskReviewPanel
+                          key={currentTask.id}
+                          project={project}
+                          task={currentTask}
+                          work={work}
+                          actorId={actorId}
+                          conflicts={conflicts}
+                          onReview={onReview}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {allowed &&
+                          (isTaskFrozen(currentTask) ? (
+                            <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
+                              <LockClosedIcon className="mt-0.5" />
+                              Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa
+                              làm rõ/gia hạn chưa dựng trong đợt này.
+                            </p>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-4"
+                              onClick={() => setEditor({ task: currentTask })}
+                            >
+                              <Pencil1Icon />
+                              Chỉnh sửa công việc
+                            </Button>
+                          ))}
+                        <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+                          <div className="flex justify-between gap-2">
+                            <dt className="text-muted-foreground">
+                              Người thực hiện
+                            </dt>
+                            <dd className="text-right">
+                              {getPerson(currentTask.assigneeId)?.name ??
+                                "Chưa phân công"}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <dt className="text-muted-foreground">Nhóm</dt>
+                            <dd className="text-right">{currentTask.group}</dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-muted-foreground">Ưu tiên</dt>
+                            <dd>{currentTask.priority}</dd>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <dt className="text-muted-foreground">Kế hoạch</dt>
+                            <dd className="text-right">
+                              {currentTask.start && currentTask.end
+                                ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
+                                : "Chưa đặt ngày"}
+                            </dd>
+                          </div>
+                        </dl>
+                        <div className="mt-5 border-t border-border pt-4 text-sm">
+                          Ước tính{" "}
+                          <span className="float-right font-medium">
+                            {currentTask.estimate} giờ
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                    <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Nhóm</dt>
-                        <dd className="text-right">{currentTask.group}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Ưu tiên</dt>
-                        <dd>{currentTask.priority}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Kế hoạch</dt>
-                        <dd className="text-right">
-                          {currentTask.start && currentTask.end
-                            ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
-                            : "Chưa đặt ngày"}
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="mt-5 border-t border-border pt-4 text-sm">
-                      Ước tính{" "}
-                      <span className="float-right font-medium">
-                        {currentTask.estimate} giờ
-                      </span>
-                    </div>
+                        <TaskSpecification
+                          key={currentTask.id}
+                          task={currentTask}
+                          showWeights
+                        />
+                      </>
+                    )}
                   </>
                 ) : (
                   <>

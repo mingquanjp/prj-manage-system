@@ -113,7 +113,7 @@ PTCM chia sẻ kế hoạch chi tiết ngoài hệ thống (ví dụ Word qua Sl
 Effort tự khai gồm việc tại công ty và ở nhà; tổng actual_hours = tổng duration_minutes của log hiệu lực / 60.
 Không timer/lịch cắt giờ/chấm công/duyệt OT. 8h quy đổi ngày công và cảnh báo, >24h/người/ngày bị chặn toàn hệ thống.
 R02: nghiệm thu dựa trên đầu ra và tiêu chí; thiếu nhật ký không tự động chặn nghiệm thu. Không có chức năng nộp kết quả thay. Dữ liệu thời gian chưa đầy đủ không dùng cho thành phần hiệu suất phụ thuộc thời gian; không ép khai giờ giả.
-R01: khi còn quyền sửa nhật ký trực tiếp, được ghi bổ sung thời gian thực tế thuộc lượt phân công, không phụ thuộc mốc bấm Start/Resume. Không sửa ngược trạng thái; nhật ký đã khóa hoặc lượt giao đã kết thúc vẫn theo hiệu chỉnh chung.
+R01 (chốt tiếp nối 21/10): chỉ tạo/sửa/xóa nhật ký trực tiếp khi task/project IN_PROGRESS và đúng người hiện được giao. ASSIGNED cần Bắt đầu, PAUSED cần Tiếp tục; vẫn đọc nhật ký. Không timer, sinh giờ hoặc sửa ngược trạng thái; nhật ký đã khóa hoặc lượt giao đã kết thúc vẫn theo hiệu chỉnh chung. Xem work_effort_workflow mục 2–3.
 Effort task CANCELLED vẫn thuộc tổng effort project; báo riêng phần hủy. Sửa sau DONE không mở lại công việc.
 Giữ ngày kế hoạch ban đầu và ngày kế hoạch hiện hành. Gia hạn có lý do/audit, không sửa mốc ban đầu.
 Ngày kế hoạch không chặn ghi effort thực tế muộn hợp lệ; không buộc gia hạn để hợp thức hóa nhật ký.
