@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ChevronDownIcon, GearIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import {
@@ -32,6 +33,7 @@ export function ProjectResponsibilities({
   const [candidate, setCandidate] = useState(project.ptcmId ?? "")
   const [error, setError] = useState("")
   const [starting, setStarting] = useState(false)
+  const [managing, setManaging] = useState(false)
   const pm = project.pmId === actorId
   const editable = ["PLANNING", "IN_PROGRESS"].includes(project.status)
   const block = candidate
@@ -44,80 +46,109 @@ export function ProjectResponsibilities({
   return (
     <section
       aria-label="Trách nhiệm và triển khai"
-      className="mb-6 rounded-lg border border-border bg-white p-5"
+      className="mb-3 border-b border-border pb-3"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
         <div>
-          <h2 className="text-sm font-semibold">Trách nhiệm dự án</h2>
-          <p className="mt-2 text-sm">
-            PM:{" "}
-            <strong className="font-medium">
-              {getPerson(project.pmId)?.name}
-            </strong>
-            <span className="mx-2 text-muted-foreground">/</span>PTCM:{" "}
-            <strong className="font-medium">
-              {getPerson(project.ptcmId)?.name ?? "Chưa chỉ định"}
-            </strong>
+          <h2 className="sr-only">Trách nhiệm dự án</h2>
+          <p className="flex flex-wrap gap-x-5 gap-y-1 text-xs leading-6">
+            <span>
+              <span className="mr-1.5 text-muted-foreground">PM</span>
+              <strong className="font-medium">
+                {getPerson(project.pmId)?.name}
+              </strong>
+            </span>
+            <span>
+              <span className="mr-1.5 text-muted-foreground">PTCM</span>
+              <strong className="font-medium">
+                {getPerson(project.ptcmId)?.name ?? "Chưa chỉ định"}
+              </strong>
+            </span>
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {pm && editable && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCandidate(project.ptcmId ?? "")
-                setError("")
-                setEditing(true)
-              }}
-            >
-              {project.ptcmId ? "Thay PTCM" : "Chỉ định PTCM"}
-            </Button>
-          )}
-          {pm && project.status === "PLANNING" && (
-            <Button
-              size="sm"
-              disabled={!hasAssigned}
-              title={
-                !hasAssigned
-                  ? "Cần ít nhất một công việc đã phân công"
-                  : undefined
-              }
-              onClick={() => {
-                setError("")
-                setStarting(true)
-              }}
-            >
-              Bắt đầu dự án
-            </Button>
+        {((pm && editable) || history.length > 0) && (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={managing}
+            aria-controls="project-management"
+            onClick={() => setManaging(!managing)}
+          >
+            <GearIcon />
+            {pm && editable ? "Quản lý dự án" : "Lịch sử thay đổi"}
+            <ChevronDownIcon className={managing ? "rotate-180" : ""} />
+          </Button>
+        )}
+      </div>
+      {!project.ptcmId && !managing && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Chưa có PTCM để thiết lập và phân công công việc.
+        </p>
+      )}
+      {managing && (
+        <div
+          id="project-management"
+          className="mt-3 rounded-lg border border-border bg-white p-4"
+        >
+          <div className="flex flex-wrap gap-2">
+            {pm && editable && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCandidate(project.ptcmId ?? "")
+                  setError("")
+                  setEditing(true)
+                }}
+              >
+                {project.ptcmId ? "Thay PTCM" : "Chỉ định PTCM"}
+              </Button>
+            )}
+            {pm && project.status === "PLANNING" && (
+              <Button
+                size="sm"
+                disabled={!hasAssigned}
+                title={
+                  !hasAssigned
+                    ? "Cần ít nhất một công việc đã phân công"
+                    : undefined
+                }
+                onClick={() => {
+                  setError("")
+                  setStarting(true)
+                }}
+              >
+                Bắt đầu dự án
+              </Button>
+            )}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            {!project.ptcmId
+              ? "Chưa có PTCM nên chưa thể tạo nhóm, công việc hoặc phân công. PM cần chỉ định người phụ trách chuyên môn."
+              : "PTCM tổ chức, phân công và nghiệm thu; không nhận công việc trong chính dự án này."}
+            {pm &&
+              project.status === "PLANNING" &&
+              !hasAssigned &&
+              " Cần ít nhất một công việc đã phân công để bắt đầu triển khai."}
+          </p>
+          {history.length > 0 && (
+            <details className="mt-3 border-t border-border pt-3 text-xs">
+              <summary className="cursor-pointer text-muted-foreground">
+                Thay đổi trong phiên mô phỏng ({history.length})
+              </summary>
+              <ul className="mt-2 space-y-2">
+                {history.map((e, i) => (
+                  <li key={i}>
+                    {e.action} · {getPerson(e.actorId)?.name} ·{" "}
+                    {new Date(e.at).toLocaleTimeString("vi-VN")}
+                    {e.action === "Chỉ định PTCM" &&
+                      ` · ${getPerson(e.before?.ptcmId)?.name ?? "Chưa chỉ định"} → ${getPerson(e.after.ptcmId)?.name}`}
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </div>
-      </div>
-      <p className="mt-3 text-xs leading-5 text-muted-foreground">
-        {!project.ptcmId
-          ? "Chưa có PTCM nên chưa thể tạo nhóm, công việc hoặc phân công. PM cần chỉ định người phụ trách chuyên môn."
-          : "PTCM tổ chức, phân công và nghiệm thu; không nhận công việc trong chính dự án này."}
-        {pm &&
-          project.status === "PLANNING" &&
-          !hasAssigned &&
-          " Cần ít nhất một công việc đã phân công để bắt đầu triển khai."}
-      </p>
-      {history.length > 0 && (
-        <details className="mt-3 border-t border-border pt-3 text-xs">
-          <summary className="cursor-pointer text-muted-foreground">
-            Thay đổi trong phiên mô phỏng ({history.length})
-          </summary>
-          <ul className="mt-2 space-y-2">
-            {history.map((e, i) => (
-              <li key={i}>
-                {e.action} · {getPerson(e.actorId)?.name} ·{" "}
-                {new Date(e.at).toLocaleTimeString("vi-VN")}
-                {e.action === "Chỉ định PTCM" &&
-                  ` · ${getPerson(e.before?.ptcmId)?.name ?? "Chưa chỉ định"} → ${getPerson(e.after.ptcmId)?.name}`}
-              </li>
-            ))}
-          </ul>
-        </details>
       )}
       {editing && (
         <Dialog

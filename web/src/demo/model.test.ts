@@ -25,9 +25,164 @@ import {
   canViewProject,
   initialOutputConflicts,
   type ProjectInput,
+  personalTasks,
+  transitionPersonalTask,
+  executionBlockReason,
 } from "./model.ts"
 
 const project = projects[0]
+
+test("công việc cá nhân chỉ thuộc người hiện được giao; PTCM cùng dự án bị loại", () => {
+  assert.deepEqual(
+    personalTasks(projects, initialTasks, "dung").map((t) => t.id),
+    ["t6"],
+  )
+  assert.equal(personalTasks(projects, initialTasks, "khoa").length, 0)
+  const crossProject = projects.map((p) =>
+    p.id === "portal" ? { ...p, ptcmId: "dung" } : p,
+  )
+  assert.deepEqual(
+    personalTasks(crossProject, initialTasks, "dung").map((t) => t.id),
+    ["t6"],
+  )
+  assert.equal(
+    personalTasks([{ ...project, ptcmId: "dung" }], initialTasks, "dung")
+      .length,
+    0,
+  )
+  assert.equal(personalTasks(projects, initialTasks, "unknown").length, 0)
+  assert.equal(canViewProject(project, "dung"), false)
+})
+
+test("Bắt đầu → tạm dừng có lý do → tiếp tục, giữ nguyên đặc tả/phân công và mẫu", () => {
+  const started = transitionPersonalTask(
+    projects,
+    initialTasks,
+    "dung",
+    "t6",
+    "ASSIGNED",
+    "start",
+  )
+  assert.equal(started.find((t) => t.id === "t6")?.status, "IN_PROGRESS")
+  assert.throws(() =>
+    transitionPersonalTask(
+      projects,
+      started,
+      "dung",
+      "t6",
+      "IN_PROGRESS",
+      "pause",
+      "  ",
+    ),
+  )
+  const paused = transitionPersonalTask(
+    projects,
+    started,
+    "dung",
+    "t6",
+    "IN_PROGRESS",
+    "pause",
+    " Chờ làm rõ dữ liệu ",
+  )
+  const resumed = transitionPersonalTask(
+    projects,
+    paused,
+    "dung",
+    "t6",
+    "PAUSED",
+    "resume",
+  )
+  const task = resumed.find((t) => t.id === "t6")!
+  assert.equal(task.status, "IN_PROGRESS")
+  assert.equal(task.executionHistory?.length, 3)
+  assert.equal(task.executionHistory?.[1].reason, "Chờ làm rõ dữ liệu")
+  assert.equal(task.executionHistory?.[1].actorId, "dung")
+  assert.deepEqual(
+    { ...task, status: "ASSIGNED", executionHistory: undefined },
+    {
+      ...initialTasks.find((t) => t.id === "t6")!,
+      executionHistory: undefined,
+    },
+  )
+  assert.equal(initialTasks.find((t) => t.id === "t6")?.status, "ASSIGNED")
+  assert.equal(
+    initialTasks.find((t) => t.id === "t6")?.executionHistory,
+    undefined,
+  )
+  assert.equal(resumed[0], initialTasks[0])
+  assert.equal(loadFor("dung", resumed), loadFor("dung", initialTasks))
+})
+
+test("chặn sai người/PTCM, trạng thái cũ, sai hành động và dự án chưa/đã kết thúc", () => {
+  for (const actor of ["khoa", "thanh", "an", "unknown"])
+    assert.throws(() =>
+      transitionPersonalTask(
+        projects,
+        initialTasks,
+        actor,
+        "t6",
+        "ASSIGNED",
+        "start",
+      ),
+    )
+  assert.throws(() =>
+    transitionPersonalTask(
+      [{ ...project, ptcmId: "dung" }],
+      initialTasks,
+      "dung",
+      "t6",
+      "ASSIGNED",
+      "start",
+    ),
+  )
+  for (const status of [
+    "PLANNING",
+    "COMPLETED",
+    "CLOSED",
+    "CANCELLED",
+  ] as const)
+    assert.throws(() =>
+      transitionPersonalTask(
+        [{ ...project, status }],
+        initialTasks,
+        "dung",
+        "t6",
+        "ASSIGNED",
+        "start",
+      ),
+    )
+  assert.throws(() =>
+    transitionPersonalTask(
+      projects,
+      initialTasks,
+      "dung",
+      "t6",
+      "IN_PROGRESS",
+      "start",
+    ),
+  )
+  assert.throws(() =>
+    transitionPersonalTask(
+      projects,
+      initialTasks,
+      "dung",
+      "t6",
+      "ASSIGNED",
+      "resume",
+    ),
+  )
+  assert.throws(() =>
+    transitionPersonalTask(projects, initialTasks, "an", "t5", "DONE", "start"),
+  )
+  assert.match(
+    executionBlockReason(
+      projects[1],
+      initialTasks.find((t) => t.id === "p2")!,
+      "an",
+    )!,
+    /chưa bắt đầu/,
+  )
+})
 const projectInput: ProjectInput = {
   code: "CRM-2026",
   name: "Quản lý khách hàng",

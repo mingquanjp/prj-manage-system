@@ -15,6 +15,7 @@ import {
   DashboardIcon,
   MixerHorizontalIcon,
   ResetIcon,
+  ListBulletIcon,
 } from "@radix-ui/react-icons"
 import { Avatar } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,8 @@ import {
   demoUsers,
   isDirector,
   initialOutputConflicts,
+  personalTasks,
+  transitionPersonalTask,
   type Project,
   type ProjectEvent,
   type Task,
@@ -36,7 +39,9 @@ import {
 import { ProjectList } from "@/features/projects/ProjectList"
 import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
 import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog"
+import { PersonalWork } from "@/features/personal-work/PersonalWork"
 import { cn } from "@/lib/utils"
+import { emptyWorkState, submitResult, reviewSubmission } from "@/demo/effort"
 
 export default function App() {
   const [actorId, setActorId] = useState("khoa")
@@ -44,6 +49,7 @@ export default function App() {
     structuredClone(initialProjects),
   )
   const [events, setEvents] = useState<ProjectEvent[]>([])
+  const [work, setWork] = useState(emptyWorkState)
   const [creating, setCreating] = useState(false)
   const [tasks, setTasks] = useState<Task[]>(() =>
     structuredClone(initialTasks),
@@ -55,23 +61,56 @@ export default function App() {
   const [notice, setNotice] = useState("")
   const location = useLocation()
   const navigate = useNavigate()
+  const ownTasks = personalTasks(projects, tasks, actorId)
+  const personalView = location.pathname === "/my-work"
   const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
   const currentProject = projects.find(
     (p) =>
       location.pathname === `/projects/${p.id}` && canViewProject(p, actorId),
   )
   const person = getPerson(actorId)!
-  const identityOptions = demoUsers.map((u) => (
-    <option key={u.personId} value={u.personId}>
-      {getPerson(u.personId)?.name}
-      {u.systemRoles.includes("DIRECTOR") ? " · Giám đốc" : ""}
+  // Thứ tự trình diễn; không dùng để cấp quyền hoặc đổi trách nhiệm dự án.
+  const demoOrder = ["thanh", "khoa", "dung", "ha", "cuong", "an", "binh"]
+  const demoIdentities = [...demoUsers]
+    .sort(
+      (a, b) => demoOrder.indexOf(a.personId) - demoOrder.indexOf(b.personId),
+    )
+    .map((u) => {
+      const responsibilities = (
+        currentProject ? [currentProject] : projects
+      ).flatMap((project) => {
+        const roles = [
+          ...(project.pmId === u.personId ? ["PM"] : []),
+          ...(project.ptcmId === u.personId ? ["PTCM"] : []),
+        ]
+        return roles.length ? [`${roles.join(" + ")} (${project.code})`] : []
+      })
+      const labels = [
+        ...u.systemRoles.map(
+          (role) =>
+            ({ ADMIN: "Quản trị viên", HR: "HR", DIRECTOR: "Giám đốc" })[role],
+        ),
+        ...responsibilities,
+      ]
+      return {
+        id: u.personId,
+        name: getPerson(u.personId)?.name,
+        responsibility: labels.length ? labels.join("; ") : "Nhân viên",
+      }
+    })
+  const identityOptions = demoIdentities.map((identity) => (
+    <option key={identity.id} value={identity.id}>
+      {identity.name} · {identity.responsibility}
     </option>
   ))
+  const identityResponsibility = demoIdentities.find(
+    (identity) => identity.id === actorId,
+  )?.responsibility
   const switchIdentity = (id: string) => {
     setActorId(id)
     setNotice("")
     setCreating(false)
-    navigate("/")
+    navigate(personalView ? "/my-work" : "/")
   }
 
   return (
@@ -130,11 +169,27 @@ export default function App() {
               </NavLink>
             ))}
           </nav>
+          <NavLink
+            to="/my-work"
+            className={({ isActive }) =>
+              cn(
+                "mt-3 flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium",
+                isActive ? "bg-accent" : "hover:bg-accent",
+              )
+            }
+          >
+            <ListBulletIcon />
+            Công việc của tôi
+            <span className="ml-auto text-muted-foreground">
+              {ownTasks.length}
+            </span>
+          </NavLink>
         </div>
         <div className="mx-5 mt-8 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
           <p className="font-medium text-foreground">Bản duyệt thiết kế</p>
           <p className="mt-1">
-            Dự án, công việc và phân công. Các khu vực khác sẽ bổ sung sau.
+            Dự án, phân công và thực hiện công việc. Các khu vực khác sẽ bổ sung
+            sau.
           </p>
         </div>
         <div className="mt-auto px-4 pb-5 pt-8">
@@ -156,10 +211,14 @@ export default function App() {
               id="identity"
               className="field mt-1 w-full text-sm"
               value={actorId}
+              title={identityResponsibility}
               onChange={(e) => switchIdentity(e.target.value)}
             >
               {identityOptions}
             </select>
+            <p className="mt-2 text-xs leading-5 text-foreground">
+              {identityResponsibility}
+            </p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Chỉ kiểm thử giao diện, không phải tính năng tự cấp quyền.
             </p>
@@ -192,9 +251,20 @@ export default function App() {
             aria-label="Đường dẫn"
             className="flex min-w-0 items-center gap-2 text-muted-foreground"
           >
-            <Link to="/" className="hover:text-foreground">
-              Dự án
+            <Link
+              to={personalView ? "/my-work" : "/"}
+              className="hover:text-foreground"
+            >
+              {personalView ? "Không gian cá nhân" : "Dự án"}
             </Link>
+            {personalView && (
+              <>
+                <ChevronRightIcon className="shrink-0" />
+                <span className="truncate text-foreground">
+                  Công việc của tôi
+                </span>
+              </>
+            )}
             {currentProject && (
               <>
                 <ChevronRightIcon className="shrink-0" />
@@ -225,6 +295,31 @@ export default function App() {
             </select>
           </label>
         </div>
+        <nav
+          aria-label="Điều hướng trên màn hình nhỏ"
+          className="flex gap-2 border-b border-border px-4 py-2 text-sm lg:hidden"
+        >
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              cn(
+                "rounded-md px-3 py-2",
+                (isActive || currentProject) && "bg-accent font-medium",
+              )
+            }
+          >
+            Dự án
+          </NavLink>
+          <NavLink
+            to="/my-work"
+            className={({ isActive }) =>
+              cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+            }
+          >
+            Công việc của tôi
+          </NavLink>
+        </nav>
         <main className="mx-auto max-w-[1600px] px-4 py-8 md:px-8">
           {notice && (
             <div
@@ -238,6 +333,54 @@ export default function App() {
             </div>
           )}
           <Routes>
+            <Route
+              path="/my-work"
+              element={
+                <PersonalWork
+                  key={actorId}
+                  projects={projects}
+                  tasks={tasks}
+                  actorId={actorId}
+                  work={work}
+                  onWorkChange={setWork}
+                  onSubmitResult={(taskId, summary, links) => {
+                    const next = submitResult(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      taskId,
+                      summary,
+                      links,
+                    )
+                    setWork(next.work)
+                    setTasks(next.tasks)
+                    setNotice(
+                      "Đã nộp kết quả trong phiên mô phỏng. Công việc chuyển sang Chờ nghiệm thu, nhật ký khóa sửa trực tiếp.",
+                    )
+                  }}
+                  onTransition={(taskId, expected, action, reason) => {
+                    const next = transitionPersonalTask(
+                      projects,
+                      tasks,
+                      actorId,
+                      taskId,
+                      expected,
+                      action,
+                      reason,
+                    )
+                    setTasks(next)
+                    setNotice(
+                      action === "pause"
+                        ? "Đã tạm dừng công việc và ghi nhận lý do trong phiên mô phỏng."
+                        : action === "start"
+                          ? "Đã bắt đầu công việc."
+                          : "Đã tiếp tục công việc.",
+                    )
+                  }}
+                />
+              }
+            />
             <Route
               path="/"
               element={
@@ -283,6 +426,26 @@ export default function App() {
                   }}
                   tasks={tasks}
                   groups={groups}
+                  work={work}
+                  onReview={(submissionId, result, comment) => {
+                    const next = reviewSubmission(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      submissionId,
+                      result,
+                      comment,
+                      initialOutputConflicts,
+                    )
+                    setWork(next.work)
+                    setTasks(next.tasks)
+                    setNotice(
+                      result === "ACCEPTED"
+                        ? "Đã nghiệm thu kết quả trong phiên mô phỏng. Tiến độ công việc đã cập nhật; dự án không tự hoàn thành."
+                        : "Đã yêu cầu chỉnh sửa. Công việc trở lại Đang thực hiện để người được giao sửa và nộp lại.",
+                    )
+                  }}
                   onGroupsChange={setGroups}
                   onTasksChange={setTasks}
                   onNotice={setNotice}
@@ -333,7 +496,7 @@ export default function App() {
         open={resetOpen}
         onOpenChange={setResetOpen}
         title="Khôi phục dữ liệu mẫu?"
-        description="Các dự án, trách nhiệm, nhóm, công việc và phân công trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
+        description="Dự án, công việc, phân công, nhật ký và kết quả trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
       >
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setResetOpen(false)}>
@@ -345,6 +508,7 @@ export default function App() {
               setGroups(structuredClone(initialGroups))
               setProjects(structuredClone(initialProjects))
               setEvents([])
+              setWork(emptyWorkState())
               navigate("/")
               setResetOpen(false)
               setNotice("Đã khôi phục dữ liệu mẫu.")

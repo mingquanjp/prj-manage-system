@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/demo/model.test.ts",
+    "test": "node --experimental-strip-types --test src/demo/*.test.ts",
     "check:harness": "node --test ../scripts/check-harness.test.mjs && node ../scripts/check-harness.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",

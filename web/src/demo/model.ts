@@ -18,6 +18,8 @@ export type Project = {
   start: string
   end: string
   priority: "Thấp" | "Trung bình" | "Cao" | "Khẩn cấp"
+  // Projection từ lịch sử triển khai cho demo; không phải planned start hay cột DB mới.
+  executionStartedAt?: string
 }
 export type Requirement = {
   skill: string
@@ -45,9 +47,29 @@ export type Task = {
   requirements: Requirement[]
   assigneeId?: string
   firstAssignedAt?: string
+  // Lượt giao hiện tại trong adapter demo, tách mốc giao đầu dùng khóa đặc tả.
+  currentAssignment?: {
+    id: string
+    employeeId: string
+    assignedAt: string
+    endedAt?: string
+    endedBy?: string
+    endReason?: string
+  }
+  acceptedAt?: string
   priority: "Thấp" | "Trung bình" | "Cao" | "Khẩn cấp"
   start?: string
   end?: string
+  // Lịch sử trạng thái trong phiên demo, không phải nhật ký thời gian hay audit server.
+  executionHistory?: TaskExecutionEvent[]
+}
+export type ExecutionAction = "start" | "pause" | "resume"
+export type TaskExecutionEvent = {
+  actorId: string
+  at: string
+  from: TaskStatus
+  to: TaskStatus
+  reason?: string
 }
 export type Person = {
   id: string
@@ -190,6 +212,7 @@ export const projects: Project[] = [
       "Xây dựng hệ thống quản lý nhập, xuất và tồn kho nội bộ; tập trung vào dữ liệu chính xác và thao tác thuận tiện.",
     status: "IN_PROGRESS",
     pmId: "thanh",
+    executionStartedAt: "2026-10-01T09:00:00+07:00",
     ptcmId: "khoa",
     start: "2026-10-01",
     end: "2026-12-31",
@@ -372,6 +395,13 @@ export const initialTasks: Task[] = taskFixtures.map((task) => ({
     task.status !== "PENDING_ASSIGNMENT"
       ? "2026-10-16T09:00:00+07:00"
       : undefined,
+  currentAssignment: task.assigneeId
+    ? {
+        id: `assignment-${task.id}-initial`,
+        employeeId: task.assigneeId,
+        assignedAt: "2026-10-16T09:00:00+07:00",
+      }
+    : undefined,
 }))
 
 export type TaskInput = Pick<
@@ -679,7 +709,11 @@ export function startProject(
     throw new Error("Dự án không còn ở trạng thái lập kế hoạch.")
   if (!tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED"))
     throw new Error("Cần ít nhất một công việc đã phân công để bắt đầu dự án.")
-  return { ...project, status: "IN_PROGRESS" }
+  return {
+    ...project,
+    status: "IN_PROGRESS",
+    executionStartedAt: new Date().toISOString(),
+  }
 }
 export type ProjectEvent = {
   projectId: string
@@ -697,6 +731,91 @@ export function canAssign(project: Project, actorId: string) {
 }
 export function isEligible(project: Project, person: Person) {
   return person.active && project.ptcmId !== person.id
+}
+
+export function personalTasks(
+  projects: Project[],
+  tasks: Task[],
+  actorId: string,
+) {
+  const person = getPerson(actorId)
+  if (!person?.active) return []
+  return tasks.filter((task) => {
+    const project = projects.find((p) => p.id === task.projectId)
+    return (
+      project &&
+      project.ptcmId !== actorId &&
+      task.assigneeId === actorId &&
+      task.status !== "PENDING_ASSIGNMENT"
+    )
+  })
+}
+
+export function executionBlockReason(
+  project: Project,
+  task: Task,
+  actorId: string,
+) {
+  if (
+    task.projectId !== project.id ||
+    task.assigneeId !== actorId ||
+    !getPerson(actorId)?.active ||
+    project.ptcmId === actorId
+  )
+    return "Bạn không có quyền thực hiện công việc này."
+  if (project.status === "PLANNING")
+    return "Dự án chưa bắt đầu triển khai. Bạn có thể xem công việc nhưng chưa thể thực hiện."
+  if (project.status !== "IN_PROGRESS")
+    return "Dự án đã kết thúc giai đoạn thực hiện. Công việc chỉ được xem."
+  if (!["ASSIGNED", "IN_PROGRESS", "PAUSED"].includes(task.status))
+    return "Trạng thái hiện tại không cho phép bắt đầu, tạm dừng hoặc tiếp tục."
+  return undefined
+}
+
+export function transitionPersonalTask(
+  projects: Project[],
+  tasks: Task[],
+  actorId: string,
+  taskId: string,
+  expectedStatus: TaskStatus,
+  action: ExecutionAction,
+  reason = "",
+): Task[] {
+  const task = tasks.find((t) => t.id === taskId)
+  const project = projects.find((p) => p.id === task?.projectId)
+  if (!task || !project) throw new Error("Không tìm thấy công việc.")
+  const block = executionBlockReason(project, task, actorId)
+  if (block) throw new Error(block)
+  if (task.status !== expectedStatus)
+    throw new Error("Trạng thái công việc đã thay đổi. Vui lòng kiểm tra lại.")
+  const from: Record<ExecutionAction, TaskStatus> = {
+    start: "ASSIGNED",
+    pause: "IN_PROGRESS",
+    resume: "PAUSED",
+  }
+  if (task.status !== from[action])
+    throw new Error("Thao tác không phù hợp với trạng thái công việc.")
+  if (action === "pause" && !reason.trim())
+    throw new Error("Vui lòng nhập lý do tạm dừng.")
+  const to = action === "pause" ? "PAUSED" : "IN_PROGRESS"
+  return tasks.map((t) =>
+    t.id === taskId
+      ? {
+          ...t,
+          status: to,
+          executionHistory: [
+            ...(t.executionHistory ?? []),
+            {
+              actorId,
+              at: new Date().toISOString(),
+              from: task.status,
+              to,
+              ...(action === "pause" ? { reason: reason.trim() } : {}),
+            },
+          ],
+        }
+      : t,
+  )
 }
 export function skillGaps(task: Task, person: Person) {
   return task.requirements.filter(
@@ -816,6 +935,11 @@ export function commitDraft(
           status: "ASSIGNED",
           assigneeId: draft[task.id].personId,
           firstAssignedAt: task.firstAssignedAt ?? new Date().toISOString(),
+          currentAssignment: {
+            id: crypto.randomUUID(),
+            employeeId: draft[task.id].personId,
+            assignedAt: new Date().toISOString(),
+          },
         }
       : task,
   )
