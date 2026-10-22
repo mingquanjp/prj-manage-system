@@ -1,6 +1,7 @@
 import { useState, type Dispatch, type SetStateAction } from "react"
 import {
   ArrowLeftIcon,
+  ChevronDownIcon,
   CheckIcon,
   Cross2Icon,
   ExclamationTriangleIcon,
@@ -63,6 +64,7 @@ export function AssignmentWorkspace({
   const [query, setQuery] = useState("")
   const [confirm, setConfirm] = useState(false)
   const [error, setError] = useState("")
+  const [draftExpanded, setDraftExpanded] = useState(true)
   const task = tasks.find((t) => t.id === activeId)!
   const selectedTasks = ids
     .map((id) => tasks.find((t) => t.id === id)!)
@@ -84,6 +86,11 @@ export function AssignmentWorkspace({
     selectedTasks.length > 0 && selectedTasks.every((t) => draft[t.id])
   const total = selectedTasks.reduce((sum, t) => sum + t.estimate, 0)
   const chosen = task ? draft[task.id] : undefined
+  const chosenIsVisible = candidates.some((p) => p.id === chosen?.personId)
+  const openConfirmation = () => {
+    setError("")
+    setConfirm(true)
+  }
   const changeMode = (value: Mode) => {
     setModes((prev) => ({ ...prev, [activeId]: value }))
     setQuery("")
@@ -124,14 +131,20 @@ export function AssignmentWorkspace({
   const removeTask = (id: string) => {
     const next = ids.filter((value) => value !== id)
     setIds(next)
-    if (id === activeId) setActiveId(next[0])
+    if (id === activeId) {
+      setActiveId(next[0])
+      setQuery("")
+    }
     setDraft((prev) =>
       Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id)),
     )
   }
 
   return (
-    <section aria-label="Không gian phân công">
+    <section
+      aria-label="Không gian phân công"
+      className="assignment-shell min-w-0"
+    >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <button
@@ -152,17 +165,43 @@ export function AssignmentWorkspace({
           <span className="mx-2 text-border">/</span> {total} giờ ước tính
         </span>
       </div>
+      <div className="assignment-toolbar sticky top-4 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 shadow-sm">
+        <div className="min-w-0 text-sm">
+          <p className="font-medium">
+            {task?.code ?? "Chưa chọn việc"} ·{" "}
+            {mode === "manual" ? "Thủ công" : "Theo gợi ý"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground" aria-live="polite">
+            Đã chọn người cho {Object.keys(draft).length}/{ids.length} việc ·
+            Chưa lưu phân công
+          </p>
+          {Object.keys(draft).length > 0 && errors.length > 0 && (
+            <p className="mt-1 text-xs text-warning" aria-live="polite">
+              {errors[0]}
+            </p>
+          )}
+        </div>
+        <Button
+          disabled={!complete || errors.length > 0}
+          onClick={openConfirmation}
+        >
+          Kiểm tra và xác nhận
+        </Button>
+      </div>
       <div className="assignment-grid grid items-start gap-4">
-        <aside className="min-w-0 rounded-lg border border-border bg-white">
+        <aside
+          aria-label="Công việc đã chọn"
+          className="assignment-tasks min-w-0 rounded-lg border border-border bg-white"
+        >
           <h3 className="border-b border-border px-4 py-3 text-sm font-medium">
             Công việc đã chọn
           </h3>
-          <div className="space-y-1 p-2">
+          <div className="assignment-task-list p-2">
             {selectedTasks.map((t) => (
               <div
                 key={t.id}
                 className={cn(
-                  "flex rounded-md",
+                  "assignment-task flex rounded-md",
                   t.id === activeId ? "bg-accent" : "hover:bg-background",
                 )}
               >
@@ -176,7 +215,9 @@ export function AssignmentWorkspace({
                   }}
                 >
                   <p className="text-xs text-muted-foreground">{t.code}</p>
-                  <p className="mt-1 text-sm font-medium leading-5">{t.name}</p>
+                  <p className="mt-1 text-sm font-medium leading-5 line-clamp-2">
+                    {t.name}
+                  </p>
                   <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>{t.estimate} giờ</span>
                     {draft[t.id] ? (
@@ -201,7 +242,7 @@ export function AssignmentWorkspace({
             ))}
           </div>
         </aside>
-        <div className="min-w-0 rounded-lg border border-border bg-white">
+        <div className="assignment-candidates min-w-0 rounded-lg border border-border bg-white">
           {!task ? (
             <EmptyState
               title="Chưa có công việc được chọn"
@@ -270,13 +311,32 @@ export function AssignmentWorkspace({
                   onChange={setQuery}
                   placeholder="Tìm ứng viên…"
                 />
+                <p
+                  className="mt-2 text-xs text-muted-foreground"
+                  aria-live="polite"
+                >
+                  {candidates.length} ứng viên hiển thị. Tìm kiếm không thay đổi
+                  bản nháp.
+                </p>
+                {chosen && !chosenIsVisible && (
+                  <p className="mt-2 rounded-md bg-background p-2 text-xs leading-5 text-muted-foreground">
+                    {getPerson(chosen.personId)?.name} vẫn ở trong bản nháp cho{" "}
+                    {task.code}, nhưng không nằm trong danh sách đang xem.
+                  </p>
+                )}
+                {chosen && chosen.mode !== mode && (
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Đổi nhánh chỉ thay danh sách đang xem. Lựa chọn trong bản
+                    nháp giữ nguyên cho tới khi bạn chọn lại hoặc bỏ lựa chọn.
+                  </p>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[470px] text-left text-sm">
                   <thead>
                     <tr className="table-heading">
                       <th className="py-3 pl-5">Ứng viên</th>
-                      <th className="px-2">Tải hiện tại</th>
+                      <th className="px-2">Tải công việc</th>
                       {mode === "recommended" && <th>Điểm mẫu</th>}
                       <th className="pr-5 text-right">Lựa chọn</th>
                     </tr>
@@ -305,7 +365,10 @@ export function AssignmentWorkspace({
                                 <p className="mt-0.5 text-xs text-muted-foreground">
                                   {person.position} · {person.seniority}
                                 </p>
-                                <details className="mt-2 text-xs">
+                                <details
+                                  key={`${task.id}-${person.id}`}
+                                  className="mt-2 text-xs"
+                                >
                                   <summary className="cursor-pointer text-muted-foreground underline underline-offset-4">
                                     Đối chiếu kỹ năng
                                     {gaps.length > 0 ? " · còn thiếu" : ""}
@@ -322,16 +385,20 @@ export function AssignmentWorkspace({
                                             : "text-muted-foreground",
                                         )}
                                       >
-                                        {r.skill}:{" "}
-                                        {levels[person.skills[r.skill] ?? 0] ||
-                                          "Chưa ghi nhận"}
-                                        <br />
-                                        <span className="text-muted-foreground">
-                                          Cần{" "}
-                                          {levels[r.level].toLocaleLowerCase(
-                                            "vi",
-                                          )}
-                                          {r.mandatory ? " (bắt buộc)" : ""}
+                                        <strong className="font-medium">
+                                          {r.skill}
+                                        </strong>
+                                        {r.mandatory
+                                          ? " · Bắt buộc"
+                                          : " · Bổ trợ"}
+                                        <span className="block text-muted-foreground">
+                                          Yêu cầu: {levels[r.level]}
+                                        </span>
+                                        <span className="block">
+                                          Hiện có:{" "}
+                                          {levels[
+                                            person.skills[r.skill] ?? 0
+                                          ] || "Chưa ghi nhận"}
                                         </span>
                                       </p>
                                     ))}
@@ -342,10 +409,19 @@ export function AssignmentWorkspace({
                           </td>
                           <td className="px-2 py-4 whitespace-nowrap tabular-nums">
                             <span className="font-medium">
-                              {loadFor(person.id, tasks)} giờ
+                              Hiện tại {loadFor(person.id, tasks)} giờ
                             </span>
                             <p className="mt-1 text-xs text-muted-foreground">
                               Xuyên dự án
+                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Nháp +{addedLoad(person.id, draft, tasks)} giờ
+                            </p>
+                            <p className="mt-1 text-xs">
+                              Sau nháp{" "}
+                              {loadFor(person.id, tasks) +
+                                addedLoad(person.id, draft, tasks)}{" "}
+                              giờ
                             </p>
                           </td>
                           {mode === "recommended" && (
@@ -383,27 +459,50 @@ export function AssignmentWorkspace({
                 </table>
                 {!candidates.length && (
                   <EmptyState
-                    title="Không có ứng viên phù hợp"
+                    title={
+                      query.trim()
+                        ? "Không tìm thấy ứng viên"
+                        : "Không có ứng viên phù hợp"
+                    }
                     detail={
-                      mode === "recommended"
-                        ? "Thử tra cứu thủ công hoặc bỏ công việc này khỏi bản nháp."
-                        : "Thử tìm bằng tên khác."
+                      query.trim()
+                        ? "Thử tên khác hoặc xóa từ khóa tìm kiếm."
+                        : mode === "recommended"
+                          ? "Thử tra cứu thủ công hoặc bỏ công việc này khỏi bản nháp."
+                          : "Thử tìm bằng tên khác."
                     }
                   />
                 )}
               </div>
               {chosen && (
                 <div className="space-y-4 border-t border-border bg-background/40 p-5">
-                  <p className="text-sm">
-                    Đang chọn{" "}
-                    <strong>{getPerson(chosen.personId)?.name}</strong>{" "}
-                    <span className="text-muted-foreground">
-                      ·{" "}
-                      {chosen.mode === "manual"
-                        ? "Thủ công"
-                        : `Gợi ý hạng ${chosen.rank}`}
-                    </span>
-                  </p>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm">
+                      Bản nháp {task.code}:{" "}
+                      <strong>{getPerson(chosen.personId)?.name}</strong>{" "}
+                      <span className="text-muted-foreground">
+                        ·{" "}
+                        {chosen.mode === "manual"
+                          ? "Thủ công"
+                          : `Gợi ý hạng ${chosen.rank}`}
+                      </span>
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setDraft((prev) =>
+                          Object.fromEntries(
+                            Object.entries(prev).filter(
+                              ([id]) => id !== task.id,
+                            ),
+                          ),
+                        )
+                      }
+                    >
+                      Bỏ lựa chọn
+                    </Button>
+                  </div>
                   {((chosen.mode === "recommended" && chosen.rank !== 1) ||
                     (chosen.mode === "manual" && chosen.hadRun)) && (
                     <label className="block text-sm font-medium">
@@ -414,7 +513,11 @@ export function AssignmentWorkspace({
                         onChange={(e) =>
                           patchChoice({ reason: e.target.value })
                         }
-                        placeholder="Vì sao lựa chọn khác gợi ý hạng đầu?"
+                        placeholder={
+                          chosen.mode === "manual"
+                            ? "Vì sao chuyển sang phân công thủ công?"
+                            : "Vì sao chọn ứng viên khác hạng đầu?"
+                        }
                       />
                     </label>
                   )}
@@ -443,9 +546,28 @@ export function AssignmentWorkspace({
             </>
           )}
         </div>
-        <aside className="rounded-lg border border-border bg-white p-4 assignment-draft">
+        <aside
+          aria-label="Bản nháp phân công"
+          className="min-w-0 rounded-lg border border-border bg-white p-4 assignment-draft"
+        >
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Bản nháp phân công</h3>
+            <h3>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 text-left font-semibold"
+                aria-expanded={draftExpanded}
+                aria-controls="assignment-draft-items"
+                onClick={() => setDraftExpanded((prev) => !prev)}
+              >
+                Bản nháp phân công{" "}
+                <ChevronDownIcon
+                  className={cn(
+                    "transition-transform",
+                    draftExpanded && "rotate-180",
+                  )}
+                />
+              </button>
+            </h3>
             <span className="count">
               {Object.keys(draft).length}/{ids.length}
             </span>
@@ -453,7 +575,11 @@ export function AssignmentWorkspace({
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             Lựa chọn chưa làm thay đổi người phụ trách hoặc tải công việc.
           </p>
-          <div className="my-5 space-y-4">
+          <div
+            id="assignment-draft-items"
+            hidden={!draftExpanded}
+            className="my-5 max-h-[40dvh] overflow-y-auto space-y-4"
+          >
             {selectedTasks.map((t) => (
               <div
                 key={t.id}
@@ -496,14 +622,18 @@ export function AssignmentWorkspace({
             ))}
           </div>
           <div className="border-t border-border pt-4">
-            <h4 className="text-sm font-medium">Tổng tải sau dự kiến</h4>
+            <h4 className="text-sm font-medium">Tải sau bản nháp</h4>
             <div className="mt-3 space-y-3">
               {[...new Set(Object.values(draft).map((c) => c.personId))].map(
                 (id) => (
                   <div key={id} className="text-xs">
                     <p>{getPerson(id)?.name}</p>
                     <p className="mt-1 text-muted-foreground tabular-nums">
-                      {loadFor(id, tasks)} + {addedLoad(id, draft, tasks)} ={" "}
+                      Hiện tại {loadFor(id, tasks)} giờ · Nháp +
+                      {addedLoad(id, draft, tasks)} giờ
+                    </p>
+                    <p className="mt-1 text-muted-foreground tabular-nums">
+                      Dự kiến{" "}
                       <strong className="text-foreground">
                         {loadFor(id, tasks) + addedLoad(id, draft, tasks)} giờ
                       </strong>
@@ -523,13 +653,6 @@ export function AssignmentWorkspace({
               {errors.join(" ")}
             </div>
           )}
-          <Button
-            className="mt-5 w-full"
-            disabled={!complete || errors.length > 0}
-            onClick={() => setConfirm(true)}
-          >
-            Kiểm tra và xác nhận
-          </Button>
           {!complete && (
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Chọn người cho từng việc hoặc bỏ việc chưa cần giao.
