@@ -75,7 +75,7 @@ Các ca dưới đây thay kế hoạch R01–R05 cũ; không triển khai nộp
 
 | ID | Thiết lập/thao tác | Kết quả bắt buộc |
 |---|---|---|
-| R01-A | Có thời gian thực tế hợp lệ nhưng quên Start/Resume; còn quyền ghi nhật ký trực tiếp | Ghi nhật ký theo quy tắc chung, không duyệt ngoại lệ riêng, không sửa ngược mốc trạng thái |
+| R01-A | Người hiện được giao, project IN_PROGRESS; thử tạo/sửa/xóa log khi task ASSIGNED/PAUSED rồi Bắt đầu/Tiếp tục | Trước chuyển trạng thái chỉ đọc, chặn cả thao tác lưu cũ; sau khi IN_PROGRESS mới cho ghi/sửa/xóa theo quy tắc chung; không tự sinh giờ/sửa ngược trạng thái (chốt 21/10) |
 | R01-B | Nhật ký đã khóa hoặc thuộc lượt phân công cũ cần sửa | Dùng hiệu chỉnh chung; không bỏ kiểm tra ngày, lượt phân công, tổng phút hoặc trạng thái dự án |
 | R02-A | Người thực hiện nộp kết quả nhưng thiếu nhật ký | Nghiệm thu theo đầu ra; không ép giờ giả, dữ liệu thiếu/không tin cậy không dùng cho hiệu suất phụ thuộc thời gian |
 | R02-B | PM/người khác thử nộp kết quả thay | Không có chức năng nộp thay; không suy quyền nộp từ quyền hiệu chỉnh nhật ký |

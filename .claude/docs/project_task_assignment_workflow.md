@@ -87,7 +87,7 @@ Giao lại bằng gợi ý: A đang phụ trách → thu hồi → PENDING_ASSIG
 
 1. Người hiện được giao (không phải PTCM của dự án) bắt đầu ASSIGNED → IN_PROGRESS khi project IN_PROGRESS; có thể có nhiều task đang làm.
 2. Ghi ngày + thời lượng phút + nội dung cho effort thực tế, gồm cả làm ở nhà. Không tự sinh giờ từ trạng thái.
-3. PAUSED dùng khi tạm dừng, có lý do; Resume để cập nhật tiến độ khi tiếp tục. Khi còn quyền sửa trực tiếp, được ghi bổ sung thời gian thực tế theo R01 mà không sửa ngược timestamp trạng thái.
+3. PAUSED dùng khi tạm dừng, có lý do; Resume để tiếp tục. Theo chốt 21/10/R01 mới, chỉ tạo/sửa/xóa nhật ký trực tiếp khi task/project IN_PROGRESS: ASSIGNED cần Bắt đầu, PAUSED cần Tiếp tục; vẫn đọc nhật ký đã có. Không timer/sinh giờ hoặc sửa ngược timestamp trạng thái.
 4. Nộp từ IN_PROGRESS: tóm tắt kết quả, minh chứng tùy chọn và bộ nhật ký tại lần nộp. Thiếu nhật ký không tự động chặn nộp; không tạo log giả.
 5. PTCM đối chiếu tiêu chí đã chốt. Thiếu đầu ra: trả về IN_PROGRESS có lý do để chỉnh sửa và nộp lại; không bổ sung scope mới dưới dạng yêu cầu sửa.
 6. Chỉ sai/thiếu nhật ký: có thể yêu cầu bổ sung hoặc hiệu chỉnh; không bắt làm lại đầu ra và không coi đủ nhật ký là điều kiện cứng để nghiệm thu.

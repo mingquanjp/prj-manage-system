@@ -27,6 +27,16 @@ Tiếp nối [baseline 12/10](business-baseline-2026-10-12.md), [nguồn nhân l
 - Chỉ thêm một cột trong thiết kế, giữ 32 bảng; dùng JSON patch của `employee_profile_change_requests` hiện có. Không thêm bảng địa chỉ, danh mục địa giới, chỉ mục hoặc tích hợp bản đồ.
 - Đợt này cập nhật tài liệu/dictionary/DBML, chưa sửa hoặc chạy migration. Khi chuyển đổi dữ liệu cũ, địa chỉ chưa biết giữ NULL, không bịa dữ liệu để lấp chỗ trống.
 
+## Quyết định tiếp nối — điều kiện ghi nhật ký (21/10/2026)
+
+Người dùng đã xác nhận luồng: Được phân công → Bắt đầu → thực hiện/ghi nhật ký → nộp → nghiệm thu. Quyết định này thay quyền ghi trực tiếp khi ASSIGNED/PAUSED trong R01 cũ, kể cả phần baseline 30/09 còn được dẫn chiếu.
+
+- Chỉ người hiện được giao hợp lệ được tạo/sửa/xóa mềm nhật ký trực tiếp khi task IN_PROGRESS và project IN_PROGRESS. ASSIGNED phải Bắt đầu; PAUSED phải Tiếp tục trước, vẫn được đọc nhật ký đã có.
+- Bắt đầu là xác nhận bắt tay thực hiện, không thêm bước xác nhận nhận việc; Start/Resume không sinh giờ hoặc chạy timer. Lưu nhật ký không tự đổi trạng thái.
+- Giữ kiểm tra ngày thực tế thuộc lượt giao/giai đoạn triển khai, không tương lai, phút nguyên và tổng xuyên dự án. Không thêm cột thời gian hay bộ đo để suy giờ thực tế từ Start/Resume.
+- Giữ khóa khi PENDING_REVIEW, hiệu chỉnh khi khóa theo quyền hiện hành và quy tắc thiếu log không chặn nộp/nghiệm thu. ASSIGNED/PAUSED không tạo quy trình duyệt ngoại lệ mới; dùng Bắt đầu/Tiếp tục, không sửa ngược lịch sử trạng thái.
+- Không đổi cấu trúc DB, công thức hoặc mở rộng nghiệm thu.
+
 ## Bộ đầu vào giao diện
 
 [Bộ Figma Make](design/figma-make/README.md) chuyển nghiệp vụ thành màn hình và tình huống kiểm tra; không phải nguồn để tự mở rộng nghiệp vụ. “Yêu cầu chỉnh sửa kết quả” là kết luận review chưa đạt; thu hồi phân công là thao tác PTCM. Không suy thêm nút nhân viên tự trả việc từ tên gọi cũ.

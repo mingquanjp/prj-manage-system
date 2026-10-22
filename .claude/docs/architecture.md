@@ -52,7 +52,7 @@ Work effort dùng ngày địa phương Asia/Ho_Chi_Minh và phút nguyên; khô
 Service chung kiểm tra tổng theo employee/date xuyên dự án và quyền sửa; log, history UPDATE/DELETE hoặc result_log_id cho ADD, quyết định request ghi atomically; tổng suy ra không cache riêng.
 Serialize mutation theo employee/date (cả ngày cũ/mới khi sửa), kết hợp khóa project/task/request và giá trị nền theo thứ tự thống nhất; close/cancel/approve không vượt nhau.
 Submission snapshot bộ nhật ký, recommendation snapshot dữ liệu đầu vào là hai loại riêng; không ghi đè snapshot lịch sử.
-R01 dùng service hiệu chỉnh chung, không backdate state history; R02 tách đầu ra khỏi độ đầy đủ nhật ký; không nộp kết quả thay.
+R01 (21/10): service ghi trực tiếp chỉ nhận task/project IN_PROGRESS, đúng người hiện được giao; ASSIGNED/PAUSED cần Bắt đầu/Tiếp tục trước. Khi khóa dùng service hiệu chỉnh chung, không backdate state history; R02 tách đầu ra khỏi độ đầy đủ nhật ký; không nộp kết quả thay.
 R03 giữ quyết định mục CV đã kết thúc; bổ sung bằng yêu cầu mới, không attempts/close-review riêng. R04 bổ sung lại kỹ năng qua quy trình yêu cầu thông thường.
 R05 không history revision/acknowledgement; service confirm kiểm tra điều kiện phân công hiện hành rồi ghi assignment, không có history acknowledgement, scorer không query DB; output run bất biến.
 Notification nội bộ ghi DB cùng transaction, không cần email/push broker.

@@ -42,13 +42,12 @@ Cho phép nhiều log cùng ngày/task; UI nhập giờ/phút nhưng chuẩn hó
 
 Không đòi người dùng xem nội dung các project khác để hiểu cảnh báo: trả tổng cá nhân/ngày và phần mình có quyền xem.
 
-### R01 — Ghi bổ sung thời gian thực tế
+### R01 — Bắt đầu/Tiếp tục trước khi ghi nhật ký
 
-Khi còn quyền sửa nhật ký trực tiếp, người thực hiện được ghi bổ sung thời gian thực tế thuộc lượt phân công của mình, không bị chặn chỉ vì quên Start/Resume. Không có yêu cầu duyệt riêng cho việc quên thao tác.
-Nhật ký đã khóa và đóng góp thuộc lượt phân công đã kết thúc vẫn theo quy trình hiệu chỉnh; không mở quyền sửa trực tiếp bằng R01.
-Giữ kiểm tra ngày, thời lượng, lượt phân công và khóa dự án. Không ghi công việc trước phân công, trong khoảng đã thu hồi hoặc phát sinh sau khi task kết thúc.
-Start/Resume phục vụ theo dõi tiến độ, không phải chấm công. Người thực hiện cập nhật trạng thái hiện tại để tiếp tục và nộp từ IN_PROGRESS; không sửa ngược lịch sử trạng thái, không tự đổi trạng thái khi lưu log.
-Ví dụ: được giao việc thứ Hai, đã làm hai giờ nhưng thứ Ba mới bấm Start; khi còn quyền nhập trực tiếp, được ghi hai giờ thực tế của thứ Hai nếu dự án đã triển khai.
+Theo [chốt tiếp nối 21/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối--điều-kiện-ghi-nhật-ký-21102026), chỉ tạo/sửa/xóa mềm trực tiếp khi người hiện được giao hợp lệ đang thực hiện task IN_PROGRESS trong project IN_PROGRESS. Quyết định này thay R01 cũ cho ghi khi ASSIGNED/PAUSED vì quên Start/Resume.
+ASSIGNED cần Bắt đầu, PAUSED cần Tiếp tục; vẫn đọc nhật ký đã có. Không thêm bước xác nhận nhận việc, yêu cầu duyệt ngoại lệ hoặc tự chuyển trạng thái khi lưu log.
+Start/Resume không phải timer/chấm công, không sinh giờ hoặc sửa ngược lịch sử. Ngày ghi vẫn theo quy tắc mục 2, không suy thời lượng hay thêm ràng buộc timestamp từ thao tác trạng thái.
+Nhật ký đã khóa và đóng góp thuộc lượt phân công đã kết thúc vẫn theo quy trình hiệu chỉnh. Giữ kiểm tra ngày, thời lượng, lượt phân công và khóa dự án; không ghi công việc trước phân công, trong khoảng đã thu hồi hoặc phát sinh sau khi task kết thúc.
 
 ## 3. Quyền theo trạng thái
 
@@ -56,15 +55,15 @@ Ví dụ: được giao việc thứ Hai, đã làm hai giờ nhưng thứ Ba m�
 |---|---|
 | Project PLANNING, task chưa bắt đầu | Không log effort thực hiện |
 | IN_PROGRESS, người hiện được giao, task IN_PROGRESS | Tạo, sửa, xóa mềm log của mình; sửa/xóa có lý do và history |
-| Task PAUSED, project IN_PROGRESS, người hiện được giao | Được ghi bổ sung phần thực tế thuộc lượt phân công theo R01; Resume để cập nhật tiến độ khi tiếp tục |
-| Task ASSIGNED, project IN_PROGRESS, người hiện được giao | Được ghi bổ sung phần thực tế thuộc lượt phân công theo R01; Start để cập nhật tiến độ và nộp từ IN_PROGRESS |
+| Task PAUSED, project IN_PROGRESS, người hiện được giao | Chỉ đọc nhật ký; cần Tiếp tục về IN_PROGRESS trước khi tạo/sửa/xóa trực tiếp |
+| Task ASSIGNED, project IN_PROGRESS, người hiện được giao | Chỉ đọc nhật ký; cần Bắt đầu về IN_PROGRESS trước khi tạo/sửa/xóa trực tiếp |
 | PENDING_REVIEW | Nhật ký nộp đã khóa; sửa qua yêu cầu, không sửa trực tiếp |
 | DONE hoặc task CANCELLED, project IN_PROGRESS/COMPLETED | Chỉ hiệu chỉnh dữ liệu cũ qua yêu cầu; không ghi công việc phát sinh sau kết thúc |
 | Người đã được thay/thu hồi | Theo lượt phân công cũ, chỉ xem đóng góp của mình và gửi yêu cầu hiệu chỉnh; quyền từ trách nhiệm dự án khác còn hợp lệ được xét riêng |
 | Người khóa/nghỉ/đã đổi role không còn quyền tự phục vụ | Không mở ghi/gửi thay; yêu cầu đã gửi do PTCM hiện hành xử lý theo quyền |
 | Project CLOSED/CANCELLED | Không tạo/sửa/duyệt effort; chỉ đọc theo quyền |
 
-Nhật ký đã tồn tại nhưng chưa đủ điều kiện sửa trực tiếp dùng cùng luồng yêu cầu.
+Nhật ký đã khóa hoặc thuộc lượt giao cũ dùng luồng yêu cầu; ASSIGNED/PAUSED cần Bắt đầu/Tiếp tục, không mở yêu cầu ngoại lệ chỉ để bỏ qua điều kiện này.
 **Chốt 15/10:** khi còn quyền Edit, nhân viên sửa/xóa mềm có lý do và history, không cần duyệt. Khi khóa, gửi yêu cầu do PTCM hiện hành xử lý; không PM duyệt từ trách nhiệm PM, không nhập/gửi thay. Không thêm ngoại lệ PM tự duyệt. Quản trị viên không sửa effort; PTCM không nhận task cùng dự án. Đổi PTCM không làm mất lịch sử hoặc đổi actor cũ.
 
 Log đã deleted_at không được sửa/xóa lại hoặc khôi phục trong phạm vi hiện tại. Xóa mềm không dùng duration=0, không xóa vật lý.

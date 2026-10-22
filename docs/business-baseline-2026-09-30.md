@@ -83,7 +83,7 @@ Không thêm thi trực tuyến, AI duyệt, kỹ năng hết hạn, tái đánh
 | Gợi ý khi giao lại | Thu hồi trước; task chờ phân công nếu chưa tìm được người, không tự khôi phục A |
 | Kiểm tra phân công thất bại | Giữ kiểm tra, không cần nhánh riêng trên activity tổng quan |
 | Kỹ năng tự hết hạn | Không thuộc nghiệp vụ |
-| R01 — Nhật ký bổ sung | Khi còn quyền sửa trực tiếp, cho ghi thời gian thực tế thuộc lượt phân công, không phụ thuộc mốc Start/Resume; không duyệt ngoại lệ riêng hoặc sửa ngược trạng thái. Nhật ký đã khóa/lượt giao đã kết thúc vẫn theo hiệu chỉnh chung |
+| R01 — Nhật ký bổ sung (đã thay thế 21/10) | Quyền ghi khi chưa Start/đang PAUSED dưới đây không còn áp dụng; xem [chốt tiếp nối 21/10](business-baseline-2026-10-20.md#quyết-định-tiếp-nối--điều-kiện-ghi-nhật-ký-21102026) và work_effort_workflow mục 2–3. Chỉ ghi/sửa/xóa trực tiếp khi task/project IN_PROGRESS; nhật ký khóa/lượt cũ vẫn theo hiệu chỉnh chung |
 | R02 — Nộp và nghiệm thu | Bỏ nộp kết quả thay; thiếu nhật ký không tự chặn nộp/nghiệm thu đầu ra, không ép khai giờ giả. Dữ liệu thời gian chưa đầy đủ không dùng cho thành phần hiệu suất phụ thuộc thời gian |
 | R03 — CV | Không mở lại nhiều vòng mục trích xuất hoặc đóng đợt review riêng; bổ sung bằng yêu cầu kỹ năng mới, có thể dùng CV cũ làm minh chứng. Giữ quyết định cũ, không mở lại kết quả tổng hợp đợt CV |
 | R04 — Sửa sai kỹ năng | Bổ sung/điều chỉnh/loại thông tin sai qua xét duyệt chung, giữ lịch sử; có thể đề nghị bổ sung lại. Không có chức năng tái kích hoạt riêng hoặc kỹ năng tự hết hạn |

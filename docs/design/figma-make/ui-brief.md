@@ -33,7 +33,7 @@ Nếu dùng bộ chọn người/role để demo, ghi rõ đây là điều khi�
 - Bỏ checkbox/lý do chấp nhận lịch sử R05 cũ. Run cũ bất biến, có thể chạy lại; khi confirm vẫn kiểm tra skill/spec/quyền/trạng thái hiện hành. Tải mới và thứ hạng cũ có nhãn thời điểm riêng.
 - Task thuộc một nhóm, một người chịu trách nhiệm. Mô tả gồm đầu ra; tiêu chí nghiệm thu riêng. Không tạo trường deliverable độc lập; spec/estimate/requirements khóa sau lần giao đầu, kể cả đã thu hồi.
 - Nhân viên tự nộp tóm tắt bắt buộc, liên kết minh chứng tùy chọn. Không ép có nhật ký hoặc khai thiếu giờ để được nộp; nhật ký rỗng ghi “Chưa có thời gian ghi nhận”.
-- Ghi effort ngày/phút/nội dung; khi còn quyền Edit có thể bổ sung phần thực tế dù quên Start/Resume. Trên 480 phút/ngày cần lý do, trên 1440 chặn xuyên dự án.
+- Ghi effort ngày/phút/nội dung; theo chốt 21/10 chỉ tạo/sửa/xóa trực tiếp khi task/project IN_PROGRESS, ASSIGNED cần Bắt đầu, PAUSED cần Tiếp tục; vẫn đọc log đã có. Không timer hoặc bước xác nhận nhận việc riêng. Trên 480 phút/ngày cần lý do, trên 1440 chặn xuyên dự án.
 - Nhật ký đã khóa hoặc lượt giao cũ dùng yêu cầu ADD/UPDATE/DELETE; PTCM hiện hành duyệt. Không PM ghi/gửi/duyệt thay từ tư cách PM.
 - Giám đốc duyệt kỹ năng; HR duyệt fullname/phone/address; CV không được phê duyệt. Kỹ năng chờ duyệt và trích xuất không trộn vào năng lực chính thức.
 - Địa chỉ phải bổ sung khi hoàn thiện hồ sơ, không bắt lúc Admin tạo tài khoản. Hồ sơ cá nhân/HR hiện “Chưa cập nhật” cùng nhắc bổ sung khi chưa có; không chặn đăng nhập/công việc. Form đề nghị mở bằng nút khi cần; bổ sung/sửa phải có nội dung, không cho xóa trắng địa chỉ đã có. Không thêm trạng thái hoàn thiện hồ sơ.
