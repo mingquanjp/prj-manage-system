@@ -2,17 +2,10 @@ import { useState } from "react"
 import { ChevronDownIcon, GearIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import {
-  appointPtcm,
-  getPerson,
-  people,
-  ptcmBlockReason,
-  startProject,
-  type OutputConflict,
-  type Project,
-  type ProjectEvent,
-  type Task,
-} from "@/demo/model"
+import { appointPtcm, ptcmBlockReason, startProject } from "@/demo/projects"
+import { getPerson } from "@/demo/identity"
+import { people } from "@/demo/fixtures"
+import type { OutputConflict, Project, ProjectEvent, Task } from "@/models/workspace"
 
 export function ProjectResponsibilities({
   project,
@@ -36,27 +29,18 @@ export function ProjectResponsibilities({
   const [managing, setManaging] = useState(false)
   const pm = project.pmId === actorId
   const editable = ["PLANNING", "IN_PROGRESS"].includes(project.status)
-  const block = candidate
-    ? ptcmBlockReason(project, candidate, tasks, conflicts)
-    : undefined
-  const hasAssigned = tasks.some(
-    (t) => t.projectId === project.id && t.status === "ASSIGNED",
-  )
+  const block = candidate ? ptcmBlockReason(project, candidate, tasks, conflicts) : undefined
+  const hasAssigned = tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED")
   const history = events.filter((e) => e.projectId === project.id)
   return (
-    <section
-      aria-label="Trách nhiệm và triển khai"
-      className="mb-3 border-b border-border pb-3"
-    >
+    <section aria-label="Trách nhiệm và triển khai" className="mb-3 border-b border-border pb-3">
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
         <div>
           <h2 className="sr-only">Trách nhiệm dự án</h2>
           <p className="flex flex-wrap gap-x-5 gap-y-1 text-xs leading-6">
             <span>
               <span className="mr-1.5 text-muted-foreground">PM</span>
-              <strong className="font-medium">
-                {getPerson(project.pmId)?.name}
-              </strong>
+              <strong className="font-medium">{getPerson(project.pmId)?.name}</strong>
             </span>
             <span>
               <span className="mr-1.5 text-muted-foreground">PTCM</span>
@@ -86,10 +70,7 @@ export function ProjectResponsibilities({
         </p>
       )}
       {managing && (
-        <div
-          id="project-management"
-          className="mt-3 rounded-lg border border-border bg-white p-4"
-        >
+        <div id="project-management" className="mt-3 rounded-lg border border-border bg-white p-4">
           <div className="flex flex-wrap gap-2">
             {pm && editable && (
               <Button
@@ -108,11 +89,7 @@ export function ProjectResponsibilities({
               <Button
                 size="sm"
                 disabled={!hasAssigned}
-                title={
-                  !hasAssigned
-                    ? "Cần ít nhất một công việc đã phân công"
-                    : undefined
-                }
+                title={!hasAssigned ? "Cần ít nhất một công việc đã phân công" : undefined}
                 onClick={() => {
                   setError("")
                   setStarting(true)
@@ -133,7 +110,7 @@ export function ProjectResponsibilities({
           </p>
           {history.length > 0 && (
             <details className="mt-3 border-t border-border pt-3 text-xs">
-              <summary className="cursor-pointer text-muted-foreground">
+              <summary className="field-label cursor-pointer">
                 Thay đổi trong phiên mô phỏng ({history.length})
               </summary>
               <ul className="mt-2 space-y-2">
@@ -172,10 +149,7 @@ export function ProjectResponsibilities({
               }
             }}
           >
-            <label
-              htmlFor="ptcm-candidate"
-              className="block text-sm font-medium"
-            >
+            <label htmlFor="ptcm-candidate" className="field-label block">
               Nhân viên phụ trách
             </label>
             <select
@@ -211,11 +185,7 @@ export function ProjectResponsibilities({
               </p>
             )}
             <div className="flex justify-end gap-2 pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditing(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setEditing(false)}>
                 Hủy
               </Button>
               <Button
@@ -247,10 +217,7 @@ export function ProjectResponsibilities({
             <Button
               onClick={() => {
                 try {
-                  onChange(
-                    startProject(project, actorId, tasks),
-                    "Bắt đầu dự án",
-                  )
+                  onChange(startProject(project, actorId, tasks), "Bắt đầu dự án")
                   setStarting(false)
                 } catch (err) {
                   setError((err as Error).message)

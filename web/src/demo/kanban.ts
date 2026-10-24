@@ -1,4 +1,5 @@
-import { statusLabels, type Task, type TaskStatus } from "./model.ts"
+import { statusLabels } from "../models/workspace-labels.ts"
+import type { Task, TaskStatus } from "../models/workspace.ts"
 
 // Chỉ nhóm trạng thái để trình bày; không phải luồng kéo thả/chuyển trạng thái.
 export const projectColumns: {

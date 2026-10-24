@@ -1,6 +1,7 @@
 import { FileTextIcon } from "@radix-ui/react-icons"
 import { Avatar, StatusBadge } from "@/components/shared"
-import { getPerson, type Task } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
+import type { Task } from "@/models/workspace"
 import { projectBoard } from "@/demo/kanban"
 import { cn } from "@/lib/utils"
 
@@ -35,10 +36,7 @@ export function ProjectKanban({
           >
             <div className="mb-3 flex items-center gap-2 px-1 py-2">
               <h2 className="field-label text-balance">{column.label}</h2>
-              <span
-                className="count ml-auto"
-                aria-label={`${column.tasks.length} công việc`}
-              >
+              <span className="count ml-auto" aria-label={`${column.tasks.length} công việc`}>
                 {column.tasks.length}
               </span>
             </div>
@@ -50,8 +48,7 @@ export function ProjectKanban({
                     key={task.id}
                     className={cn(
                       "rounded-lg border border-border bg-white p-3.5",
-                      (selectedId === task.id ||
-                        selectedAssignments.includes(task.id)) &&
+                      (selectedId === task.id || selectedAssignments.includes(task.id)) &&
                         "border-primary ring-1 ring-primary",
                     )}
                   >

@@ -26,7 +26,8 @@ export function localTarget(base, source, target) {
 
 export async function requiredFiles(base = root) {
   const required = new Set([...entries, ".gitignore", "scripts/check-harness.mjs", "scripts/check-harness.test.mjs",
-    "web/package.json", "web/pnpm-lock.yaml", "web/index.html", "web/tsconfig.json", "web/vite.config.ts", "web/components.json"])
+    "web/package.json", "web/pnpm-lock.yaml", "web/index.html", "web/tsconfig.json", "web/vite.config.ts", "web/components.json",
+    "web/eslint.config.mjs", "web/.prettierrc.json", "web/.prettierignore"])
   for (const source of entries) {
     for (const target of localLinks(await readFile(resolve(base, source), "utf8"))) {
       required.add(localTarget(base, source, target))
@@ -86,7 +87,7 @@ export async function checkHarness({ staged = false } = {}) {
       }
     }
     const pkg = JSON.parse(await readFile(resolve(root, "web/package.json"), "utf8"))
-    for (const script of ["dev", "typecheck", "test", "build", "check"]) {
+    for (const script of ["dev", "typecheck", "lint", "format:check", "format", "test", "build", "check"]) {
       if (!pkg.scripts?.[script]) errors.push(`Thiếu lệnh frontend: ${script}`)
     }
   } catch (error) {

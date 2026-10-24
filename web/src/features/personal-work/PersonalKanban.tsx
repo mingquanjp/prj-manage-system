@@ -1,10 +1,6 @@
 import { FileTextIcon } from "@radix-ui/react-icons"
-import {
-  statusLabels,
-  type Project,
-  type Task,
-  type TaskStatus,
-} from "@/demo/model"
+import { statusLabels } from "@/models/workspace-labels"
+import type { Project, Task, TaskStatus } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/shared"
 
@@ -57,16 +53,11 @@ export function PersonalKanban({
                   className={cn(
                     "size-2 rounded-full bg-muted-foreground",
                     column.id === "DONE" && "bg-success",
-                    (column.id === "IN_PROGRESS" ||
-                      column.id === "PENDING_REVIEW") &&
-                      "bg-warning",
+                    (column.id === "IN_PROGRESS" || column.id === "PENDING_REVIEW") && "bg-warning",
                   )}
                 />
                 <h2 className="field-label text-balance">{column.label}</h2>
-                <span
-                  className="count ml-auto"
-                  aria-label={`${rows.length} công việc`}
-                >
+                <span className="count ml-auto" aria-label={`${rows.length} công việc`}>
                   {rows.length}
                 </span>
               </div>
@@ -80,8 +71,7 @@ export function PersonalKanban({
                     onClick={(e) => onSelect(task, e.currentTarget)}
                     className={cn(
                       "block w-full rounded-lg border border-border bg-white p-3.5 text-left transition-colors hover:border-muted-foreground/50",
-                      selectedId === task.id &&
-                        "border-primary ring-1 ring-primary",
+                      selectedId === task.id && "border-primary ring-1 ring-primary",
                     )}
                   >
                     <span className="flex items-center gap-2 text-xs text-muted-foreground">

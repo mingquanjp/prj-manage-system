@@ -10,14 +10,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/shared"
-import {
-  canAssign,
-  isTaskFrozen,
-  saveGroup,
-  type Project,
-  type Task,
-  type TaskGroup,
-} from "@/demo/model"
+import { canAssign } from "@/demo/identity"
+import { isTaskFrozen, saveGroup } from "@/demo/task-structure"
+import type { Project, Task, TaskGroup } from "@/models/workspace"
 
 export function ProjectStructure({
   project,
@@ -56,10 +51,9 @@ export function ProjectStructure({
     <section className="min-w-0" aria-label="Cấu trúc dự án">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Nhóm công việc</h2>
+          <h2 className="text-lg font-semibold text-balance">Nhóm công việc</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tổ chức phạm vi theo module hoặc gói công việc. Nhóm có thể chưa có
-            công việc.
+            Tổ chức phạm vi theo module hoặc gói công việc. Nhóm có thể chưa có công việc.
           </p>
         </div>
         {allowed && (
@@ -71,9 +65,7 @@ export function ProjectStructure({
       </div>
       <div className="space-y-4">
         {relatedGroups.map((group) => {
-          const rows = tasks.filter(
-            (t) => t.projectId === project.id && t.groupId === group.id,
-          )
+          const rows = tasks.filter((t) => t.projectId === project.id && t.groupId === group.id)
           return (
             <details
               key={group.id}
@@ -83,9 +75,7 @@ export function ProjectStructure({
               <summary className="flex cursor-pointer list-none items-center gap-3 bg-background/50 px-4 py-4">
                 <ChevronDownIcon />
                 <LayersIcon className="text-muted-foreground" />
-                <span className="min-w-0 break-words font-medium">
-                  {group.name}
-                </span>
+                <span className="min-w-0 break-words font-medium">{group.name}</span>
                 <span className="count">{rows.length}</span>
               </summary>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3">
@@ -103,11 +93,7 @@ export function ProjectStructure({
                     >
                       <Pencil1Icon />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onCreateTask(group.id)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => onCreateTask(group.id)}>
                       <PlusIcon />
                       Thêm công việc
                     </Button>
@@ -129,10 +115,7 @@ export function ProjectStructure({
                     </thead>
                     <tbody>
                       {rows.map((task) => (
-                        <tr
-                          key={task.id}
-                          className="border-t border-border hover:bg-background"
-                        >
+                        <tr key={task.id} className="border-t border-border hover:bg-background">
                           <td className="px-4 py-3">
                             <button
                               type="button"
@@ -141,9 +124,7 @@ export function ProjectStructure({
                             >
                               <FileTextIcon className="mt-1 text-muted-foreground" />
                               <span>
-                                <span className="block font-medium">
-                                  {task.name}
-                                </span>
+                                <span className="block font-medium">{task.name}</span>
                                 <span className="mt-1 block text-xs text-muted-foreground">
                                   {task.code}
                                 </span>
@@ -153,9 +134,7 @@ export function ProjectStructure({
                           <td>
                             <StatusBadge status={task.status} />
                           </td>
-                          <td className="pr-4 text-right tabular-nums">
-                            {task.estimate} giờ
-                          </td>
+                          <td className="pr-4 text-right tabular-nums">{task.estimate} giờ</td>
                           <td>
                             {allowed &&
                               (isTaskFrozen(task) ? (
@@ -212,8 +191,8 @@ export function ProjectStructure({
         </div>
       )}
       <p className="mt-4 text-xs leading-5 text-muted-foreground">
-        Đặc tả công việc khóa sau lần giao đầu. Đổi tên nhóm không thay đổi yêu
-        cầu của các công việc bên trong.
+        Đặc tả công việc khóa sau lần giao đầu. Đổi tên nhóm không thay đổi yêu cầu của các công
+        việc bên trong.
       </p>
       {editing && (
         <Dialog
@@ -247,10 +226,7 @@ export function ProjectStructure({
             }}
           >
             <div>
-              <label
-                htmlFor="group-name"
-                className="mb-2 block text-sm font-medium"
-              >
+              <label htmlFor="group-name" className="field-label mb-2 block">
                 Tên nhóm *
               </label>
               <input
@@ -264,14 +240,8 @@ export function ProjectStructure({
               />
             </div>
             <div>
-              <label
-                htmlFor="group-description"
-                className="mb-2 block text-sm font-medium"
-              >
-                Mô tả{" "}
-                <span className="font-normal text-muted-foreground">
-                  · Không bắt buộc
-                </span>
+              <label htmlFor="group-description" className="field-label mb-2 block">
+                Mô tả <span className="font-normal text-muted-foreground">· Không bắt buộc</span>
               </label>
               <textarea
                 id="group-description"
@@ -281,11 +251,7 @@ export function ProjectStructure({
               />
             </div>
             {error && (
-              <p
-                id="group-error"
-                role="alert"
-                className="text-sm text-destructive"
-              >
+              <p id="group-error" role="alert" className="text-sm text-destructive">
                 {error}
               </p>
             )}
@@ -293,9 +259,7 @@ export function ProjectStructure({
               <Button variant="outline" onClick={() => setEditing(null)}>
                 Hủy
               </Button>
-              <Button type="submit">
-                {editing === "new" ? "Tạo nhóm" : "Lưu thay đổi"}
-              </Button>
+              <Button type="submit">{editing === "new" ? "Tạo nhóm" : "Lưu thay đổi"}</Button>
             </div>
           </form>
         </Dialog>

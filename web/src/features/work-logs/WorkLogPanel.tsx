@@ -2,7 +2,8 @@ import { useState } from "react"
 import { Pencil1Icon, TrashIcon, PlusIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { type Project, type Task } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
+import type { Project, Task } from "@/models/workspace"
 import {
   dailyMinutes,
   deleteLog,
@@ -14,7 +15,16 @@ import {
   WorkValidationError,
   type WorkLog,
   type WorkState,
+  type Contribution,
 } from "@/demo/effort"
+import {
+  correctionBlockReason,
+  contributionFor,
+  defaultLogDate,
+  logDateBounds,
+  sendLogChange,
+} from "@/demo/corrections"
+import { CorrectionRequests } from "./CorrectionRequests"
 
 export function WorkLogPanel({
   project,
@@ -24,6 +34,7 @@ export function WorkLogPanel({
   actorId,
   work,
   onChange,
+  contribution: historical,
 }: {
   project: Project
   task: Task
@@ -32,8 +43,13 @@ export function WorkLogPanel({
   actorId: string
   work: WorkState
   onChange: (work: WorkState) => void
+  contribution?: Contribution
 }) {
-  const [editor, setEditor] = useState<{ before?: WorkLog } | null>(null)
+  const [editor, setEditor] = useState<{
+    before?: WorkLog
+    correction: boolean
+    requestId: string
+  } | null>(null)
   const [deleting, setDeleting] = useState<WorkLog | null>(null)
   const [date, setDate] = useState(vietnamDay())
   const [hours, setHours] = useState("0"),
@@ -43,37 +59,42 @@ export function WorkLogPanel({
   const [reason, setReason] = useState(""),
     [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState("")
-  const rows = taskLogs(work, task, actorId).sort(
-    (a, b) =>
-      b.workDate.localeCompare(a.workDate) ||
-      b.createdAt.localeCompare(a.createdAt),
-  )
-  const block = logBlockReason(project, task, actorId)
-  const earliestDay =
-    project.executionStartedAt && task.currentAssignment
-      ? [
-          vietnamDay(new Date(project.executionStartedAt)),
-          vietnamDay(new Date(task.currentAssignment.assignedAt)),
-        ].sort()[1]
-      : undefined
+  const assignmentId = historical?.assignment.id ?? task.currentAssignment?.id
+  const contribution =
+    historical ?? (assignmentId ? contributionFor(work, tasks, assignmentId) : undefined)
+  const correctionBlock = contribution
+    ? correctionBlockReason(project, task, contribution, actorId)
+    : "Thiếu dữ liệu lượt giao."
+  const canRequest = !correctionBlock
+  const rows = (
+    historical
+      ? work.logs.filter(
+          (log) =>
+            log.assignmentId === assignmentId && log.employeeId === actorId && !log.deletedAt,
+        )
+      : taskLogs(work, task, actorId)
+  ).sort((a, b) => b.workDate.localeCompare(a.workDate) || b.createdAt.localeCompare(a.createdAt))
+  const block = historical
+    ? "Đây là nhật ký đóng góp lịch sử của bạn, không phải quyền thực hiện công việc hiện tại. Chỉ gửi yêu cầu hiệu chỉnh khi đủ điều kiện."
+    : logBlockReason(project, task, actorId)
+  const { min: earliestDay, max: latestDay } = logDateBounds(project, contribution)
   const duration = Number(hours) * 60 + Number(minutes)
-  const totalDay =
-    dailyMinutes(work, actorId, date, editor?.before?.id) + duration
+  const totalDay = dailyMinutes(work, actorId, date, editor?.before?.id) + duration
   const edits = work.history.filter(
     (h) =>
       h.before.taskId === task.id &&
-      h.before.assignmentId === task.currentAssignment?.id &&
+      h.before.assignmentId === assignmentId &&
       h.before.employeeId === actorId,
   )
-  const openEditor = (before?: WorkLog) => {
-    setDate(before?.workDate ?? vietnamDay())
+  const openEditor = (before?: WorkLog, correction = false) => {
+    setDate(before?.workDate ?? defaultLogDate(project, contribution))
     setHours(String(Math.floor((before?.minutes ?? 0) / 60)))
     setMinutes(String((before?.minutes ?? 0) % 60))
     setDescription(before?.description ?? "")
     setOverReason(before?.overLimitReason ?? "")
     setReason("")
     setErrors({})
-    setEditor({ before })
+    setEditor({ before, correction, requestId: crypto.randomUUID() })
   }
   const error = (name: string) =>
     errors[name] ? (
@@ -86,11 +107,7 @@ export function WorkLogPanel({
     "aria-describedby": errors[name] ? `log-${name}-error` : undefined,
   })
   const failed = (err: unknown) =>
-    setErrors(
-      err instanceof WorkValidationError
-        ? err.fields
-        : { form: (err as Error).message },
-    )
+    setErrors(err instanceof WorkValidationError ? err.fields : { form: (err as Error).message })
   return (
     <section aria-label="Nhật ký công việc" className="mt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -101,16 +118,24 @@ export function WorkLogPanel({
             Ghi nhật ký
           </Button>
         )}
+        {canRequest && (
+          <Button size="sm" variant="outline" onClick={() => openEditor(undefined, true)}>
+            <PlusIcon />
+            Yêu cầu bổ sung nhật ký
+          </Button>
+        )}
       </div>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        Ghi thời gian thực tế dành cho task, gồm ở công ty hoặc ở nhà; không gồm
-        nghỉ/chờ thụ động. Không ghi trùng thời gian giữa các task.
+        Ghi thời gian thực tế dành cho task, gồm ở công ty hoặc ở nhà; không gồm nghỉ/chờ thụ động.
+        Không ghi trùng thời gian giữa các task.
       </p>
-      {block && (
-        <p className="mt-3 rounded-md bg-accent p-3 text-xs leading-5">
-          {block}
-        </p>
-      )}
+      {block && <p className="mt-3 rounded-md bg-accent p-3 text-xs leading-5">{block}</p>}
+      {block &&
+        !canRequest &&
+        contribution &&
+        ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"].includes(task.status) && (
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">{correctionBlock}</p>
+        )}
       {notice && (
         <p role="status" className="mt-3 text-xs text-success">
           {notice}
@@ -131,9 +156,7 @@ export function WorkLogPanel({
           <li key={log.id} className="py-3">
             <div className="flex items-center justify-between gap-2 text-sm">
               <span>{log.workDate.split("-").reverse().join("/")}</span>
-              <strong className="font-medium">
-                {formatMinutes(log.minutes)}
-              </strong>
+              <strong className="font-medium">{formatMinutes(log.minutes)}</strong>
             </div>
             <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
               {log.description}
@@ -143,14 +166,18 @@ export function WorkLogPanel({
                 Lý do vượt 8 giờ: {log.overLimitReason}
               </p>
             )}
-            {!block && (
+            {(!block || canRequest) && (
               <div className="mt-2 flex justify-end gap-1">
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label={`Sửa nhật ký ${log.description}`}
-                  title="Chỉnh sửa nhật ký"
-                  onClick={() => openEditor(log)}
+                  aria-label={`${canRequest ? "Yêu cầu sửa" : "Sửa"} nhật ký ${log.description}`}
+                  title={canRequest ? "Yêu cầu sửa nhật ký" : "Chỉnh sửa nhật ký"}
+                  disabled={
+                    canRequest &&
+                    work.requests.some((r) => r.targetLogId === log.id && r.status === "PENDING")
+                  }
+                  onClick={() => openEditor(log, canRequest)}
                 >
                   <Pencil1Icon />
                 </Button>
@@ -158,8 +185,12 @@ export function WorkLogPanel({
                   size="icon"
                   variant="ghost"
                   className="text-destructive"
-                  aria-label={`Xóa nhật ký ${log.description}`}
-                  title="Xóa nhật ký"
+                  aria-label={`${canRequest ? "Yêu cầu xóa" : "Xóa"} nhật ký ${log.description}`}
+                  title={canRequest ? "Yêu cầu xóa nhật ký" : "Xóa nhật ký"}
+                  disabled={
+                    canRequest &&
+                    work.requests.some((r) => r.targetLogId === log.id && r.status === "PENDING")
+                  }
                   onClick={() => {
                     setDeleting(log)
                     setReason("")
@@ -170,24 +201,40 @@ export function WorkLogPanel({
                 </Button>
               </div>
             )}
+            {work.requests.some((r) => r.targetLogId === log.id && r.status === "PENDING") && (
+              <p className="mt-2 text-xs text-warning">
+                Nhật ký đang có yêu cầu hiệu chỉnh chờ duyệt.
+              </p>
+            )}
           </li>
         ))}
       </ul>
+      {assignmentId && (
+        <CorrectionRequests
+          projects={projects}
+          tasks={tasks}
+          work={work}
+          actorId={actorId}
+          assignmentId={assignmentId}
+          onChange={onChange}
+        />
+      )}
       {edits.length > 0 && (
         <details className="mt-4 border-t border-border pt-3 text-xs">
-          <summary className="cursor-pointer font-medium">
+          <summary className="field-label cursor-pointer">
             Lịch sử sửa/xóa trong phiên ({edits.length})
           </summary>
           <ul className="mt-3 space-y-3">
             {edits.map((h, i) => (
               <li key={i} className="break-words leading-5">
                 <p>
-                  {h.after.deletedAt ? "Xóa" : "Sửa"} ·{" "}
-                  {new Date(h.at).toLocaleString("vi-VN")} · {h.reason}
+                  {h.after.deletedAt ? "Xóa" : "Sửa"} · {new Date(h.at).toLocaleString("vi-VN")} ·{" "}
+                  {getPerson(h.actorId)?.name} · {h.reason}
+                  {h.requestId && " · Qua yêu cầu hiệu chỉnh"}
                 </p>
                 <p className="text-muted-foreground">
-                  Trước: {h.before.workDate} · {formatMinutes(h.before.minutes)}{" "}
-                  · {h.before.description}
+                  Trước: {h.before.workDate} · {formatMinutes(h.before.minutes)} ·{" "}
+                  {h.before.description}
                   {h.before.overLimitReason && ` · ${h.before.overLimitReason}`}
                 </p>
                 {!h.after.deletedAt && (
@@ -205,8 +252,20 @@ export function WorkLogPanel({
       <Dialog
         open={!!editor}
         onOpenChange={(open) => !open && setEditor(null)}
-        title={editor?.before ? "Chỉnh sửa nhật ký" : "Ghi nhật ký công việc"}
-        description="Chỉ ghi thời gian thực tế của bạn trong lượt được giao. Không tự ghi giờ từ trạng thái công việc."
+        title={
+          editor?.correction
+            ? editor.before
+              ? "Yêu cầu sửa nhật ký"
+              : "Yêu cầu bổ sung nhật ký"
+            : editor?.before
+              ? "Chỉnh sửa nhật ký"
+              : "Ghi nhật ký công việc"
+        }
+        description={
+          editor?.correction
+            ? "Đề nghị chưa thay đổi nhật ký hoặc tổng giờ. PTCM hiện hành sẽ kiểm tra và quyết định; snapshot lần nộp giữ nguyên."
+            : "Chỉ ghi thời gian thực tế của bạn trong lượt được giao. Không tự ghi giờ từ trạng thái công việc."
+        }
       >
         <form
           className="space-y-4"
@@ -214,11 +273,7 @@ export function WorkLogPanel({
           onSubmit={(e) => {
             e.preventDefault()
             if (!editor) return
-            if (
-              !/^\d+$/.test(hours) ||
-              !/^\d+$/.test(minutes) ||
-              Number(minutes) > 59
-            ) {
+            if (!/^\d+$/.test(hours) || !/^\d+$/.test(minutes) || Number(minutes) > 59) {
               setErrors({
                 minutes: "Giờ phải là số nguyên không âm; phút từ 0 đến 59.",
               })
@@ -226,26 +281,46 @@ export function WorkLogPanel({
             }
             try {
               onChange(
-                saveLog(
-                  projects,
-                  tasks,
-                  work,
-                  actorId,
-                  task.id,
-                  {
-                    workDate: date,
-                    minutes: duration,
-                    description,
-                    overLimitReason: overReason,
-                  },
-                  editor.before ? { before: editor.before, reason } : undefined,
-                ),
+                editor.correction
+                  ? sendLogChange(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      assignmentId!,
+                      editor.before ? "UPDATE" : "ADD",
+                      reason,
+                      {
+                        workDate: date,
+                        minutes: duration,
+                        description,
+                        overLimitReason: overReason,
+                      },
+                      editor.before,
+                      editor.requestId,
+                    )
+                  : saveLog(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      task.id,
+                      {
+                        workDate: date,
+                        minutes: duration,
+                        description,
+                        overLimitReason: overReason,
+                      },
+                      editor.before ? { before: editor.before, reason } : undefined,
+                    ),
               )
               setEditor(null)
               setNotice(
-                editor.before
-                  ? "Đã cập nhật nhật ký và giữ lịch sử trong phiên."
-                  : "Đã ghi nhật ký trong phiên mô phỏng.",
+                editor.correction
+                  ? "Đã gửi yêu cầu. Nhật ký và tổng giờ chưa thay đổi."
+                  : editor.before
+                    ? "Đã cập nhật nhật ký và giữ lịch sử trong phiên."
+                    : "Đã ghi nhật ký trong phiên mô phỏng.",
               )
             } catch (err) {
               failed(err)
@@ -253,13 +328,13 @@ export function WorkLogPanel({
           }}
         >
           <label className="block text-sm">
-            Ngày làm việc *
+            <span className="field-label">Ngày làm việc *</span>
             <input
               type="date"
               className="field mt-2 w-full"
               value={date}
               min={earliestDay}
-              max={vietnamDay()}
+              max={latestDay}
               onChange={(e) => setDate(e.target.value)}
               {...field("workDate")}
             />
@@ -267,14 +342,13 @@ export function WorkLogPanel({
           </label>
           {earliestDay && (
             <p className="text-xs leading-5 text-muted-foreground">
-              Được ghi thời gian từ {earliestDay.split("-").reverse().join("/")}
-              . Ngày quá hạn kế hoạch vẫn được ghi nếu là thời gian thực tế hợp
-              lệ.
+              Được ghi thời gian từ {earliestDay.split("-").reverse().join("/")}. Ngày quá hạn kế
+              hoạch vẫn được ghi nếu là thời gian thực tế hợp lệ.
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">
-              Giờ
+              <span className="field-label">Giờ</span>
               <input
                 type="number"
                 min="0"
@@ -286,7 +360,7 @@ export function WorkLogPanel({
               />
             </label>
             <label className="text-sm">
-              Phút
+              <span className="field-label">Phút</span>
               <input
                 type="number"
                 min="0"
@@ -303,12 +377,14 @@ export function WorkLogPanel({
           <p
             className={`text-xs leading-5 ${totalDay > 480 ? "text-warning" : "text-muted-foreground"}`}
           >
-            Tổng cá nhân ngày này sau lưu:{" "}
-            {Number.isFinite(totalDay) ? formatMinutes(totalDay) : "—"} (xuyên
-            dự án). Trên 8 giờ cần lý do; trên 24 giờ không được lưu.
+            {editor?.correction
+              ? "Tổng cá nhân ngày này nếu được chấp thuận:"
+              : "Tổng cá nhân ngày này sau lưu:"}{" "}
+            {Number.isFinite(totalDay) ? formatMinutes(totalDay) : "—"} (xuyên dự án). Trên 8 giờ
+            cần lý do; trên 24 giờ không được lưu.
           </p>
           <label className="block text-sm">
-            Nội dung đã làm *
+            <span className="field-label">Nội dung đã làm *</span>
             <textarea
               className="field mt-2 min-h-24 w-full"
               value={description}
@@ -319,7 +395,7 @@ export function WorkLogPanel({
           </label>
           {(totalDay > 480 || overReason || errors.overLimitReason) && (
             <label className="block text-sm">
-              Lý do tổng ngày vượt 8 giờ *
+              <span className="field-label">Lý do tổng ngày vượt 8 giờ *</span>
               <textarea
                 className="field mt-2 w-full"
                 value={overReason}
@@ -329,9 +405,11 @@ export function WorkLogPanel({
               {error("overLimitReason")}
             </label>
           )}
-          {editor?.before && (
+          {(editor?.before || editor?.correction) && (
             <label className="block text-sm">
-              Lý do chỉnh sửa *
+              <span className="field-label">
+                {editor?.correction ? "Lý do và căn cứ hiệu chỉnh *" : "Lý do chỉnh sửa *"}
+              </span>
               <textarea
                 className="field mt-2 w-full"
                 value={reason}
@@ -352,22 +430,22 @@ export function WorkLogPanel({
             </p>
           )}
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditor(null)}
-            >
+            <Button type="button" variant="outline" onClick={() => setEditor(null)}>
               Hủy
             </Button>
-            <Button type="submit">Lưu nhật ký</Button>
+            <Button type="submit">{editor?.correction ? "Gửi yêu cầu" : "Lưu nhật ký"}</Button>
           </div>
         </form>
       </Dialog>
       <Dialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Xóa nhật ký?"
-        description="Nhật ký bị loại khỏi tổng thời gian nhưng vẫn giữ lịch sử. Không có thao tác khôi phục trong phiên bản hiện tại."
+        title={canRequest ? "Yêu cầu xóa nhật ký" : "Xóa nhật ký?"}
+        description={
+          canRequest
+            ? "Nhật ký chỉ bị loại khỏi tổng sau khi PTCM chấp thuận. Snapshot đã nộp vẫn được giữ nguyên."
+            : "Nhật ký bị loại khỏi tổng thời gian nhưng vẫn giữ lịch sử. Không có thao tác khôi phục trong phiên bản hiện tại."
+        }
       >
         <form
           onSubmit={(e) => {
@@ -375,25 +453,33 @@ export function WorkLogPanel({
             if (!deleting) return
             try {
               onChange(
-                deleteLog(
-                  projects,
-                  tasks,
-                  work,
-                  actorId,
-                  task.id,
-                  deleting,
-                  reason,
-                ),
+                canRequest
+                  ? sendLogChange(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      assignmentId!,
+                      "DELETE",
+                      reason,
+                      undefined,
+                      deleting,
+                    )
+                  : deleteLog(projects, tasks, work, actorId, task.id, deleting, reason),
               )
               setDeleting(null)
-              setNotice("Đã xóa nhật ký khỏi tổng thời gian và giữ lịch sử.")
+              setNotice(
+                canRequest
+                  ? "Đã gửi yêu cầu xóa. Nhật ký hiện tại chưa thay đổi."
+                  : "Đã xóa nhật ký khỏi tổng thời gian và giữ lịch sử.",
+              )
             } catch (err) {
               failed(err)
             }
           }}
         >
           <label className="block text-sm">
-            Lý do xóa *
+            <span className="field-label">Lý do xóa *</span>
             <textarea
               className="field mt-2 w-full"
               value={reason}
@@ -408,18 +494,11 @@ export function WorkLogPanel({
             </p>
           )}
           <div className="mt-5 flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleting(null)}
-            >
+            <Button type="button" variant="outline" onClick={() => setDeleting(null)}>
               Hủy
             </Button>
-            <Button
-              type="submit"
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              Xóa nhật ký
+            <Button type="submit" className="bg-destructive text-white hover:bg-destructive/90">
+              {canRequest ? "Gửi yêu cầu xóa" : "Xóa nhật ký"}
             </Button>
           </div>
         </form>

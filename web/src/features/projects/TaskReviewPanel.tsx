@@ -2,12 +2,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { SubmissionHistory } from "@/components/submission-history"
-import {
-  reviewBlockReason,
-  type WorkState,
-  type ReviewResult,
-} from "@/demo/effort"
-import type { Project, Task, OutputConflict } from "@/demo/model"
+import { reviewBlockReason, type WorkState, type ReviewResult } from "@/demo/effort"
+import type { Project, Task, OutputConflict } from "@/models/workspace"
 
 export function TaskReviewPanel({
   project,
@@ -22,11 +18,7 @@ export function TaskReviewPanel({
   work: WorkState
   actorId: string
   conflicts: OutputConflict[]
-  onReview: (
-    submissionId: string,
-    result: ReviewResult,
-    comment: string,
-  ) => void
+  onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
   const [decision, setDecision] = useState<{
     result: ReviewResult
@@ -37,25 +29,18 @@ export function TaskReviewPanel({
   const submissions = work.submissions.filter((s) => s.taskId === task.id)
   const latest = submissions.at(-1)
   const isPtcm = project.ptcmId === actorId
-  const block = reviewBlockReason(
-    project,
-    task,
-    work,
-    actorId,
-    latest?.id ?? "",
-    conflicts,
-  )
+  const block = reviewBlockReason(project, task, work, actorId, latest?.id ?? "", conflicts)
   return (
     <section className="mt-4" aria-label="Kết quả và nghiệm thu công việc">
-      <h3 className="text-sm font-semibold">Kết quả và nghiệm thu</h3>
+      <h3 className="section-title">Kết quả và nghiệm thu</h3>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        Đối chiếu đầu ra với tiêu chí đã chốt. Thiếu nhật ký không tự chặn
-        nghiệm thu; không yêu cầu sửa ngoài phạm vi công việc.
+        Đối chiếu đầu ra với tiêu chí đã chốt. Thiếu nhật ký không tự chặn nghiệm thu; không yêu cầu
+        sửa ngoài phạm vi công việc.
       </p>
       {!isPtcm && (
         <p className="mt-3 rounded-md bg-accent p-3 text-xs leading-5">
-          Bạn đang theo dõi kết quả. Chỉ PTCM hiện hành được quyết định nghiệm
-          thu; bản chụp nhật ký chi tiết không mở từ tư cách PM.
+          Bạn đang theo dõi kết quả. Chỉ PTCM hiện hành được quyết định nghiệm thu; bản chụp nhật ký
+          chi tiết không mở từ tư cách PM.
         </p>
       )}
       {!latest && (
@@ -129,9 +114,11 @@ export function TaskReviewPanel({
             {task.code} · {task.name}
           </p>
           <label className="block text-sm">
-            {decision?.result === "REJECTED"
-              ? "Lý do yêu cầu chỉnh sửa *"
-              : "Nhận xét (tùy chọn)"}
+            <span className="field-label">
+              {decision?.result === "REJECTED"
+                ? "Lý do yêu cầu chỉnh sửa *"
+                : "Nhận xét (tùy chọn)"}
+            </span>
             <textarea
               className="field mt-2 min-h-28 w-full"
               value={comment}
@@ -141,26 +128,16 @@ export function TaskReviewPanel({
             />
           </label>
           {error && (
-            <p
-              id="review-error"
-              role="alert"
-              className="mt-2 text-sm text-destructive"
-            >
+            <p id="review-error" role="alert" className="mt-2 text-sm text-destructive">
               {error}
             </p>
           )}
           <div className="mt-5 flex flex-wrap justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDecision(null)}
-            >
+            <Button type="button" variant="outline" onClick={() => setDecision(null)}>
               Hủy
             </Button>
             <Button type="submit">
-              {decision?.result === "REJECTED"
-                ? "Xác nhận yêu cầu sửa"
-                : "Xác nhận chấp nhận"}
+              {decision?.result === "REJECTED" ? "Xác nhận yêu cầu sửa" : "Xác nhận chấp nhận"}
             </Button>
           </div>
         </form>

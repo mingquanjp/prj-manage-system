@@ -1,14 +1,9 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { cn } from "@/lib/utils"
-import { statusLabels, type TaskStatus } from "@/demo/model"
+import { statusLabels } from "@/models/workspace-labels"
+import type { TaskStatus } from "@/models/workspace"
 
-export function Avatar({
-  initials,
-  small = false,
-}: {
-  initials: string
-  small?: boolean
-}) {
+export function Avatar({ initials, small = false }: { initials: string; small?: boolean }) {
   return (
     <span
       aria-hidden="true"
@@ -21,11 +16,7 @@ export function Avatar({
     </span>
   )
 }
-export function StatusBadge({
-  status,
-}: {
-  status: TaskStatus | "PLANNING" | "COMPLETED"
-}) {
+export function StatusBadge({ status }: { status: TaskStatus | "PLANNING" | "COMPLETED" }) {
   const label =
     status === "PLANNING"
       ? "Lập kế hoạch"
@@ -49,10 +40,12 @@ export function StatusBadge({
   )
 }
 export function SearchInput({
+  id,
   value,
   onChange,
   placeholder,
 }: {
+  id?: string
   value: string
   onChange: (value: string) => void
   placeholder: string
@@ -61,6 +54,7 @@ export function SearchInput({
     <div className="relative min-w-0">
       <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
       <input
+        id={id}
         type="search"
         aria-label={placeholder}
         className="field w-full pl-9"
@@ -71,16 +65,10 @@ export function SearchInput({
     </div>
   )
 }
-export function EmptyState({
-  title,
-  detail,
-}: {
-  title: string
-  detail: string
-}) {
+export function EmptyState({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="py-16 text-center">
-      <p className="font-medium">{title}</p>
+      <p className="section-title">{title}</p>
       <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
     </div>
   )

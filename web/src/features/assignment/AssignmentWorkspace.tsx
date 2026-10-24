@@ -1,32 +1,16 @@
+import { AssignmentTaskList } from "./AssignmentTaskList"
+import { AssignmentCandidateTable } from "./AssignmentCandidateTable"
+import { AssignmentDraftPanel } from "./AssignmentDraftPanel"
 import { useState, type Dispatch, type SetStateAction } from "react"
-import {
-  ArrowLeftIcon,
-  ChevronDownIcon,
-  CheckIcon,
-  Cross2Icon,
-  ExclamationTriangleIcon,
-  InfoCircledIcon,
-  PersonIcon,
-} from "@radix-ui/react-icons"
-import { Avatar, EmptyState, SearchInput } from "@/components/shared"
+import { ArrowLeftIcon, ExclamationTriangleIcon, InfoCircledIcon } from "@radix-ui/react-icons"
+import { EmptyState, SearchInput } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import {
-  addedLoad,
-  commitDraft,
-  getPerson,
-  isEligible,
-  levels,
-  loadFor,
-  people,
-  recommendations,
-  skillGaps,
-  validateDraft,
-  type Choice,
-  type Draft,
-  type Project,
-  type Task,
-} from "@/demo/model"
+import { commitDraft, recommendations, skillGaps, validateDraft } from "@/demo/assignment"
+import { getPerson, isEligible } from "@/demo/identity"
+import { levels } from "@/models/workspace-labels"
+import { people } from "@/demo/fixtures"
+import type { Choice, Draft, Project, Task } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 
 type Mode = "manual" | "recommended"
@@ -56,19 +40,14 @@ export function AssignmentWorkspace({
   const [modes, setModes] = useState<Record<string, Mode>>({})
   const [runTimes, setRunTimes] = useState<Record<string, string>>(() =>
     initialMode === "recommended"
-      ? Object.fromEntries(
-          selectedIds.map((id) => [id, new Date().toLocaleTimeString("vi-VN")]),
-        )
+      ? Object.fromEntries(selectedIds.map((id) => [id, new Date().toLocaleTimeString("vi-VN")]))
       : {},
   )
   const [query, setQuery] = useState("")
   const [confirm, setConfirm] = useState(false)
   const [error, setError] = useState("")
-  const [draftExpanded, setDraftExpanded] = useState(true)
   const task = tasks.find((t) => t.id === activeId)!
-  const selectedTasks = ids
-    .map((id) => tasks.find((t) => t.id === id)!)
-    .filter(Boolean)
+  const selectedTasks = ids.map((id) => tasks.find((t) => t.id === id)!).filter(Boolean)
   const mode = modes[activeId] ?? initialMode
   const ranked = task ? recommendations(project, task) : []
   const candidates = task
@@ -76,14 +55,11 @@ export function AssignmentWorkspace({
         ? ranked.map((r) => r.person)
         : people.filter((p) => isEligible(project, p))
       ).filter((p) =>
-        `${p.name} ${p.position}`
-          .toLocaleLowerCase("vi")
-          .includes(query.toLocaleLowerCase("vi")),
+        `${p.name} ${p.position}`.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")),
       )
     : []
   const errors = validateDraft(project, actorId, tasks, draft)
-  const complete =
-    selectedTasks.length > 0 && selectedTasks.every((t) => draft[t.id])
+  const complete = selectedTasks.length > 0 && selectedTasks.every((t) => draft[t.id])
   const total = selectedTasks.reduce((sum, t) => sum + t.estimate, 0)
   const chosen = task ? draft[task.id] : undefined
   const chosenIsVisible = candidates.some((p) => p.id === chosen?.personId)
@@ -101,15 +77,9 @@ export function AssignmentWorkspace({
       }))
   }
   const selectPerson = (personId: string) => {
-    if (
-      draft[activeId]?.personId === personId &&
-      draft[activeId]?.mode === mode
-    )
-      return
+    if (draft[activeId]?.personId === personId && draft[activeId]?.mode === mode) return
     const rank =
-      mode === "recommended"
-        ? ranked.find((r) => r.person.id === personId)?.rank
-        : undefined
+      mode === "recommended" ? ranked.find((r) => r.person.id === personId)?.rank : undefined
     setDraft((prev) => ({
       ...prev,
       [activeId]: {
@@ -128,6 +98,10 @@ export function AssignmentWorkspace({
       ...prev,
       [activeId]: { ...prev[activeId], ...patch },
     }))
+  const selectTask = (id: string) => {
+    setActiveId(id)
+    setQuery("")
+  }
   const removeTask = (id: string) => {
     const next = ids.filter((value) => value !== id)
     setIds(next)
@@ -135,16 +109,11 @@ export function AssignmentWorkspace({
       setActiveId(next[0])
       setQuery("")
     }
-    setDraft((prev) =>
-      Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id)),
-    )
+    setDraft((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id)))
   }
 
   return (
-    <section
-      aria-label="Không gian phân công"
-      className="assignment-shell min-w-0"
-    >
+    <section aria-label="Không gian phân công" className="assignment-shell min-w-0">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <button
@@ -155,27 +124,23 @@ export function AssignmentWorkspace({
             <ArrowLeftIcon />
             Về danh sách công việc
           </button>
-          <h2 className="text-xl font-semibold text-balance">
-            Phân công công việc
-          </h2>
+          <h2 className="text-xl font-semibold text-balance">Phân công công việc</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
             So sánh, lựa chọn và kiểm tra bản nháp trước khi giao việc.
           </p>
         </div>
         <span className="rounded-md border border-border bg-white px-3 py-2 text-sm">
-          {selectedTasks.length} công việc{" "}
-          <span className="mx-2 text-border">/</span> {total} giờ ước tính
+          {selectedTasks.length} công việc <span className="mx-2 text-border">/</span> {total} giờ
+          ước tính
         </span>
       </div>
       <div className="assignment-toolbar sticky top-4 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 shadow-sm">
         <div className="min-w-0 text-sm">
           <p className="field-label">
-            {task?.code ?? "Chưa chọn việc"} ·{" "}
-            {mode === "manual" ? "Thủ công" : "Theo gợi ý"}
+            {task?.code ?? "Chưa chọn việc"} · {mode === "manual" ? "Thủ công" : "Theo gợi ý"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground" aria-live="polite">
-            Đã chọn người cho {Object.keys(draft).length}/{ids.length} việc ·
-            Chưa lưu phân công
+            Đã chọn người cho {Object.keys(draft).length}/{ids.length} việc · Chưa lưu phân công
           </p>
           {Object.keys(draft).length > 0 && errors.length > 0 && (
             <p className="mt-1 text-xs text-warning" aria-live="polite">
@@ -183,67 +148,18 @@ export function AssignmentWorkspace({
             </p>
           )}
         </div>
-        <Button
-          disabled={!complete || errors.length > 0}
-          onClick={openConfirmation}
-        >
+        <Button disabled={!complete || errors.length > 0} onClick={openConfirmation}>
           Kiểm tra và xác nhận
         </Button>
       </div>
       <div className="assignment-grid grid items-start gap-4">
-        <aside
-          aria-label="Công việc đã chọn"
-          className="assignment-tasks min-w-0 rounded-lg border border-border bg-white"
-        >
-          <h3 className="section-title border-b border-border px-4 py-3">
-            Công việc đã chọn
-          </h3>
-          <div className="assignment-task-list p-2">
-            {selectedTasks.map((t) => (
-              <div
-                key={t.id}
-                className={cn(
-                  "assignment-task flex rounded-md",
-                  t.id === activeId ? "bg-accent" : "hover:bg-background",
-                )}
-              >
-                <button
-                  type="button"
-                  aria-pressed={t.id === activeId}
-                  className="min-w-0 flex-1 p-3 text-left"
-                  onClick={() => {
-                    setActiveId(t.id)
-                    setQuery("")
-                  }}
-                >
-                  <p className="text-xs text-muted-foreground">{t.code}</p>
-                  <p className="mt-1 text-sm font-medium leading-5 line-clamp-2">
-                    {t.name}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{t.estimate} giờ</span>
-                    {draft[t.id] ? (
-                      <span className="inline-flex items-center gap-1 text-success">
-                        <CheckIcon />
-                        Đã chọn
-                      </span>
-                    ) : (
-                      <span>Chưa chọn</span>
-                    )}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Bỏ ${t.name} khỏi lần phân công`}
-                  className="mr-1 mt-2 self-start rounded p-1.5 text-muted-foreground hover:bg-white"
-                  onClick={() => removeTask(t.id)}
-                >
-                  <Cross2Icon />
-                </button>
-              </div>
-            ))}
-          </div>
-        </aside>
+        <AssignmentTaskList
+          selectedTasks={selectedTasks}
+          activeId={activeId}
+          draft={draft}
+          onSelectTask={selectTask}
+          onRemoveTask={removeTask}
+        />
         <div className="assignment-candidates min-w-0 rounded-lg border border-border bg-white">
           {!task ? (
             <EmptyState
@@ -258,9 +174,7 @@ export function AssignmentWorkspace({
                     <p className="eyebrow">
                       {task.code} · {task.group}
                     </p>
-                    <h3 className="mt-1 text-lg font-semibold text-balance">
-                      {task.name}
-                    </h3>
+                    <h3 className="mt-1 text-lg font-semibold text-balance">{task.name}</h3>
                   </div>
                   <span className="whitespace-nowrap text-sm text-muted-foreground">
                     {task.estimate} giờ
@@ -273,8 +187,7 @@ export function AssignmentWorkspace({
                       key={r.skill}
                       className="rounded border border-border bg-background px-2 py-1 text-xs"
                     >
-                      <span className="font-medium">{r.skill}</span> ·{" "}
-                      {levels[r.level]}
+                      <span className="font-medium">{r.skill}</span> · {levels[r.level]}
                       {r.mandatory ? " · bắt buộc" : ""}
                     </span>
                   ))}
@@ -312,190 +225,41 @@ export function AssignmentWorkspace({
                       : "Tra cứu toàn công ty từ năng lực chính thức. Không xếp hạng hoặc tính điểm ở nhánh thủ công."}
                   </p>
                 </div>
-                <SearchInput
-                  value={query}
-                  onChange={setQuery}
-                  placeholder="Tìm ứng viên…"
-                />
-                <p
-                  className="mt-2 text-xs text-muted-foreground"
-                  aria-live="polite"
-                >
-                  {candidates.length} ứng viên hiển thị. Tìm kiếm không thay đổi
-                  bản nháp.
+                <SearchInput value={query} onChange={setQuery} placeholder="Tìm ứng viên…" />
+                <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+                  {candidates.length} ứng viên hiển thị. Tìm kiếm không thay đổi bản nháp.
                 </p>
                 {chosen && !chosenIsVisible && (
                   <p className="mt-2 rounded-md bg-background p-2 text-xs leading-5 text-muted-foreground">
-                    {getPerson(chosen.personId)?.name} vẫn ở trong bản nháp cho{" "}
-                    {task.code}, nhưng không nằm trong danh sách đang xem.
+                    {getPerson(chosen.personId)?.name} vẫn ở trong bản nháp cho {task.code}, nhưng
+                    không nằm trong danh sách đang xem.
                   </p>
                 )}
                 {chosen && chosen.mode !== mode && (
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Đổi nhánh chỉ thay danh sách đang xem. Lựa chọn trong bản
-                    nháp giữ nguyên cho tới khi bạn chọn lại hoặc bỏ lựa chọn.
+                    Đổi nhánh chỉ thay danh sách đang xem. Lựa chọn trong bản nháp giữ nguyên cho
+                    tới khi bạn chọn lại hoặc bỏ lựa chọn.
                   </p>
                 )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[470px] text-left text-sm">
-                  <thead>
-                    <tr className="table-heading table-heading-strong">
-                      <th className="py-3 pl-5">Ứng viên</th>
-                      <th className="px-2">Tải công việc</th>
-                      {mode === "recommended" && <th>Điểm mẫu</th>}
-                      <th className="pr-5 text-right">Lựa chọn</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {candidates.map((person) => {
-                      const recommendation = ranked.find(
-                        (r) => r.person.id === person.id,
-                      )
-                      const checked =
-                        chosen?.personId === person.id && chosen.mode === mode
-                      const gaps = skillGaps(task, person)
-                      return (
-                        <tr
-                          key={person.id}
-                          className={cn(
-                            "border-t border-border align-top",
-                            checked && "bg-accent/50",
-                          )}
-                        >
-                          <td className="py-4 pl-5 pr-2">
-                            <div className="flex items-start gap-2.5">
-                              <Avatar initials={person.initials} />
-                              <div>
-                                <p className="font-medium">{person.name}</p>
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                  {person.position} · {person.seniority}
-                                </p>
-                                <details
-                                  key={`${task.id}-${person.id}`}
-                                  className="mt-2 text-xs"
-                                >
-                                  <summary className="field-label cursor-pointer underline underline-offset-4">
-                                    Đối chiếu kỹ năng
-                                    {gaps.length > 0 ? " · còn thiếu" : ""}
-                                  </summary>
-                                  <div className="mt-3 space-y-2">
-                                    {task.requirements.map((r) => (
-                                      <p
-                                        key={r.skill}
-                                        className={cn(
-                                          "leading-5",
-                                          (person.skills[r.skill] ?? 0) <
-                                            r.level && r.mandatory
-                                            ? "text-warning"
-                                            : "text-muted-foreground",
-                                        )}
-                                      >
-                                        <strong className="text-sm font-medium text-foreground">
-                                          {r.skill}
-                                        </strong>
-                                        {r.mandatory
-                                          ? " · Bắt buộc"
-                                          : " · Bổ trợ"}
-                                        <span className="block text-muted-foreground">
-                                          <span className="font-medium text-foreground">
-                                            Yêu cầu:
-                                          </span>{" "}
-                                          {levels[r.level]}
-                                        </span>
-                                        <span className="block">
-                                          <span className="font-medium text-foreground">
-                                            Hiện có:
-                                          </span>{" "}
-                                          {levels[
-                                            person.skills[r.skill] ?? 0
-                                          ] || "Chưa ghi nhận"}
-                                        </span>
-                                      </p>
-                                    ))}
-                                  </div>
-                                </details>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-2 py-4 whitespace-nowrap tabular-nums">
-                            <span className="font-medium">
-                              Hiện tại {loadFor(person.id, tasks)} giờ
-                            </span>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Xuyên dự án
-                            </p>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Nháp +{addedLoad(person.id, draft, tasks)} giờ
-                            </p>
-                            <p className="mt-1 text-xs">
-                              Sau nháp{" "}
-                              {loadFor(person.id, tasks) +
-                                addedLoad(person.id, draft, tasks)}{" "}
-                              giờ
-                            </p>
-                          </td>
-                          {mode === "recommended" && (
-                            <td className="py-4 tabular-nums">
-                              <strong className="font-medium">
-                                {recommendation?.score.toLocaleString("vi-VN")}
-                              </strong>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Hạng {recommendation?.rank}
-                              </p>
-                            </td>
-                          )}
-                          <td className="py-4 pl-2 pr-5 text-right">
-                            <Button
-                              variant={checked ? "default" : "outline"}
-                              size="sm"
-                              aria-pressed={checked}
-                              aria-label={`Chọn ${person.name}`}
-                              onClick={() => selectPerson(person.id)}
-                            >
-                              {checked ? (
-                                <>
-                                  <CheckIcon />
-                                  Đã chọn
-                                </>
-                              ) : (
-                                "Chọn"
-                              )}
-                            </Button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-                {!candidates.length && (
-                  <EmptyState
-                    title={
-                      query.trim()
-                        ? "Không tìm thấy ứng viên"
-                        : "Không có ứng viên phù hợp"
-                    }
-                    detail={
-                      query.trim()
-                        ? "Thử tên khác hoặc xóa từ khóa tìm kiếm."
-                        : mode === "recommended"
-                          ? "Thử tra cứu thủ công hoặc bỏ công việc này khỏi bản nháp."
-                          : "Thử tìm bằng tên khác."
-                    }
-                  />
-                )}
-              </div>
+              <AssignmentCandidateTable
+                task={task}
+                tasks={tasks}
+                candidates={candidates}
+                ranked={ranked}
+                chosen={chosen}
+                mode={mode}
+                draft={draft}
+                query={query}
+                onSelectPerson={selectPerson}
+              />
               {chosen && (
                 <div className="space-y-4 border-t border-border bg-background/40 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <p className="text-sm">
-                      Bản nháp {task.code}:{" "}
-                      <strong>{getPerson(chosen.personId)?.name}</strong>{" "}
+                      Bản nháp {task.code}: <strong>{getPerson(chosen.personId)?.name}</strong>{" "}
                       <span className="text-muted-foreground">
-                        ·{" "}
-                        {chosen.mode === "manual"
-                          ? "Thủ công"
-                          : `Gợi ý hạng ${chosen.rank}`}
+                        · {chosen.mode === "manual" ? "Thủ công" : `Gợi ý hạng ${chosen.rank}`}
                       </span>
                     </p>
                     <Button
@@ -503,11 +267,7 @@ export function AssignmentWorkspace({
                       size="sm"
                       onClick={() =>
                         setDraft((prev) =>
-                          Object.fromEntries(
-                            Object.entries(prev).filter(
-                              ([id]) => id !== task.id,
-                            ),
-                          ),
+                          Object.fromEntries(Object.entries(prev).filter(([id]) => id !== task.id)),
                         )
                       }
                     >
@@ -523,9 +283,7 @@ export function AssignmentWorkspace({
                       <textarea
                         className="field workspace-field mt-2 min-h-20 w-full"
                         value={chosen.reason}
-                        onChange={(e) =>
-                          patchChoice({ reason: e.target.value })
-                        }
+                        onChange={(e) => patchChoice({ reason: e.target.value })}
                         placeholder={
                           chosen.mode === "manual"
                             ? "Vì sao chuyển sang phân công thủ công?"
@@ -538,20 +296,17 @@ export function AssignmentWorkspace({
                     <>
                       <p className="flex items-start gap-2 text-sm leading-6 text-warning">
                         <ExclamationTriangleIcon className="mt-1 shrink-0" />
-                        Ứng viên chưa đáp ứng kỹ năng bắt buộc. Cần lý do để
-                        phân công thủ công ngoại lệ.
+                        Ứng viên chưa đáp ứng kỹ năng bắt buộc. Cần lý do để phân công thủ công
+                        ngoại lệ.
                       </p>
                       <label className="block">
                         <span className="field-label">
-                          Lý do ngoại lệ kỹ năng{" "}
-                          <span className="text-warning">*</span>
+                          Lý do ngoại lệ kỹ năng <span className="text-warning">*</span>
                         </span>
                         <textarea
                           className="field workspace-field mt-2 min-h-20 w-full"
                           value={chosen.overrideReason}
-                          onChange={(e) =>
-                            patchChoice({ overrideReason: e.target.value })
-                          }
+                          onChange={(e) => patchChoice({ overrideReason: e.target.value })}
                         />
                       </label>
                     </>
@@ -561,124 +316,16 @@ export function AssignmentWorkspace({
             </>
           )}
         </div>
-        <aside
-          aria-label="Bản nháp phân công"
-          className="min-w-0 rounded-lg border border-border bg-white p-4 assignment-draft"
-        >
-          <div className="flex items-center justify-between">
-            <h3>
-              <button
-                type="button"
-                className="section-title inline-flex items-center gap-2 text-left"
-                aria-expanded={draftExpanded}
-                aria-controls="assignment-draft-items"
-                onClick={() => setDraftExpanded((prev) => !prev)}
-              >
-                Bản nháp phân công{" "}
-                <ChevronDownIcon
-                  className={cn(
-                    "transition-transform",
-                    draftExpanded && "rotate-180",
-                  )}
-                />
-              </button>
-            </h3>
-            <span className="count">
-              {Object.keys(draft).length}/{ids.length}
-            </span>
-          </div>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Lựa chọn chưa làm thay đổi người phụ trách hoặc tải công việc.
-          </p>
-          <div
-            id="assignment-draft-items"
-            hidden={!draftExpanded}
-            className="my-5 max-h-[40dvh] overflow-y-auto space-y-4"
-          >
-            {selectedTasks.map((t) => (
-              <div
-                key={t.id}
-                className="border-b border-border pb-4 last:border-0 last:pb-0"
-              >
-                <button
-                  type="button"
-                  className="text-left text-sm leading-5 hover:underline"
-                  onClick={() => {
-                    setActiveId(t.id)
-                    setQuery("")
-                  }}
-                >
-                  <span className="text-sm font-medium">{t.name}</span>
-                </button>
-                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  {draft[t.id] ? (
-                    <>
-                      <Avatar
-                        initials={getPerson(draft[t.id].personId)!.initials}
-                        small
-                      />
-                      <span>
-                        {getPerson(draft[t.id].personId)?.name}
-                        <span className="mt-0.5 block">
-                          {draft[t.id].mode === "manual"
-                            ? "Thủ công"
-                            : `Gợi ý hạng ${draft[t.id].rank}`}
-                        </span>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <PersonIcon />
-                      Chưa chọn người
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-border pt-4">
-            <h4 className="field-label text-balance">Tải sau bản nháp</h4>
-            <div className="mt-3 space-y-3">
-              {[...new Set(Object.values(draft).map((c) => c.personId))].map(
-                (id) => (
-                  <div key={id} className="text-xs">
-                    <p className="text-sm font-medium">{getPerson(id)?.name}</p>
-                    <p className="mt-1 text-muted-foreground tabular-nums">
-                      Hiện tại {loadFor(id, tasks)} giờ · Nháp +
-                      {addedLoad(id, draft, tasks)} giờ
-                    </p>
-                    <p className="mt-1 text-muted-foreground tabular-nums">
-                      Dự kiến{" "}
-                      <strong className="text-foreground">
-                        {loadFor(id, tasks) + addedLoad(id, draft, tasks)} giờ
-                      </strong>
-                    </p>
-                  </div>
-                ),
-              )}
-              {!Object.keys(draft).length && (
-                <p className="text-xs text-muted-foreground">
-                  Hiển thị sau khi chọn ứng viên.
-                </p>
-              )}
-            </div>
-          </div>
-          {Object.keys(draft).length > 0 && errors.length > 0 && (
-            <div className="mt-4 rounded-md bg-warning-soft p-3 text-xs leading-5 text-warning">
-              {errors.join(" ")}
-            </div>
-          )}
-          {!complete && (
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Chọn người cho từng việc hoặc bỏ việc chưa cần giao.
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="mt-3 text-sm text-destructive">
-              {error}
-            </p>
-          )}
-        </aside>
+        <AssignmentDraftPanel
+          selectedTasks={selectedTasks}
+          taskCount={ids.length}
+          tasks={tasks}
+          draft={draft}
+          errors={errors}
+          complete={complete}
+          error={error}
+          onSelectTask={selectTask}
+        />
       </div>
       <Dialog
         open={confirm}
@@ -697,8 +344,8 @@ export function AssignmentWorkspace({
           ))}
         </div>
         <p className="mb-5 text-sm text-muted-foreground">
-          Chỉ cập nhật khi tất cả lựa chọn hợp lệ. Tổng {total} giờ ước tính
-          được bổ sung vào tải sau khi xác nhận.
+          Chỉ cập nhật khi tất cả lựa chọn hợp lệ. Tổng {total} giờ ước tính được bổ sung vào tải
+          sau khi xác nhận.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setConfirm(false)}>
@@ -711,9 +358,7 @@ export function AssignmentWorkspace({
                 setConfirm(false)
                 onCommit(next)
               } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "Chưa thể xác nhận.",
-                )
+                setError(err instanceof Error ? err.message : "Chưa thể xác nhận.")
                 setConfirm(false)
               }
             }}
