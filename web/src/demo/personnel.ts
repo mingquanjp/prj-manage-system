@@ -12,31 +12,49 @@ export type ProfessionalProfile = {
 }
 
 export function canLookupPersonnel(projects: Project[], actorId: string) {
-  return Boolean(getPerson(actorId)?.active) && projects.some(
-    (project) => project.pmId === actorId || project.ptcmId === actorId,
+  return (
+    Boolean(getPerson(actorId)?.active) &&
+    projects.some((project) => project.pmId === actorId || project.ptcmId === actorId)
   )
 }
 
 export function searchKey(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().trim()
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim()
 }
 
 export function personnelProfiles(
-  projects: Project[], tasks: Task[], actorId: string, query = "",
+  projects: Project[],
+  tasks: Task[],
+  actorId: string,
+  query = "",
 ): ProfessionalProfile[] {
   if (!canLookupPersonnel(projects, actorId)) return []
   const needle = searchKey(query)
-  return people.filter((person) => person.active).map((person) => ({
-    id: person.id,
-    name: person.name,
-    initials: person.initials,
-    position: person.position,
-    seniority: person.seniority,
-    skills: Object.entries(person.skills).map(([name, level]) => ({ name, level })),
-    currentLoad: loadFor(person.id, tasks),
-  })).filter((person) => searchKey([
-    person.name, person.position, person.seniority,
-    ...person.skills.map((skill) => skill.name),
-  ].join(" ")).includes(needle))
+  return people
+    .filter((person) => person.active)
+    .map((person) => ({
+      id: person.id,
+      name: person.name,
+      initials: person.initials,
+      position: person.position,
+      seniority: person.seniority,
+      skills: Object.entries(person.skills).map(([name, level]) => ({ name, level })),
+      currentLoad: loadFor(person.id, tasks),
+    }))
+    .filter((person) =>
+      searchKey(
+        [
+          person.name,
+          person.position,
+          person.seniority,
+          ...person.skills.map((skill) => skill.name),
+        ].join(" "),
+      ).includes(needle),
+    )
 }

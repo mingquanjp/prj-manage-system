@@ -54,23 +54,17 @@ export function PersonalWork({
   const [status, setStatus] = useState("all")
   const [view, setView] = useState<"list" | "kanban">("list")
   const [detailId, setDetailId] = useState<string | null>(null)
-  const [detailTab, setDetailTab] = useState<"details" | "logs" | "results">(
-    "details",
-  )
+  const [detailTab, setDetailTab] = useState<"details" | "logs" | "results">("details")
   const [pausing, setPausing] = useState(false)
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
   const trigger = useRef<HTMLButtonElement | null>(null)
   const viewControls = useRef<HTMLDivElement | null>(null)
   const own = personalTasks(projects, tasks, actorId)
-  const availableProjects = projects.filter((p) =>
-    own.some((t) => t.projectId === p.id),
-  )
+  const availableProjects = projects.filter((p) => own.some((t) => t.projectId === p.id))
   const filtered = own.filter(
     (t) =>
-      `${t.code} ${t.name}`
-        .toLocaleLowerCase("vi")
-        .includes(search.toLocaleLowerCase("vi")) &&
+      `${t.code} ${t.name}`.toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi")) &&
       (projectId === "all" || t.projectId === projectId) &&
       (status === "all" || t.status === status),
   )
@@ -79,10 +73,7 @@ export function PersonalWork({
     (t) => t.status === "CLOSED" || t.status === "CANCELLED",
   ).length
   const project = projects.find((p) => p.id === detail?.projectId)
-  const block =
-    detail && project
-      ? executionBlockReason(project, detail, actorId)
-      : undefined
+  const block = detail && project ? executionBlockReason(project, detail, actorId) : undefined
   const perform = (action: ExecutionAction) => {
     if (!detail) return
     try {
@@ -99,14 +90,10 @@ export function PersonalWork({
     setError("")
     if (trigger.current?.isConnected) trigger.current.focus()
     else
-      viewControls.current
-        ?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
-        ?.focus()
+      viewControls.current?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')?.focus()
   }
   const date = (value?: string) =>
-    value
-      ? new Date(`${value}T00:00:00`).toLocaleDateString("vi-VN")
-      : "Chưa đặt"
+    value ? new Date(`${value}T00:00:00`).toLocaleDateString("vi-VN") : "Chưa đặt"
   return (
     <>
       <p className="eyebrow">KHÔNG GIAN CÁ NHÂN</p>
@@ -185,8 +172,7 @@ export function PersonalWork({
         </div>
         {view === "kanban" && (
           <p className="text-xs text-muted-foreground">
-            Nhấn thẻ để xem chi tiết. Thay đổi trạng thái bằng nút thao tác,
-            không kéo thả.
+            Nhấn thẻ để xem chi tiết. Thay đổi trạng thái bằng nút thao tác, không kéo thả.
           </p>
         )}
       </div>
@@ -201,9 +187,7 @@ export function PersonalWork({
             {!filtered.length ? (
               <EmptyState
                 title={
-                  own.length
-                    ? "Không có công việc phù hợp"
-                    : "Bạn chưa có công việc được giao"
+                  own.length ? "Không có công việc phù hợp" : "Bạn chưa có công việc được giao"
                 }
                 detail={
                   own.length
@@ -258,9 +242,7 @@ export function PersonalWork({
                           >
                             <FileTextIcon className="mt-1 shrink-0 text-muted-foreground" />
                             <span>
-                              <span className="block font-medium">
-                                {task.name}
-                              </span>
+                              <span className="block font-medium">{task.name}</span>
                               <span className="mt-1 block text-xs text-muted-foreground">
                                 {task.code} · {task.group}
                               </span>
@@ -273,12 +255,8 @@ export function PersonalWork({
                         <td className="pr-4">
                           <StatusBadge status={task.status} />
                         </td>
-                        <td className="pr-4 text-right whitespace-nowrap">
-                          {task.estimate} giờ
-                        </td>
-                        <td className="pr-4 whitespace-nowrap">
-                          {date(task.end)}
-                        </td>
+                        <td className="pr-4 text-right whitespace-nowrap">{task.estimate} giờ</td>
+                        <td className="pr-4 whitespace-nowrap">{date(task.end)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -288,18 +266,15 @@ export function PersonalWork({
           </div>
           {view === "kanban" && archivedCount > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-white px-3 py-2 text-xs text-muted-foreground">
-              <span>
-                {archivedCount} công việc Đã đóng/Đã hủy không hiển thị trên
-                Kanban.
-              </span>
+              <span>{archivedCount} công việc Đã đóng/Đã hủy không hiển thị trên Kanban.</span>
               <Button size="sm" variant="ghost" onClick={() => setView("list")}>
                 Xem trong danh sách
               </Button>
             </div>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
-            {filtered.length} / {own.length} công việc · Chỉ hiển thị công việc
-            bạn được giao, không mở quyền xem toàn bộ dự án.
+            {filtered.length} / {own.length} công việc · Chỉ hiển thị công việc bạn được giao, không
+            mở quyền xem toàn bộ dự án.
           </p>
         </section>
         {detail && project && (
@@ -310,10 +285,7 @@ export function PersonalWork({
               if (
                 e.key === "Escape" &&
                 !pausing &&
-                !(
-                  e.target instanceof Element &&
-                  e.target.closest('[role="dialog"]')
-                )
+                !(e.target instanceof Element && e.target.closest('[role="dialog"]'))
               )
                 closeDetail()
             }}
@@ -377,26 +349,19 @@ export function PersonalWork({
                     </dd>
                   </div>
                   <div>
-                    <dt className="field-label">
-                      Nhóm / PTCM
-                    </dt>
+                    <dt className="field-label">Nhóm / PTCM</dt>
                     <dd className="mt-1">
-                      {detail.group} /{" "}
-                      {getPerson(project.ptcmId)?.name ?? "Chưa chỉ định"}
+                      {detail.group} / {getPerson(project.ptcmId)?.name ?? "Chưa chỉ định"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="field-label">
-                      Ước tính / Ưu tiên
-                    </dt>
+                    <dt className="field-label">Ước tính / Ưu tiên</dt>
                     <dd className="mt-1">
                       {detail.estimate} giờ / {detail.priority}
                     </dd>
                   </div>
                   <div>
-                    <dt className="field-label">
-                      Ngày kế hoạch
-                    </dt>
+                    <dt className="field-label">Ngày kế hoạch</dt>
                     <dd className="mt-1">
                       {date(detail.start)} — {date(detail.end)}
                     </dd>
@@ -404,9 +369,7 @@ export function PersonalWork({
                 </dl>
                 <div className="mt-5 border-t border-border pt-4">
                   {block ? (
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      {block}
-                    </p>
+                    <p className="text-sm leading-6 text-muted-foreground">{block}</p>
                   ) : (
                     <>
                       {detail.status === "ASSIGNED" && (
@@ -442,9 +405,8 @@ export function PersonalWork({
                     </p>
                   )}
                   <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                    Cập nhật trạng thái không tự ghi thời gian. Mở Nhật ký để
-                    ghi phần đã làm; mở Kết quả để nộp khi công việc đang thực
-                    hiện.
+                    Cập nhật trạng thái không tự ghi thời gian. Mở Nhật ký để ghi phần đã làm; mở
+                    Kết quả để nộp khi công việc đang thực hiện.
                   </p>
                 </div>
                 <TaskSpecification key={detail.id} task={detail} />
@@ -455,10 +417,7 @@ export function PersonalWork({
                     </summary>
                     <ul className="mt-3 space-y-3">
                       {detail.executionHistory.map((event, i) => (
-                        <li
-                          key={i}
-                          className="text-xs leading-5 text-muted-foreground"
-                        >
+                        <li key={i} className="text-xs leading-5 text-muted-foreground">
                           {statusLabels[event.from]} → {statusLabels[event.to]}
                           <br />
                           {getPerson(event.actorId)?.name} ·{" "}
@@ -478,7 +437,13 @@ export function PersonalWork({
           </aside>
         )}
       </div>
-      <ContributionHistory projects={projects} tasks={tasks} work={work} actorId={actorId} onChange={onWorkChange} />
+      <ContributionHistory
+        projects={projects}
+        tasks={tasks}
+        work={work}
+        actorId={actorId}
+        onChange={onWorkChange}
+      />
       <Dialog
         open={pausing && !!detail}
         onOpenChange={(open) => {
@@ -509,11 +474,7 @@ export function PersonalWork({
             aria-describedby={error ? "pause-error" : undefined}
           />
           {error && (
-            <p
-              id="pause-error"
-              role="alert"
-              className="mt-2 text-sm text-destructive"
-            >
+            <p id="pause-error" role="alert" className="mt-2 text-sm text-destructive">
               {error}
             </p>
           )}

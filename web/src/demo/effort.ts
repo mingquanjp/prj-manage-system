@@ -20,10 +20,7 @@ export type WorkLog = {
   updatedAt: string
   deletedAt?: string
 }
-export type LogInput = Pick<
-  WorkLog,
-  "workDate" | "minutes" | "description" | "overLimitReason"
->
+export type LogInput = Pick<WorkLog, "workDate" | "minutes" | "description" | "overLimitReason">
 export type LogEdit = {
   before: WorkLog
   after: WorkLog
@@ -76,12 +73,7 @@ export type Submission = {
     schemaVersion: 2
     logs: Pick<
       WorkLog,
-      | "id"
-      | "assignmentId"
-      | "workDate"
-      | "minutes"
-      | "description"
-      | "overLimitReason"
+      "id" | "assignmentId" | "workDate" | "minutes" | "description" | "overLimitReason"
     >[]
   }
   review?: {
@@ -111,22 +103,34 @@ export const emptyWorkState = (): WorkState => ({
 export function rememberContributions(state: WorkState, tasks: Task[]): WorkState {
   const saved = new Map(state.contributions.map((entry) => [entry.assignment.id, entry]))
   for (const task of tasks) {
-    if (task.currentAssignment) saved.set(task.currentAssignment.id, {
-      taskId: task.id, projectId: task.projectId, taskCode: task.code, taskName: task.name,
-      assignment: structuredClone(task.currentAssignment),
-    })
+    if (task.currentAssignment)
+      saved.set(task.currentAssignment.id, {
+        taskId: task.id,
+        projectId: task.projectId,
+        taskCode: task.code,
+        taskName: task.name,
+        assignment: structuredClone(task.currentAssignment),
+      })
   }
   return { ...state, contributions: [...saved.values()] }
 }
 
-export function recordAssignmentChanges(state: WorkState, before: Task[], after: Task[], now = new Date()) {
+export function recordAssignmentChanges(
+  state: WorkState,
+  before: Task[],
+  after: Task[],
+  now = new Date(),
+) {
   const captured = rememberContributions(state, before)
   const ended = {
     ...captured,
     contributions: captured.contributions.map((entry) => {
       const previous = before.find((task) => task.currentAssignment?.id === entry.assignment.id)
       const next = after.find((task) => task.id === entry.taskId)
-      return previous && next && next.currentAssignment?.id !== entry.assignment.id && !entry.assignment.endedAt
+      return previous &&
+        next &&
+        next.currentAssignment?.id !== entry.assignment.id &&
+        !entry.assignment.endedAt
         ? { ...entry, assignment: { ...entry.assignment, endedAt: now.toISOString() } }
         : entry
     }),
@@ -146,9 +150,8 @@ export const formatMinutes = (minutes: number) =>
 export function logBlockReason(project: Project, task: Task, actorId: string) {
   const block = executionBlockReason(project, task, actorId)
   if (block)
-    return ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"].includes(
-      task.status,
-    ) && project.status === "IN_PROGRESS"
+    return ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"].includes(task.status) &&
+      project.status === "IN_PROGRESS"
       ? "Nhật ký đã khóa sửa trực tiếp. Bạn có thể gửi yêu cầu hiệu chỉnh dữ liệu cũ để PTCM xét duyệt."
       : block
   if (task.status === "ASSIGNED")
@@ -173,28 +176,14 @@ export function taskLogs(state: WorkState, task: Task, actorId: string) {
       !l.deletedAt,
   )
 }
-export function dailyMinutes(
-  state: WorkState,
-  actorId: string,
-  day: string,
-  exceptId?: string,
-) {
+export function dailyMinutes(state: WorkState, actorId: string, day: string, exceptId?: string) {
   return state.logs
     .filter(
-      (l) =>
-        l.employeeId === actorId &&
-        l.workDate === day &&
-        !l.deletedAt &&
-        l.id !== exceptId,
+      (l) => l.employeeId === actorId && l.workDate === day && !l.deletedAt && l.id !== exceptId,
     )
     .reduce((sum, l) => sum + l.minutes, 0)
 }
-function context(
-  projects: Project[],
-  tasks: Task[],
-  actorId: string,
-  taskId: string,
-) {
+function context(projects: Project[], tasks: Task[], actorId: string, taskId: string) {
   const task = tasks.find((t) => t.id === taskId)
   const project = projects.find((p) => p.id === task?.projectId)
   if (!task || !project) throw new Error("Không tìm thấy công việc.")
@@ -215,10 +204,7 @@ export function validInput(
   const date = /^\d{4}-\d{2}-\d{2}$/.test(input.workDate)
     ? new Date(`${input.workDate}T00:00:00Z`)
     : new Date(NaN)
-  if (
-    !Number.isFinite(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== input.workDate
-  )
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== input.workDate)
     errors.workDate = "Chọn ngày làm việc hợp lệ."
   else if (input.workDate > vietnamDay(now))
     errors.workDate = "Không ghi nhật ký cho ngày tương lai."
@@ -226,22 +212,19 @@ export function validInput(
     input.workDate < vietnamDay(new Date(task.currentAssignment!.assignedAt)) ||
     input.workDate < vietnamDay(new Date(project.executionStartedAt!))
   )
-    errors.workDate =
-      "Ngày làm phải thuộc lượt được giao và giai đoạn dự án đã triển khai thực tế."
-  else if (task.currentAssignment?.endedAt && input.workDate > vietnamDay(new Date(task.currentAssignment.endedAt)))
+    errors.workDate = "Ngày làm phải thuộc lượt được giao và giai đoạn dự án đã triển khai thực tế."
+  else if (
+    task.currentAssignment?.endedAt &&
+    input.workDate > vietnamDay(new Date(task.currentAssignment.endedAt))
+  )
     errors.workDate = "Không ghi công việc phát sinh sau khi lượt thực hiện đã kết thúc."
   if (!Number.isSafeInteger(input.minutes) || input.minutes <= 0)
     errors.minutes = "Thời lượng phải là số phút nguyên lớn hơn 0."
-  if (!input.description.trim())
-    errors.description = "Nhập nội dung công việc thực tế đã làm."
-  const total =
-    dailyMinutes(state, actorId, input.workDate, exceptId) + input.minutes
-  if (total > 1440)
-    errors.minutes =
-      "Tổng nhật ký cá nhân trong ngày vượt 24 giờ (xuyên dự án)."
+  if (!input.description.trim()) errors.description = "Nhập nội dung công việc thực tế đã làm."
+  const total = dailyMinutes(state, actorId, input.workDate, exceptId) + input.minutes
+  if (total > 1440) errors.minutes = "Tổng nhật ký cá nhân trong ngày vượt 24 giờ (xuyên dự án)."
   if (total > 480 && !input.overLimitReason.trim())
-    errors.overLimitReason =
-      "Tổng ngày vượt 8 giờ: cần lý do cho phần thời gian thực tế này."
+    errors.overLimitReason = "Tổng ngày vượt 8 giờ: cần lý do cho phần thời gian thực tế này."
   return errors
 }
 export class WorkValidationError extends Error {
@@ -263,20 +246,9 @@ export function saveLog(
   now = new Date(),
 ): WorkState {
   const { task, project } = context(projects, tasks, actorId, taskId)
-  const before = edit
-    ? currentLog(state, task, actorId, edit.before)
-    : undefined
-  const errors = validInput(
-    state,
-    actorId,
-    project,
-    task,
-    input,
-    now,
-    before?.id,
-  )
-  if (edit && !edit.reason.trim())
-    errors.reason = "Cần lý do chỉnh sửa nhật ký."
+  const before = edit ? currentLog(state, task, actorId, edit.before) : undefined
+  const errors = validInput(state, actorId, project, task, input, now, before?.id)
+  if (edit && !edit.reason.trim()) errors.reason = "Cần lý do chỉnh sửa nhật ký."
   if (Object.keys(errors).length) throw new WorkValidationError(errors)
   const at = now.toISOString()
   const next: WorkLog = {
@@ -292,9 +264,7 @@ export function saveLog(
   }
   return {
     ...rememberContributions(state, tasks),
-    logs: before
-      ? state.logs.map((l) => (l.id === before.id ? next : l))
-      : [...state.logs, next],
+    logs: before ? state.logs.map((l) => (l.id === before.id ? next : l)) : [...state.logs, next],
     history: before
       ? [
           ...state.history,
@@ -309,12 +279,7 @@ export function saveLog(
       : state.history,
   }
 }
-function currentLog(
-  state: WorkState,
-  task: Task,
-  actorId: string,
-  expected: WorkLog,
-) {
+function currentLog(state: WorkState, task: Task, actorId: string, expected: WorkLog) {
   const log = state.logs.find((l) => l.id === expected.id)
   if (
     !log ||
@@ -325,9 +290,7 @@ function currentLog(
   )
     throw new Error("Không còn quyền sửa nhật ký này.")
   if (JSON.stringify(log) !== JSON.stringify(expected))
-    throw new Error(
-      "Nhật ký đã thay đổi. Đóng biểu mẫu và mở lại để xem dữ liệu mới.",
-    )
+    throw new Error("Nhật ký đã thay đổi. Đóng biểu mẫu và mở lại để xem dữ liệu mới.")
   return log
 }
 export function deleteLog(
@@ -342,8 +305,7 @@ export function deleteLog(
 ): WorkState {
   const { task } = context(projects, tasks, actorId, taskId)
   const before = currentLog(state, task, actorId, expected)
-  if (!reason.trim())
-    throw new WorkValidationError({ reason: "Cần lý do xóa nhật ký." })
+  if (!reason.trim()) throw new WorkValidationError({ reason: "Cần lý do xóa nhật ký." })
   const at = now.toISOString(),
     after = { ...before, deletedAt: at, updatedAt: at }
   return {
@@ -372,15 +334,10 @@ export function validateResultInput(summary: string, linkText: string) {
   for (const link of links) {
     try {
       const url = new URL(link)
-      if (
-        !["http:", "https:"].includes(url.protocol) ||
-        url.username ||
-        url.password
-      )
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password)
         throw new Error()
     } catch {
-      errors.links =
-        "Mỗi dòng là một URL http/https hợp lệ, không chứa thông tin đăng nhập."
+      errors.links = "Mỗi dòng là một URL http/https hợp lệ, không chứa thông tin đăng nhập."
     }
   }
   if (Object.keys(errors).length) throw new WorkValidationError(errors)
@@ -399,9 +356,7 @@ export function submitResult(
 ) {
   const { task } = context(projects, tasks, actorId, taskId)
   if (state.submissions.some((s) => s.taskId === task.id && !s.review))
-    throw new Error(
-      "Công việc vẫn còn lần nộp chưa có kết luận. Vui lòng kiểm tra lại.",
-    )
+    throw new Error("Công việc vẫn còn lần nộp chưa có kết luận. Vui lòng kiểm tra lại.")
   if (task.status !== "IN_PROGRESS")
     throw new Error("Chỉ nộp kết quả khi công việc đang thực hiện.")
   const links = validateResultInput(summary, linkText)
@@ -417,14 +372,7 @@ export function submitResult(
     logSnapshot: {
       schemaVersion: 2,
       logs: taskLogs(state, task, actorId).map(
-        ({
-          id,
-          assignmentId,
-          workDate,
-          minutes,
-          description,
-          overLimitReason,
-        }) => ({
+        ({ id, assignmentId, workDate, minutes, description, overLimitReason }) => ({
           id,
           assignmentId,
           workDate,
@@ -436,19 +384,21 @@ export function submitResult(
     },
   }
   return {
-    work: { ...rememberContributions(state, tasks), submissions: [...state.submissions, submission] },
-    tasks: tasks.map(
-      (t): Task =>
-        t.id !== task.id
-          ? t
-          : {
-              ...t,
-              status: "PENDING_REVIEW",
-              executionHistory: [
-                ...(t.executionHistory ?? []),
-                { actorId, at, from: "IN_PROGRESS", to: "PENDING_REVIEW" },
-              ],
-            },
+    work: {
+      ...rememberContributions(state, tasks),
+      submissions: [...state.submissions, submission],
+    },
+    tasks: tasks.map((t): Task =>
+      t.id !== task.id
+        ? t
+        : {
+            ...t,
+            status: "PENDING_REVIEW",
+            executionHistory: [
+              ...(t.executionHistory ?? []),
+              { actorId, at, from: "IN_PROGRESS", to: "PENDING_REVIEW" },
+            ],
+          },
     ),
   }
 }
@@ -464,11 +414,7 @@ export function reviewBlockReason(
   submissionId: string,
   conflicts: OutputConflict[],
 ) {
-  if (
-    project.id !== task.projectId ||
-    project.ptcmId !== actorId ||
-    !getPerson(actorId)?.active
-  )
+  if (project.id !== task.projectId || project.ptcmId !== actorId || !getPerson(actorId)?.active)
     return "Chỉ PTCM hiện hành của dự án được quyết định nghiệm thu."
   if (project.status !== "IN_PROGRESS" || task.status !== "PENDING_REVIEW")
     return "Chỉ nghiệm thu công việc đang chờ trong dự án đang triển khai."
@@ -493,10 +439,7 @@ export function reviewBlockReason(
     submission.employeeId === actorId ||
     submissions.some((s) => s.employeeId === actorId) ||
     conflicts.some(
-      (c) =>
-        c.projectId === project.id &&
-        c.taskId === task.id &&
-        c.personId === actorId,
+      (c) => c.projectId === project.id && c.taskId === task.id && c.personId === actorId,
     )
   )
     return "Không được tự nghiệm thu đầu ra có đóng góp của chính mình."
@@ -517,19 +460,10 @@ export function reviewSubmission(
   const submission = state.submissions.find((s) => s.id === submissionId)
   const task = tasks.find((t) => t.id === submission?.taskId)
   const project = projects.find((p) => p.id === task?.projectId)
-  if (!submission || !task || !project)
-    throw new Error("Không tìm thấy lần nộp.")
-  const block = reviewBlockReason(
-    project,
-    task,
-    state,
-    actorId,
-    submissionId,
-    conflicts,
-  )
+  if (!submission || !task || !project) throw new Error("Không tìm thấy lần nộp.")
+  const block = reviewBlockReason(project, task, state, actorId, submissionId, conflicts)
   if (block) throw new Error(block)
-  if (!["ACCEPTED", "REJECTED"].includes(result))
-    throw new Error("Kết luận không hợp lệ.")
+  if (!["ACCEPTED", "REJECTED"].includes(result)) throw new Error("Kết luận không hợp lệ.")
   if (result === "REJECTED" && !comment.trim())
     throw new WorkValidationError({
       comment: "Nhập lý do yêu cầu chỉnh sửa đầu ra.",
@@ -553,35 +487,34 @@ export function reviewSubmission(
           : s,
       ),
     },
-    tasks: tasks.map(
-      (t): Task =>
-        t.id !== task.id
-          ? t
-          : {
-              ...t,
-              status: to,
-              ...(result === "ACCEPTED"
-                ? {
-                    acceptedAt: at,
-                    currentAssignment: {
-                      ...t.currentAssignment!,
-                      endedAt: at,
-                      endedBy: actorId,
-                      endReason: "DONE",
-                    },
-                  }
-                : {}),
-              executionHistory: [
-                ...(t.executionHistory ?? []),
-                {
-                  actorId,
-                  at,
-                  from: "PENDING_REVIEW",
-                  to,
-                  ...(comment.trim() ? { reason: comment.trim() } : {}),
-                },
-              ],
-            },
+    tasks: tasks.map((t): Task =>
+      t.id !== task.id
+        ? t
+        : {
+            ...t,
+            status: to,
+            ...(result === "ACCEPTED"
+              ? {
+                  acceptedAt: at,
+                  currentAssignment: {
+                    ...t.currentAssignment!,
+                    endedAt: at,
+                    endedBy: actorId,
+                    endReason: "DONE",
+                  },
+                }
+              : {}),
+            executionHistory: [
+              ...(t.executionHistory ?? []),
+              {
+                actorId,
+                at,
+                from: "PENDING_REVIEW",
+                to,
+                ...(comment.trim() ? { reason: comment.trim() } : {}),
+              },
+            ],
+          },
     ),
   }
 }

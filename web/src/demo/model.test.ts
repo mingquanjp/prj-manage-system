@@ -38,42 +38,21 @@ test("công việc cá nhân chỉ thuộc người hiện được giao; PTCM c
     ["t6"],
   )
   assert.equal(personalTasks(projects, initialTasks, "khoa").length, 0)
-  const crossProject = projects.map((p) =>
-    p.id === "portal" ? { ...p, ptcmId: "dung" } : p,
-  )
+  const crossProject = projects.map((p) => (p.id === "portal" ? { ...p, ptcmId: "dung" } : p))
   assert.deepEqual(
     personalTasks(crossProject, initialTasks, "dung").map((t) => t.id),
     ["t6"],
   )
-  assert.equal(
-    personalTasks([{ ...project, ptcmId: "dung" }], initialTasks, "dung")
-      .length,
-    0,
-  )
+  assert.equal(personalTasks([{ ...project, ptcmId: "dung" }], initialTasks, "dung").length, 0)
   assert.equal(personalTasks(projects, initialTasks, "unknown").length, 0)
   assert.equal(canViewProject(project, "dung"), false)
 })
 
 test("Bắt đầu → tạm dừng có lý do → tiếp tục, giữ nguyên đặc tả/phân công và mẫu", () => {
-  const started = transitionPersonalTask(
-    projects,
-    initialTasks,
-    "dung",
-    "t6",
-    "ASSIGNED",
-    "start",
-  )
+  const started = transitionPersonalTask(projects, initialTasks, "dung", "t6", "ASSIGNED", "start")
   assert.equal(started.find((t) => t.id === "t6")?.status, "IN_PROGRESS")
   assert.throws(() =>
-    transitionPersonalTask(
-      projects,
-      started,
-      "dung",
-      "t6",
-      "IN_PROGRESS",
-      "pause",
-      "  ",
-    ),
+    transitionPersonalTask(projects, started, "dung", "t6", "IN_PROGRESS", "pause", "  "),
   )
   const paused = transitionPersonalTask(
     projects,
@@ -84,14 +63,7 @@ test("Bắt đầu → tạm dừng có lý do → tiếp tục, giữ nguyên �
     "pause",
     " Chờ làm rõ dữ liệu ",
   )
-  const resumed = transitionPersonalTask(
-    projects,
-    paused,
-    "dung",
-    "t6",
-    "PAUSED",
-    "resume",
-  )
+  const resumed = transitionPersonalTask(projects, paused, "dung", "t6", "PAUSED", "resume")
   const task = resumed.find((t) => t.id === "t6")!
   assert.equal(task.status, "IN_PROGRESS")
   assert.equal(task.executionHistory?.length, 3)
@@ -105,10 +77,7 @@ test("Bắt đầu → tạm dừng có lý do → tiếp tục, giữ nguyên �
     },
   )
   assert.equal(initialTasks.find((t) => t.id === "t6")?.status, "ASSIGNED")
-  assert.equal(
-    initialTasks.find((t) => t.id === "t6")?.executionHistory,
-    undefined,
-  )
+  assert.equal(initialTasks.find((t) => t.id === "t6")?.executionHistory, undefined)
   assert.equal(resumed[0], initialTasks[0])
   assert.equal(loadFor("dung", resumed), loadFor("dung", initialTasks))
 })
@@ -116,14 +85,7 @@ test("Bắt đầu → tạm dừng có lý do → tiếp tục, giữ nguyên �
 test("chặn sai người/PTCM, trạng thái cũ, sai hành động và dự án chưa/đã kết thúc", () => {
   for (const actor of ["khoa", "thanh", "an", "unknown"])
     assert.throws(() =>
-      transitionPersonalTask(
-        projects,
-        initialTasks,
-        actor,
-        "t6",
-        "ASSIGNED",
-        "start",
-      ),
+      transitionPersonalTask(projects, initialTasks, actor, "t6", "ASSIGNED", "start"),
     )
   assert.throws(() =>
     transitionPersonalTask(
@@ -135,12 +97,7 @@ test("chặn sai người/PTCM, trạng thái cũ, sai hành động và dự á
       "start",
     ),
   )
-  for (const status of [
-    "PLANNING",
-    "COMPLETED",
-    "CLOSED",
-    "CANCELLED",
-  ] as const)
+  for (const status of ["PLANNING", "COMPLETED", "CLOSED", "CANCELLED"] as const)
     assert.throws(() =>
       transitionPersonalTask(
         [{ ...project, status }],
@@ -152,28 +109,12 @@ test("chặn sai người/PTCM, trạng thái cũ, sai hành động và dự á
       ),
     )
   assert.throws(() =>
-    transitionPersonalTask(
-      projects,
-      initialTasks,
-      "dung",
-      "t6",
-      "IN_PROGRESS",
-      "start",
-    ),
+    transitionPersonalTask(projects, initialTasks, "dung", "t6", "IN_PROGRESS", "start"),
   )
   assert.throws(() =>
-    transitionPersonalTask(
-      projects,
-      initialTasks,
-      "dung",
-      "t6",
-      "ASSIGNED",
-      "resume",
-    ),
+    transitionPersonalTask(projects, initialTasks, "dung", "t6", "ASSIGNED", "resume"),
   )
-  assert.throws(() =>
-    transitionPersonalTask(projects, initialTasks, "an", "t5", "DONE", "start"),
-  )
+  assert.throws(() => transitionPersonalTask(projects, initialTasks, "an", "t5", "DONE", "start"))
   assert.match(
     executionBlockReason(
       projects[1],
@@ -206,21 +147,11 @@ test("Giám đốc tạo kèm PM; không tự nhận trách nhiệm hoặc sửa
   assert.equal(canViewProject(created, "ha"), true)
 })
 test("Tạo dự án kiểm tra mã toàn hệ thống, PM, ngày và ưu tiên", () => {
-  assert.ok(
-    validateProjectInput(projects, { ...projectInput, code: " KHO-2026 " })
-      .code,
-  )
-  assert.ok(
-    validateProjectInput(projects, { ...projectInput, pmId: "missing" }).pmId,
-  )
+  assert.ok(validateProjectInput(projects, { ...projectInput, code: " KHO-2026 " }).code)
+  assert.ok(validateProjectInput(projects, { ...projectInput, pmId: "missing" }).pmId)
   assert.ok(validateProjectInput(projects, { ...projectInput, name: " " }).name)
-  assert.ok(
-    validateProjectInput(projects, { ...projectInput, start: "2026-02-30" })
-      .start,
-  )
-  assert.ok(
-    validateProjectInput(projects, { ...projectInput, end: "2026-01-01" }).end,
-  )
+  assert.ok(validateProjectInput(projects, { ...projectInput, start: "2026-02-30" }).start)
+  assert.ok(validateProjectInput(projects, { ...projectInput, end: "2026-01-01" }).end)
   assert.ok(
     validateProjectInput(projects, {
       ...projectInput,
@@ -249,39 +180,19 @@ test("Chỉ PM chỉ định PTCM, kiêm nhiệm hợp lệ; quyền cũ không 
     }),
   )
   for (const status of ["COMPLETED", "CLOSED", "CANCELLED"] as const)
-    assert.throws(() =>
-      appointPtcm({ ...portal, status }, "thanh", "cuong", initialTasks, []),
-    )
+    assert.throws(() => appointPtcm({ ...portal, status }, "thanh", "cuong", initialTasks, []))
 })
 test("Chặn PTCM đang giữ task mở hoặc đầu ra cũ; không thu hồi ngầm, không cấm lịch sử DONE", () => {
   const before = structuredClone(initialTasks)
-  assert.match(
-    ptcmBlockReason(project, "cuong", initialTasks, [])!,
-    /Còn công việc/,
-  )
+  assert.match(ptcmBlockReason(project, "cuong", initialTasks, [])!, /Còn công việc/)
   assert.throws(
-    () =>
-      appointPtcm(
-        project,
-        "thanh",
-        "thanh",
-        initialTasks,
-        initialOutputConflicts,
-      ),
+    () => appointPtcm(project, "thanh", "thanh", initialTasks, initialOutputConflicts),
     /đầu ra/,
   )
-  assert.equal(
-    appointPtcm(project, "thanh", "an", initialTasks, []).ptcmId,
-    "an",
-  )
+  assert.equal(appointPtcm(project, "thanh", "an", initialTasks, []).ptcmId, "an")
   assert.deepEqual(initialTasks, before)
-  const resolved = initialTasks.map((t) =>
-    t.id === "t7" ? { ...t, status: "DONE" as const } : t,
-  )
-  assert.equal(
-    ptcmBlockReason(project, "thanh", resolved, initialOutputConflicts),
-    undefined,
-  )
+  const resolved = initialTasks.map((t) => (t.id === "t7" ? { ...t, status: "DONE" as const } : t))
+  assert.equal(ptcmBlockReason(project, "thanh", resolved, initialOutputConflicts), undefined)
   assert.equal(
     ptcmBlockReason(projects[1], "cuong", initialTasks, initialOutputConflicts),
     undefined,
@@ -328,16 +239,12 @@ test("PM-only và PTCM tự nhận không hợp lệ", () => {
     }),
   )
   assert.equal(
-    recommendations(project, initialTasks[0]).some(
-      (r) => r.person.id === project.ptcmId,
-    ),
+    recommendations(project, initialTasks[0]).some((r) => r.person.id === project.ptcmId),
     false,
   )
 })
 test("một dòng sai không làm thay đổi dòng hợp lệ", () => {
-  assert.throws(() =>
-    commitDraft(project, "khoa", initialTasks, { ...draft, t5: draft.t1 }),
-  )
+  assert.throws(() => commitDraft(project, "khoa", initialTasks, { ...draft, t5: draft.t1 }))
   assert.equal(initialTasks[0].status, "PENDING_ASSIGNMENT")
 })
 test("manual không cần điểm; thiếu kỹ năng bắt buộc cần lý do", () => {
@@ -402,13 +309,7 @@ test("nhóm trống tồn tại độc lập; tạo/sửa nhóm không làm mấ
 })
 
 test("tạo task hợp lệ vào nhóm rồi phân công dùng cùng dữ liệu; sửa trước giao giữ ID", () => {
-  const created = saveTask(
-    project,
-    "khoa",
-    initialGroups,
-    initialTasks,
-    taskInput,
-  )
+  const created = saveTask(project, "khoa", initialGroups, initialTasks, taskInput)
   const task = created.at(-1)!
   assert.equal(task.status, "PENDING_ASSIGNMENT")
   assert.equal(task.group, "Kiểm thử")
@@ -432,10 +333,7 @@ test("tạo task hợp lệ vào nhóm rồi phân công dùng cùng dữ liệu
 })
 
 test("form kiểm tra mã, nhóm cùng dự án, ước tính và yêu cầu không trùng", () => {
-  assert.deepEqual(
-    validateTaskInput(project, initialGroups, initialTasks, taskInput),
-    {},
-  )
+  assert.deepEqual(validateTaskInput(project, initialGroups, initialTasks, taskInput), {})
   const invalid = validateTaskInput(project, initialGroups, initialTasks, {
     ...taskInput,
     code: " KHO-T001 ",
@@ -516,9 +414,7 @@ test("ngày task để trống hoặc đủ cặp đúng thứ tự trong dự �
 })
 
 test("chỉ PTCM sửa cấu trúc; dự án kết thúc chặn cả task và nhóm", () => {
-  assert.throws(() =>
-    saveTask(project, "thanh", initialGroups, initialTasks, taskInput),
-  )
+  assert.throws(() => saveTask(project, "thanh", initialGroups, initialTasks, taskInput))
   assert.throws(() =>
     saveGroup(project, "thanh", initialGroups, initialTasks, {
       name: "Tài liệu",
@@ -527,13 +423,7 @@ test("chỉ PTCM sửa cấu trúc; dự án kết thúc chặn cả task và nh
   )
   for (const status of ["COMPLETED", "CLOSED", "CANCELLED"] as const) {
     assert.throws(() =>
-      saveTask(
-        { ...project, status },
-        "khoa",
-        initialGroups,
-        initialTasks,
-        taskInput,
-      ),
+      saveTask({ ...project, status }, "khoa", initialGroups, initialTasks, taskInput),
     )
     assert.throws(() =>
       saveGroup({ ...project, status }, "khoa", initialGroups, initialTasks, {
@@ -547,22 +437,11 @@ test("chỉ PTCM sửa cấu trúc; dự án kết thúc chặn cả task và nh
 test("sau lần giao đầu, thu hồi không mở khóa đặc tả", () => {
   const assigned = commitDraft(project, "khoa", initialTasks, draft)
   const returned = assigned.map((t) =>
-    t.id === "t1"
-      ? { ...t, status: "PENDING_ASSIGNMENT" as const, assigneeId: undefined }
-      : t,
+    t.id === "t1" ? { ...t, status: "PENDING_ASSIGNMENT" as const, assigneeId: undefined } : t,
   )
   assert.equal(isTaskFrozen(returned[0]), true)
   assert.throws(() =>
-    saveTask(
-      project,
-      "khoa",
-      initialGroups,
-      returned,
-      { ...taskInput, code: "KHO-T001" },
-      "t1",
-    ),
+    saveTask(project, "khoa", initialGroups, returned, { ...taskInput, code: "KHO-T001" }, "t1"),
   )
-  assert.throws(() =>
-    saveTask(project, "khoa", initialGroups, initialTasks, taskInput, "p1"),
-  )
+  assert.throws(() => saveTask(project, "khoa", initialGroups, initialTasks, taskInput, "p1"))
 })

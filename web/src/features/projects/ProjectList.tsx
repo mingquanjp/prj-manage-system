@@ -1,19 +1,8 @@
 import { useState } from "react"
 import { Link } from "react-router"
 import { ArrowTopRightIcon, CubeIcon, PlusIcon } from "@radix-ui/react-icons"
-import {
-  Avatar,
-  EmptyState,
-  SearchInput,
-  StatusBadge,
-} from "@/components/shared"
-import {
-  getPerson,
-  progress,
-  isDirector,
-  type Project,
-  type Task,
-} from "@/demo/model"
+import { Avatar, EmptyState, SearchInput, StatusBadge } from "@/components/shared"
+import { getPerson, progress, isDirector, type Project, type Task } from "@/demo/model"
 import { Button } from "@/components/ui/button"
 
 export function ProjectList({
@@ -31,9 +20,7 @@ export function ProjectList({
   const [filter, setFilter] = useState("all")
   const filtered = projects.filter(
     (p) =>
-      `${p.name} ${p.code}`
-        .toLocaleLowerCase("vi")
-        .includes(search.toLocaleLowerCase("vi")) &&
+      `${p.name} ${p.code}`.toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi")) &&
       (filter === "all" || p.status === filter),
   )
   return (
@@ -67,20 +54,14 @@ export function ProjectList({
               key={value}
               aria-pressed={filter === value}
               onClick={() => setFilter(value)}
-              className={`filter-chip ${
-                filter === value ? "filter-active" : ""
-              }`}
+              className={`filter-chip ${filter === value ? "filter-active" : ""}`}
             >
               {label}
             </button>
           ))}
         </div>
         <div className="w-full sm:w-72">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Tìm tên hoặc mã dự án…"
-          />
+          <SearchInput value={search} onChange={setSearch} placeholder="Tìm tên hoặc mã dự án…" />
         </div>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border bg-white">
@@ -98,20 +79,12 @@ export function ProjectList({
             {filtered.map((project) => {
               const related = tasks.filter((t) => t.projectId === project.id)
               const percent = progress(related)
-              const pending = related.filter(
-                (t) => t.status === "PENDING_ASSIGNMENT",
-              ).length
+              const pending = related.filter((t) => t.status === "PENDING_ASSIGNMENT").length
               const pm = getPerson(project.pmId)!
               return (
-                <tr
-                  key={project.id}
-                  className="border-t border-border hover:bg-background/70"
-                >
+                <tr key={project.id} className="border-t border-border hover:bg-background/70">
                   <td className="py-6 pl-5 pr-5">
-                    <Link
-                      to={`/projects/${project.id}`}
-                      className="group flex items-center gap-3"
-                    >
+                    <Link to={`/projects/${project.id}`} className="group flex items-center gap-3">
                       <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-background">
                         <CubeIcon className="size-5" />
                       </span>
@@ -121,8 +94,7 @@ export function ProjectList({
                           <ArrowTopRightIcon className="text-muted-foreground" />
                         </span>
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {project.code} · {related.length} công việc ·{" "}
-                          {pending} chờ phân công
+                          {project.code} · {related.length} công việc · {pending} chờ phân công
                         </span>
                       </span>
                     </Link>
@@ -138,9 +110,7 @@ export function ProjectList({
                           className="h-full rounded-full bg-success"
                         />
                       </div>
-                      <span className="tabular-nums">
-                        {percent === null ? "—" : `${percent}%`}
-                      </span>
+                      <span className="tabular-nums">{percent === null ? "—" : `${percent}%`}</span>
                     </div>
                   </td>
                   <td className="pr-5">
@@ -150,9 +120,7 @@ export function ProjectList({
                     </span>
                   </td>
                   <td className="whitespace-nowrap pr-5 tabular-nums">
-                    {new Date(`${project.end}T00:00:00`).toLocaleDateString(
-                      "vi-VN",
-                    )}
+                    {new Date(`${project.end}T00:00:00`).toLocaleDateString("vi-VN")}
                   </td>
                 </tr>
               )
@@ -171,8 +139,8 @@ export function ProjectList({
         )}
       </div>
       <p className="mt-4 text-xs text-muted-foreground">
-        {filtered.length} dự án · Tiến độ dựa trên công việc đã nghiệm thu,
-        không phải số công việc đã giao.
+        {filtered.length} dự án · Tiến độ dựa trên công việc đã nghiệm thu, không phải số công việc
+        đã giao.
       </p>
     </>
   )

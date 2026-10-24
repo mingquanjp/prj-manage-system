@@ -2,13 +2,7 @@ import { MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { cn } from "@/lib/utils"
 import { statusLabels, type TaskStatus } from "@/demo/model"
 
-export function Avatar({
-  initials,
-  small = false,
-}: {
-  initials: string
-  small?: boolean
-}) {
+export function Avatar({ initials, small = false }: { initials: string; small?: boolean }) {
   return (
     <span
       aria-hidden="true"
@@ -21,11 +15,7 @@ export function Avatar({
     </span>
   )
 }
-export function StatusBadge({
-  status,
-}: {
-  status: TaskStatus | "PLANNING" | "COMPLETED"
-}) {
+export function StatusBadge({ status }: { status: TaskStatus | "PLANNING" | "COMPLETED" }) {
   const label =
     status === "PLANNING"
       ? "Lập kế hoạch"
@@ -74,13 +64,7 @@ export function SearchInput({
     </div>
   )
 }
-export function EmptyState({
-  title,
-  detail,
-}: {
-  title: string
-  detail: string
-}) {
+export function EmptyState({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="py-16 text-center">
       <p className="section-title">{title}</p>

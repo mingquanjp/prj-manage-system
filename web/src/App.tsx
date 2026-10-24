@@ -1,12 +1,5 @@
 import { useState } from "react"
-import {
-  Link,
-  NavLink,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from "react-router"
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router"
 import {
   ArchiveIcon,
   ChevronDownIcon,
@@ -42,24 +35,24 @@ import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
 import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog"
 import { PersonalWork } from "@/features/personal-work/PersonalWork"
 import { cn } from "@/lib/utils"
-import { emptyWorkState, submitResult, reviewSubmission, rememberContributions, recordAssignmentChanges } from "@/demo/effort"
+import {
+  emptyWorkState,
+  submitResult,
+  reviewSubmission,
+  rememberContributions,
+  recordAssignmentChanges,
+} from "@/demo/effort"
 import { canLookupPersonnel } from "@/demo/personnel"
 import { PersonnelDirectory } from "@/features/personnel/PersonnelDirectory"
 
 export default function App() {
   const [actorId, setActorId] = useState("khoa")
-  const [projects, setProjects] = useState<Project[]>(() =>
-    structuredClone(initialProjects),
-  )
+  const [projects, setProjects] = useState<Project[]>(() => structuredClone(initialProjects))
   const [events, setEvents] = useState<ProjectEvent[]>([])
   const [work, setWork] = useState(() => rememberContributions(emptyWorkState(), initialTasks))
   const [creating, setCreating] = useState(false)
-  const [tasks, setTasks] = useState<Task[]>(() =>
-    structuredClone(initialTasks),
-  )
-  const [groups, setGroups] = useState<TaskGroup[]>(() =>
-    structuredClone(initialGroups),
-  )
+  const [tasks, setTasks] = useState<Task[]>(() => structuredClone(initialTasks))
+  const [groups, setGroups] = useState<TaskGroup[]>(() => structuredClone(initialGroups))
   const [resetOpen, setResetOpen] = useState(false)
   const [notice, setNotice] = useState("")
   const location = useLocation()
@@ -70,20 +63,15 @@ export default function App() {
   const canLookup = canLookupPersonnel(projects, actorId)
   const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
   const currentProject = projects.find(
-    (p) =>
-      location.pathname === `/projects/${p.id}` && canViewProject(p, actorId),
+    (p) => location.pathname === `/projects/${p.id}` && canViewProject(p, actorId),
   )
   const person = getPerson(actorId)!
   // Thứ tự trình diễn; không dùng để cấp quyền hoặc đổi trách nhiệm dự án.
   const demoOrder = ["thanh", "khoa", "dung", "ha", "cuong", "an", "binh"]
   const demoIdentities = [...demoUsers]
-    .sort(
-      (a, b) => demoOrder.indexOf(a.personId) - demoOrder.indexOf(b.personId),
-    )
+    .sort((a, b) => demoOrder.indexOf(a.personId) - demoOrder.indexOf(b.personId))
     .map((u) => {
-      const responsibilities = (
-        currentProject ? [currentProject] : projects
-      ).flatMap((project) => {
+      const responsibilities = (currentProject ? [currentProject] : projects).flatMap((project) => {
         const roles = [
           ...(project.pmId === u.personId ? ["PM"] : []),
           ...(project.ptcmId === u.personId ? ["PTCM"] : []),
@@ -92,8 +80,7 @@ export default function App() {
       })
       const labels = [
         ...u.systemRoles.map(
-          (role) =>
-            ({ ADMIN: "Quản trị viên", HR: "HR", DIRECTOR: "Giám đốc" })[role],
+          (role) => ({ ADMIN: "Quản trị viên", HR: "HR", DIRECTOR: "Giám đốc" })[role],
         ),
         ...responsibilities,
       ]
@@ -127,9 +114,7 @@ export default function App() {
           </span>
           <div>
             <strong className="block text-base">TaskAssign</strong>
-            <span className="text-xs text-muted-foreground">
-              Không gian làm việc
-            </span>
+            <span className="text-xs text-muted-foreground">Không gian làm việc</span>
           </div>
         </Link>
         <div className="px-3 pt-5">
@@ -148,14 +133,9 @@ export default function App() {
           >
             <DashboardIcon />
             {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
-            <span className="ml-auto text-muted-foreground">
-              {visibleProjects.length}
-            </span>
+            <span className="ml-auto text-muted-foreground">{visibleProjects.length}</span>
           </NavLink>
-          <nav
-            aria-label="Dự án"
-            className="mt-3 space-y-1 border-l border-border ml-5 pl-3"
-          >
+          <nav aria-label="Dự án" className="mt-3 space-y-1 border-l border-border ml-5 pl-3">
             {visibleProjects.map((project) => (
               <NavLink
                 key={project.id}
@@ -185,20 +165,27 @@ export default function App() {
           >
             <ListBulletIcon />
             Công việc của tôi
-            <span className="ml-auto text-muted-foreground">
-              {ownTasks.length}
-            </span>
+            <span className="ml-auto text-muted-foreground">{ownTasks.length}</span>
           </NavLink>
-          {canLookup && <NavLink to="/personnel" className={({ isActive }) => cn(
-            "mt-3 flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium",
-            isActive ? "bg-accent" : "hover:bg-accent",
-          )}><PersonIcon />Tra cứu nhân sự</NavLink>}
+          {canLookup && (
+            <NavLink
+              to="/personnel"
+              className={({ isActive }) =>
+                cn(
+                  "mt-3 flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium",
+                  isActive ? "bg-accent" : "hover:bg-accent",
+                )
+              }
+            >
+              <PersonIcon />
+              Tra cứu nhân sự
+            </NavLink>
+          )}
         </div>
         <div className="mx-5 mt-8 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
           <p className="font-medium text-foreground">Bản duyệt thiết kế</p>
           <p className="mt-1">
-            Dự án, thực hiện công việc và tra cứu nghề nghiệp. Các khu vực khác sẽ bổ sung
-            sau.
+            Dự án, thực hiện công việc và tra cứu nghề nghiệp. Các khu vực khác sẽ bổ sung sau.
           </p>
         </div>
         <div className="mt-auto px-4 pb-5 pt-8">
@@ -210,10 +197,7 @@ export default function App() {
               </span>
               <ChevronDownIcon />
             </summary>
-            <label
-              className="field-label mt-3 block"
-              htmlFor="identity"
-            >
+            <label className="field-label mt-3 block" htmlFor="identity">
               Danh tính mô phỏng
             </label>
             <select
@@ -225,9 +209,7 @@ export default function App() {
             >
               {identityOptions}
             </select>
-            <p className="mt-2 text-xs leading-5 text-foreground">
-              {identityResponsibility}
-            </p>
+            <p className="mt-2 text-xs leading-5 text-foreground">{identityResponsibility}</p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Chỉ kiểm thử giao diện, không phải tính năng tự cấp quyền.
             </p>
@@ -246,9 +228,7 @@ export default function App() {
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{person.name}</p>
               <p className="text-xs text-muted-foreground">
-                {isDirector(actorId)
-                  ? "Giám đốc"
-                  : "Trách nhiệm theo từng dự án"}
+                {isDirector(actorId) ? "Giám đốc" : "Trách nhiệm theo từng dự án"}
               </p>
             </div>
           </div>
@@ -269,17 +249,13 @@ export default function App() {
             {personalView && (
               <>
                 <ChevronRightIcon className="shrink-0" />
-                <span className="truncate text-foreground">
-                  Công việc của tôi
-                </span>
+                <span className="truncate text-foreground">Công việc của tôi</span>
               </>
             )}
             {currentProject && (
               <>
                 <ChevronRightIcon className="shrink-0" />
-                <span className="truncate text-foreground">
-                  {currentProject.name}
-                </span>
+                <span className="truncate text-foreground">{currentProject.name}</span>
               </>
             )}
           </nav>
@@ -312,10 +288,7 @@ export default function App() {
             to="/"
             end
             className={({ isActive }) =>
-              cn(
-                "rounded-md px-3 py-2",
-                (isActive || currentProject) && "bg-accent font-medium",
-              )
+              cn("rounded-md px-3 py-2", (isActive || currentProject) && "bg-accent font-medium")
             }
           >
             Dự án
@@ -328,9 +301,16 @@ export default function App() {
           >
             Công việc của tôi
           </NavLink>
-          {canLookup && <NavLink to="/personnel" className={({ isActive }) => cn(
-            "rounded-md px-3 py-2", isActive && "bg-accent font-medium",
-          )}>Tra cứu nhân sự</NavLink>}
+          {canLookup && (
+            <NavLink
+              to="/personnel"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Tra cứu nhân sự
+            </NavLink>
+          )}
         </nav>
         <main className="mx-auto max-w-[1600px] px-4 py-8 md:px-8">
           {notice && (
@@ -345,7 +325,17 @@ export default function App() {
             </div>
           )}
           <Routes>
-            <Route path="/personnel" element={<PersonnelDirectory key={actorId} projects={projects} tasks={tasks} actorId={actorId} />} />
+            <Route
+              path="/personnel"
+              element={
+                <PersonnelDirectory
+                  key={actorId}
+                  projects={projects}
+                  tasks={tasks}
+                  actorId={actorId}
+                />
+              }
+            />
             <Route
               path="/my-work"
               element={
@@ -417,9 +407,7 @@ export default function App() {
                   events={events}
                   onProjectChange={(next, action) => {
                     const before = projects.find((p) => p.id === next.id)
-                    setProjects((prev) =>
-                      prev.map((p) => (p.id === next.id ? next : p)),
-                    )
+                    setProjects((prev) => prev.map((p) => (p.id === next.id ? next : p)))
                     setEvents((prev) => [
                       ...prev,
                       {
@@ -473,9 +461,7 @@ export default function App() {
               path="*"
               element={
                 <div>
-                  <h1 className="text-2xl font-semibold text-balance">
-                    Không tìm thấy trang
-                  </h1>
+                  <h1 className="text-2xl font-semibold text-balance">Không tìm thấy trang</h1>
                   <Button asChild variant="outline" className="mt-4">
                     <Link to="/">Về danh sách dự án</Link>
                   </Button>

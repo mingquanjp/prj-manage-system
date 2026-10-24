@@ -39,9 +39,7 @@ export function ResultPanel({
   return (
     <section aria-label="Kết quả công việc" className="mt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="section-title">
-          Các lần nộp · {submissions.length}
-        </h3>
+        <h3 className="section-title">Các lần nộp · {submissions.length}</h3>
         {allowed && (
           <Button
             size="sm"
@@ -60,8 +58,7 @@ export function ResultPanel({
           ? "Kết quả đang chờ PTCM nghiệm thu. Không chỉnh sửa lần nộp hoặc nhật ký trực tiếp."
           : allowed
             ? "Nộp tóm tắt đầu ra và link tham khảo nếu có. Thiếu nhật ký vẫn được nộp, không khai giờ phỏng đoán."
-            : (block ??
-              "Bắt đầu hoặc tiếp tục công việc trước khi nộp kết quả.")}
+            : (block ?? "Bắt đầu hoặc tiếp tục công việc trước khi nộp kết quả.")}
       </p>
       {!submissions.length && (
         <p className="mt-4 rounded-md bg-accent p-3 text-sm leading-6">
@@ -83,9 +80,7 @@ export function ResultPanel({
       >
         {confirming ? (
           <div>
-            <p className="whitespace-pre-wrap break-words text-sm leading-6">
-              {summary}
-            </p>
+            <p className="whitespace-pre-wrap break-words text-sm leading-6">{summary}</p>
             {links.trim() && (
               <p className="mt-3 whitespace-pre-wrap break-all text-xs text-muted-foreground">
                 Link minh chứng:
@@ -155,23 +150,16 @@ export function ResultPanel({
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 aria-invalid={!!errors.summary}
-                aria-describedby={
-                  errors.summary ? "result-summary-error" : undefined
-                }
+                aria-describedby={errors.summary ? "result-summary-error" : undefined}
               />
               {errors.summary && (
-                <p
-                  id="result-summary-error"
-                  className="mt-1 text-xs text-destructive"
-                >
+                <p id="result-summary-error" className="mt-1 text-xs text-destructive">
                   {errors.summary}
                 </p>
               )}
             </label>
             <label className="block text-sm">
-              <span className="field-label">
-                Link minh chứng (tùy chọn, mỗi dòng một URL)
-              </span>
+              <span className="field-label">Link minh chứng (tùy chọn, mỗi dòng một URL)</span>
               <textarea
                 className="field mt-2 min-h-24 w-full"
                 value={links}
@@ -179,15 +167,10 @@ export function ResultPanel({
                 aria-invalid={!!errors.links}
                 aria-describedby="result-links-hint"
               />
-              <span
-                id="result-links-hint"
-                className="mt-1 block text-xs text-muted-foreground"
-              >
+              <span id="result-links-hint" className="mt-1 block text-xs text-muted-foreground">
                 Chỉ http/https. Không gửi token, mật khẩu hoặc link chứa bí mật.
               </span>
-              {errors.links && (
-                <p className="mt-1 text-xs text-destructive">{errors.links}</p>
-              )}
+              {errors.links && <p className="mt-1 text-xs text-destructive">{errors.links}</p>}
             </label>
             {errors.form && (
               <p role="alert" className="text-sm text-destructive">
@@ -195,11 +178,7 @@ export function ResultPanel({
               </p>
             )}
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit">Kiểm tra trước khi nộp</Button>

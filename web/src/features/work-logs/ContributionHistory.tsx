@@ -7,7 +7,13 @@ import { WorkLogPanel } from "@/features/personal-work/WorkLogPanel"
 import { historicalContributions } from "@/demo/corrections"
 
 // Tách quyền xem đóng góp của chính chủ khỏi quyền thực hiện công việc hiện tại.
-export function ContributionHistory({ projects, tasks, work, actorId, onChange }: {
+export function ContributionHistory({
+  projects,
+  tasks,
+  work,
+  actorId,
+  onChange,
+}: {
   projects: Project[]
   tasks: Task[]
   work: WorkState
@@ -42,9 +48,13 @@ export function ContributionHistory({ projects, tasks, work, actorId, onChange }
       <Dialog
         side
         open={Boolean(selected)}
-        onOpenChange={(open) => { if (!open) setSelectedId(undefined) }}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(undefined)
+        }}
         title="Nhật ký đóng góp cũ"
-        description={selected ? `${selected.taskCode} · ${selected.taskName}` : "Chỉ xem đóng góp của bạn."}
+        description={
+          selected ? `${selected.taskCode} · ${selected.taskName}` : "Chỉ xem đóng góp của bạn."
+        }
       >
         {selected && project && task && (
           <WorkLogPanel

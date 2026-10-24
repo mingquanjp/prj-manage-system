@@ -16,12 +16,7 @@ import {
   ViewVerticalIcon,
   CheckCircledIcon,
 } from "@radix-ui/react-icons"
-import {
-  Avatar,
-  EmptyState,
-  SearchInput,
-  StatusBadge,
-} from "@/components/shared"
+import { Avatar, EmptyState, SearchInput, StatusBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
@@ -78,11 +73,7 @@ export function ProjectWorkspace({
   onNotice: (notice: string) => void
   work: WorkState
   onWorkChange: (work: WorkState) => void
-  onReview: (
-    submissionId: string,
-    result: ReviewResult,
-    comment: string,
-  ) => void
+  onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
   const { projectId } = useParams()
   const project = projects.find((p) => p.id === projectId)
@@ -103,26 +94,17 @@ export function ProjectWorkspace({
   const [discardTab, setDiscardTab] = useState<
     "tasks" | "structure" | "reviews" | "corrections" | null
   >(null)
-  const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(
-    null,
-  )
+  const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(null)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   if (!project || !canViewProject(project, actorId))
     return (
-      <EmptyState
-        title="Không tìm thấy dự án"
-        detail="Chọn dự án khác trong thanh điều hướng."
-      />
+      <EmptyState title="Không tìm thấy dự án" detail="Chọn dự án khác trong thanh điều hướng." />
     )
   const related = tasks.filter((t) => t.projectId === project.id)
-  const groups = allGroups
-    .filter((g) => g.projectId === project.id)
-    .map((g) => g.name)
+  const groups = allGroups.filter((g) => g.projectId === project.id).map((g) => g.name)
   const filtered = related.filter(
     (t) =>
-      `${t.name} ${t.code}`
-        .toLocaleLowerCase("vi")
-        .includes(search.toLocaleLowerCase("vi")) &&
+      `${t.name} ${t.code}`.toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi")) &&
       (tab === "reviews"
         ? project.status === "IN_PROGRESS" && t.status === "PENDING_REVIEW"
         : filter === "all" || t.status === filter) &&
@@ -160,8 +142,7 @@ export function ProjectWorkspace({
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
     )
-  const hasAll =
-    eligible.length > 0 && eligible.every((t) => selected.includes(t.id))
+  const hasAll = eligible.length > 0 && eligible.every((t) => selected.includes(t.id))
   const renderTable = (rows: Task[]) => (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[650px] text-left text-sm">
@@ -177,9 +158,7 @@ export function ProjectWorkspace({
                   onChange={() =>
                     setSelected((prev) =>
                       hasAll
-                        ? prev.filter(
-                            (id) => !eligible.some((t) => t.id === id),
-                          )
+                        ? prev.filter((id) => !eligible.some((t) => t.id === id))
                         : [...new Set([...prev, ...eligible.map((t) => t.id)])],
                     )
                   }
@@ -229,17 +208,13 @@ export function ProjectWorkspace({
                       detailTrigger.current = e.currentTarget
                       setDetail(task.id)
                       setDetailTab(
-                        task.status === "PENDING_REVIEW" && canReadResults
-                          ? "results"
-                          : "details",
+                        task.status === "PENDING_REVIEW" && canReadResults ? "results" : "details",
                       )
                     }}
                   >
                     <FileTextIcon className="mt-0.5 shrink-0 text-muted-foreground" />
                     <span>
-                      <span className="block font-medium leading-5">
-                        {task.name}
-                      </span>
+                      <span className="block font-medium leading-5">{task.name}</span>
                       <span className="mt-1 block text-xs text-muted-foreground">
                         {task.code} <span className="mx-1">/</span> {task.group}
                       </span>
@@ -256,9 +231,7 @@ export function ProjectWorkspace({
                       <span>{person.name}</span>
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">
-                      Chưa phân công
-                    </span>
+                    <span className="text-muted-foreground">Chưa phân công</span>
                   )}
                 </td>
                 <td className="pr-4 text-right whitespace-nowrap tabular-nums">
@@ -289,9 +262,7 @@ export function ProjectWorkspace({
           <div>
             <p className="eyebrow">{project.code}</p>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-xl font-semibold text-balance sm:text-2xl">
-                {project.name}
-              </h1>
+              <h1 className="text-xl font-semibold text-balance sm:text-2xl">{project.name}</h1>
               <StatusBadge status={project.status} />
             </div>
           </div>
@@ -340,10 +311,7 @@ export function ProjectWorkspace({
           <button
             type="button"
             onClick={() => requestTab("tasks")}
-            className={cn(
-              "tab-button workspace-tab",
-              tab === "tasks" && "tab-selected",
-            )}
+            className={cn("tab-button workspace-tab", tab === "tasks" && "tab-selected")}
             aria-pressed={tab === "tasks"}
           >
             <ListBulletIcon />
@@ -351,10 +319,7 @@ export function ProjectWorkspace({
           </button>
           <button
             type="button"
-            className={cn(
-              "tab-button workspace-tab",
-              tab === "structure" && "tab-selected",
-            )}
+            className={cn("tab-button workspace-tab", tab === "structure" && "tab-selected")}
             aria-pressed={tab === "structure"}
             onClick={() => requestTab("structure")}
           >
@@ -365,21 +330,32 @@ export function ProjectWorkspace({
             <button
               type="button"
               onClick={() => requestTab("reviews")}
-              className={cn(
-                "tab-button workspace-tab",
-                tab === "reviews" && "tab-selected",
-              )}
+              className={cn("tab-button workspace-tab", tab === "reviews" && "tab-selected")}
               aria-pressed={tab === "reviews"}
             >
               <CheckCircledIcon />
               Nghiệm thu <span className="count">{waiting}</span>
             </button>
           )}
-          {project.ptcmId === actorId && <button type="button" onClick={() => requestTab("corrections")}
-            className={cn("tab-button workspace-tab", tab === "corrections" && "tab-selected")}
-            aria-pressed={tab === "corrections"}>
-            Hiệu chỉnh nhật ký <span className="count">{work.requests.filter((r) => r.status === "PENDING" && contributionFor(work, tasks, r.assignmentId)?.projectId === project.id).length}</span>
-          </button>}
+          {project.ptcmId === actorId && (
+            <button
+              type="button"
+              onClick={() => requestTab("corrections")}
+              className={cn("tab-button workspace-tab", tab === "corrections" && "tab-selected")}
+              aria-pressed={tab === "corrections"}
+            >
+              Hiệu chỉnh nhật ký{" "}
+              <span className="count">
+                {
+                  work.requests.filter(
+                    (r) =>
+                      r.status === "PENDING" &&
+                      contributionFor(work, tasks, r.assignmentId)?.projectId === project.id,
+                  ).length
+                }
+              </span>
+            </button>
+          )}
         </div>
         <span className="hidden text-xs text-muted-foreground md:block">
           Bạn đang có trách nhiệm{" "}
@@ -395,7 +371,15 @@ export function ProjectWorkspace({
         </span>
       </div>
       {tab === "corrections" && project.ptcmId === actorId ? (
-        <CorrectionRequests key={project.id} projects={projects} tasks={tasks} work={work} actorId={actorId} projectId={project.id} onChange={onWorkChange} />
+        <CorrectionRequests
+          key={project.id}
+          projects={projects}
+          tasks={tasks}
+          work={work}
+          actorId={actorId}
+          projectId={project.id}
+          onChange={onWorkChange}
+        />
       ) : tab === "structure" ? (
         <ProjectStructure
           project={project}
@@ -460,19 +444,12 @@ export function ProjectWorkspace({
                         type="button"
                         key={value}
                         aria-pressed={filter === value}
-                        className={cn(
-                          "filter-chip",
-                          filter === value && "filter-active",
-                        )}
+                        className={cn("filter-chip", filter === value && "filter-active")}
                         onClick={() => setFilter(value)}
                       >
                         {label}
                         <span className="ml-1 text-xs text-muted-foreground">
-                          {
-                            related.filter(
-                              (t) => value === "all" || t.status === value,
-                            ).length
-                          }
+                          {related.filter((t) => value === "all" || t.status === value).length}
                         </span>
                       </button>
                     ))}
@@ -491,10 +468,7 @@ export function ProjectWorkspace({
                     type="button"
                     aria-label="Xem bảng"
                     aria-pressed={view === "list"}
-                    className={cn(
-                      "rounded p-2",
-                      view === "list" && "bg-accent",
-                    )}
+                    className={cn("rounded p-2", view === "list" && "bg-accent")}
                     onClick={() => setView("list")}
                   >
                     <ListBulletIcon />
@@ -503,10 +477,7 @@ export function ProjectWorkspace({
                     type="button"
                     aria-label="Xem theo nhóm"
                     aria-pressed={view === "groups"}
-                    className={cn(
-                      "rounded p-2",
-                      view === "groups" && "bg-accent",
-                    )}
+                    className={cn("rounded p-2", view === "groups" && "bg-accent")}
                     onClick={() => setView("groups")}
                   >
                     <RowsIcon />
@@ -515,10 +486,7 @@ export function ProjectWorkspace({
                     type="button"
                     aria-label="Xem Kanban"
                     aria-pressed={view === "kanban"}
-                    className={cn(
-                      "rounded p-2",
-                      view === "kanban" && "bg-accent",
-                    )}
+                    className={cn("rounded p-2", view === "kanban" && "bg-accent")}
                     onClick={() => setView("kanban")}
                   >
                     <ViewVerticalIcon />
@@ -526,11 +494,7 @@ export function ProjectWorkspace({
                 </div>
               </div>
               <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Tìm công việc…"
-                />
+                <SearchInput value={search} onChange={setSearch} placeholder="Tìm công việc…" />
                 <label className="flex items-center gap-2 rounded-md border border-border bg-white pl-3 text-sm">
                   <MixerHorizontalIcon />
                   <span className="field-label">Nhóm</span>
@@ -575,21 +539,11 @@ export function ProjectWorkspace({
               )}
               {view === "kanban" && (
                 <>
-                  {filtered.some((t) =>
-                    ["CLOSED", "CANCELLED"].includes(t.status),
-                  ) && (
+                  {filtered.some((t) => ["CLOSED", "CANCELLED"].includes(t.status)) && (
                     <p className="mb-3 text-xs text-muted-foreground">
-                      {
-                        filtered.filter((t) =>
-                          ["CLOSED", "CANCELLED"].includes(t.status),
-                        ).length
-                      }{" "}
+                      {filtered.filter((t) => ["CLOSED", "CANCELLED"].includes(t.status)).length}{" "}
                       công việc đã đóng/hủy không nằm trên Kanban.{" "}
-                      <button
-                        type="button"
-                        className="underline"
-                        onClick={() => setView("list")}
-                      >
+                      <button type="button" className="underline" onClick={() => setView("list")}>
                         Xem danh sách
                       </button>
                     </p>
@@ -605,9 +559,7 @@ export function ProjectWorkspace({
                       setDetail(task.id)
                       setInfo(false)
                       setDetailTab(
-                        task.status === "PENDING_REVIEW" && canReadResults
-                          ? "results"
-                          : "details",
+                        task.status === "PENDING_REVIEW" && canReadResults ? "results" : "details",
                       )
                     }}
                   />
@@ -640,11 +592,7 @@ export function ProjectWorkspace({
                     groups
                       .filter((g) => filtered.some((t) => t.group === g))
                       .map((g) => (
-                        <details
-                          key={g}
-                          open
-                          className="border-b border-border last:border-0"
-                        >
+                        <details key={g} open className="border-b border-border last:border-0">
                           <summary className="field-label flex cursor-pointer list-none items-center gap-2 bg-background/70 px-4 py-3">
                             <ChevronDownIcon />
                             {g}
@@ -659,20 +607,17 @@ export function ProjectWorkspace({
                 </div>
               )}
               <p className="mt-3 text-xs text-muted-foreground">
-                {filtered.length} / {related.length} công việc · Nhấn tên để xem
-                chi tiết mà không rời danh sách.
+                {filtered.length} / {related.length} công việc · Nhấn tên để xem chi tiết mà không
+                rời danh sách.
               </p>
             </section>
             {(info || currentTask) && (
               <aside
                 className={cn(
                   "min-w-0 rounded-lg border border-border bg-white p-5 xl:sticky xl:top-6",
-                  currentTask &&
-                    "xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto",
+                  currentTask && "xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto",
                 )}
-                aria-label={
-                  currentTask ? "Chi tiết công việc" : "Thông tin dự án"
-                }
+                aria-label={currentTask ? "Chi tiết công việc" : "Thông tin dự án"}
                 onKeyDown={(e) => {
                   if (
                     e.key === "Escape" &&
@@ -684,10 +629,7 @@ export function ProjectWorkspace({
               >
                 {currentTask ? (
                   <>
-                    <TaskDetailHeader
-                      task={currentTask}
-                      onClose={closeDetail}
-                    />
+                    <TaskDetailHeader task={currentTask} onClose={closeDetail} />
                     {canReadResults && (
                       <div
                         className="mt-4 flex gap-1"
@@ -696,9 +638,7 @@ export function ProjectWorkspace({
                       >
                         <Button
                           size="sm"
-                          variant={
-                            detailTab === "details" ? "default" : "ghost"
-                          }
+                          variant={detailTab === "details" ? "default" : "ghost"}
                           aria-pressed={detailTab === "details"}
                           className="workspace-tab"
                           onClick={() => setDetailTab("details")}
@@ -707,9 +647,7 @@ export function ProjectWorkspace({
                         </Button>
                         <Button
                           size="sm"
-                          variant={
-                            detailTab === "results" ? "default" : "ghost"
-                          }
+                          variant={detailTab === "results" ? "default" : "ghost"}
                           aria-pressed={detailTab === "results"}
                           className="workspace-tab"
                           onClick={() => setDetailTab("results")}
@@ -720,10 +658,7 @@ export function ProjectWorkspace({
                     )}
                     {detailTab === "results" && canReadResults ? (
                       <>
-                        <details
-                          className="mt-4 rounded-md border border-border p-3 text-sm"
-                          open
-                        >
+                        <details className="mt-4 rounded-md border border-border p-3 text-sm" open>
                           <summary className="section-title cursor-pointer">
                             Tiêu chí nghiệm thu
                           </summary>
@@ -747,8 +682,8 @@ export function ProjectWorkspace({
                           (isTaskFrozen(currentTask) ? (
                             <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
                               <LockClosedIcon className="mt-0.5" />
-                              Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa
-                              làm rõ/gia hạn chưa dựng trong đợt này.
+                              Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa làm rõ/gia hạn chưa
+                              dựng trong đợt này.
                             </p>
                           ) : (
                             <Button
@@ -763,12 +698,9 @@ export function ProjectWorkspace({
                           ))}
                         <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
                           <div className="flex justify-between gap-2">
-                            <dt className="field-label">
-                              Người thực hiện
-                            </dt>
+                            <dt className="field-label">Người thực hiện</dt>
                             <dd className="text-right">
-                              {getPerson(currentTask.assigneeId)?.name ??
-                                "Chưa phân công"}
+                              {getPerson(currentTask.assigneeId)?.name ?? "Chưa phân công"}
                             </dd>
                           </div>
                           <div className="flex justify-between gap-2">
@@ -794,11 +726,7 @@ export function ProjectWorkspace({
                             {currentTask.estimate} giờ
                           </span>
                         </div>
-                        <TaskSpecification
-                          key={currentTask.id}
-                          task={currentTask}
-                          showWeights
-                        />
+                        <TaskSpecification key={currentTask.id} task={currentTask} showWeights />
                       </>
                     )}
                   </>
@@ -815,27 +743,17 @@ export function ProjectWorkspace({
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="field-label">Ngày bắt đầu</dt>
-                        <dd>
-                          {new Date(
-                            `${project.start}T00:00:00`,
-                          ).toLocaleDateString("vi-VN")}
-                        </dd>
+                        <dd>{new Date(`${project.start}T00:00:00`).toLocaleDateString("vi-VN")}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="field-label">Hạn dự kiến</dt>
-                        <dd>
-                          {new Date(
-                            `${project.end}T00:00:00`,
-                          ).toLocaleDateString("vi-VN")}
-                        </dd>
+                        <dd>{new Date(`${project.end}T00:00:00`).toLocaleDateString("vi-VN")}</dd>
                       </div>
                     </dl>
                     <div className="mt-6 border-t border-border pt-5">
                       <div className="flex justify-between text-sm">
                         <span>Đã nghiệm thu</span>
-                        <strong>
-                          {percent === null ? "—" : `${percent}%`}
-                        </strong>
+                        <strong>{percent === null ? "—" : `${percent}%`}</strong>
                       </div>
                       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-accent">
                         <div
@@ -845,13 +763,12 @@ export function ProjectWorkspace({
                       </div>
                       <p className="mt-3 text-xs text-muted-foreground">
                         {related.filter((t) => t.status === "DONE").length} /{" "}
-                        {related.filter((t) => t.status !== "CANCELLED").length}{" "}
-                        công việc hiệu lực
+                        {related.filter((t) => t.status !== "CANCELLED").length} công việc hiệu lực
                       </p>
                     </div>
                     <div className="mt-6 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">
-                      Không cần lập danh sách thành viên trước. PTCM lựa chọn
-                      người phù hợp trong toàn công ty.
+                      Không cần lập danh sách thành viên trước. PTCM lựa chọn người phù hợp trong
+                      toàn công ty.
                     </div>
                   </>
                 )}

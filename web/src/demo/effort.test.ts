@@ -26,43 +26,17 @@ const input: LogInput = {
   overLimitReason: "",
 }
 const started = () =>
-  transitionPersonalTask(
-    projects,
-    assignedTasks,
-    "dung",
-    "t6",
-    "ASSIGNED",
-    "start",
-  )
+  transitionPersonalTask(projects, assignedTasks, "dung", "t6", "ASSIGNED", "start")
 
 const initialTasks = started()
 
 test("R01 chỉ ghi/sửa/xóa khi đang thực hiện; Bắt đầu/Tiếp tục mở quyền, không sinh giờ", () => {
   const empty = emptyWorkState()
   assert.throws(
-    () =>
-      saveLog(
-        projects,
-        assignedTasks,
-        empty,
-        "dung",
-        "t6",
-        input,
-        undefined,
-        now,
-      ),
+    () => saveLog(projects, assignedTasks, empty, "dung", "t6", input, undefined, now),
     /Bắt đầu/,
   )
-  const saved = saveLog(
-    projects,
-    initialTasks,
-    empty,
-    "dung",
-    "t6",
-    input,
-    undefined,
-    now,
-  )
+  const saved = saveLog(projects, initialTasks, empty, "dung", "t6", input, undefined, now)
   assert.equal(empty.logs.length, 0)
   assert.equal(saved.logs[0].employeeId, "dung")
   assert.equal(saved.history.length, 0)
@@ -81,9 +55,7 @@ test("R01 chỉ ghi/sửa/xóa khi đang thực hiện; Bắt đầu/Tiếp tụ
     "Chờ làm tiếp",
   )
   for (const tasks of [assignedTasks, paused]) {
-    assert.throws(() =>
-      saveLog(projects, tasks, saved, "dung", "t6", input, undefined, now),
-    )
+    assert.throws(() => saveLog(projects, tasks, saved, "dung", "t6", input, undefined, now))
     assert.throws(() =>
       saveLog(
         projects,
@@ -97,30 +69,18 @@ test("R01 chỉ ghi/sửa/xóa khi đang thực hiện; Bắt đầu/Tiếp tụ
       ),
     )
     assert.throws(() =>
-      deleteLog(
-        projects,
-        tasks,
-        saved,
-        "dung",
-        "t6",
-        saved.logs[0],
-        "Ghi nhầm",
-        now,
-      ),
+      deleteLog(projects, tasks, saved, "dung", "t6", saved.logs[0], "Ghi nhầm", now),
     )
     assert.equal(
-      taskLogs(saved, tasks.find((t) => t.id === "t6")!, "dung").length,
+      taskLogs(
+        saved,
+        tasks.find((t) => t.id === "t6")!,
+        "dung",
+      ).length,
       1,
     )
   }
-  const resumed = transitionPersonalTask(
-    projects,
-    paused,
-    "dung",
-    "t6",
-    "PAUSED",
-    "resume",
-  )
+  const resumed = transitionPersonalTask(projects, paused, "dung", "t6", "PAUSED", "resume")
   assert.equal(saved.logs.length, 1)
   const edited = saveLog(
     projects,
@@ -132,29 +92,15 @@ test("R01 chỉ ghi/sửa/xóa khi đang thực hiện; Bắt đầu/Tiếp tụ
     { before: saved.logs[0], reason: "Bổ sung kiểm thử" },
     now,
   )
-  const added = saveLog(
-    projects,
-    resumed,
-    edited,
-    "dung",
-    "t6",
-    input,
-    undefined,
-    now,
-  )
+  const added = saveLog(projects, resumed, edited, "dung", "t6", input, undefined, now)
   assert.equal(added.logs.length, 2)
-  const deleted = deleteLog(
-    projects,
-    resumed,
-    added,
-    "dung",
-    "t6",
-    added.logs[1],
-    "Ghi nhầm",
-    now,
-  )
+  const deleted = deleteLog(projects, resumed, added, "dung", "t6", added.logs[1], "Ghi nhầm", now)
   assert.equal(
-    taskLogs(deleted, resumed.find((t) => t.id === "t6")!, "dung").length,
+    taskLogs(
+      deleted,
+      resumed.find((t) => t.id === "t6")!,
+      "dung",
+    ).length,
     1,
   )
 })
@@ -178,31 +124,11 @@ test("ngày Việt Nam, không trước lượt giao/triển khai, không tươn
     p.id === "kho" ? { ...p, executionStartedAt: "2026-10-21T02:00:00Z" } : p,
   )
   assert.throws(() =>
-    saveLog(
-      later,
-      initialTasks,
-      emptyWorkState(),
-      "dung",
-      "t6",
-      input,
-      undefined,
-      now,
-    ),
+    saveLog(later, initialTasks, emptyWorkState(), "dung", "t6", input, undefined, now),
   )
-  const tasks = initialTasks.map((t) =>
-    t.id === "t6" ? { ...t, end: "2026-10-19" } : t,
-  )
+  const tasks = initialTasks.map((t) => (t.id === "t6" ? { ...t, end: "2026-10-19" } : t))
   assert.equal(
-    saveLog(
-      projects,
-      tasks,
-      emptyWorkState(),
-      "dung",
-      "t6",
-      input,
-      undefined,
-      now,
-    ).logs.length,
+    saveLog(projects, tasks, emptyWorkState(), "dung", "t6", input, undefined, now).logs.length,
     1,
   )
 })
@@ -303,16 +229,7 @@ test("tổng xuyên task/project: >480 cần lý do, >1440 chặn; phút nguyên
 })
 
 test("sửa/xóa cần lý do và giá trị nền, giữ history và xóa mềm không cộng tổng", () => {
-  const one = saveLog(
-    projects,
-    initialTasks,
-    emptyWorkState(),
-    "dung",
-    "t6",
-    input,
-    undefined,
-    now,
-  )
+  const one = saveLog(projects, initialTasks, emptyWorkState(), "dung", "t6", input, undefined, now)
   const before = structuredClone(one.logs[0])
   assert.throws(() =>
     saveLog(
@@ -353,57 +270,23 @@ test("sửa/xóa cần lý do và giá trị nền, giữ history và xóa mềm
       ),
     /đã thay đổi/,
   )
-  assert.throws(() =>
-    deleteLog(projects, initialTasks, two, "dung", "t6", two.logs[0], " ", now),
-  )
-  const deleted = deleteLog(
-    projects,
-    initialTasks,
-    two,
-    "dung",
-    "t6",
-    two.logs[0],
-    "Ghi nhầm",
-    now,
-  )
+  assert.throws(() => deleteLog(projects, initialTasks, two, "dung", "t6", two.logs[0], " ", now))
+  const deleted = deleteLog(projects, initialTasks, two, "dung", "t6", two.logs[0], "Ghi nhầm", now)
   assert.equal(deleted.logs.length, 1)
   assert.equal(deleted.logs[0].minutes, 120)
   assert.equal(dailyMinutes(deleted, "dung", input.workDate), 0)
   assert.equal(deleted.history.length, 2)
   assert.throws(() =>
-    deleteLog(
-      projects,
-      initialTasks,
-      deleted,
-      "dung",
-      "t6",
-      deleted.logs[0],
-      "x",
-      now,
-    ),
+    deleteLog(projects, initialTasks, deleted, "dung", "t6", deleted.logs[0], "x", now),
   )
 })
 
 test("chặn sai người, PTCM, lượt giao khác, project khóa và task khóa", () => {
   for (const actor of ["an", "khoa", "unknown"])
     assert.throws(() =>
-      saveLog(
-        projects,
-        initialTasks,
-        emptyWorkState(),
-        actor,
-        "t6",
-        input,
-        undefined,
-        now,
-      ),
+      saveLog(projects, initialTasks, emptyWorkState(), actor, "t6", input, undefined, now),
     )
-  for (const status of [
-    "PLANNING",
-    "COMPLETED",
-    "CLOSED",
-    "CANCELLED",
-  ] as const)
+  for (const status of ["PLANNING", "COMPLETED", "CLOSED", "CANCELLED"] as const)
     assert.throws(() =>
       saveLog(
         projects.map((p) => (p.id === "kho" ? { ...p, status } : p)),
@@ -416,12 +299,7 @@ test("chặn sai người, PTCM, lượt giao khác, project khóa và task khó
         now,
       ),
     )
-  for (const status of [
-    "PENDING_REVIEW",
-    "DONE",
-    "CLOSED",
-    "CANCELLED",
-  ] as const)
+  for (const status of ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"] as const)
     assert.throws(() =>
       saveLog(
         projects,
@@ -453,35 +331,19 @@ test("chặn sai người, PTCM, lượt giao khác, project khóa và task khó
       : t,
   )
   assert.equal(
-    taskLogs(state, reassigned.find((t) => t.id === "t6")!, "dung").length,
+    taskLogs(
+      state,
+      reassigned.find((t) => t.id === "t6")!,
+      "dung",
+    ).length,
     0,
   )
-  assert.throws(() =>
-    deleteLog(
-      projects,
-      reassigned,
-      state,
-      "dung",
-      "t6",
-      state.logs[0],
-      "x",
-      now,
-    ),
-  )
+  assert.throws(() => deleteLog(projects, reassigned, state, "dung", "t6", state.logs[0], "x", now))
 })
 
 test("nộp thiếu nhật ký hợp lệ; chỉ IN_PROGRESS, chỉ chính chủ; link an toàn; không nộp lặp", () => {
   assert.throws(() =>
-    submitResult(
-      projects,
-      assignedTasks,
-      emptyWorkState(),
-      "dung",
-      "t6",
-      "Xong",
-      "",
-      now,
-    ),
+    submitResult(projects, assignedTasks, emptyWorkState(), "dung", "t6", "Xong", "", now),
   )
   const tasks = started()
   for (const links of [
@@ -491,32 +353,10 @@ test("nộp thiếu nhật ký hợp lệ; chỉ IN_PROGRESS, chỉ chính chủ
     "not-url",
   ])
     assert.throws(() =>
-      submitResult(
-        projects,
-        tasks,
-        emptyWorkState(),
-        "dung",
-        "t6",
-        "Xong",
-        links,
-        now,
-      ),
+      submitResult(projects, tasks, emptyWorkState(), "dung", "t6", "Xong", links, now),
     )
-  assert.throws(() =>
-    submitResult(
-      projects,
-      tasks,
-      emptyWorkState(),
-      "an",
-      "t6",
-      "Xong",
-      "",
-      now,
-    ),
-  )
-  assert.throws(() =>
-    submitResult(projects, tasks, emptyWorkState(), "dung", "t6", " ", "", now),
-  )
+  assert.throws(() => submitResult(projects, tasks, emptyWorkState(), "an", "t6", "Xong", "", now))
+  assert.throws(() => submitResult(projects, tasks, emptyWorkState(), "dung", "t6", " ", "", now))
   const next = submitResult(
     projects,
     tasks,
@@ -531,33 +371,13 @@ test("nộp thiếu nhật ký hợp lệ; chỉ IN_PROGRESS, chỉ chính chủ
   assert.equal(tasks.find((t) => t.id === "t6")!.status, "IN_PROGRESS")
   assert.equal(loadFor("dung", next.tasks), loadFor("dung", tasks))
   assert.equal(next.work.submissions[0].logSnapshot.logs.length, 0)
-  assert.throws(() =>
-    submitResult(
-      projects,
-      next.tasks,
-      next.work,
-      "dung",
-      "t6",
-      "Xong",
-      "",
-      now,
-    ),
-  )
+  assert.throws(() => submitResult(projects, next.tasks, next.work, "dung", "t6", "Xong", "", now))
 })
 
 test("snapshot chỉ log hiệu lực đúng lượt; bất biến với nhật ký hiện tại, khóa sửa khi chờ", () => {
   const tasks = started(),
     initial = emptyWorkState()
-  const logged = saveLog(
-    projects,
-    tasks,
-    initial,
-    "dung",
-    "t6",
-    input,
-    undefined,
-    now,
-  )
+  const logged = saveLog(projects, tasks, initial, "dung", "t6", input, undefined, now)
   const removed = saveLog(
     projects,
     tasks,
@@ -568,16 +388,7 @@ test("snapshot chỉ log hiệu lực đúng lượt; bất biến với nhật 
     undefined,
     now,
   )
-  const state = deleteLog(
-    projects,
-    tasks,
-    removed,
-    "dung",
-    "t6",
-    removed.logs[1],
-    "Ghi nhầm",
-    now,
-  )
+  const state = deleteLog(projects, tasks, removed, "dung", "t6", removed.logs[1], "Ghi nhầm", now)
   const next = submitResult(
     projects,
     tasks,
@@ -589,35 +400,12 @@ test("snapshot chỉ log hiệu lực đúng lượt; bất biến với nhật 
     now,
   )
   assert.equal(next.work.submissions[0].logSnapshot.logs.length, 1)
+  assert.throws(() => saveLog(projects, next.tasks, next.work, "dung", "t6", input, undefined, now))
   assert.throws(() =>
-    saveLog(
-      projects,
-      next.tasks,
-      next.work,
-      "dung",
-      "t6",
-      input,
-      undefined,
-      now,
-    ),
-  )
-  assert.throws(() =>
-    deleteLog(
-      projects,
-      next.tasks,
-      next.work,
-      "dung",
-      "t6",
-      state.logs[0],
-      "x",
-      now,
-    ),
+    deleteLog(projects, next.tasks, next.work, "dung", "t6", state.logs[0], "x", now),
   )
   state.logs[0].description = "Thay đổi nguồn sau khi chụp"
-  assert.equal(
-    next.work.submissions[0].logSnapshot.logs[0].description,
-    input.description,
-  )
+  assert.equal(next.work.submissions[0].logSnapshot.logs[0].description, input.description)
   const portal = startProject(projects[1], "thanh", initialTasks)
   assert.ok(portal.executionStartedAt)
 })

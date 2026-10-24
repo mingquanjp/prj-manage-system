@@ -13,15 +13,25 @@ Môi trường đã chạy: Node **24.15.0**, pnpm **11.19.0**; package.json kha
 pnpm install --frozen-lockfile
 pnpm dev                 # localhost:5173; giữ strictPort, không tự kill tiến trình khác
 pnpm typecheck
-pnpm test                # hiện chỉ test model demo
+pnpm lint                # ESLint, không --fix; cảnh báo cũng làm cổng thất bại
+pnpm format:check        # Prettier chỉ kiểm tra, không ghi file
+pnpm format              # chủ động ghi lại định dạng; review diff riêng
+pnpm test                # chạy các src/demo/*.test.ts
 pnpm build
-pnpm check:harness       # 6 test harness → kiểm kê nguồn
-pnpm check               # harness → typecheck → test model → build
+pnpm check:harness       # 7 test harness → kiểm kê nguồn
+pnpm check               # harness → lint → format:check → typecheck → test model → build
 node ../scripts/check-harness.mjs
 node ../scripts/check-harness.mjs --staged # chỉ lúc chuẩn bị bàn giao Git
 ```
 
-Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/model.test.ts`; test harness từ root: `node --test scripts/check-harness.test.mjs`. Test Git dùng repo tạm riêng, tự dọn sau chạy, không đụng index/config/commit repo thật. Không truyền một file TS riêng cho tsc thay tsconfig project. Chưa có lint/formatter/E2E tự động; không ghi đã chạy các cổng chưa tồn tại. Các check không gọi DB/API; build ghi `dist/` bị ignore, không tự sửa mã nguồn. Lệnh cài đặt cần registry/cache và quyền phù hợp; lỗi môi trường không phải test pass.
+Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/model.test.ts`; test harness từ root: `node --test scripts/check-harness.test.mjs`. Test Git dùng repo tạm riêng, tự dọn sau chạy, không đụng index/config/commit repo thật. Không truyền một file TS riêng cho tsc thay tsconfig project. Chưa có React/E2E tự động; không ghi đã chạy các cổng chưa tồn tại. Các check không gọi DB/API; build ghi `dist/` bị ignore, không tự sửa mã nguồn. Lệnh cài đặt cần registry/cache và quyền phù hợp; lỗi môi trường không phải test pass.
+
+### Convention và cấu hình công cụ
+
+- Quy ước ngắn nằm tại [AGENTS.md](AGENTS.md); không tạo thêm bản sao nghiệp vụ hoặc một bộ convention khác theo từng màn.
+- [ESLint flat config](eslint.config.mjs): ESLint recommended + typescript-eslint recommended cho TS/TSX, hai quy tắc Hooks `rules-of-hooks`/`exhaustive-deps` cho nguồn React. Không bật toàn bộ chẩn đoán React Compiler trong đợt nền công cụ; chưa có typed lint nên typecheck vẫn là cổng riêng. Không đồng nghĩa lint kiểm chứng quyền/nghiệp vụ hoặc kiến trúc feature.
+- [Prettier config](.prettierrc.json): hai dấu cách mặc định, nháy kép, không chấm phẩy, trailing comma và độ rộng mục tiêu 100. Không thêm plugin sắp xếp class/import. [Phạm vi bỏ qua](.prettierignore): Markdown giữ định dạng tài liệu hiện hành, lockfile do pnpm quản lý, dependency/build bị loại; source/test TS/TSX, CSS, HTML và config được kiểm tra. ESLint-config-prettier tách trách nhiệm lint khỏi định dạng.
+- `pnpm check` chỉ đọc source; không thay bằng `lint --fix` hoặc `format`. Định dạng lần đầu có thể tạo diff nhiều file nhưng phải review riêng với sửa logic. Không tự stage hoặc chạy formatter cả repo/backend/export.
 
 `--staged` phát hiện nguồn chưa được theo dõi và nội dung làm việc mới hơn staging. Chế độ thường không ép stage mỗi lần sửa; cả hai chế độ đều không tự git add/commit. Staging chỉ chuẩn bị snapshot, chưa có nghĩa clone nhận được thay đổi. Tạo commit cần người dùng yêu cầu riêng; không đưa `node_modules`, `dist`, bí mật hoặc tài liệu ngoài phạm vi vào snapshot.
 
@@ -29,6 +39,7 @@ Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/m
 
 - Notion-inspired ở cách tổ chức workspace/bảng/side peek; không sao chép branding, thêm tính năng hay biến thành dashboard nhiều KPI.
 - Token màu/typography nguồn duy nhất là [src/index.css](src/index.css): canvas ấm, surface trắng, chữ/nút chính đậm, border nhẹ; không nhân bản hex sang từng màn hình. Inter có fallback hệ thống, chưa tải font ngoài.
+- Thang chữ đã duyệt 24/10: nhãn/tiêu đề bảng/tab đang chọn 14px/600, tiêu đề khu vực 16–18px/600; tên dữ liệu medium, ô nhập 14px/400, mô tả phụ giữ nhẹ. Tái dùng field-label/section-title/table-heading/tab thay vì làm đậm toàn trang; reset font thuộc base để không ghi đè style control.
 - Shell ổn định, breadcrumb/title/tabs rõ; bảng đủ mật độ để làm việc, tìm/lọc gần dữ liệu. Chi tiết task mở bên cạnh, không che toàn bộ workspace.
 - Phân công: việc đã chọn → ứng viên so sánh → bản nháp/tải dự kiến. Không tự chọn Top-1; thao tác nháp khác xác nhận. Thủ công không giả điểm/hạng.
 - Tái dùng Button/Dialog trong `src/components/ui/`, pattern tại `shared.tsx`; đây là primitives tùy biến theo shadcn/Radix, không phải mọi màn hình đã dùng bộ shadcn đầy đủ.
@@ -47,7 +58,8 @@ Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/m
 | Loại thay đổi | Cổng cần thực hiện |
 |---|---|
 | Chỉ tài liệu | `node scripts/check-harness.mjs` từ root, `git diff --check`; trước bàn giao thêm `--staged` và `git diff --cached --check`; không chạy build lại mỗi sửa câu chữ |
-| Copy/icon/layout | Typecheck + build; xem vùng bị đổi và luồng chính nếu ảnh hưởng tương tác |
+| Copy/icon/layout | Lint + format:check + typecheck + build; xem vùng bị đổi và luồng chính nếu ảnh hưởng tương tác |
+| Công cụ/convention FE | `pnpm check`, kiểm tra config có hiệu lực bằng ca lỗi có chủ đích không ghi source; review thay đổi cơ học riêng với sửa logic |
 | Form/validation | Các cổng trên + thử nhập đúng/lỗi quan trọng/hủy; test logic nếu có hàm độc lập |
 | Quyền/trạng thái/draft | `pnpm check` + test bất biến bị đổi + một hành trình UI chính/ca bị từ chối có liên quan |
 | API/auth/upload/backend | Đóng contract còn mở, đọc security/API; lập phạm vi riêng và check tích hợp/bảo mật, không dùng demo làm chứng cứ |
@@ -67,6 +79,15 @@ Bàn giao: rủi ro còn lại; bước kế tiếp được giao/chờ duyệt:
 Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt lớn cần kế hoạch riêng thì dẫn tới một file duy nhất và đóng/lưu lịch sử sau khi xong.
 
 ## Sổ công việc
+
+### Đợt 1 — convention và cổng chất lượng FE — 24/10/2026 — hoàn tất phạm vi
+
+- Mục tiêu/nguồn: phạm vi chuẩn hóa được người dùng duyệt; chỉ dẫn web/AGENTS.md, vòng harness và kiến trúc .claude/docs/architecture.md. Skill clean-code áp dụng tên rõ, trách nhiệm rõ và formatter thống nhất, không ép giới hạn số dòng/tham số máy móc.
+- Phạm vi: nhánh feature/frontend-quality-gates; ESLint/TypeScript/React Hooks, Prettier, devDependencies/lockfile, scripts và kiểm kê harness. Giữ mọi thay đổi có sẵn; chỉ sửa lỗi lint cần thiết và định dạng cơ học. Không đổi UI/nghiệp vụ/schema/API, tách module/state, thêm thư viện runtime hoặc commit/push.
+- Tiêu chí: lint và format:check chỉ đọc, format là lệnh sửa tường minh; pnpm check chạy cả hai cổng. Kiểm kê không bỏ sót config mới; typecheck/test/build vẫn qua. Review riêng thay đổi cơ học và sửa lint; không tắt hàng loạt quy tắc để che lỗi.
+- Đã sửa: convention ngắn trong AGENTS; ESLint recommended/TypeScript và hai quy tắc Hooks cơ bản, Prettier chạy riêng, cấu hình môi trường browser/Node. Pin bảy devDependencies mới và lockfile, không đổi dependency runtime. Thêm lint/format:check vào pnpm check; kiểm kê ba config mới và test hồi quy kiểm kê. Chuẩn hóa cơ học 32 file source/test/CSS/config; lint đã qua ngay lượt đầu nên không cần sửa logic hoặc thêm eslint-disable. Giữ định dạng Markdown và lockfile do pnpm quản lý.
+- Đã kiểm tra/review: pnpm check qua 7 test harness/85 nguồn, lint không warning, format:check, typecheck, 45 test model và build. Hash trước/sau xác nhận pnpm check không đổi source/config/lockfile/tài liệu web. Probe trong bộ nhớ xác nhận bắt any/biến thừa/Hook điều kiện/thiếu dependency và sai định dạng; không tạo file lỗi trong repo. So sánh 34 TS/TSX với bản chụp đầu đợt bằng transpile/chuẩn hóa: cùng logic và nội dung JSX (gộp các chuỗi children liền kề khi đối chiếu); CSS chỉ đổi định dạng. pnpm install --offline --frozen-lockfile qua với cache hiện tại; không chứng minh cài mới trên máy sạch. git diff --check qua.
+- Giới hạn/bàn giao: chưa typed lint, React Compiler diagnostics, kiểm tra kiến trúc import tự động hoặc React/E2E; lint không thay review nghiệp vụ. Không chạy browser lại vì chỉ công cụ/định dạng, không tuyên bố đã test UI lại. Build vẫn cảnh báo JS >500 kB (~520.1 kB/gzip153.8 kB), không tăng ngưỡng. Không backend/DB/export, stage/commit/push. Những file sửa logic từ các đợt trước vẫn giữ nguyên trong worktree; diff với HEAD gồm cả các đợt đó, không phải toàn bộ là đợt này. Bước sau chờ duyệt: tách trách nhiệm module/fixture/model và đưa WorkLogPanel về miền work-logs, chưa tự thực hiện.
 
 ### Sửa truy cập đóng góp lịch sử sau review — 24/10/2026 — hoàn tất phạm vi, chờ duyệt
 

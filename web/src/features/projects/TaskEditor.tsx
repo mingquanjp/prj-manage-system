@@ -34,10 +34,7 @@ function Field({
       </label>
       {children}
       {hint && (
-        <p
-          id={`${id}-hint`}
-          className="text-xs leading-5 text-muted-foreground"
-        >
+        <p id={`${id}-hint`} className="text-xs leading-5 text-muted-foreground">
           {hint}
         </p>
       )}
@@ -93,10 +90,7 @@ export function TaskEditor({
     "aria-invalid": Boolean(errors[key]),
     "aria-describedby": errors[key] ? `${key}-error` : undefined,
   })
-  const requirement = (
-    index: number,
-    value: Partial<TaskInput["requirements"][number]>,
-  ) =>
+  const requirement = (index: number, value: Partial<TaskInput["requirements"][number]>) =>
     update(
       "requirements",
       input.requirements.map((r, i) => (i === index ? { ...r, ...value } : r)),
@@ -116,32 +110,17 @@ export function TaskEditor({
         noValidate
         onSubmit={(event) => {
           event.preventDefault()
-          const nextErrors = validateTaskInput(
-            project,
-            groups,
-            tasks,
-            input,
-            task?.id,
-          )
+          const nextErrors = validateTaskInput(project, groups, tasks, input, task?.id)
           setErrors(nextErrors)
           setFailure("")
           if (Object.keys(nextErrors).length) {
             requestAnimationFrame(() =>
-              document
-                .querySelector<HTMLElement>('[aria-invalid="true"]')
-                ?.focus(),
+              document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
             )
             return
           }
           try {
-            const next = saveTask(
-              project,
-              actorId,
-              groups,
-              tasks,
-              input,
-              task?.id,
-            )
+            const next = saveTask(project, actorId, groups, tasks, input, task?.id)
             onSave(next, task?.id ?? next[next.length - 1].id)
           } catch (error) {
             setFailure((error as Error).message)
@@ -200,11 +179,7 @@ export function TaskEditor({
                   ))}
               </select>
             </Field>
-            <Field
-              id="estimate"
-              label="Ước tính (giờ) *"
-              error={errors.estimate}
-            >
+            <Field id="estimate" label="Ước tính (giờ) *" error={errors.estimate}>
               <input
                 id="estimate"
                 type="number"
@@ -220,9 +195,7 @@ export function TaskEditor({
                 id="priority"
                 className="field w-full"
                 value={input.priority}
-                onChange={(e) =>
-                  update("priority", e.target.value as TaskInput["priority"])
-                }
+                onChange={(e) => update("priority", e.target.value as TaskInput["priority"])}
               >
                 {["Thấp", "Trung bình", "Cao", "Khẩn cấp"].map((p) => (
                   <option key={p}>{p}</option>
@@ -230,11 +203,7 @@ export function TaskEditor({
               </select>
             </Field>
           </div>
-          <Field
-            id="description"
-            label="Mô tả và đầu ra mong đợi *"
-            error={errors.description}
-          >
+          <Field id="description" label="Mô tả và đầu ra mong đợi *" error={errors.description}>
             <textarea
               id="description"
               className="field min-h-28 w-full resize-y"
@@ -244,11 +213,7 @@ export function TaskEditor({
               {...a11y("description")}
             />
           </Field>
-          <Field
-            id="criteria"
-            label="Tiêu chí nghiệm thu *"
-            error={errors.criteria}
-          >
+          <Field id="criteria" label="Tiêu chí nghiệm thu *" error={errors.criteria}>
             <textarea
               id="criteria"
               className="field min-h-24 w-full resize-y"
@@ -264,19 +229,16 @@ export function TaskEditor({
           >
             <summary className="field-label">
               Ngày kế hoạch{" "}
-              <span className="ml-1 font-normal text-muted-foreground">
-                · Không bắt buộc
-              </span>
+              <span className="ml-1 font-normal text-muted-foreground">· Không bắt buộc</span>
             </summary>
             <p className="mt-2 text-xs text-muted-foreground">
               Trong khoảng {project.start.split("-").reverse().join("/")} –{" "}
-              {project.end.split("-").reverse().join("/")}. Nhập đủ hai ngày
-              hoặc để trống.
+              {project.end.split("-").reverse().join("/")}. Nhập đủ hai ngày hoặc để trống.
             </p>
             {task?.start && task.end && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Giữ cặp ngày đã lưu. Điều chỉnh kế hoạch có lý do và lịch sử sẽ
-                được dựng ở đợt riêng.
+                Giữ cặp ngày đã lưu. Điều chỉnh kế hoạch có lý do và lịch sử sẽ được dựng ở đợt
+                riêng.
               </p>
             )}
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -316,10 +278,7 @@ export function TaskEditor({
             )}
           </details>
         </section>
-        <section
-          className="border-t border-border pt-5"
-          aria-labelledby="requirements-heading"
-        >
+        <section className="border-t border-border pt-5" aria-labelledby="requirements-heading">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
             <h3 id="requirements-heading" className="section-title">
               Yêu cầu kỹ năng
@@ -338,12 +297,9 @@ export function TaskEditor({
               Thêm kỹ năng
             </Button>
           </div>
-          <p
-            className="mb-4 text-xs leading-5 text-muted-foreground"
-            id="weight-note"
-          >
-            Trọng số do PTCM đặt. Giá trị hiện tại chỉ minh họa, chưa chốt miền
-            số và chưa dùng để tính điểm gợi ý.
+          <p className="mb-4 text-xs leading-5 text-muted-foreground" id="weight-note">
+            Trọng số do PTCM đặt. Giá trị hiện tại chỉ minh họa, chưa chốt miền số và chưa dùng để
+            tính điểm gợi ý.
           </p>
           {errors.requirements && (
             <p role="alert" className="mb-3 text-sm text-destructive">
@@ -353,22 +309,14 @@ export function TaskEditor({
           <div className="space-y-3">
             {input.requirements.map((r, i) => (
               <fieldset key={i} className="rounded-md border border-border p-3">
-                <legend className="field-label px-1">
-                  Kỹ năng {i + 1}
-                </legend>
+                <legend className="field-label px-1">Kỹ năng {i + 1}</legend>
                 <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_100px_40px]">
-                  <Field
-                    id={`skill-${i}`}
-                    label="Kỹ năng *"
-                    error={errors[`skill-${i}`]}
-                  >
+                  <Field id={`skill-${i}`} label="Kỹ năng *" error={errors[`skill-${i}`]}>
                     <select
                       id={`skill-${i}`}
                       className="field w-full"
                       value={r.skill}
-                      onChange={(e) =>
-                        requirement(i, { skill: e.target.value })
-                      }
+                      onChange={(e) => requirement(i, { skill: e.target.value })}
                       {...a11y(`skill-${i}`)}
                     >
                       <option value="">Chọn kỹ năng</option>
@@ -384,18 +332,12 @@ export function TaskEditor({
                       ))}
                     </select>
                   </Field>
-                  <Field
-                    id={`level-${i}`}
-                    label="Mức yêu cầu"
-                    error={errors[`level-${i}`]}
-                  >
+                  <Field id={`level-${i}`} label="Mức yêu cầu" error={errors[`level-${i}`]}>
                     <select
                       id={`level-${i}`}
                       className="field w-full"
                       value={r.level}
-                      onChange={(e) =>
-                        requirement(i, { level: Number(e.target.value) })
-                      }
+                      onChange={(e) => requirement(i, { level: Number(e.target.value) })}
                       {...a11y(`level-${i}`)}
                     >
                       {levels.slice(1).map((level, index) => (
@@ -405,20 +347,14 @@ export function TaskEditor({
                       ))}
                     </select>
                   </Field>
-                  <Field
-                    id={`weight-${i}`}
-                    label="Trọng số"
-                    error={errors[`weight-${i}`]}
-                  >
+                  <Field id={`weight-${i}`} label="Trọng số" error={errors[`weight-${i}`]}>
                     <input
                       id={`weight-${i}`}
                       type="number"
                       step="any"
                       className="field w-full"
                       value={Number.isNaN(r.weight) ? "" : r.weight}
-                      onChange={(e) =>
-                        requirement(i, { weight: e.target.valueAsNumber })
-                      }
+                      onChange={(e) => requirement(i, { weight: e.target.valueAsNumber })}
                       {...a11y(`weight-${i}`)}
                       aria-describedby={`weight-note${errors[`weight-${i}`] ? ` weight-${i}-error` : ""}`}
                     />
@@ -443,9 +379,7 @@ export function TaskEditor({
                   <input
                     type="checkbox"
                     checked={r.mandatory}
-                    onChange={(e) =>
-                      requirement(i, { mandatory: e.target.checked })
-                    }
+                    onChange={(e) => requirement(i, { mandatory: e.target.checked })}
                   />
                   Kỹ năng bắt buộc
                 </label>
@@ -459,16 +393,12 @@ export function TaskEditor({
           </p>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-          <p className="text-xs text-muted-foreground">
-            Đặc tả khóa sau lần phân công đầu tiên.
-          </p>
+          <p className="text-xs text-muted-foreground">Đặc tả khóa sau lần phân công đầu tiên.</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit">
-              {task ? "Lưu thay đổi" : "Tạo công việc"}
-            </Button>
+            <Button type="submit">{task ? "Lưu thay đổi" : "Tạo công việc"}</Button>
           </div>
         </div>
       </form>

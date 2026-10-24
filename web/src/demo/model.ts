@@ -92,9 +92,7 @@ export const demoUsers: { personId: string; systemRoles: SystemRole[] }[] = [
   { personId: "ha", systemRoles: ["DIRECTOR"] },
 ]
 export const isDirector = (actorId: string) =>
-  demoUsers.some(
-    (u) => u.personId === actorId && u.systemRoles.includes("DIRECTOR"),
-  )
+  demoUsers.some((u) => u.personId === actorId && u.systemRoles.includes("DIRECTOR"))
 export const canViewProject = (project: Project, actorId: string) =>
   isDirector(actorId) || project.pmId === actorId || project.ptcmId === actorId
 
@@ -273,8 +271,7 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     requirements: backend,
     description:
       "Xây dựng API thêm, sửa và tra cứu sản phẩm. Đầu ra gồm API, kiểm tra dữ liệu đầu vào và tài liệu endpoint.",
-    criteria:
-      "Không trùng mã sản phẩm; trả lỗi rõ ràng; có kiểm thử các thao tác chính.",
+    criteria: "Không trùng mã sản phẩm; trả lỗi rõ ràng; có kiểm thử các thao tác chính.",
   },
   {
     id: "t2",
@@ -285,10 +282,8 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     estimate: 32,
     status: "PENDING_ASSIGNMENT",
     requirements: backend,
-    description:
-      "Xây dựng API phiếu nhập và xuất kho, cập nhật số tồn trong cùng giao dịch.",
-    criteria:
-      "Không xuất vượt tồn; phiếu và số tồn nhất quán khi thành công hoặc thất bại.",
+    description: "Xây dựng API phiếu nhập và xuất kho, cập nhật số tồn trong cùng giao dịch.",
+    criteria: "Không xuất vượt tồn; phiếu và số tồn nhất quán khi thành công hoặc thất bại.",
   },
   {
     id: "t3",
@@ -301,8 +296,7 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     requirements: frontend,
     description:
       "Xây dựng giao diện danh sách tồn kho, lọc theo sản phẩm và kho; có trạng thái rỗng và lỗi.",
-    criteria:
-      "Bộ lọc hoạt động; số liệu khớp nguồn dữ liệu; sử dụng được bằng bàn phím.",
+    criteria: "Bộ lọc hoạt động; số liệu khớp nguồn dữ liệu; sử dụng được bằng bàn phím.",
   },
   {
     id: "t4",
@@ -315,8 +309,7 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     requirements: frontend,
     assigneeId: "binh",
     description: "Xây dựng form nhập kho và bảng các dòng sản phẩm.",
-    criteria:
-      "Kiểm tra số lượng dương; tổng các dòng chính xác; hủy không lưu dữ liệu.",
+    criteria: "Kiểm tra số lượng dương; tổng các dòng chính xác; hủy không lưu dữ liệu.",
   },
   {
     id: "t5",
@@ -328,8 +321,7 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     status: "DONE",
     requirements: backend,
     assigneeId: "an",
-    description:
-      "Thiết kế cấu trúc lưu trữ sản phẩm và kho; đầu ra gồm sơ đồ và mô tả ràng buộc.",
+    description: "Thiết kế cấu trúc lưu trữ sản phẩm và kho; đầu ra gồm sơ đồ và mô tả ràng buộc.",
     criteria: "Quan hệ rõ ràng, có khóa duy nhất và kiểm tra dữ liệu bắt buộc.",
   },
   {
@@ -342,10 +334,8 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     status: "ASSIGNED",
     requirements: backend,
     assigneeId: "dung",
-    description:
-      "Xây dựng API báo cáo nhập, xuất và tồn theo khoảng thời gian.",
-    criteria:
-      "Tồn đầu + nhập − xuất = tồn cuối; hỗ trợ trường hợp không phát sinh.",
+    description: "Xây dựng API báo cáo nhập, xuất và tồn theo khoảng thời gian.",
+    criteria: "Tồn đầu + nhập − xuất = tồn cuối; hỗ trợ trường hợp không phát sinh.",
   },
   {
     id: "t7",
@@ -358,8 +348,7 @@ const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
     requirements: frontend,
     assigneeId: "cuong",
     description: "Bổ sung tìm kiếm và lọc cho danh sách sản phẩm.",
-    criteria:
-      "Giữ điều kiện khi mở và đóng chi tiết; hiển thị rõ kết quả rỗng.",
+    criteria: "Giữ điều kiện khi mở và đóng chi tiết; hiển thị rõ kết quả rỗng.",
   },
   {
     id: "p1",
@@ -391,10 +380,7 @@ export const initialTasks: Task[] = taskFixtures.map((task) => ({
   ...task,
   groupId: `${task.projectId}-${task.group.toLowerCase()}`,
   priority: "Trung bình",
-  firstAssignedAt:
-    task.status !== "PENDING_ASSIGNMENT"
-      ? "2026-10-16T09:00:00+07:00"
-      : undefined,
+  firstAssignedAt: task.status !== "PENDING_ASSIGNMENT" ? "2026-10-16T09:00:00+07:00" : undefined,
   currentAssignment: task.assigneeId
     ? {
         id: `assignment-${task.id}-initial`,
@@ -435,10 +421,7 @@ export function validateTaskInput(
     errors.code = "Nhập mã công việc, tối đa 30 ký tự."
   else if (
     tasks.some(
-      (t) =>
-        t.projectId === project.id &&
-        t.id !== editingId &&
-        t.code === input.code.trim(),
+      (t) => t.projectId === project.id && t.id !== editingId && t.code === input.code.trim(),
     )
   )
     errors.code = "Mã công việc đã được dùng trong dự án."
@@ -446,8 +429,7 @@ export function validateTaskInput(
     errors.name = "Nhập tên công việc, tối đa 150 ký tự."
   if (!groups.some((g) => g.id === input.groupId && g.projectId === project.id))
     errors.groupId = "Chọn nhóm thuộc dự án này."
-  if (!input.description.trim())
-    errors.description = "Mô tả phạm vi và đầu ra mong đợi."
+  if (!input.description.trim()) errors.description = "Mô tả phạm vi và đầu ra mong đợi."
   if (!input.criteria.trim()) errors.criteria = "Bổ sung tiêu chí nghiệm thu."
   if (!Number.isFinite(input.estimate) || input.estimate <= 0)
     errors.estimate = "Ước tính phải là số giờ lớn hơn 0."
@@ -467,12 +449,9 @@ export function validateTaskInput(
       input.start < project.start ||
       input.end > project.end
     )
-      errors.dates =
-        "Ngày công việc phải đúng thứ tự và nằm trong kế hoạch dự án."
+      errors.dates = "Ngày công việc phải đúng thứ tự và nằm trong kế hoạch dự án."
   }
-  const previous = tasks.find(
-    (t) => t.id === editingId && t.projectId === project.id,
-  )
+  const previous = tasks.find((t) => t.id === editingId && t.projectId === project.id)
   // Gia hạn có lý do/lịch sử là luồng riêng chưa dựng; không ghi đè cặp ngày đã lưu.
   if (
     previous?.start &&
@@ -482,20 +461,15 @@ export function validateTaskInput(
     errors.dates =
       "Giữ nguyên kế hoạch đã lưu. Luồng điều chỉnh ngày có lý do/lịch sử chưa dựng trong đợt này."
   }
-  if (!input.requirements.length)
-    errors.requirements = "Thêm ít nhất một yêu cầu kỹ năng."
+  if (!input.requirements.length) errors.requirements = "Thêm ít nhất một yêu cầu kỹ năng."
   input.requirements.forEach((r, i) => {
-    if (!skillCatalog.includes(r.skill))
-      errors[`skill-${i}`] = "Chọn kỹ năng trong danh mục."
-    else if (
-      input.requirements.some((other, j) => j !== i && other.skill === r.skill)
-    )
+    if (!skillCatalog.includes(r.skill)) errors[`skill-${i}`] = "Chọn kỹ năng trong danh mục."
+    else if (input.requirements.some((other, j) => j !== i && other.skill === r.skill))
       errors[`skill-${i}`] = "Kỹ năng này đã có trong công việc."
     if (!Number.isInteger(r.level) || r.level < 1 || r.level > 4)
       errors[`level-${i}`] = "Chọn một trong bốn mức."
     // Chỉ kiểm tra dữ liệu số hữu hạn cho demo, chưa chốt miền trọng số nghiệp vụ.
-    if (!Number.isFinite(r.weight))
-      errors[`weight-${i}`] = "Nhập giá trị số minh họa."
+    if (!Number.isFinite(r.weight)) errors[`weight-${i}`] = "Nhập giá trị số minh họa."
   })
   return errors
 }
@@ -509,19 +483,14 @@ export function saveTask(
   editingId?: string,
 ): Task[] {
   if (!canAssign(project, actorId))
-    throw new Error(
-      "Chỉ PTCM của dự án đang lập kế hoạch/triển khai được sửa cấu trúc.",
-    )
+    throw new Error("Chỉ PTCM của dự án đang lập kế hoạch/triển khai được sửa cấu trúc.")
   const existing = editingId
     ? tasks.find((t) => t.id === editingId && t.projectId === project.id)
     : undefined
   if (editingId && (!existing || isTaskFrozen(existing)))
-    throw new Error(
-      "Công việc đã từng phân công không được sửa lại đặc tả bằng biểu mẫu này.",
-    )
+    throw new Error("Công việc đã từng phân công không được sửa lại đặc tả bằng biểu mẫu này.")
   const errors = validateTaskInput(project, groups, tasks, input, editingId)
-  if (Object.keys(errors).length)
-    throw new Error(Object.values(errors).join(" "))
+  if (Object.keys(errors).length) throw new Error(Object.values(errors).join(" "))
   const group = groups.find((g) => g.id === input.groupId)!
   const task: Task = {
     ...existing,
@@ -537,9 +506,7 @@ export function saveTask(
     end: input.end || undefined,
     status: existing?.status ?? "PENDING_ASSIGNMENT",
   }
-  return existing
-    ? tasks.map((t) => (t.id === task.id ? task : t))
-    : [...tasks, task]
+  return existing ? tasks.map((t) => (t.id === task.id ? task : t)) : [...tasks, task]
 }
 
 export function saveGroup(
@@ -551,23 +518,12 @@ export function saveGroup(
   editingId?: string,
 ) {
   if (!canAssign(project, actorId))
-    throw new Error(
-      "Chỉ PTCM của dự án đang lập kế hoạch/triển khai được sửa nhóm.",
-    )
+    throw new Error("Chỉ PTCM của dự án đang lập kế hoạch/triển khai được sửa nhóm.")
   const name = input.name.trim()
-  if (!name || name.length > 150)
-    throw new Error("Nhập tên nhóm, tối đa 150 ký tự.")
-  if (
-    groups.some(
-      (g) =>
-        g.projectId === project.id && g.id !== editingId && g.name === name,
-    )
-  )
+  if (!name || name.length > 150) throw new Error("Nhập tên nhóm, tối đa 150 ký tự.")
+  if (groups.some((g) => g.projectId === project.id && g.id !== editingId && g.name === name))
     throw new Error("Tên nhóm đã có trong dự án.")
-  if (
-    editingId &&
-    !groups.some((g) => g.id === editingId && g.projectId === project.id)
-  )
+  if (editingId && !groups.some((g) => g.id === editingId && g.projectId === project.id))
     throw new Error("Không tìm thấy nhóm trong dự án.")
   const group = {
     id: editingId ?? crypto.randomUUID(),
@@ -576,13 +532,9 @@ export function saveGroup(
     description: input.description.trim(),
   }
   return {
-    groups: editingId
-      ? groups.map((g) => (g.id === editingId ? group : g))
-      : [...groups, group],
+    groups: editingId ? groups.map((g) => (g.id === editingId ? group : g)) : [...groups, group],
     tasks: tasks.map((t) =>
-      t.projectId === project.id && t.groupId === editingId
-        ? { ...t, group: name }
-        : t,
+      t.projectId === project.id && t.groupId === editingId ? { ...t, group: name } : t,
     ),
   }
 }
@@ -594,25 +546,15 @@ export type ProjectInput = Pick<
   Project,
   "code" | "name" | "pmId" | "start" | "end" | "priority" | "description"
 >
-export const priorities: Project["priority"][] = [
-  "Thấp",
-  "Trung bình",
-  "Cao",
-  "Khẩn cấp",
-]
-export function validateProjectInput(
-  all: Project[],
-  input: ProjectInput,
-): FormErrors {
+export const priorities: Project["priority"][] = ["Thấp", "Trung bình", "Cao", "Khẩn cấp"]
+export function validateProjectInput(all: Project[], input: ProjectInput): FormErrors {
   const errors: FormErrors = {}
   if (!input.code.trim() || input.code.trim().length > 30)
     errors.code = "Nhập mã dự án, tối đa 30 ký tự."
-  else if (all.some((p) => p.code === input.code.trim()))
-    errors.code = "Mã dự án đã tồn tại."
+  else if (all.some((p) => p.code === input.code.trim())) errors.code = "Mã dự án đã tồn tại."
   if (!input.name.trim() || input.name.trim().length > 150)
     errors.name = "Nhập tên dự án, tối đa 150 ký tự."
-  if (!getPerson(input.pmId)?.active)
-    errors.pmId = "Chọn nhân viên đang hoạt động làm PM."
+  if (!getPerson(input.pmId)?.active) errors.pmId = "Chọn nhân viên đang hoạt động làm PM."
   const validDate = (value: string) =>
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) &&
@@ -621,15 +563,10 @@ export function validateProjectInput(
   if (!validDate(input.end)) errors.end = "Nhập hạn dự kiến hợp lệ."
   else if (!errors.start && input.end < input.start)
     errors.end = "Hạn dự kiến không trước ngày bắt đầu."
-  if (!priorities.includes(input.priority))
-    errors.priority = "Chọn mức ưu tiên."
+  if (!priorities.includes(input.priority)) errors.priority = "Chọn mức ưu tiên."
   return errors
 }
-export function createProject(
-  all: Project[],
-  actorId: string,
-  input: ProjectInput,
-): Project[] {
+export function createProject(all: Project[], actorId: string, input: ProjectInput): Project[] {
   if (!isDirector(actorId) || !getPerson(actorId)?.active)
     throw new Error("Chỉ Giám đốc được tạo dự án.")
   const errors = validateProjectInput(all, input)
@@ -658,9 +595,7 @@ export function ptcmBlockReason(
       (t) =>
         t.projectId === project.id &&
         t.assigneeId === personId &&
-        ["ASSIGNED", "IN_PROGRESS", "PAUSED", "PENDING_REVIEW"].includes(
-          t.status,
-        ),
+        ["ASSIGNED", "IN_PROGRESS", "PAUSED", "PENDING_REVIEW"].includes(t.status),
     )
   )
     return "Còn công việc đang được giao trong dự án. Cần xử lý phân công trước khi chỉ định PTCM."
@@ -691,22 +626,15 @@ export function appointPtcm(
     !getPerson(actorId)?.active ||
     !["PLANNING", "IN_PROGRESS"].includes(project.status)
   )
-    throw new Error(
-      "Chỉ PM của dự án đang lập kế hoạch hoặc triển khai được chỉ định PTCM.",
-    )
+    throw new Error("Chỉ PM của dự án đang lập kế hoạch hoặc triển khai được chỉ định PTCM.")
   const reason = ptcmBlockReason(project, personId, tasks, conflicts)
   if (reason) throw new Error(reason)
   return { ...project, ptcmId: personId }
 }
-export function startProject(
-  project: Project,
-  actorId: string,
-  tasks: Task[],
-): Project {
+export function startProject(project: Project, actorId: string, tasks: Task[]): Project {
   if (project.pmId !== actorId || !getPerson(actorId)?.active)
     throw new Error("Chỉ PM của dự án được bắt đầu triển khai.")
-  if (project.status !== "PLANNING")
-    throw new Error("Dự án không còn ở trạng thái lập kế hoạch.")
+  if (project.status !== "PLANNING") throw new Error("Dự án không còn ở trạng thái lập kế hoạch.")
   if (!tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED"))
     throw new Error("Cần ít nhất một công việc đã phân công để bắt đầu dự án.")
   return {
@@ -724,20 +652,13 @@ export type ProjectEvent = {
   after: Project
 }
 export function canAssign(project: Project, actorId: string) {
-  return (
-    actorId === project.ptcmId &&
-    ["PLANNING", "IN_PROGRESS"].includes(project.status)
-  )
+  return actorId === project.ptcmId && ["PLANNING", "IN_PROGRESS"].includes(project.status)
 }
 export function isEligible(project: Project, person: Person) {
   return person.active && project.ptcmId !== person.id
 }
 
-export function personalTasks(
-  projects: Project[],
-  tasks: Task[],
-  actorId: string,
-) {
+export function personalTasks(projects: Project[], tasks: Task[], actorId: string) {
   const person = getPerson(actorId)
   if (!person?.active) return []
   return tasks.filter((task) => {
@@ -751,11 +672,7 @@ export function personalTasks(
   })
 }
 
-export function executionBlockReason(
-  project: Project,
-  task: Task,
-  actorId: string,
-) {
+export function executionBlockReason(project: Project, task: Task, actorId: string) {
   if (
     task.projectId !== project.id ||
     task.assigneeId !== actorId ||
@@ -795,8 +712,7 @@ export function transitionPersonalTask(
   }
   if (task.status !== from[action])
     throw new Error("Thao tác không phù hợp với trạng thái công việc.")
-  if (action === "pause" && !reason.trim())
-    throw new Error("Vui lòng nhập lý do tạm dừng.")
+  if (action === "pause" && !reason.trim()) throw new Error("Vui lòng nhập lý do tạm dừng.")
   const to = action === "pause" ? "PAUSED" : "IN_PROGRESS"
   return tasks.map((t) =>
     t.id === taskId
@@ -818,9 +734,7 @@ export function transitionPersonalTask(
   )
 }
 export function skillGaps(task: Task, person: Person) {
-  return task.requirements.filter(
-    (r) => r.mandatory && (person.skills[r.skill] ?? 0) < r.level,
-  )
+  return task.requirements.filter((r) => r.mandatory && (person.skills[r.skill] ?? 0) < r.level)
 }
 export function loadFor(personId: string, tasks: Task[]) {
   return (
@@ -829,9 +743,7 @@ export function loadFor(personId: string, tasks: Task[]) {
       .filter(
         (t) =>
           t.assigneeId === personId &&
-          ["ASSIGNED", "IN_PROGRESS", "PAUSED", "PENDING_REVIEW"].includes(
-            t.status,
-          ),
+          ["ASSIGNED", "IN_PROGRESS", "PAUSED", "PENDING_REVIEW"].includes(t.status),
       )
       .reduce((sum, t) => sum + t.estimate, 0)
   )
@@ -839,19 +751,12 @@ export function loadFor(personId: string, tasks: Task[]) {
 export function addedLoad(personId: string, draft: Draft, tasks: Task[]) {
   return Object.entries(draft)
     .filter(([, choice]) => choice.personId === personId)
-    .reduce(
-      (sum, [id]) => sum + (tasks.find((t) => t.id === id)?.estimate ?? 0),
-      0,
-    )
+    .reduce((sum, [id]) => sum + (tasks.find((t) => t.id === id)?.estimate ?? 0), 0)
 }
 export function progress(tasks: Task[]) {
   const effective = tasks.filter((t) => t.status !== "CANCELLED")
   return effective.length
-    ? Math.round(
-        (effective.filter((t) => t.status === "DONE").length /
-          effective.length) *
-          100,
-      )
+    ? Math.round((effective.filter((t) => t.status === "DONE").length / effective.length) * 100)
     : null
 }
 
@@ -884,8 +789,7 @@ export function validateDraft(
   tasks: Task[],
   draft: Draft,
 ): string[] {
-  if (!canAssign(project, actorId))
-    return ["Bạn không có trách nhiệm phân công tại dự án này."]
+  if (!canAssign(project, actorId)) return ["Bạn không có trách nhiệm phân công tại dự án này."]
   if (!Object.keys(draft).length) return ["Chưa có lựa chọn trong bản nháp."]
   const errors: string[] = []
   for (const [id, choice] of Object.entries(draft)) {
