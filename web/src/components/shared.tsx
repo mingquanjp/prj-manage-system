@@ -49,10 +49,12 @@ export function StatusBadge({
   )
 }
 export function SearchInput({
+  id,
   value,
   onChange,
   placeholder,
 }: {
+  id?: string
   value: string
   onChange: (value: string) => void
   placeholder: string
@@ -61,6 +63,7 @@ export function SearchInput({
     <div className="relative min-w-0">
       <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
       <input
+        id={id}
         type="search"
         aria-label={placeholder}
         className="field w-full pl-9"
@@ -80,7 +83,7 @@ export function EmptyState({
 }) {
   return (
     <div className="py-16 text-center">
-      <p className="font-medium">{title}</p>
+      <p className="section-title">{title}</p>
       <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
     </div>
   )

@@ -47,7 +47,7 @@ export function TaskReviewPanel({
   )
   return (
     <section className="mt-4" aria-label="Kết quả và nghiệm thu công việc">
-      <h3 className="text-sm font-semibold">Kết quả và nghiệm thu</h3>
+      <h3 className="section-title">Kết quả và nghiệm thu</h3>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
         Đối chiếu đầu ra với tiêu chí đã chốt. Thiếu nhật ký không tự chặn
         nghiệm thu; không yêu cầu sửa ngoài phạm vi công việc.
@@ -129,9 +129,11 @@ export function TaskReviewPanel({
             {task.code} · {task.name}
           </p>
           <label className="block text-sm">
-            {decision?.result === "REJECTED"
-              ? "Lý do yêu cầu chỉnh sửa *"
-              : "Nhận xét (tùy chọn)"}
+            <span className="field-label">
+              {decision?.result === "REJECTED"
+                ? "Lý do yêu cầu chỉnh sửa *"
+                : "Nhận xét (tùy chọn)"}
+            </span>
             <textarea
               className="field mt-2 min-h-28 w-full"
               value={comment}

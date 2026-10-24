@@ -41,7 +41,7 @@ export function ProjectList({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="eyebrow">KHÔNG GIAN LÀM VIỆC</p>
-          <h1 className="mt-2 text-2xl font-semibold">
+          <h1 className="mt-2 text-2xl font-semibold text-balance">
             {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

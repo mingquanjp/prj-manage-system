@@ -25,6 +25,7 @@ import { PersonalKanban } from "./PersonalKanban"
 import { WorkLogPanel } from "./WorkLogPanel"
 import { ResultPanel } from "./ResultPanel"
 import type { WorkState } from "@/demo/effort"
+import { ContributionHistory } from "@/features/work-logs/ContributionHistory"
 
 export function PersonalWork({
   projects,
@@ -449,7 +450,7 @@ export function PersonalWork({
                 <TaskSpecification key={detail.id} task={detail} />
                 {!!detail.executionHistory?.length && (
                   <details className="mt-5 border-t border-border pt-4 text-sm">
-                    <summary className="cursor-pointer font-medium">
+                    <summary className="field-label cursor-pointer">
                       Cập nhật trong phiên mô phỏng
                     </summary>
                     <ul className="mt-3 space-y-3">
@@ -477,6 +478,7 @@ export function PersonalWork({
           </aside>
         )}
       </div>
+      <ContributionHistory projects={projects} tasks={tasks} work={work} actorId={actorId} onChange={onWorkChange} />
       <Dialog
         open={pausing && !!detail}
         onOpenChange={(open) => {
@@ -492,7 +494,7 @@ export function PersonalWork({
             perform("pause")
           }}
         >
-          <label htmlFor="pause-reason" className="text-sm font-medium">
+          <label htmlFor="pause-reason" className="field-label">
             Lý do tạm dừng *
           </label>
           <textarea

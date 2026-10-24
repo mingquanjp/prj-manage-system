@@ -56,7 +56,7 @@ export function ProjectStructure({
     <section className="min-w-0" aria-label="Cấu trúc dự án">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Nhóm công việc</h2>
+          <h2 className="text-lg font-semibold text-balance">Nhóm công việc</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Tổ chức phạm vi theo module hoặc gói công việc. Nhóm có thể chưa có
             công việc.
@@ -249,7 +249,7 @@ export function ProjectStructure({
             <div>
               <label
                 htmlFor="group-name"
-                className="mb-2 block text-sm font-medium"
+                className="field-label mb-2 block"
               >
                 Tên nhóm *
               </label>
@@ -266,7 +266,7 @@ export function ProjectStructure({
             <div>
               <label
                 htmlFor="group-description"
-                className="mb-2 block text-sm font-medium"
+                className="field-label mb-2 block"
               >
                 Mô tả{" "}
                 <span className="font-normal text-muted-foreground">

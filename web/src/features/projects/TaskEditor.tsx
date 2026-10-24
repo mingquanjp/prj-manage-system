@@ -29,7 +29,7 @@ function Field({
 }) {
   return (
     <div className="min-w-0 space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium">
+      <label htmlFor={id} className="field-label block">
         {label}
       </label>
       {children}
@@ -262,7 +262,7 @@ export function TaskEditor({
             className="rounded-md border border-border px-4 py-3"
             open={Boolean(input.start || input.end || errors.dates)}
           >
-            <summary className="text-sm font-medium">
+            <summary className="field-label">
               Ngày kế hoạch{" "}
               <span className="ml-1 font-normal text-muted-foreground">
                 · Không bắt buộc
@@ -321,7 +321,7 @@ export function TaskEditor({
           aria-labelledby="requirements-heading"
         >
           <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-            <h3 id="requirements-heading" className="font-semibold">
+            <h3 id="requirements-heading" className="section-title">
               Yêu cầu kỹ năng
             </h3>
             <Button
@@ -353,7 +353,7 @@ export function TaskEditor({
           <div className="space-y-3">
             {input.requirements.map((r, i) => (
               <fieldset key={i} className="rounded-md border border-border p-3">
-                <legend className="px-1 text-xs text-muted-foreground">
+                <legend className="field-label px-1">
                   Kỹ năng {i + 1}
                 </legend>
                 <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_100px_40px]">

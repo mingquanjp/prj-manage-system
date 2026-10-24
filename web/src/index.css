@@ -19,7 +19,9 @@
 
 :root { --background: #f7f6f3; --foreground: #26231f; --primary: #26231f; font-family: var(--font-sans); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: light; }
 body { margin: 0; }
-button, input, select, textarea { font: inherit; }
+@layer base {
+  button, input, select, textarea { font: inherit; }
+}
 button, summary, select { cursor: pointer; }
 button:disabled, input:disabled { cursor: not-allowed; }
 input[type="checkbox"] { width: 16px; height: 16px; accent-color: #26231f; }
@@ -28,25 +30,26 @@ svg { flex-shrink: 0; }
 ::selection { background: #e5e1db; }
 
 @layer components {
-  .field { @apply h-10 rounded-md border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground; }
+  .field { @apply h-10 rounded-md border border-border bg-white px-3 text-sm font-normal text-foreground placeholder:text-muted-foreground; }
+  select.field { @apply pr-8; }
   textarea.field { @apply h-auto py-2.5; }
   .eyebrow { @apply text-xs font-medium tracking-wider text-muted-foreground; }
-  .table-heading { @apply bg-background/60 text-xs font-medium text-muted-foreground; }
-  .table-heading th { @apply font-medium; }
+  .table-heading { @apply bg-background/60 text-sm font-semibold text-foreground; }
+  .table-heading th { @apply font-semibold; }
   .filter-chip { @apply inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground; }
-  .filter-active { @apply bg-accent font-medium text-foreground; }
+  .filter-active { @apply bg-accent font-semibold text-foreground; }
   .tab-button { @apply relative flex h-12 shrink-0 items-center gap-2 px-3 text-sm text-muted-foreground; }
-  .tab-selected { @apply font-medium text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary; }
+  .tab-selected { @apply font-semibold text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary; }
   .count { @apply inline-flex min-w-5 items-center justify-center rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums; }
 }
 
-/* Chỉ áp dụng tại các workspace đã duyệt; không đổi chữ phụ toàn app. */
+/* Thang chữ dùng chung; giữ mô tả phụ nhẹ và giá trị nhập regular. */
 .field-label { @apply text-sm font-semibold text-foreground; }
 .section-title { @apply text-base font-semibold text-foreground text-balance; }
 .table-heading-strong, .table-heading-strong th { @apply text-sm font-semibold text-foreground; }
 .workspace-tab { font-size: 0.875rem; font-weight: 400; }
 .workspace-tab[aria-pressed="true"] { font-weight: 600; }
-/* Tách giá trị khỏi nhãn bao ngoài và reset font: inherit của trình duyệt. */
+/* Giữ tương thích các workspace đã duyệt; .field dùng cùng cỡ/độ đậm. */
 .workspace-field { font-size: 0.875rem; font-weight: 400; }
 select.workspace-field { padding-right: 2rem; }
 

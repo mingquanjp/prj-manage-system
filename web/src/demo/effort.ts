@@ -30,6 +30,39 @@ export type LogEdit = {
   actorId: string
   at: string
   reason: string
+  requestId?: string
+}
+// Projection lượt giao của demo để giữ quyền đóng góp cũ, không thêm bảng DB.
+export type Contribution = {
+  taskId: string
+  projectId: string
+  taskCode: string
+  taskName: string
+  assignment: NonNullable<Task["currentAssignment"]>
+}
+export type LogChangeRequest = {
+  id: string
+  assignmentId: string
+  operation: "ADD" | "UPDATE" | "DELETE"
+  targetLogId?: string
+  before?: WorkLog
+  proposed?: LogInput
+  requestedBy: string
+  requestedAt: string
+  reason: string
+  status: "PENDING" | "APPROVED" | "REJECTED" | "WITHDRAWN"
+  resolvedBy?: string
+  resolvedAt?: string
+  decisionReason?: string
+  resultLogId?: string
+}
+export type EffortNotification = {
+  id: string
+  recipientId: string
+  requestId: string
+  message: string
+  at: string
+  readAt?: string
 }
 export type Submission = {
   id: string
@@ -62,12 +95,44 @@ export type WorkState = {
   logs: WorkLog[]
   history: LogEdit[]
   submissions: Submission[]
+  contributions: Contribution[]
+  requests: LogChangeRequest[]
+  notifications: EffortNotification[]
 }
 export const emptyWorkState = (): WorkState => ({
   logs: [],
   history: [],
   submissions: [],
+  contributions: [],
+  requests: [],
+  notifications: [],
 })
+
+export function rememberContributions(state: WorkState, tasks: Task[]): WorkState {
+  const saved = new Map(state.contributions.map((entry) => [entry.assignment.id, entry]))
+  for (const task of tasks) {
+    if (task.currentAssignment) saved.set(task.currentAssignment.id, {
+      taskId: task.id, projectId: task.projectId, taskCode: task.code, taskName: task.name,
+      assignment: structuredClone(task.currentAssignment),
+    })
+  }
+  return { ...state, contributions: [...saved.values()] }
+}
+
+export function recordAssignmentChanges(state: WorkState, before: Task[], after: Task[], now = new Date()) {
+  const captured = rememberContributions(state, before)
+  const ended = {
+    ...captured,
+    contributions: captured.contributions.map((entry) => {
+      const previous = before.find((task) => task.currentAssignment?.id === entry.assignment.id)
+      const next = after.find((task) => task.id === entry.taskId)
+      return previous && next && next.currentAssignment?.id !== entry.assignment.id && !entry.assignment.endedAt
+        ? { ...entry, assignment: { ...entry.assignment, endedAt: now.toISOString() } }
+        : entry
+    }),
+  }
+  return rememberContributions(ended, after)
+}
 export const vietnamDay = (now = new Date()) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
@@ -84,7 +149,7 @@ export function logBlockReason(project: Project, task: Task, actorId: string) {
     return ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"].includes(
       task.status,
     ) && project.status === "IN_PROGRESS"
-      ? "Nhật ký đã khóa sửa trực tiếp theo trạng thái công việc. Hiệu chỉnh sau khóa chưa dựng trong đợt này."
+      ? "Nhật ký đã khóa sửa trực tiếp. Bạn có thể gửi yêu cầu hiệu chỉnh dữ liệu cũ để PTCM xét duyệt."
       : block
   if (task.status === "ASSIGNED")
     return "Bấm Bắt đầu ở phần Chi tiết trước khi ghi nhật ký công việc."
@@ -137,7 +202,7 @@ function context(
   if (block) throw new Error(block)
   return { task, project }
 }
-function validInput(
+export function validInput(
   state: WorkState,
   actorId: string,
   project: Project,
@@ -163,6 +228,8 @@ function validInput(
   )
     errors.workDate =
       "Ngày làm phải thuộc lượt được giao và giai đoạn dự án đã triển khai thực tế."
+  else if (task.currentAssignment?.endedAt && input.workDate > vietnamDay(new Date(task.currentAssignment.endedAt)))
+    errors.workDate = "Không ghi công việc phát sinh sau khi lượt thực hiện đã kết thúc."
   if (!Number.isSafeInteger(input.minutes) || input.minutes <= 0)
     errors.minutes = "Thời lượng phải là số phút nguyên lớn hơn 0."
   if (!input.description.trim())
@@ -224,7 +291,7 @@ export function saveLog(
     updatedAt: at,
   }
   return {
-    ...state,
+    ...rememberContributions(state, tasks),
     logs: before
       ? state.logs.map((l) => (l.id === before.id ? next : l))
       : [...state.logs, next],
@@ -369,7 +436,7 @@ export function submitResult(
     },
   }
   return {
-    work: { ...state, submissions: [...state.submissions, submission] },
+    work: { ...rememberContributions(state, tasks), submissions: [...state.submissions, submission] },
     tasks: tasks.map(
       (t): Task =>
         t.id !== task.id

@@ -15,7 +15,7 @@ export function TaskDetailHeader({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow">{task.code}</p>
-          <h2 className="mt-2 break-words text-lg font-semibold leading-7">
+          <h2 className="mt-2 break-words text-lg font-semibold leading-7 text-balance">
             {task.name}
           </h2>
         </div>

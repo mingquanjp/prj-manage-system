@@ -133,7 +133,7 @@ export function ProjectResponsibilities({
           </p>
           {history.length > 0 && (
             <details className="mt-3 border-t border-border pt-3 text-xs">
-              <summary className="cursor-pointer text-muted-foreground">
+              <summary className="field-label cursor-pointer">
                 Thay đổi trong phiên mô phỏng ({history.length})
               </summary>
               <ul className="mt-2 space-y-2">
@@ -174,7 +174,7 @@ export function ProjectResponsibilities({
           >
             <label
               htmlFor="ptcm-candidate"
-              className="block text-sm font-medium"
+              className="field-label block"
             >
               Nhân viên phụ trách
             </label>

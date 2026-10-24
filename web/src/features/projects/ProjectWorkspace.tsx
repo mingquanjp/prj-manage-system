@@ -48,6 +48,8 @@ import { ProjectKanban } from "./ProjectKanban"
 import { TaskReviewPanel } from "./TaskReviewPanel"
 import type { ReviewResult, WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
+import { CorrectionRequests } from "@/features/work-logs/CorrectionRequests"
+import { contributionFor } from "@/demo/corrections"
 
 export function ProjectWorkspace({
   actorId,
@@ -62,6 +64,7 @@ export function ProjectWorkspace({
   onNotice,
   work,
   onReview,
+  onWorkChange,
 }: {
   actorId: string
   projects: Project[]
@@ -74,6 +77,7 @@ export function ProjectWorkspace({
   onTasksChange: (tasks: Task[]) => void
   onNotice: (notice: string) => void
   work: WorkState
+  onWorkChange: (work: WorkState) => void
   onReview: (
     submissionId: string,
     result: ReviewResult,
@@ -86,7 +90,7 @@ export function ProjectWorkspace({
   const [filter, setFilter] = useState("all")
   const [group, setGroup] = useState("all")
   const [view, setView] = useState<"list" | "groups" | "kanban">("list")
-  const [tab, setTab] = useState<"tasks" | "structure" | "reviews">("tasks")
+  const [tab, setTab] = useState<"tasks" | "structure" | "reviews" | "corrections">("tasks")
   const [detailTab, setDetailTab] = useState<"details" | "results">("details")
   const [editor, setEditor] = useState<{
     task?: Task
@@ -97,7 +101,7 @@ export function ProjectWorkspace({
   const [selected, setSelected] = useState<string[]>([])
   const [draft, setDraft] = useState<Draft>({})
   const [discardTab, setDiscardTab] = useState<
-    "tasks" | "structure" | "reviews" | null
+    "tasks" | "structure" | "reviews" | "corrections" | null
   >(null)
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(
     null,
@@ -134,7 +138,7 @@ export function ProjectWorkspace({
       ? related.filter((t) => t.status === "PENDING_REVIEW").length
       : 0
   const percent = progress(related)
-  const openTab = (next: "tasks" | "structure" | "reviews") => {
+  const openTab = (next: "tasks" | "structure" | "reviews" | "corrections") => {
     setDraft({})
     setAssignMode(null)
     setTab(next)
@@ -144,7 +148,7 @@ export function ProjectWorkspace({
       setDetail(null)
     }
   }
-  const requestTab = (next: "tasks" | "structure" | "reviews") => {
+  const requestTab = (next: "tasks" | "structure" | "reviews" | "corrections") => {
     if (assignMode && Object.keys(draft).length) setDiscardTab(next)
     else openTab(next)
   }
@@ -293,7 +297,7 @@ export function ProjectWorkspace({
           </div>
         </div>
         <div className="flex gap-2">
-          {allowed && !assignMode && tab !== "reviews" && (
+          {allowed && !assignMode && tab !== "reviews" && tab !== "corrections" && (
             <Button
               onClick={() => {
                 if (!groups.length) {
@@ -371,6 +375,11 @@ export function ProjectWorkspace({
               Nghiệm thu <span className="count">{waiting}</span>
             </button>
           )}
+          {project.ptcmId === actorId && <button type="button" onClick={() => requestTab("corrections")}
+            className={cn("tab-button workspace-tab", tab === "corrections" && "tab-selected")}
+            aria-pressed={tab === "corrections"}>
+            Hiệu chỉnh nhật ký <span className="count">{work.requests.filter((r) => r.status === "PENDING" && contributionFor(work, tasks, r.assignmentId)?.projectId === project.id).length}</span>
+          </button>}
         </div>
         <span className="hidden text-xs text-muted-foreground md:block">
           Bạn đang có trách nhiệm{" "}
@@ -385,7 +394,9 @@ export function ProjectWorkspace({
                   : "Chỉ xem"}
         </span>
       </div>
-      {tab === "structure" ? (
+      {tab === "corrections" && project.ptcmId === actorId ? (
+        <CorrectionRequests key={project.id} projects={projects} tasks={tasks} work={work} actorId={actorId} projectId={project.id} onChange={onWorkChange} />
+      ) : tab === "structure" ? (
         <ProjectStructure
           project={project}
           actorId={actorId}

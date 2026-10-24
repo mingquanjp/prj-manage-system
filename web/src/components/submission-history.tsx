@@ -14,7 +14,7 @@ export function SubmissionHistory({
       {[...submissions].reverse().map((s, index) => (
         <li key={s.id} className="rounded-lg border border-border p-3 text-sm">
           <div className="flex flex-wrap justify-between gap-2">
-            <strong className="font-medium">
+            <strong className="field-label">
               Lần nộp {submissions.length - index}
             </strong>
             <span className="text-xs text-muted-foreground">
@@ -65,7 +65,7 @@ export function SubmissionHistory({
           )}
           {showLogs && (
             <details className="mt-3 text-xs">
-              <summary className="cursor-pointer font-medium">
+              <summary className="field-label cursor-pointer">
                 Nhật ký tại lần nộp ·{" "}
                 {s.logSnapshot.logs.length
                   ? formatMinutes(

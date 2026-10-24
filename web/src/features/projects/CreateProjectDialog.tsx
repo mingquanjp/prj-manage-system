@@ -39,7 +39,7 @@ export function CreateProjectDialog({
     control: ReactNode,
   ) => (
     <div className="min-w-0 space-y-2">
-      <label htmlFor={`project-${key}`} className="block text-sm font-medium">
+      <label htmlFor={`project-${key}`} className="field-label block">
         {label}
       </label>
       {control}

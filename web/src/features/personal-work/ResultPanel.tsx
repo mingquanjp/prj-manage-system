@@ -149,7 +149,7 @@ export function ResultPanel({
             }}
           >
             <label className="block text-sm">
-              Tóm tắt kết quả *
+              <span className="field-label">Tóm tắt kết quả *</span>
               <textarea
                 className="field mt-2 min-h-32 w-full"
                 value={summary}
@@ -169,7 +169,9 @@ export function ResultPanel({
               )}
             </label>
             <label className="block text-sm">
-              Link minh chứng (tùy chọn, mỗi dòng một URL)
+              <span className="field-label">
+                Link minh chứng (tùy chọn, mỗi dòng một URL)
+              </span>
               <textarea
                 className="field mt-2 min-h-24 w-full"
                 value={links}

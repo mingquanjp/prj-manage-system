@@ -16,6 +16,7 @@ import {
   MixerHorizontalIcon,
   ResetIcon,
   ListBulletIcon,
+  PersonIcon,
 } from "@radix-ui/react-icons"
 import { Avatar } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -41,7 +42,9 @@ import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
 import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog"
 import { PersonalWork } from "@/features/personal-work/PersonalWork"
 import { cn } from "@/lib/utils"
-import { emptyWorkState, submitResult, reviewSubmission } from "@/demo/effort"
+import { emptyWorkState, submitResult, reviewSubmission, rememberContributions, recordAssignmentChanges } from "@/demo/effort"
+import { canLookupPersonnel } from "@/demo/personnel"
+import { PersonnelDirectory } from "@/features/personnel/PersonnelDirectory"
 
 export default function App() {
   const [actorId, setActorId] = useState("khoa")
@@ -49,7 +52,7 @@ export default function App() {
     structuredClone(initialProjects),
   )
   const [events, setEvents] = useState<ProjectEvent[]>([])
-  const [work, setWork] = useState(emptyWorkState)
+  const [work, setWork] = useState(() => rememberContributions(emptyWorkState(), initialTasks))
   const [creating, setCreating] = useState(false)
   const [tasks, setTasks] = useState<Task[]>(() =>
     structuredClone(initialTasks),
@@ -63,6 +66,8 @@ export default function App() {
   const navigate = useNavigate()
   const ownTasks = personalTasks(projects, tasks, actorId)
   const personalView = location.pathname === "/my-work"
+  const personnelView = location.pathname === "/personnel"
+  const canLookup = canLookupPersonnel(projects, actorId)
   const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
   const currentProject = projects.find(
     (p) =>
@@ -110,7 +115,7 @@ export default function App() {
     setActorId(id)
     setNotice("")
     setCreating(false)
-    navigate(personalView ? "/my-work" : "/")
+    navigate(personalView ? "/my-work" : personnelView ? "/personnel" : "/")
   }
 
   return (
@@ -184,11 +189,15 @@ export default function App() {
               {ownTasks.length}
             </span>
           </NavLink>
+          {canLookup && <NavLink to="/personnel" className={({ isActive }) => cn(
+            "mt-3 flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium",
+            isActive ? "bg-accent" : "hover:bg-accent",
+          )}><PersonIcon />Tra cứu nhân sự</NavLink>}
         </div>
         <div className="mx-5 mt-8 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
           <p className="font-medium text-foreground">Bản duyệt thiết kế</p>
           <p className="mt-1">
-            Dự án, phân công và thực hiện công việc. Các khu vực khác sẽ bổ sung
+            Dự án, thực hiện công việc và tra cứu nghề nghiệp. Các khu vực khác sẽ bổ sung
             sau.
           </p>
         </div>
@@ -202,7 +211,7 @@ export default function App() {
               <ChevronDownIcon />
             </summary>
             <label
-              className="mt-3 block text-xs text-muted-foreground"
+              className="field-label mt-3 block"
               htmlFor="identity"
             >
               Danh tính mô phỏng
@@ -252,10 +261,10 @@ export default function App() {
             className="flex min-w-0 items-center gap-2 text-muted-foreground"
           >
             <Link
-              to={personalView ? "/my-work" : "/"}
+              to={personnelView ? "/personnel" : personalView ? "/my-work" : "/"}
               className="hover:text-foreground"
             >
-              {personalView ? "Không gian cá nhân" : "Dự án"}
+              {personnelView ? "Tra cứu nhân sự" : personalView ? "Không gian cá nhân" : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -283,7 +292,7 @@ export default function App() {
             TaskAssign
           </Link>
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            Mô phỏng
+            <span className="field-label">Mô phỏng</span>
             <select
               aria-label="Danh tính mô phỏng trên màn hình nhỏ"
               className="field max-w-48"
@@ -297,7 +306,7 @@ export default function App() {
         </div>
         <nav
           aria-label="Điều hướng trên màn hình nhỏ"
-          className="flex gap-2 border-b border-border px-4 py-2 text-sm lg:hidden"
+          className="flex flex-wrap gap-2 border-b border-border px-4 py-2 text-sm lg:hidden"
         >
           <NavLink
             to="/"
@@ -319,6 +328,9 @@ export default function App() {
           >
             Công việc của tôi
           </NavLink>
+          {canLookup && <NavLink to="/personnel" className={({ isActive }) => cn(
+            "rounded-md px-3 py-2", isActive && "bg-accent font-medium",
+          )}>Tra cứu nhân sự</NavLink>}
         </nav>
         <main className="mx-auto max-w-[1600px] px-4 py-8 md:px-8">
           {notice && (
@@ -333,6 +345,7 @@ export default function App() {
             </div>
           )}
           <Routes>
+            <Route path="/personnel" element={<PersonnelDirectory key={actorId} projects={projects} tasks={tasks} actorId={actorId} />} />
             <Route
               path="/my-work"
               element={
@@ -427,6 +440,7 @@ export default function App() {
                   tasks={tasks}
                   groups={groups}
                   work={work}
+                  onWorkChange={setWork}
                   onReview={(submissionId, result, comment) => {
                     const next = reviewSubmission(
                       projects,
@@ -438,7 +452,7 @@ export default function App() {
                       comment,
                       initialOutputConflicts,
                     )
-                    setWork(next.work)
+                    setWork(rememberContributions(next.work, next.tasks))
                     setTasks(next.tasks)
                     setNotice(
                       result === "ACCEPTED"
@@ -447,7 +461,10 @@ export default function App() {
                     )
                   }}
                   onGroupsChange={setGroups}
-                  onTasksChange={setTasks}
+                  onTasksChange={(nextTasks) => {
+                    setWork((previous) => recordAssignmentChanges(previous, tasks, nextTasks))
+                    setTasks(nextTasks)
+                  }}
                   onNotice={setNotice}
                 />
               }
@@ -456,7 +473,7 @@ export default function App() {
               path="*"
               element={
                 <div>
-                  <h1 className="text-2xl font-semibold">
+                  <h1 className="text-2xl font-semibold text-balance">
                     Không tìm thấy trang
                   </h1>
                   <Button asChild variant="outline" className="mt-4">
