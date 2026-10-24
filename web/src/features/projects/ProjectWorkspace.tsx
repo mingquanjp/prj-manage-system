@@ -162,7 +162,7 @@ export function ProjectWorkspace({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[650px] text-left text-sm">
         <thead>
-          <tr className="table-heading">
+          <tr className="table-heading table-heading-strong">
             <th className="w-10 py-3 pl-4">
               {canSelectAssignments && (
                 <input
@@ -285,7 +285,7 @@ export function ProjectWorkspace({
           <div>
             <p className="eyebrow">{project.code}</p>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-xl font-semibold sm:text-2xl">
+              <h1 className="text-xl font-semibold text-balance sm:text-2xl">
                 {project.name}
               </h1>
               <StatusBadge status={project.status} />
@@ -336,7 +336,10 @@ export function ProjectWorkspace({
           <button
             type="button"
             onClick={() => requestTab("tasks")}
-            className={cn("tab-button", tab === "tasks" && "tab-selected")}
+            className={cn(
+              "tab-button workspace-tab",
+              tab === "tasks" && "tab-selected",
+            )}
             aria-pressed={tab === "tasks"}
           >
             <ListBulletIcon />
@@ -344,7 +347,10 @@ export function ProjectWorkspace({
           </button>
           <button
             type="button"
-            className={cn("tab-button", tab === "structure" && "tab-selected")}
+            className={cn(
+              "tab-button workspace-tab",
+              tab === "structure" && "tab-selected",
+            )}
             aria-pressed={tab === "structure"}
             onClick={() => requestTab("structure")}
           >
@@ -355,7 +361,10 @@ export function ProjectWorkspace({
             <button
               type="button"
               onClick={() => requestTab("reviews")}
-              className={cn("tab-button", tab === "reviews" && "tab-selected")}
+              className={cn(
+                "tab-button workspace-tab",
+                tab === "reviews" && "tab-selected",
+              )}
               aria-pressed={tab === "reviews"}
             >
               <CheckCircledIcon />
@@ -511,11 +520,12 @@ export function ProjectWorkspace({
                   onChange={setSearch}
                   placeholder="Tìm công việc…"
                 />
-                <label className="flex items-center gap-2 rounded-md border border-border bg-white pl-3 text-sm text-muted-foreground">
+                <label className="flex items-center gap-2 rounded-md border border-border bg-white pl-3 text-sm">
                   <MixerHorizontalIcon />
+                  <span className="field-label">Nhóm</span>
                   <select
                     aria-label="Nhóm công việc"
-                    className="field border-0"
+                    className="field workspace-field min-w-0 border-0"
                     value={group}
                     onChange={(e) => setGroup(e.target.value)}
                   >
@@ -527,10 +537,10 @@ export function ProjectWorkspace({
                 </label>
               </div>
               {tab === "tasks" && (
-                <label className="mb-4 flex w-fit items-center gap-2 text-sm text-muted-foreground">
-                  Trạng thái
+                <label className="mb-4 flex w-fit max-w-full flex-wrap items-center gap-2">
+                  <span className="field-label">Trạng thái</span>
                   <select
-                    className="field"
+                    className="field workspace-field"
                     aria-label="Trạng thái công việc dự án"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
@@ -624,7 +634,7 @@ export function ProjectWorkspace({
                           open
                           className="border-b border-border last:border-0"
                         >
-                          <summary className="flex cursor-pointer list-none items-center gap-2 bg-background/70 px-4 py-3 text-sm font-medium">
+                          <summary className="field-label flex cursor-pointer list-none items-center gap-2 bg-background/70 px-4 py-3">
                             <ChevronDownIcon />
                             {g}
                             <span className="count">
@@ -679,6 +689,7 @@ export function ProjectWorkspace({
                             detailTab === "details" ? "default" : "ghost"
                           }
                           aria-pressed={detailTab === "details"}
+                          className="workspace-tab"
                           onClick={() => setDetailTab("details")}
                         >
                           Chi tiết
@@ -689,6 +700,7 @@ export function ProjectWorkspace({
                             detailTab === "results" ? "default" : "ghost"
                           }
                           aria-pressed={detailTab === "results"}
+                          className="workspace-tab"
                           onClick={() => setDetailTab("results")}
                         >
                           Kết quả
@@ -701,7 +713,7 @@ export function ProjectWorkspace({
                           className="mt-4 rounded-md border border-border p-3 text-sm"
                           open
                         >
-                          <summary className="cursor-pointer font-medium">
+                          <summary className="section-title cursor-pointer">
                             Tiêu chí nghiệm thu
                           </summary>
                           <p className="mt-2 whitespace-pre-wrap break-words leading-6 text-muted-foreground">
@@ -740,7 +752,7 @@ export function ProjectWorkspace({
                           ))}
                         <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
                           <div className="flex justify-between gap-2">
-                            <dt className="text-muted-foreground">
+                            <dt className="field-label">
                               Người thực hiện
                             </dt>
                             <dd className="text-right">
@@ -749,15 +761,15 @@ export function ProjectWorkspace({
                             </dd>
                           </div>
                           <div className="flex justify-between gap-2">
-                            <dt className="text-muted-foreground">Nhóm</dt>
+                            <dt className="field-label">Nhóm</dt>
                             <dd className="text-right">{currentTask.group}</dd>
                           </div>
                           <div className="flex justify-between">
-                            <dt className="text-muted-foreground">Ưu tiên</dt>
+                            <dt className="field-label">Ưu tiên</dt>
                             <dd>{currentTask.priority}</dd>
                           </div>
                           <div className="flex justify-between gap-2">
-                            <dt className="text-muted-foreground">Kế hoạch</dt>
+                            <dt className="field-label">Kế hoạch</dt>
                             <dd className="text-right">
                               {currentTask.start && currentTask.end
                                 ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
@@ -781,17 +793,17 @@ export function ProjectWorkspace({
                   </>
                 ) : (
                   <>
-                    <h2 className="font-semibold">Về dự án</h2>
+                    <h2 className="section-title">Về dự án</h2>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
                       {project.description}
                     </p>
                     <dl className="mt-5 space-y-4 text-sm">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Ưu tiên</dt>
+                        <dt className="field-label">Ưu tiên</dt>
                         <dd>{project.priority}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Ngày bắt đầu</dt>
+                        <dt className="field-label">Ngày bắt đầu</dt>
                         <dd>
                           {new Date(
                             `${project.start}T00:00:00`,
@@ -799,7 +811,7 @@ export function ProjectWorkspace({
                         </dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground">Hạn dự kiến</dt>
+                        <dt className="field-label">Hạn dự kiến</dt>
                         <dd>
                           {new Date(
                             `${project.end}T00:00:00`,

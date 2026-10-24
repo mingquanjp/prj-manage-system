@@ -68,6 +68,29 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 
 ## Sổ công việc
 
+### Đóng gói typography — 24/10/2026
+
+- Người dùng đã duyệt hai workspace và màn phân công, yêu cầu commit theo chuẩn repo. Gom chung 11 file của hai lượt trên nhánh `feature/workspace-typography`; thông điệp tiếng Anh theo Conventional Commits, attribution `Co-Authored-By: Codex`. Không push/merge hoặc thay đổi ngoài phạm vi.
+- Trước đóng gói: `pnpm check` qua 6 test harness, kiểm kê 75 nguồn, typecheck, 31 test model và build; diff check qua. Kiểm tra thêm snapshot staged trước commit. Bằng chứng UI/giới hạn giữ tại hai mục dưới; các ghi chú “chưa commit” là trạng thái khi bàn giao từng lượt.
+
+### Phân cấp chữ màn phân công — 24/10/2026 — hoàn tất phạm vi, chờ duyệt UI
+
+- Mục tiêu/nguồn: áp dụng thang chữ hai workspace vừa được người dùng duyệt cho màn phân công; screen-contracts UI-12/UI-13 và chuẩn thiết kế ở trên. Skill baseline-ui giữ token/primitives hiện có.
+- Phạm vi: AssignmentWorkspace và sổ này, tiếp tục nhánh `feature/workspace-typography`, giữ các thay đổi chưa commit của đợt trước. Không đổi bố cục/breakpoint, công thức/xếp hạng, quyền, state/validation, DB/API/dependency.
+- Tiêu chí: task đang chọn, nhánh, bảng ứng viên, kỹ năng và bản nháp có thứ bậc rõ; nhãn 14px/600, tiêu đề khu vực 16px/600, tên việc/người medium, giá trị nhập regular. Check typecheck/build, harness/diff, xem gợi ý/thủ công và bản nháp ở laptop/màn nhỏ; không kiểm thử lại mọi ngoại lệ nghiệp vụ.
+- Đã sửa: tái dùng section-title/field-label/table-heading-strong/workspace-tab/workspace-field từ đợt trước; nhấn rõ mã task/nhánh hiện tại, tiêu đề danh sách việc/bản nháp, bảng ứng viên và đối chiếu kỹ năng. Nhãn lý do tách khỏi textarea; tên việc/người medium, thông tin phụ và điểm minh họa giữ nguyên. Không sửa logic lựa chọn/xác nhận hoặc CSS bố cục.
+- Đã kiểm tra: typecheck/build qua; harness kiểm kê nguồn và diff check qua. Browser 1440px/390px: gợi ý → mở đối chiếu An → chọn Dũng → thủ công/tìm Cường → chọn Cường thấy hai nhãn lý do và bản nháp cập nhật. Computed style: heading khu vực 16px/600, nhãn/tiêu đề bảng/tab đang chọn 14px/600, textarea 14px/400; mobile page = viewport = 390px, bảng 470px cuộn nội bộ. Đã trả viewport mặc định; chỉ thử trong bản nháp, không xác nhận giao việc.
+- Giới hạn/bàn giao: không chạy lại toàn bộ validation/luồng nghiệp vụ hoặc test model vì không đổi logic. Hai file thay đổi mới là AssignmentWorkspace và sổ này; giữ nguyên thay đổi đợt trước. Chưa stage/commit/push; chờ người dùng duyệt màn phân công trước khi mở rộng tiếp.
+
+### Phân cấp chữ hai workspace — 24/10/2026 — hoàn tất phạm vi, chờ duyệt UI
+
+- Mục tiêu: làm rõ nhãn lọc, tiêu đề bảng/tab/khu vực và chi tiết ở Công việc của tôi, workspace dự án theo xác nhận của người dùng; nhãn 14px/600/màu chữ chính, giá trị nhập regular. Nguồn: chuẩn thiết kế ở trên, screen-contracts UI-10/UI-14 và chốt typography 24/10.
+- Phạm vi: CSS typography dùng chung có áp dụng tường minh, hai workspace và thành phần chi tiết/Kanban liên quan. Không đổi palette, bố cục, nghiệp vụ, state, DB/API/dependency; chưa hoàn thiện phân công hoặc mở rộng toàn app. Skill baseline-ui giữ thang chữ/token hiện có.
+- Tiêu chí: nhãn và dữ liệu có thứ bậc, tên task medium; nút/input không vô tình thừa hưởng độ đậm; laptop/mobile không tràn trang. Check typecheck/build, harness/diff, xem hai màn và chi tiết/lọc trên browser.
+- Đã sửa: style nhãn/tiêu đề khu vực/tiêu đề bảng và tab dùng chung, áp dụng tường minh tại hai workspace (kể cả bảng cấu trúc và tiêu đề cột Kanban), không thay style bảng toàn hệ thống/phân công. Nhãn tách span riêng khỏi select; giá trị select khai báo 14px/400 và có khoảng dành cho mũi tên. Tên task giữ medium, nội dung/mã/mô tả phụ giữ thứ bậc cũ. Các tiêu đề đặc tả/nhật ký/kết quả dùng chung thang 16px/600; không đổi hành vi.
+- Đã kiểm tra: typecheck/build qua; harness kiểm kê 75 file và diff check qua. Browser 1440px/390px: xem hai màn, lọc trạng thái và mở chi tiết; xem các vùng Chi tiết/Nhật ký/Kết quả cá nhân. Computed style xác nhận nhãn/heading bảng 14px/600, select 14px/400, tab đang chọn 600, heading khu vực 16px/600; nút Bắt đầu không bị đậm theo. Hai trang ở 390px không tràn ngang (page = viewport = 390), bảng cuộn riêng; đã trả viewport mặc định.
+- Giới hạn/bàn giao: chưa chạy lại mọi form/luồng phân công/nghiệm thu, test model hoặc audit accessibility toàn app vì đợt này không đổi logic. Nhánh `feature/workspace-typography`; chưa stage/commit/push. Người dùng xem hai màn mẫu trước khi quyết định mở rộng typography ra các màn còn lại.
+
 ### Đóng gói Git cho bản demo — 22/10/2026
 
 - Theo yêu cầu commit của người dùng: lưu các đợt đã duyệt trên nhánh tổng hợp `feature/task-execution-review`, kế thừa HEAD hiện tại và giữ nguyên các nhánh cũ; không push, merge main, xóa nhánh hoặc thay nghiệp vụ/DB.

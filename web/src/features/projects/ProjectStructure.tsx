@@ -117,7 +117,7 @@ export function ProjectStructure({
               {rows.length ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-sm">
-                    <thead className="table-heading">
+                    <thead className="table-heading table-heading-strong">
                       <tr>
                         <th className="px-4 py-2.5">Công việc</th>
                         <th>Trạng thái</th>

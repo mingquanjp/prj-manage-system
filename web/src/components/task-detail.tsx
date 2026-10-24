@@ -49,7 +49,7 @@ export function TaskSpecification({
       className="mt-4 divide-y divide-border border-y border-border"
     >
       <details open className="py-3">
-        <summary className="cursor-pointer text-sm font-medium">
+        <summary className="section-title cursor-pointer">
           Mô tả và đầu ra
         </summary>
         <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
@@ -57,7 +57,7 @@ export function TaskSpecification({
         </p>
       </details>
       <details open className="py-3">
-        <summary className="cursor-pointer text-sm font-medium">
+        <summary className="section-title cursor-pointer">
           Tiêu chí nghiệm thu
         </summary>
         <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
@@ -65,7 +65,7 @@ export function TaskSpecification({
         </p>
       </details>
       <details className="py-3">
-        <summary className="cursor-pointer text-sm font-medium">
+        <summary className="section-title cursor-pointer">
           Yêu cầu kỹ năng{" "}
           <span className="ml-1 text-muted-foreground">
             ({task.requirements.length})

@@ -94,7 +94,7 @@ export function WorkLogPanel({
   return (
     <section aria-label="Nhật ký công việc" className="mt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Nhật ký · {rows.length}</h3>
+        <h3 className="section-title">Nhật ký · {rows.length}</h3>
         {!block && (
           <Button size="sm" onClick={() => openEditor()}>
             <PlusIcon />
