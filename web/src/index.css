@@ -40,6 +40,16 @@ svg { flex-shrink: 0; }
   .count { @apply inline-flex min-w-5 items-center justify-center rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums; }
 }
 
+/* Chỉ áp dụng tại các workspace đã duyệt; không đổi chữ phụ toàn app. */
+.field-label { @apply text-sm font-semibold text-foreground; }
+.section-title { @apply text-base font-semibold text-foreground text-balance; }
+.table-heading-strong, .table-heading-strong th { @apply text-sm font-semibold text-foreground; }
+.workspace-tab { font-size: 0.875rem; font-weight: 400; }
+.workspace-tab[aria-pressed="true"] { font-weight: 600; }
+/* Tách giá trị khỏi nhãn bao ngoài và reset font: inherit của trình duyệt. */
+.workspace-field { font-size: 0.875rem; font-weight: 400; }
+select.workspace-field { padding-right: 2rem; }
+
 .assignment-shell { container-type: inline-size; }
 .assignment-task-list { display: flex; gap: 4px; overflow-x: auto; }
 .assignment-task { flex: 0 0 220px; }

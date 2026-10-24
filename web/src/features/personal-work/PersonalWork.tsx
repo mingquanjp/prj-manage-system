@@ -109,7 +109,7 @@ export function PersonalWork({
   return (
     <>
       <p className="eyebrow">KHÔNG GIAN CÁ NHÂN</p>
-      <h1 className="mt-2 text-3xl font-semibold">Công việc của tôi</h1>
+      <h1 className="mt-2 text-3xl font-semibold text-balance">Công việc của tôi</h1>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         Theo dõi các công việc được giao và cập nhật tiến độ thực hiện.
       </p>
@@ -121,10 +121,10 @@ export function PersonalWork({
             placeholder="Tìm tên hoặc mã công việc…"
           />
         </div>
-        <label className="grid gap-1.5 text-xs text-muted-foreground">
-          Dự án
+        <label className="grid gap-1.5">
+          <span className="field-label">Dự án</span>
           <select
-            className="field max-w-full sm:max-w-64"
+            className="field workspace-field max-w-full sm:max-w-64"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
           >
@@ -136,10 +136,10 @@ export function PersonalWork({
             ))}
           </select>
         </label>
-        <label className="grid gap-1.5 text-xs text-muted-foreground">
-          Trạng thái công việc
+        <label className="grid gap-1.5">
+          <span className="field-label">Trạng thái công việc</span>
           <select
-            className="field"
+            className="field workspace-field"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
@@ -165,7 +165,7 @@ export function PersonalWork({
             size="sm"
             variant="ghost"
             aria-pressed={view === "list"}
-            className={cn(view === "list" && "bg-accent")}
+            className={cn("workspace-tab", view === "list" && "bg-accent")}
             onClick={() => setView("list")}
           >
             <ListBulletIcon />
@@ -175,7 +175,7 @@ export function PersonalWork({
             size="sm"
             variant="ghost"
             aria-pressed={view === "kanban"}
-            className={cn(view === "kanban" && "bg-accent")}
+            className={cn("workspace-tab", view === "kanban" && "bg-accent")}
             onClick={() => setView("kanban")}
           >
             <ViewVerticalIcon />
@@ -226,7 +226,7 @@ export function PersonalWork({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[660px] text-left text-sm">
                   <thead>
-                    <tr className="table-heading">
+                    <tr className="table-heading table-heading-strong">
                       <th className="px-4 py-3">Công việc</th>
                       <th className="pr-4">Dự án</th>
                       <th className="pr-4">Trạng thái</th>
@@ -336,7 +336,7 @@ export function PersonalWork({
                   aria-pressed={detailTab === id}
                   onClick={() => setDetailTab(id)}
                   className={cn(
-                    "tab-button flex-1 justify-center px-2",
+                    "tab-button workspace-tab flex-1 justify-center px-2",
                     detailTab === id && "tab-selected",
                   )}
                 >
@@ -370,13 +370,13 @@ export function PersonalWork({
               <>
                 <dl className="mt-5 space-y-3 text-sm">
                   <div>
-                    <dt className="text-xs text-muted-foreground">Dự án</dt>
+                    <dt className="field-label">Dự án</dt>
                     <dd className="mt-1">
                       {project.name} · <StatusBadge status={project.status} />
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">
+                    <dt className="field-label">
                       Nhóm / PTCM
                     </dt>
                     <dd className="mt-1">
@@ -385,7 +385,7 @@ export function PersonalWork({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">
+                    <dt className="field-label">
                       Ước tính / Ưu tiên
                     </dt>
                     <dd className="mt-1">
@@ -393,7 +393,7 @@ export function PersonalWork({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">
+                    <dt className="field-label">
                       Ngày kế hoạch
                     </dt>
                     <dd className="mt-1">

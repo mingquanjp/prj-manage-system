@@ -34,7 +34,7 @@ export function ProjectKanban({
             className="w-64 shrink-0 rounded-lg bg-accent/50 p-2"
           >
             <div className="mb-3 flex items-center gap-2 px-1 py-2">
-              <h2 className="text-sm font-medium">{column.label}</h2>
+              <h2 className="field-label text-balance">{column.label}</h2>
               <span
                 className="count ml-auto"
                 aria-label={`${column.tasks.length} công việc`}

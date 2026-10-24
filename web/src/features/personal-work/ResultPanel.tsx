@@ -39,7 +39,7 @@ export function ResultPanel({
   return (
     <section aria-label="Kết quả công việc" className="mt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">
+        <h3 className="section-title">
           Các lần nộp · {submissions.length}
         </h3>
         {allowed && (

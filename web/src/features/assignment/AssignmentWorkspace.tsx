@@ -155,7 +155,9 @@ export function AssignmentWorkspace({
             <ArrowLeftIcon />
             Về danh sách công việc
           </button>
-          <h2 className="text-xl font-semibold">Phân công công việc</h2>
+          <h2 className="text-xl font-semibold text-balance">
+            Phân công công việc
+          </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
             So sánh, lựa chọn và kiểm tra bản nháp trước khi giao việc.
           </p>
@@ -167,7 +169,7 @@ export function AssignmentWorkspace({
       </div>
       <div className="assignment-toolbar sticky top-4 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-3 shadow-sm">
         <div className="min-w-0 text-sm">
-          <p className="font-medium">
+          <p className="field-label">
             {task?.code ?? "Chưa chọn việc"} ·{" "}
             {mode === "manual" ? "Thủ công" : "Theo gợi ý"}
           </p>
@@ -193,7 +195,7 @@ export function AssignmentWorkspace({
           aria-label="Công việc đã chọn"
           className="assignment-tasks min-w-0 rounded-lg border border-border bg-white"
         >
-          <h3 className="border-b border-border px-4 py-3 text-sm font-medium">
+          <h3 className="section-title border-b border-border px-4 py-3">
             Công việc đã chọn
           </h3>
           <div className="assignment-task-list p-2">
@@ -256,19 +258,23 @@ export function AssignmentWorkspace({
                     <p className="eyebrow">
                       {task.code} · {task.group}
                     </p>
-                    <h3 className="mt-1 text-lg font-semibold">{task.name}</h3>
+                    <h3 className="mt-1 text-lg font-semibold text-balance">
+                      {task.name}
+                    </h3>
                   </div>
                   <span className="whitespace-nowrap text-sm text-muted-foreground">
                     {task.estimate} giờ
                   </span>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <p className="field-label mt-4">Yêu cầu kỹ năng</p>
+                <div className="mt-2 flex flex-wrap gap-2">
                   {task.requirements.map((r) => (
                     <span
                       key={r.skill}
                       className="rounded border border-border bg-background px-2 py-1 text-xs"
                     >
-                      {r.skill} · {levels[r.level]}
+                      <span className="font-medium">{r.skill}</span> ·{" "}
+                      {levels[r.level]}
                       {r.mandatory ? " · bắt buộc" : ""}
                     </span>
                   ))}
@@ -288,9 +294,9 @@ export function AssignmentWorkspace({
                       aria-pressed={mode === value}
                       onClick={() => changeMode(value)}
                       className={cn(
-                        "h-9 flex-1 rounded px-3 text-sm",
+                        "workspace-tab h-9 flex-1 rounded px-3",
                         mode === value
-                          ? "bg-white font-medium shadow-sm"
+                          ? "bg-white shadow-sm"
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
@@ -334,7 +340,7 @@ export function AssignmentWorkspace({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[470px] text-left text-sm">
                   <thead>
-                    <tr className="table-heading">
+                    <tr className="table-heading table-heading-strong">
                       <th className="py-3 pl-5">Ứng viên</th>
                       <th className="px-2">Tải công việc</th>
                       {mode === "recommended" && <th>Điểm mẫu</th>}
@@ -369,7 +375,7 @@ export function AssignmentWorkspace({
                                   key={`${task.id}-${person.id}`}
                                   className="mt-2 text-xs"
                                 >
-                                  <summary className="cursor-pointer text-muted-foreground underline underline-offset-4">
+                                  <summary className="field-label cursor-pointer underline underline-offset-4">
                                     Đối chiếu kỹ năng
                                     {gaps.length > 0 ? " · còn thiếu" : ""}
                                   </summary>
@@ -385,17 +391,22 @@ export function AssignmentWorkspace({
                                             : "text-muted-foreground",
                                         )}
                                       >
-                                        <strong className="font-medium">
+                                        <strong className="text-sm font-medium text-foreground">
                                           {r.skill}
                                         </strong>
                                         {r.mandatory
                                           ? " · Bắt buộc"
                                           : " · Bổ trợ"}
                                         <span className="block text-muted-foreground">
-                                          Yêu cầu: {levels[r.level]}
+                                          <span className="font-medium text-foreground">
+                                            Yêu cầu:
+                                          </span>{" "}
+                                          {levels[r.level]}
                                         </span>
                                         <span className="block">
-                                          Hiện có:{" "}
+                                          <span className="font-medium text-foreground">
+                                            Hiện có:
+                                          </span>{" "}
                                           {levels[
                                             person.skills[r.skill] ?? 0
                                           ] || "Chưa ghi nhận"}
@@ -505,10 +516,12 @@ export function AssignmentWorkspace({
                   </div>
                   {((chosen.mode === "recommended" && chosen.rank !== 1) ||
                     (chosen.mode === "manual" && chosen.hadRun)) && (
-                    <label className="block text-sm font-medium">
-                      Lý do lựa chọn <span className="text-warning">*</span>
+                    <label className="block">
+                      <span className="field-label">
+                        Lý do lựa chọn <span className="text-warning">*</span>
+                      </span>
                       <textarea
-                        className="field mt-2 min-h-20 w-full font-normal"
+                        className="field workspace-field mt-2 min-h-20 w-full"
                         value={chosen.reason}
                         onChange={(e) =>
                           patchChoice({ reason: e.target.value })
@@ -528,11 +541,13 @@ export function AssignmentWorkspace({
                         Ứng viên chưa đáp ứng kỹ năng bắt buộc. Cần lý do để
                         phân công thủ công ngoại lệ.
                       </p>
-                      <label className="block text-sm font-medium">
-                        Lý do ngoại lệ kỹ năng{" "}
-                        <span className="text-warning">*</span>
+                      <label className="block">
+                        <span className="field-label">
+                          Lý do ngoại lệ kỹ năng{" "}
+                          <span className="text-warning">*</span>
+                        </span>
                         <textarea
-                          className="field mt-2 min-h-20 w-full font-normal"
+                          className="field workspace-field mt-2 min-h-20 w-full"
                           value={chosen.overrideReason}
                           onChange={(e) =>
                             patchChoice({ overrideReason: e.target.value })
@@ -554,7 +569,7 @@ export function AssignmentWorkspace({
             <h3>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 text-left font-semibold"
+                className="section-title inline-flex items-center gap-2 text-left"
                 aria-expanded={draftExpanded}
                 aria-controls="assignment-draft-items"
                 onClick={() => setDraftExpanded((prev) => !prev)}
@@ -593,7 +608,7 @@ export function AssignmentWorkspace({
                     setQuery("")
                   }}
                 >
-                  {t.name}
+                  <span className="text-sm font-medium">{t.name}</span>
                 </button>
                 <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                   {draft[t.id] ? (
@@ -622,12 +637,12 @@ export function AssignmentWorkspace({
             ))}
           </div>
           <div className="border-t border-border pt-4">
-            <h4 className="text-sm font-medium">Tải sau bản nháp</h4>
+            <h4 className="field-label text-balance">Tải sau bản nháp</h4>
             <div className="mt-3 space-y-3">
               {[...new Set(Object.values(draft).map((c) => c.personId))].map(
                 (id) => (
                   <div key={id} className="text-xs">
-                    <p>{getPerson(id)?.name}</p>
+                    <p className="text-sm font-medium">{getPerson(id)?.name}</p>
                     <p className="mt-1 text-muted-foreground tabular-nums">
                       Hiện tại {loadFor(id, tasks)} giờ · Nháp +
                       {addedLoad(id, draft, tasks)} giờ

@@ -62,7 +62,7 @@ export function PersonalKanban({
                       "bg-warning",
                   )}
                 />
-                <h2 className="text-sm font-medium">{column.label}</h2>
+                <h2 className="field-label text-balance">{column.label}</h2>
                 <span
                   className="count ml-auto"
                   aria-label={`${rows.length} công việc`}
