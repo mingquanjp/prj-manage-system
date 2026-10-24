@@ -1,7 +1,8 @@
 import { Cross2Icon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/shared"
-import { levels, type Task } from "@/demo/model"
+import { levels } from "@/models/workspace-labels"
+import type { Task } from "@/models/workspace"
 
 export function TaskDetailHeader({ task, onClose }: { task: Task; onClose: () => void }) {
   return (

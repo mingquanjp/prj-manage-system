@@ -1,46 +1,36 @@
+import { ProjectTaskTable } from "./ProjectTaskTable"
+import { ProjectTaskToolbar } from "./ProjectTaskToolbar"
+import { ProjectTaskSidebar } from "./ProjectTaskSidebar"
 import { useRef, useState } from "react"
 import { Link, useParams } from "react-router"
 import {
   ArrowLeftIcon,
   ChevronDownIcon,
   CubeIcon,
-  FileTextIcon,
   InfoCircledIcon,
   ListBulletIcon,
-  MixerHorizontalIcon,
-  RowsIcon,
   LayersIcon,
   PlusIcon,
-  Pencil1Icon,
-  LockClosedIcon,
-  ViewVerticalIcon,
   CheckCircledIcon,
 } from "@radix-ui/react-icons"
-import { Avatar, EmptyState, SearchInput, StatusBadge } from "@/components/shared"
+import { EmptyState, StatusBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
-import {
-  canAssign,
-  isTaskFrozen,
-  getPerson,
-  progress,
-  canViewProject,
-  isDirector,
-  statusLabels,
-  type Project,
-  type ProjectEvent,
-  type OutputConflict,
-  type Task,
-  type TaskGroup,
-  type Draft,
-} from "@/demo/model"
+import { canAssign, canViewProject, isDirector } from "@/demo/identity"
+import { progress } from "@/demo/projects"
+import type {
+  Project,
+  ProjectEvent,
+  OutputConflict,
+  Task,
+  TaskGroup,
+  Draft,
+} from "@/models/workspace"
 import { AssignmentWorkspace } from "@/features/assignment/AssignmentWorkspace"
 import { ProjectStructure } from "./ProjectStructure"
 import { TaskEditor } from "./TaskEditor"
 import { ProjectResponsibilities } from "./ProjectResponsibilities"
 import { ProjectKanban } from "./ProjectKanban"
-import { TaskReviewPanel } from "./TaskReviewPanel"
 import type { ReviewResult, WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
 import { CorrectionRequests } from "@/features/work-logs/CorrectionRequests"
@@ -143,107 +133,17 @@ export function ProjectWorkspace({
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
     )
   const hasAll = eligible.length > 0 && eligible.every((t) => selected.includes(t.id))
-  const renderTable = (rows: Task[]) => (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[650px] text-left text-sm">
-        <thead>
-          <tr className="table-heading table-heading-strong">
-            <th className="w-10 py-3 pl-4">
-              {canSelectAssignments && (
-                <input
-                  type="checkbox"
-                  aria-label="Chọn tất cả công việc đủ điều kiện theo bộ lọc"
-                  checked={hasAll}
-                  disabled={!eligible.length}
-                  onChange={() =>
-                    setSelected((prev) =>
-                      hasAll
-                        ? prev.filter((id) => !eligible.some((t) => t.id === id))
-                        : [...new Set([...prev, ...eligible.map((t) => t.id)])],
-                    )
-                  }
-                />
-              )}
-            </th>
-            <th className="min-w-[220px]">Tên công việc</th>
-            <th>Trạng thái</th>
-            <th>Người thực hiện</th>
-            <th className="whitespace-nowrap pr-4 text-right">Ước tính</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((task) => {
-            const person = getPerson(task.assigneeId)
-            return (
-              <tr
-                key={task.id}
-                className={cn(
-                  "border-t border-border hover:bg-background",
-                  selected.includes(task.id) && "bg-accent/60",
-                  detail === task.id && "bg-accent",
-                )}
-              >
-                <td className="pl-4">
-                  {canSelectAssignments && (
-                    <input
-                      type="checkbox"
-                      aria-label={`Chọn ${task.name}`}
-                      disabled={task.status !== "PENDING_ASSIGNMENT"}
-                      title={
-                        task.status !== "PENDING_ASSIGNMENT"
-                          ? "Chỉ chọn công việc đang chờ phân công"
-                          : undefined
-                      }
-                      checked={selected.includes(task.id)}
-                      onChange={() => toggle(task.id)}
-                    />
-                  )}
-                </td>
-                <td className="py-4 pr-3">
-                  <button
-                    type="button"
-                    className="flex items-start gap-2.5 text-left hover:underline"
-                    aria-label={`Xem ${task.name}`}
-                    onClick={(e) => {
-                      detailTrigger.current = e.currentTarget
-                      setDetail(task.id)
-                      setDetailTab(
-                        task.status === "PENDING_REVIEW" && canReadResults ? "results" : "details",
-                      )
-                    }}
-                  >
-                    <FileTextIcon className="mt-0.5 shrink-0 text-muted-foreground" />
-                    <span>
-                      <span className="block font-medium leading-5">{task.name}</span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {task.code} <span className="mx-1">/</span> {task.group}
-                      </span>
-                    </span>
-                  </button>
-                </td>
-                <td className="pr-3">
-                  <StatusBadge status={task.status} />
-                </td>
-                <td className="pr-3">
-                  {person ? (
-                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                      <Avatar initials={person.initials} small />
-                      <span>{person.name}</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Chưa phân công</span>
-                  )}
-                </td>
-                <td className="pr-4 text-right whitespace-nowrap tabular-nums">
-                  {task.estimate} giờ
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
+  const toggleAll = () =>
+    setSelected((prev) =>
+      hasAll
+        ? prev.filter((id) => !eligible.some((t) => t.id === id))
+        : [...new Set([...prev, ...eligible.map((t) => t.id)])],
+    )
+  const openTableTask = (task: Task, trigger: HTMLButtonElement) => {
+    detailTrigger.current = trigger
+    setDetail(task.id)
+    setDetailTab(task.status === "PENDING_REVIEW" && canReadResults ? "results" : "details")
+  }
 
   return (
     <>
@@ -432,111 +332,21 @@ export function ProjectWorkspace({
             )}
           >
             <section className="min-w-0">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                {tab !== "reviews" && (
-                  <div className="mr-auto flex flex-wrap gap-1">
-                    {[
-                      ["all", "Tất cả"],
-                      ["PENDING_ASSIGNMENT", "Chờ phân công"],
-                      ["IN_PROGRESS", "Đang thực hiện"],
-                    ].map(([value, label]) => (
-                      <button
-                        type="button"
-                        key={value}
-                        aria-pressed={filter === value}
-                        className={cn("filter-chip", filter === value && "filter-active")}
-                        onClick={() => setFilter(value)}
-                      >
-                        {label}
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {related.filter((t) => value === "all" || t.status === value).length}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {tab === "reviews" && (
-                  <p className="mr-auto text-sm text-muted-foreground">
-                    Công việc đang chờ · {waiting}
-                  </p>
-                )}
-                <div
-                  className="flex rounded-md border border-border bg-white p-0.5"
-                  aria-label="Cách xem"
-                >
-                  <button
-                    type="button"
-                    aria-label="Xem bảng"
-                    aria-pressed={view === "list"}
-                    className={cn("rounded p-2", view === "list" && "bg-accent")}
-                    onClick={() => setView("list")}
-                  >
-                    <ListBulletIcon />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Xem theo nhóm"
-                    aria-pressed={view === "groups"}
-                    className={cn("rounded p-2", view === "groups" && "bg-accent")}
-                    onClick={() => setView("groups")}
-                  >
-                    <RowsIcon />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Xem Kanban"
-                    aria-pressed={view === "kanban"}
-                    className={cn("rounded p-2", view === "kanban" && "bg-accent")}
-                    onClick={() => setView("kanban")}
-                  >
-                    <ViewVerticalIcon />
-                  </button>
-                </div>
-              </div>
-              <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <SearchInput value={search} onChange={setSearch} placeholder="Tìm công việc…" />
-                <label className="flex items-center gap-2 rounded-md border border-border bg-white pl-3 text-sm">
-                  <MixerHorizontalIcon />
-                  <span className="field-label">Nhóm</span>
-                  <select
-                    aria-label="Nhóm công việc"
-                    className="field workspace-field min-w-0 border-0"
-                    value={group}
-                    onChange={(e) => setGroup(e.target.value)}
-                  >
-                    <option value="all">Tất cả nhóm</option>
-                    {groups.map((g) => (
-                      <option key={g}>{g}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              {tab === "tasks" && (
-                <label className="mb-4 flex w-fit max-w-full flex-wrap items-center gap-2">
-                  <span className="field-label">Trạng thái</span>
-                  <select
-                    className="field workspace-field"
-                    aria-label="Trạng thái công việc dự án"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  >
-                    <option value="all">Tất cả trạng thái</option>
-                    {Object.entries(statusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {tab === "reviews" && (
-                <p className="mb-4 text-xs leading-5 text-muted-foreground">
-                  Chọn công việc để xem lần nộp và tiêu chí.{" "}
-                  {project.ptcmId === actorId
-                    ? "Bạn xử lý theo trách nhiệm PTCM."
-                    : "Bạn chỉ theo dõi; quyết định thuộc PTCM."}
-                </p>
-              )}
+              <ProjectTaskToolbar
+                tab={tab}
+                related={related}
+                waiting={waiting}
+                view={view}
+                search={search}
+                filter={filter}
+                group={group}
+                groups={groups}
+                isPtcm={project.ptcmId === actorId}
+                onViewChange={setView}
+                onSearchChange={setSearch}
+                onFilterChange={setFilter}
+                onGroupChange={setGroup}
+              />
               {view === "kanban" && (
                 <>
                   {filtered.some((t) => ["CLOSED", "CANCELLED"].includes(t.status)) && (
@@ -587,7 +397,17 @@ export function ProjectWorkspace({
                       }
                     />
                   ) : view === "list" ? (
-                    renderTable(filtered)
+                    <ProjectTaskTable
+                      rows={filtered}
+                      canSelectAssignments={canSelectAssignments}
+                      hasAll={hasAll}
+                      hasEligible={eligible.length > 0}
+                      selected={selected}
+                      detail={detail}
+                      onToggleAll={toggleAll}
+                      onToggle={toggle}
+                      onOpenTask={openTableTask}
+                    />
                   ) : (
                     groups
                       .filter((g) => filtered.some((t) => t.group === g))
@@ -600,7 +420,17 @@ export function ProjectWorkspace({
                               {filtered.filter((t) => t.group === g).length}
                             </span>
                           </summary>
-                          {renderTable(filtered.filter((t) => t.group === g))}
+                          <ProjectTaskTable
+                            rows={filtered.filter((t) => t.group === g)}
+                            canSelectAssignments={canSelectAssignments}
+                            hasAll={hasAll}
+                            hasEligible={eligible.length > 0}
+                            selected={selected}
+                            detail={detail}
+                            onToggleAll={toggleAll}
+                            onToggle={toggle}
+                            onOpenTask={openTableTask}
+                          />
                         </details>
                       ))
                   )}
@@ -612,167 +442,22 @@ export function ProjectWorkspace({
               </p>
             </section>
             {(info || currentTask) && (
-              <aside
-                className={cn(
-                  "min-w-0 rounded-lg border border-border bg-white p-5 xl:sticky xl:top-6",
-                  currentTask && "xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto",
-                )}
-                aria-label={currentTask ? "Chi tiết công việc" : "Thông tin dự án"}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Escape" &&
-                    currentTask &&
-                    !(e.target as HTMLElement).closest('[role="dialog"]')
-                  )
-                    closeDetail()
-                }}
-              >
-                {currentTask ? (
-                  <>
-                    <TaskDetailHeader task={currentTask} onClose={closeDetail} />
-                    {canReadResults && (
-                      <div
-                        className="mt-4 flex gap-1"
-                        role="group"
-                        aria-label="Nội dung công việc dự án"
-                      >
-                        <Button
-                          size="sm"
-                          variant={detailTab === "details" ? "default" : "ghost"}
-                          aria-pressed={detailTab === "details"}
-                          className="workspace-tab"
-                          onClick={() => setDetailTab("details")}
-                        >
-                          Chi tiết
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={detailTab === "results" ? "default" : "ghost"}
-                          aria-pressed={detailTab === "results"}
-                          className="workspace-tab"
-                          onClick={() => setDetailTab("results")}
-                        >
-                          Kết quả
-                        </Button>
-                      </div>
-                    )}
-                    {detailTab === "results" && canReadResults ? (
-                      <>
-                        <details className="mt-4 rounded-md border border-border p-3 text-sm" open>
-                          <summary className="section-title cursor-pointer">
-                            Tiêu chí nghiệm thu
-                          </summary>
-                          <p className="mt-2 whitespace-pre-wrap break-words leading-6 text-muted-foreground">
-                            {currentTask.criteria}
-                          </p>
-                        </details>
-                        <TaskReviewPanel
-                          key={currentTask.id}
-                          project={project}
-                          task={currentTask}
-                          work={work}
-                          actorId={actorId}
-                          conflicts={conflicts}
-                          onReview={onReview}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        {allowed &&
-                          (isTaskFrozen(currentTask) ? (
-                            <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
-                              <LockClosedIcon className="mt-0.5" />
-                              Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa làm rõ/gia hạn chưa
-                              dựng trong đợt này.
-                            </p>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-4"
-                              onClick={() => setEditor({ task: currentTask })}
-                            >
-                              <Pencil1Icon />
-                              Chỉnh sửa công việc
-                            </Button>
-                          ))}
-                        <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-                          <div className="flex justify-between gap-2">
-                            <dt className="field-label">Người thực hiện</dt>
-                            <dd className="text-right">
-                              {getPerson(currentTask.assigneeId)?.name ?? "Chưa phân công"}
-                            </dd>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <dt className="field-label">Nhóm</dt>
-                            <dd className="text-right">{currentTask.group}</dd>
-                          </div>
-                          <div className="flex justify-between">
-                            <dt className="field-label">Ưu tiên</dt>
-                            <dd>{currentTask.priority}</dd>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <dt className="field-label">Kế hoạch</dt>
-                            <dd className="text-right">
-                              {currentTask.start && currentTask.end
-                                ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
-                                : "Chưa đặt ngày"}
-                            </dd>
-                          </div>
-                        </dl>
-                        <div className="mt-5 border-t border-border pt-4 text-sm">
-                          Ước tính{" "}
-                          <span className="float-right font-medium">
-                            {currentTask.estimate} giờ
-                          </span>
-                        </div>
-                        <TaskSpecification key={currentTask.id} task={currentTask} showWeights />
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h2 className="section-title">Về dự án</h2>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      {project.description}
-                    </p>
-                    <dl className="mt-5 space-y-4 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <dt className="field-label">Ưu tiên</dt>
-                        <dd>{project.priority}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="field-label">Ngày bắt đầu</dt>
-                        <dd>{new Date(`${project.start}T00:00:00`).toLocaleDateString("vi-VN")}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="field-label">Hạn dự kiến</dt>
-                        <dd>{new Date(`${project.end}T00:00:00`).toLocaleDateString("vi-VN")}</dd>
-                      </div>
-                    </dl>
-                    <div className="mt-6 border-t border-border pt-5">
-                      <div className="flex justify-between text-sm">
-                        <span>Đã nghiệm thu</span>
-                        <strong>{percent === null ? "—" : `${percent}%`}</strong>
-                      </div>
-                      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-accent">
-                        <div
-                          className="h-full rounded-full bg-success"
-                          style={{ width: `${percent ?? 0}%` }}
-                        />
-                      </div>
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        {related.filter((t) => t.status === "DONE").length} /{" "}
-                        {related.filter((t) => t.status !== "CANCELLED").length} công việc hiệu lực
-                      </p>
-                    </div>
-                    <div className="mt-6 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">
-                      Không cần lập danh sách thành viên trước. PTCM lựa chọn người phù hợp trong
-                      toàn công ty.
-                    </div>
-                  </>
-                )}
-              </aside>
+              <ProjectTaskSidebar
+                currentTask={currentTask}
+                project={project}
+                actorId={actorId}
+                allowed={allowed}
+                canReadResults={canReadResults}
+                detailTab={detailTab}
+                work={work}
+                conflicts={conflicts}
+                percent={percent}
+                related={related}
+                onCloseDetail={closeDetail}
+                onDetailTabChange={setDetailTab}
+                onEditTask={(task) => setEditor({ task })}
+                onReview={onReview}
+              />
             )}
           </div>
           {selected.length > 0 && allowed && (

@@ -1,4 +1,4 @@
-import { getPerson } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
 import { formatMinutes, type Submission } from "@/demo/effort"
 
 // Cùng một cách đọc kết quả ở cá nhân và dự án; caller giới hạn dữ liệu theo tư cách.

@@ -1,4 +1,6 @@
-import { getPerson, personalTasks, type Project, type Task } from "./model.ts"
+import { getPerson } from "./identity.ts"
+import { personalTasks } from "./execution.ts"
+import type { Project, Task } from "../models/workspace.ts"
 import {
   rememberContributions,
   validInput,

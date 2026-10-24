@@ -6,9 +6,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { checkGitIndex, localLinks, localTarget, requiredFiles } from "./check-harness.mjs"
 
-test("kiểm kê chứa đủ config lint/format và test model frontend", async () => {
+test("kiểm kê chứa đủ config lint/format và test nguồn frontend", async () => {
   const files = await requiredFiles()
-  for (const path of ["web/eslint.config.mjs", "web/.prettierrc.json", "web/.prettierignore", "web/src/demo/model.test.ts", "web/src/demo/model.ts"]) {
+  for (const path of ["web/eslint.config.mjs", "web/.prettierrc.json", "web/.prettierignore", "web/src/demo/workspace.test.ts", "web/src/lib/utils.test.ts", "web/src/models/workspace.ts"]) {
     assert.ok(files.includes(path), `Thiếu nguồn chất lượng FE: ${path}`)
   }
 })

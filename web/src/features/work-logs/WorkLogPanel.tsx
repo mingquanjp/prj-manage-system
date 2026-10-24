@@ -2,7 +2,8 @@ import { useState } from "react"
 import { Pencil1Icon, TrashIcon, PlusIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { getPerson, type Project, type Task } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
+import type { Project, Task } from "@/models/workspace"
 import {
   dailyMinutes,
   deleteLog,
@@ -23,7 +24,7 @@ import {
   logDateBounds,
   sendLogChange,
 } from "@/demo/corrections"
-import { CorrectionRequests } from "@/features/work-logs/CorrectionRequests"
+import { CorrectionRequests } from "./CorrectionRequests"
 
 export function WorkLogPanel({
   project,

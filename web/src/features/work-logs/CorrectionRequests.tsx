@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { getPerson, type Project, type Task } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
+import type { Project, Task } from "@/models/workspace"
 import {
   formatMinutes,
   WorkValidationError,

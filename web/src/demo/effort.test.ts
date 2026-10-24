@@ -1,12 +1,9 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import {
-  initialTasks as assignedTasks,
-  projects,
-  transitionPersonalTask,
-  startProject,
-  loadFor,
-} from "./model.ts"
+import { initialTasks as assignedTasks, projects } from "./fixtures.ts"
+import { transitionPersonalTask } from "./execution.ts"
+import { startProject } from "./projects.ts"
+import { loadFor } from "./assignment.ts"
 import {
   emptyWorkState,
   saveLog,

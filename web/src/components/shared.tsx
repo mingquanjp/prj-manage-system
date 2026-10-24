@@ -1,6 +1,7 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { cn } from "@/lib/utils"
-import { statusLabels, type TaskStatus } from "@/demo/model"
+import { statusLabels } from "@/models/workspace-labels"
+import type { TaskStatus } from "@/models/workspace"
 
 export function Avatar({ initials, small = false }: { initials: string; small?: boolean }) {
   return (

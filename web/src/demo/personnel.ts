@@ -1,4 +1,7 @@
-import { getPerson, loadFor, people, type Project, type Task } from "./model.ts"
+import { getPerson } from "./identity.ts"
+import { loadFor } from "./assignment.ts"
+import { people } from "./fixtures.ts"
+import type { Project, Task } from "../models/workspace.ts"
 
 // Projection demo cho UI-13; không trả entity, dữ liệu liên hệ hoặc task gốc.
 export type ProfessionalProfile = {

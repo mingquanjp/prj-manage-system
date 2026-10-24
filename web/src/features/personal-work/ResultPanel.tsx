@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { type Task, type Project } from "@/demo/model"
+import type { Task, Project } from "@/models/workspace"
 import { SubmissionHistory } from "@/components/submission-history"
 import {
   logBlockReason,

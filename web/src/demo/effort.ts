@@ -1,10 +1,6 @@
-import {
-  executionBlockReason,
-  getPerson,
-  type OutputConflict,
-  type Project,
-  type Task,
-} from "./model.ts"
+import { executionBlockReason } from "./execution.ts"
+import { getPerson } from "./identity.ts"
+import type { OutputConflict, Project, Task } from "../models/workspace.ts"
 
 // Read model trong bộ nhớ; không thay schema hoặc service/audit server.
 export type WorkLog = {

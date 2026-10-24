@@ -4,31 +4,22 @@ import {
   initialTasks,
   projects,
   people,
-  commitDraft,
-  loadFor,
-  progress,
-  recommendations,
-  validateDraft,
-  type Draft,
   initialGroups,
-  isTaskFrozen,
-  saveGroup,
-  saveTask,
-  validateTaskInput,
-  type TaskInput,
+  initialOutputConflicts,
+} from "./fixtures.ts"
+import { commitDraft, loadFor, recommendations, validateDraft } from "./assignment.ts"
+import {
+  progress,
   createProject,
   validateProjectInput,
   appointPtcm,
   ptcmBlockReason,
   startProject,
-  canAssign,
-  canViewProject,
-  initialOutputConflicts,
-  type ProjectInput,
-  personalTasks,
-  transitionPersonalTask,
-  executionBlockReason,
-} from "./model.ts"
+} from "./projects.ts"
+import type { Draft, TaskInput, ProjectInput } from "../models/workspace.ts"
+import { isTaskFrozen, saveGroup, saveTask, validateTaskInput } from "./task-structure.ts"
+import { canAssign, canViewProject } from "./identity.ts"
+import { personalTasks, transitionPersonalTask, executionBlockReason } from "./execution.ts"
 
 const project = projects[0]
 

@@ -2,7 +2,8 @@ import { useState } from "react"
 import { Avatar, EmptyState, SearchInput } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { levels, type Project, type Task } from "@/demo/model"
+import { levels } from "@/models/workspace-labels"
+import type { Project, Task } from "@/models/workspace"
 import { canLookupPersonnel, personnelProfiles } from "@/demo/personnel"
 
 export function PersonnelDirectory({

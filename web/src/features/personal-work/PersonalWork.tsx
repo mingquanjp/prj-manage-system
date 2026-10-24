@@ -10,19 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { EmptyState, SearchInput, StatusBadge } from "@/components/shared"
 import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
-import {
-  executionBlockReason,
-  getPerson,
-  personalTasks,
-  statusLabels,
-  type ExecutionAction,
-  type Project,
-  type Task,
-  type TaskStatus,
-} from "@/demo/model"
+import { executionBlockReason, personalTasks } from "@/demo/execution"
+import { getPerson } from "@/demo/identity"
+import { statusLabels } from "@/models/workspace-labels"
+import type { ExecutionAction, Project, Task, TaskStatus } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 import { PersonalKanban } from "./PersonalKanban"
-import { WorkLogPanel } from "./WorkLogPanel"
+import { WorkLogPanel } from "@/features/work-logs/WorkLogPanel"
 import { ResultPanel } from "./ResultPanel"
 import type { WorkState } from "@/demo/effort"
 import { ContributionHistory } from "@/features/work-logs/ContributionHistory"

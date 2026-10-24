@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { type Project, type Task } from "@/demo/model"
+import type { Project, Task } from "@/models/workspace"
 import { type WorkState } from "@/demo/effort"
-import { WorkLogPanel } from "@/features/personal-work/WorkLogPanel"
+import { WorkLogPanel } from "./WorkLogPanel"
 import { historicalContributions } from "@/demo/corrections"
 
 // Tách quyền xem đóng góp của chính chủ khỏi quyền thực hiện công việc hiện tại.

@@ -1,0 +1,292 @@
+import type {
+  SystemRole,
+  OutputConflict,
+  Person,
+  Project,
+  Requirement,
+  TaskGroup,
+  Task,
+} from "../models/workspace.ts"
+
+// Dữ liệu mẫu chỉ dùng cho adapter trong bộ nhớ; không phải nguồn nghiệp vụ hoặc dữ liệu server.
+export const demoUsers: { personId: string; systemRoles: SystemRole[] }[] = [
+  { personId: "khoa", systemRoles: [] },
+  { personId: "thanh", systemRoles: [] },
+  { personId: "cuong", systemRoles: [] },
+  { personId: "an", systemRoles: [] },
+  { personId: "binh", systemRoles: [] },
+  { personId: "dung", systemRoles: [] },
+  { personId: "ha", systemRoles: ["DIRECTOR"] },
+]
+
+// Mẫu: Thanh từng góp đầu ra cho T007, hiện Cường nộp và chưa được nghiệm thu.
+export const initialOutputConflicts: OutputConflict[] = [
+  { projectId: "kho", taskId: "t7", personId: "thanh" },
+]
+
+export const people: Person[] = [
+  {
+    id: "ha",
+    name: "Đặng Thu Hà",
+    initials: "TH",
+    position: "Giám đốc",
+    seniority: "Senior",
+    active: true,
+    skills: {},
+    backgroundLoad: 0,
+  },
+  {
+    id: "khoa",
+    name: "Ngô Minh Khoa",
+    initials: "MK",
+    position: "Kỹ sư phần mềm",
+    seniority: "Senior",
+    active: true,
+    skills: { "Node.js": 4, PostgreSQL: 3, React: 3 },
+    backgroundLoad: 0,
+  },
+  {
+    id: "thanh",
+    name: "Phan Thị Thanh",
+    initials: "PT",
+    position: "Quản lý dự án",
+    seniority: "Senior",
+    active: true,
+    skills: { React: 3 },
+    backgroundLoad: 0,
+  },
+  {
+    id: "an",
+    name: "Nguyễn Văn An",
+    initials: "VA",
+    position: "Kỹ sư Backend",
+    seniority: "Senior",
+    active: true,
+    skills: { "Node.js": 4, PostgreSQL: 3, TypeScript: 3 },
+    backgroundLoad: 16,
+  },
+  {
+    id: "binh",
+    name: "Trần Thị Bình",
+    initials: "TB",
+    position: "Kỹ sư Frontend",
+    seniority: "Middle",
+    active: true,
+    skills: { React: 3, TypeScript: 3, "Node.js": 3, PostgreSQL: 2 },
+    backgroundLoad: 8,
+  },
+  {
+    id: "dung",
+    name: "Phạm Quang Dũng",
+    initials: "QD",
+    position: "Kỹ sư phần mềm",
+    seniority: "Middle",
+    active: true,
+    skills: { "Node.js": 3, PostgreSQL: 3, React: 2, TypeScript: 2 },
+    backgroundLoad: 12,
+  },
+  {
+    id: "cuong",
+    name: "Lê Minh Cường",
+    initials: "MC",
+    position: "Kỹ sư Frontend",
+    seniority: "Senior",
+    active: true,
+    skills: { React: 4, TypeScript: 4, "Node.js": 2 },
+    backgroundLoad: 20,
+  },
+]
+
+export const projects: Project[] = [
+  {
+    id: "kho",
+    code: "KHO-2026",
+    name: "Hệ thống quản lý kho hàng",
+    description:
+      "Xây dựng hệ thống quản lý nhập, xuất và tồn kho nội bộ; tập trung vào dữ liệu chính xác và thao tác thuận tiện.",
+    status: "IN_PROGRESS",
+    pmId: "thanh",
+    executionStartedAt: "2026-10-01T09:00:00+07:00",
+    ptcmId: "khoa",
+    start: "2026-10-01",
+    end: "2026-12-31",
+    priority: "Cao",
+  },
+  {
+    id: "portal",
+    code: "PORTAL-2026",
+    name: "Cổng thông tin nhân sự",
+    description: "Không gian tra cứu và quản lý thông tin nhân sự nội bộ.",
+    status: "PLANNING",
+    pmId: "thanh",
+    ptcmId: "khoa",
+    start: "2026-10-15",
+    end: "2027-02-28",
+    priority: "Trung bình",
+  },
+]
+
+const backend: Requirement[] = [
+  { skill: "Node.js", level: 3, mandatory: true, weight: 1 },
+  { skill: "PostgreSQL", level: 3, mandatory: false, weight: 1 },
+]
+
+const frontend: Requirement[] = [
+  { skill: "React", level: 3, mandatory: true, weight: 1 },
+  { skill: "TypeScript", level: 3, mandatory: false, weight: 1 },
+]
+
+export const skillCatalog = ["Node.js", "PostgreSQL", "React", "TypeScript"]
+
+export const initialGroups: TaskGroup[] = projects.flatMap((project) => [
+  {
+    id: `${project.id}-backend`,
+    projectId: project.id,
+    name: "Backend",
+    description: "API, dữ liệu và xử lý nghiệp vụ.",
+  },
+  {
+    id: `${project.id}-frontend`,
+    projectId: project.id,
+    name: "Frontend",
+    description: "Giao diện và tương tác người dùng.",
+  },
+  {
+    id: `${project.id}-testing`,
+    projectId: project.id,
+    name: "Kiểm thử",
+    description: "Kiểm tra các luồng nghiệp vụ trước bàn giao.",
+  },
+])
+
+const taskFixtures: Omit<Task, "groupId" | "priority">[] = [
+  {
+    id: "t1",
+    projectId: "kho",
+    code: "KHO-T001",
+    name: "API quản lý sản phẩm",
+    group: "Backend",
+    estimate: 24,
+    status: "PENDING_ASSIGNMENT",
+    requirements: backend,
+    description:
+      "Xây dựng API thêm, sửa và tra cứu sản phẩm. Đầu ra gồm API, kiểm tra dữ liệu đầu vào và tài liệu endpoint.",
+    criteria: "Không trùng mã sản phẩm; trả lỗi rõ ràng; có kiểm thử các thao tác chính.",
+  },
+  {
+    id: "t2",
+    projectId: "kho",
+    code: "KHO-T002",
+    name: "API nhập và xuất kho",
+    group: "Backend",
+    estimate: 32,
+    status: "PENDING_ASSIGNMENT",
+    requirements: backend,
+    description: "Xây dựng API phiếu nhập và xuất kho, cập nhật số tồn trong cùng giao dịch.",
+    criteria: "Không xuất vượt tồn; phiếu và số tồn nhất quán khi thành công hoặc thất bại.",
+  },
+  {
+    id: "t3",
+    projectId: "kho",
+    code: "KHO-T003",
+    name: "Màn hình tổng quan tồn kho",
+    group: "Frontend",
+    estimate: 28,
+    status: "PENDING_ASSIGNMENT",
+    requirements: frontend,
+    description:
+      "Xây dựng giao diện danh sách tồn kho, lọc theo sản phẩm và kho; có trạng thái rỗng và lỗi.",
+    criteria: "Bộ lọc hoạt động; số liệu khớp nguồn dữ liệu; sử dụng được bằng bàn phím.",
+  },
+  {
+    id: "t4",
+    projectId: "kho",
+    code: "KHO-T004",
+    name: "Màn hình phiếu nhập kho",
+    group: "Frontend",
+    estimate: 20,
+    status: "IN_PROGRESS",
+    requirements: frontend,
+    assigneeId: "binh",
+    description: "Xây dựng form nhập kho và bảng các dòng sản phẩm.",
+    criteria: "Kiểm tra số lượng dương; tổng các dòng chính xác; hủy không lưu dữ liệu.",
+  },
+  {
+    id: "t5",
+    projectId: "kho",
+    code: "KHO-T005",
+    name: "Cấu trúc dữ liệu sản phẩm",
+    group: "Backend",
+    estimate: 16,
+    status: "DONE",
+    requirements: backend,
+    assigneeId: "an",
+    description: "Thiết kế cấu trúc lưu trữ sản phẩm và kho; đầu ra gồm sơ đồ và mô tả ràng buộc.",
+    criteria: "Quan hệ rõ ràng, có khóa duy nhất và kiểm tra dữ liệu bắt buộc.",
+  },
+  {
+    id: "t6",
+    projectId: "kho",
+    code: "KHO-T006",
+    name: "API báo cáo biến động tồn kho",
+    group: "Backend",
+    estimate: 16,
+    status: "ASSIGNED",
+    requirements: backend,
+    assigneeId: "dung",
+    description: "Xây dựng API báo cáo nhập, xuất và tồn theo khoảng thời gian.",
+    criteria: "Tồn đầu + nhập − xuất = tồn cuối; hỗ trợ trường hợp không phát sinh.",
+  },
+  {
+    id: "t7",
+    projectId: "kho",
+    code: "KHO-T007",
+    name: "Bộ lọc và tra cứu sản phẩm",
+    group: "Frontend",
+    estimate: 12,
+    status: "PENDING_REVIEW",
+    requirements: frontend,
+    assigneeId: "cuong",
+    description: "Bổ sung tìm kiếm và lọc cho danh sách sản phẩm.",
+    criteria: "Giữ điều kiện khi mở và đóng chi tiết; hiển thị rõ kết quả rỗng.",
+  },
+  {
+    id: "p1",
+    projectId: "portal",
+    code: "PORTAL-T001",
+    name: "Danh sách hồ sơ nhân viên",
+    group: "Frontend",
+    estimate: 24,
+    status: "PENDING_ASSIGNMENT",
+    requirements: frontend,
+    description: "Xây dựng danh sách hồ sơ theo phạm vi được xem.",
+    criteria: "Có tìm kiếm, trạng thái rỗng và giới hạn trường theo quyền.",
+  },
+  {
+    id: "p2",
+    projectId: "portal",
+    code: "PORTAL-T002",
+    name: "API tra cứu năng lực",
+    group: "Backend",
+    estimate: 20,
+    status: "ASSIGNED",
+    requirements: backend,
+    assigneeId: "an",
+    description: "API đọc kỹ năng chính thức và tải công việc tổng hợp.",
+    criteria: "Không trả dữ liệu liên hệ hoặc chi tiết công việc ngoài quyền.",
+  },
+]
+
+export const initialTasks: Task[] = taskFixtures.map((task) => ({
+  ...task,
+  groupId: `${task.projectId}-${task.group.toLowerCase()}`,
+  priority: "Trung bình",
+  firstAssignedAt: task.status !== "PENDING_ASSIGNMENT" ? "2026-10-16T09:00:00+07:00" : undefined,
+  currentAssignment: task.assigneeId
+    ? {
+        id: `assignment-${task.id}-initial`,
+        employeeId: task.assigneeId,
+        assignedAt: "2026-10-16T09:00:00+07:00",
+      }
+    : undefined,
+}))

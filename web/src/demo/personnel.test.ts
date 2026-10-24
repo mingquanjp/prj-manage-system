@@ -1,6 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { initialTasks, projects, loadFor } from "./model.ts"
+import { initialTasks, projects } from "./fixtures.ts"
+import { loadFor } from "./assignment.ts"
 import { canLookupPersonnel, personnelProfiles } from "./personnel.ts"
 
 test("tra cứu chỉ dành cho PM/PTCM hiện hành, không suy từ vai trò Giám đốc", () => {

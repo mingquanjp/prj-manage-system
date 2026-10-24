@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { SubmissionHistory } from "@/components/submission-history"
 import { reviewBlockReason, type WorkState, type ReviewResult } from "@/demo/effort"
-import type { Project, Task, OutputConflict } from "@/demo/model"
+import type { Project, Task, OutputConflict } from "@/models/workspace"
 
 export function TaskReviewPanel({
   project,

@@ -30,5 +30,60 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   { files: ["*.mjs"], extends: [js.configs.recommended] },
+  {
+    files: ["src/models/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/demo/**",
+                "**/demo/**",
+                "@/features/**",
+                "**/features/**",
+                "@/components/**",
+                "**/components/**",
+              ],
+              message: "Type/nhãn dùng chung không phụ thuộc dữ liệu demo hoặc UI.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/demo/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/features/**", "**/features/**", "@/components/**", "**/components/**"],
+              message: "Adapter demo không import ngược thành phần UI.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/features/work-logs/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/features/personal-work/**", "**/personal-work/**"],
+              message: "work-logs không phụ thuộc ngược màn hình personal-work.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 ])

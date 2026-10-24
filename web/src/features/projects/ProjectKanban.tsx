@@ -1,6 +1,7 @@
 import { FileTextIcon } from "@radix-ui/react-icons"
 import { Avatar, StatusBadge } from "@/components/shared"
-import { getPerson, type Task } from "@/demo/model"
+import { getPerson } from "@/demo/identity"
+import type { Task } from "@/models/workspace"
 import { projectBoard } from "@/demo/kanban"
 import { cn } from "@/lib/utils"
 

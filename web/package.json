@@ -14,7 +14,7 @@
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "test": "node --experimental-strip-types --test src/demo/*.test.ts",
+    "test": "node --experimental-strip-types --test \"src/**/*.test.ts\"",
     "check:harness": "node --test ../scripts/check-harness.test.mjs && node ../scripts/check-harness.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",

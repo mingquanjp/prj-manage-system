@@ -1,5 +1,6 @@
 import { FileTextIcon } from "@radix-ui/react-icons"
-import { statusLabels, type Project, type Task, type TaskStatus } from "@/demo/model"
+import { statusLabels } from "@/models/workspace-labels"
+import type { Project, Task, TaskStatus } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/shared"
 

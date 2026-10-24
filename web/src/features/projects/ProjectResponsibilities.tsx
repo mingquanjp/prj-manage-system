@@ -2,17 +2,10 @@ import { useState } from "react"
 import { ChevronDownIcon, GearIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import {
-  appointPtcm,
-  getPerson,
-  people,
-  ptcmBlockReason,
-  startProject,
-  type OutputConflict,
-  type Project,
-  type ProjectEvent,
-  type Task,
-} from "@/demo/model"
+import { appointPtcm, ptcmBlockReason, startProject } from "@/demo/projects"
+import { getPerson } from "@/demo/identity"
+import { people } from "@/demo/fixtures"
+import type { OutputConflict, Project, ProjectEvent, Task } from "@/models/workspace"
 
 export function ProjectResponsibilities({
   project,

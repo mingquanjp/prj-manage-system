@@ -1,15 +1,10 @@
 import { useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import {
-  createProject,
-  people,
-  priorities,
-  validateProjectInput,
-  type FormErrors,
-  type Project,
-  type ProjectInput,
-} from "@/demo/model"
+import { createProject, validateProjectInput } from "@/demo/projects"
+import { people } from "@/demo/fixtures"
+import { priorities } from "@/models/workspace-labels"
+import type { FormErrors, Project, ProjectInput } from "@/models/workspace"
 
 export function CreateProjectDialog({
   projects,

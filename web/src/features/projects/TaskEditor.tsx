@@ -2,17 +2,10 @@ import { useState, type ReactNode } from "react"
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import {
-  levels,
-  saveTask,
-  skillCatalog,
-  validateTaskInput,
-  type FormErrors,
-  type Project,
-  type Task,
-  type TaskGroup,
-  type TaskInput,
-} from "@/demo/model"
+import { levels } from "@/models/workspace-labels"
+import { saveTask, validateTaskInput } from "@/demo/task-structure"
+import { skillCatalog } from "@/demo/fixtures"
+import type { FormErrors, Project, Task, TaskGroup, TaskInput } from "@/models/workspace"
 
 function Field({
   id,

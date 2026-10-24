@@ -1,13 +1,8 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import {
-  appointPtcm,
-  executionBlockReason,
-  initialTasks,
-  personalTasks,
-  projects,
-  transitionPersonalTask,
-} from "./model.ts"
+import { appointPtcm } from "./projects.ts"
+import { executionBlockReason, personalTasks, transitionPersonalTask } from "./execution.ts"
+import { initialTasks, projects } from "./fixtures.ts"
 import {
   dailyMinutes,
   emptyWorkState,

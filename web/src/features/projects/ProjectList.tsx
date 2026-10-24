@@ -2,7 +2,9 @@ import { useState } from "react"
 import { Link } from "react-router"
 import { ArrowTopRightIcon, CubeIcon, PlusIcon } from "@radix-ui/react-icons"
 import { Avatar, EmptyState, SearchInput, StatusBadge } from "@/components/shared"
-import { getPerson, progress, isDirector, type Project, type Task } from "@/demo/model"
+import { getPerson, isDirector } from "@/demo/identity"
+import { progress } from "@/demo/projects"
+import type { Project, Task } from "@/models/workspace"
 import { Button } from "@/components/ui/button"
 
 export function ProjectList({

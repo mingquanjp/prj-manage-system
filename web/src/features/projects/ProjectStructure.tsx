@@ -10,14 +10,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/shared"
-import {
-  canAssign,
-  isTaskFrozen,
-  saveGroup,
-  type Project,
-  type Task,
-  type TaskGroup,
-} from "@/demo/model"
+import { canAssign } from "@/demo/identity"
+import { isTaskFrozen, saveGroup } from "@/demo/task-structure"
+import type { Project, Task, TaskGroup } from "@/models/workspace"
 
 export function ProjectStructure({
   project,
