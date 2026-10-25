@@ -112,6 +112,9 @@ export function startProject(project: Project, actorId: string, tasks: Task[]): 
 export function progress(tasks: Task[]) {
   const effective = tasks.filter((t) => t.status !== "CANCELLED")
   return effective.length
-    ? Math.round((effective.filter((t) => t.status === "DONE").length / effective.length) * 100)
+    ? Math.round(
+        (effective.filter((t) => ["DONE", "CLOSED"].includes(t.status)).length / effective.length) *
+          100,
+      )
     : null
 }
