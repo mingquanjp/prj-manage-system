@@ -6,6 +6,10 @@ import { appointPtcm, ptcmBlockReason, startProject } from "@/demo/projects"
 import { getPerson } from "@/demo/identity"
 import { people } from "@/demo/fixtures"
 import type { OutputConflict, Project, ProjectEvent, Task } from "@/models/workspace"
+import type { WorkState } from "@/demo/effort"
+import type { LifecycleCommand } from "@/demo/project-lifecycle"
+import { ProjectLifecycleActions } from "./ProjectLifecycleActions"
+import { ProjectManagementRow } from "./ProjectManagementRow"
 
 export function ProjectResponsibilities({
   project,
@@ -14,6 +18,9 @@ export function ProjectResponsibilities({
   conflicts,
   events,
   onChange,
+  work,
+  onLifecycle,
+  hasDraft,
 }: {
   project: Project
   actorId: string
@@ -21,6 +28,9 @@ export function ProjectResponsibilities({
   conflicts: OutputConflict[]
   events: ProjectEvent[]
   onChange: (project: Project, action: string) => void
+  work: WorkState
+  onLifecycle: (command: LifecycleCommand) => void
+  hasDraft: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [candidate, setCandidate] = useState(project.ptcmId ?? "")
@@ -29,6 +39,7 @@ export function ProjectResponsibilities({
   const [managing, setManaging] = useState(false)
   const pm = project.pmId === actorId
   const editable = ["PLANNING", "IN_PROGRESS"].includes(project.status)
+  const manageable = editable || project.status === "COMPLETED"
   const block = candidate ? ptcmBlockReason(project, candidate, tasks, conflicts) : undefined
   const hasAssigned = tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED")
   const history = events.filter((e) => e.projectId === project.id)
@@ -50,7 +61,7 @@ export function ProjectResponsibilities({
             </span>
           </p>
         </div>
-        {((pm && editable) || history.length > 0) && (
+        {((pm && manageable) || history.length > 0) && (
           <Button
             size="sm"
             variant="ghost"
@@ -59,33 +70,69 @@ export function ProjectResponsibilities({
             onClick={() => setManaging(!managing)}
           >
             <GearIcon />
-            {pm && editable ? "Quản lý dự án" : "Lịch sử thay đổi"}
+            {pm && manageable ? "Quản lý dự án" : "Lịch sử thay đổi"}
             <ChevronDownIcon className={managing ? "rotate-180" : ""} />
           </Button>
         )}
       </div>
+      {["COMPLETED", "CLOSED", "CANCELLED"].includes(project.status) && (
+        <p className="mt-3 rounded-md bg-accent p-3 text-xs leading-5">
+          {project.status === "COMPLETED"
+            ? "Dự án đã hoàn thành: không thực hiện thêm công việc. PTCM vẫn xử lý hiệu chỉnh nhật ký; PM đóng khi hết yêu cầu chờ."
+            : "Dự án đã đóng/hủy: dữ liệu nghiệp vụ chỉ đọc, lịch sử và minh chứng được giữ nguyên. Không mở lại dự án."}
+          {project.status === "CANCELLED" &&
+            work.requests.some(
+              (request) =>
+                request.decisionReason?.startsWith("PROJECT_CANCELLED") &&
+                work.contributions.some(
+                  (entry) =>
+                    entry.projectId === project.id && entry.assignment.id === request.assignmentId,
+                ),
+            ) &&
+            " Có yêu cầu hiệu chỉnh chưa được giải quyết trước khi hủy; nhật ký có thể chưa đầy đủ. Xem lịch sử hiệu chỉnh để đối chiếu."}
+        </p>
+      )}
       {!project.ptcmId && !managing && (
         <p className="mt-1 text-xs text-muted-foreground">
           Chưa có PTCM để thiết lập và phân công công việc.
         </p>
       )}
       {managing && (
-        <div id="project-management" className="mt-3 rounded-lg border border-border bg-white p-4">
-          <div className="flex flex-wrap gap-2">
-            {pm && editable && (
+        <div id="project-management" className="mt-3 rounded-lg border border-border bg-white px-4">
+          {pm && editable && (
+            <ProjectManagementRow
+              title="Phụ trách chuyên môn"
+              description={
+                project.ptcmId
+                  ? (getPerson(project.ptcmId)?.name ?? "Chưa có thông tin nhân viên")
+                  : "Chưa chỉ định người thiết lập và phân công công việc."
+              }
+            >
               <Button
                 variant="outline"
                 size="sm"
+                aria-label={
+                  project.ptcmId ? "Thay đổi phụ trách chuyên môn" : "Chỉ định phụ trách chuyên môn"
+                }
                 onClick={() => {
                   setCandidate(project.ptcmId ?? "")
                   setError("")
                   setEditing(true)
                 }}
               >
-                {project.ptcmId ? "Thay PTCM" : "Chỉ định PTCM"}
+                {project.ptcmId ? "Thay đổi" : "Chỉ định PTCM"}
               </Button>
-            )}
-            {pm && project.status === "PLANNING" && (
+            </ProjectManagementRow>
+          )}
+          {pm && project.status === "PLANNING" && (
+            <ProjectManagementRow
+              title="Bắt đầu dự án"
+              description={
+                hasAssigned
+                  ? "Cho phép người được giao bắt đầu thực hiện công việc."
+                  : "Cần ít nhất một công việc đã phân công để bắt đầu triển khai."
+              }
+            >
               <Button
                 size="sm"
                 disabled={!hasAssigned}
@@ -97,19 +144,18 @@ export function ProjectResponsibilities({
               >
                 Bắt đầu dự án
               </Button>
-            )}
-          </div>
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            {!project.ptcmId
-              ? "Chưa có PTCM nên chưa thể tạo nhóm, công việc hoặc phân công. PM cần chỉ định người phụ trách chuyên môn."
-              : "PTCM tổ chức, phân công và nghiệm thu; không nhận công việc trong chính dự án này."}
-            {pm &&
-              project.status === "PLANNING" &&
-              !hasAssigned &&
-              " Cần ít nhất một công việc đã phân công để bắt đầu triển khai."}
-          </p>
+            </ProjectManagementRow>
+          )}
+          <ProjectLifecycleActions
+            project={project}
+            tasks={tasks}
+            work={work}
+            actorId={actorId}
+            onTransition={onLifecycle}
+            hasDraft={hasDraft}
+          />
           {history.length > 0 && (
-            <details className="mt-3 border-t border-border pt-3 text-xs">
+            <details className="border-t border-border py-3 text-xs">
               <summary className="field-label cursor-pointer">
                 Thay đổi trong phiên mô phỏng ({history.length})
               </summary>
@@ -118,6 +164,11 @@ export function ProjectResponsibilities({
                   <li key={i}>
                     {e.action} · {getPerson(e.actorId)?.name} ·{" "}
                     {new Date(e.at).toLocaleTimeString("vi-VN")}
+                    {e.reason && (
+                      <p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">
+                        Lý do: {e.reason}
+                      </p>
+                    )}
                     {e.action === "Chỉ định PTCM" &&
                       ` · ${getPerson(e.before?.ptcmId)?.name ?? "Chưa chỉ định"} → ${getPerson(e.after.ptcmId)?.name}`}
                   </li>

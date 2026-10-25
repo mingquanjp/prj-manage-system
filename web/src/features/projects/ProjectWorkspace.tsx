@@ -35,6 +35,7 @@ import type { ReviewResult, WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
 import { CorrectionRequests } from "@/features/work-logs/CorrectionRequests"
 import { contributionFor } from "@/demo/corrections"
+import type { LifecycleCommand } from "@/demo/project-lifecycle"
 
 export function ProjectWorkspace({
   actorId,
@@ -50,6 +51,7 @@ export function ProjectWorkspace({
   work,
   onReview,
   onWorkChange,
+  onLifecycle,
 }: {
   actorId: string
   projects: Project[]
@@ -63,6 +65,7 @@ export function ProjectWorkspace({
   onNotice: (notice: string) => void
   work: WorkState
   onWorkChange: (work: WorkState) => void
+  onLifecycle: (command: LifecycleCommand) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
   const { projectId } = useParams()
@@ -144,6 +147,12 @@ export function ProjectWorkspace({
     setDetail(task.id)
     setDetailTab(task.status === "PENDING_REVIEW" && canReadResults ? "results" : "details")
   }
+  const transitionLifecycle = (command: LifecycleCommand) => {
+    onLifecycle(command)
+    setDraft({})
+    setSelected([])
+    setAssignMode(null)
+  }
 
   return (
     <>
@@ -205,6 +214,9 @@ export function ProjectWorkspace({
         conflicts={conflicts}
         events={events}
         onChange={onProjectChange}
+        work={work}
+        onLifecycle={transitionLifecycle}
+        hasDraft={Object.keys(draft).length > 0}
       />
       <div className="mb-4 flex items-center justify-between gap-4 border-b border-border">
         <div className="flex min-w-0 overflow-x-auto">
@@ -457,6 +469,8 @@ export function ProjectWorkspace({
                 onDetailTabChange={setDetailTab}
                 onEditTask={(task) => setEditor({ task })}
                 onReview={onReview}
+                tasks={tasks}
+                onLifecycle={transitionLifecycle}
               />
             )}
           </div>

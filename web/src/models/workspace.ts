@@ -136,6 +136,7 @@ export type ProjectEvent = {
   actorId: string
   at: string
   action: string
+  reason?: string
   before?: Project
   after: Project
 }

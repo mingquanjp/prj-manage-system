@@ -17,6 +17,14 @@ export type DemoWorkspaceState = {
 }
 
 export type DemoWorkspaceAction =
+  | {
+      type: "lifecycleChanged"
+      project: Project
+      tasks: Task[]
+      work: WorkState
+      event: ProjectEvent
+      notice: string
+    }
   | { type: "projectCreated"; projects: Project[]; event: ProjectEvent }
   | { type: "projectChanged"; project: Project; event: ProjectEvent; notice: string }
   | { type: "groupsChanged"; groups: TaskGroup[] }
@@ -44,6 +52,15 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "lifecycleChanged":
+      return {
+        ...state,
+        projects: state.projects.map((p) => (p.id === action.project.id ? action.project : p)),
+        tasks: action.tasks,
+        work: action.work,
+        events: [...state.events, action.event],
+        notice: action.notice,
+      }
     case "projectCreated":
       return {
         ...state,

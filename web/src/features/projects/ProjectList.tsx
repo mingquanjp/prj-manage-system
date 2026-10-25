@@ -50,6 +50,9 @@ export function ProjectList({
             ["all", "Tất cả"],
             ["IN_PROGRESS", "Đang thực hiện"],
             ["PLANNING", "Lập kế hoạch"],
+            ["COMPLETED", "Đã hoàn thành"],
+            ["CLOSED", "Đã đóng"],
+            ["CANCELLED", "Đã hủy"],
           ].map(([value, label]) => (
             <button
               type="button"

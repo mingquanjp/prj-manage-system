@@ -68,6 +68,7 @@ export function WorkspaceRoutes({
             conflicts={initialOutputConflicts}
             events={events}
             onProjectChange={actions.changeProject}
+            onLifecycle={actions.transitionLifecycle}
             tasks={tasks}
             groups={groups}
             work={work}

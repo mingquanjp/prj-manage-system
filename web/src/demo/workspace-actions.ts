@@ -9,6 +9,7 @@ import {
   type WorkState,
 } from "./effort.ts"
 import type { DemoWorkspaceAction, DemoWorkspaceState } from "./workspace-state.ts"
+import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lifecycle.ts"
 
 // Biên thao tác demo: chuẩn bị kết quả trước dispatch để lỗi vẫn trả về form gọi.
 // Đây không phải transaction/API server; callback dùng snapshot render hiện tại.
@@ -18,6 +19,10 @@ export function createDemoWorkspaceActions(
   actorId: string,
 ) {
   return {
+    transitionLifecycle(command: LifecycleCommand) {
+      const next = transitionProjectLifecycle(state, actorId, command, new Date().toISOString())
+      dispatch({ type: "lifecycleChanged", ...next })
+    },
     setNotice(notice: string) {
       dispatch({ type: "noticeChanged", notice })
     },

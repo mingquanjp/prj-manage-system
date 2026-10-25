@@ -7,6 +7,8 @@ import type { Project, Task, OutputConflict } from "@/models/workspace"
 import type { ReviewResult, WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
 import { TaskReviewPanel } from "./TaskReviewPanel"
+import { ProjectLifecycleActions } from "./ProjectLifecycleActions"
+import type { LifecycleCommand } from "@/demo/project-lifecycle"
 
 export function ProjectTaskSidebar({
   currentTask,
@@ -23,6 +25,8 @@ export function ProjectTaskSidebar({
   onDetailTabChange,
   onEditTask,
   onReview,
+  tasks,
+  onLifecycle,
 }: {
   currentTask: Task | undefined
   project: Project
@@ -38,6 +42,8 @@ export function ProjectTaskSidebar({
   onDetailTabChange: (tab: "details" | "results") => void
   onEditTask: (task: Task) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
+  tasks: Task[]
+  onLifecycle: (command: LifecycleCommand) => void
 }) {
   return (
     <aside
@@ -58,6 +64,24 @@ export function ProjectTaskSidebar({
       {currentTask ? (
         <>
           <TaskDetailHeader task={currentTask} onClose={onCloseDetail} />
+          <div className="mt-3">
+            <ProjectLifecycleActions
+              project={project}
+              tasks={tasks}
+              work={work}
+              actorId={actorId}
+              task={currentTask}
+              onTransition={onLifecycle}
+            />
+          </div>
+          {currentTask.status === "CANCELLED" && (
+            <p className="mt-3 whitespace-pre-wrap break-words rounded-md bg-accent p-3 text-xs leading-5">
+              Công việc đã hủy. Nhật ký và các lần nộp được giữ nguyên, không kết luận nghiệm thu
+              thay.
+              {currentTask.executionHistory?.at(-1)?.reason &&
+                ` Lý do: ${currentTask.executionHistory.at(-1)?.reason}`}
+            </p>
+          )}
           {canReadResults && (
             <div className="mt-4 flex gap-1" role="group" aria-label="Nội dung công việc dự án">
               <Button
@@ -179,7 +203,7 @@ export function ProjectTaskSidebar({
               />
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              {related.filter((t) => t.status === "DONE").length} /{" "}
+              {related.filter((t) => ["DONE", "CLOSED"].includes(t.status)).length} /{" "}
               {related.filter((t) => t.status !== "CANCELLED").length} công việc hiệu lực
             </p>
           </div>

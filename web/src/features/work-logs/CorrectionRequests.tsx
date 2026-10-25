@@ -148,6 +148,8 @@ export function CorrectionRequests({
           const project = projects.find((p) => p.id === contribution.projectId)!
           const writable = ["IN_PROGRESS", "COMPLETED"].includes(project.status)
           const pending = r.status === "PENDING"
+          const endedByCancellation =
+            r.status === "REJECTED" && r.decisionReason?.startsWith("PROJECT_CANCELLED")
           const stale = requestConflict(work, r)
           return (
             <li key={r.id} className="rounded-lg border border-border bg-white p-4">
@@ -156,7 +158,7 @@ export function CorrectionRequests({
                   {changeLabels[r.operation]} nhật ký · {contribution.taskCode}
                 </p>
                 <span className="rounded bg-accent px-2 py-1 text-xs">
-                  {requestLabels[r.status]}
+                  {endedByCancellation ? "Kết thúc do hủy dự án" : requestLabels[r.status]}
                 </span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{contribution.taskName}</p>
@@ -183,7 +185,8 @@ export function CorrectionRequests({
               {r.resolvedAt && (
                 <p className="mt-3 break-words text-xs leading-5 text-muted-foreground">
                   {getPerson(r.resolvedBy)?.name} · {new Date(r.resolvedAt).toLocaleString("vi-VN")}
-                  {r.decisionReason && ` · ${r.decisionReason}`}
+                  {r.decisionReason &&
+                    ` · ${endedByCancellation ? r.decisionReason.replace(/^PROJECT_CANCELLED\s*·?\s*/, "Hủy dự án: ") : r.decisionReason}`}
                   {r.resultLogId && " · Đã liên kết nhật ký được tạo từ yêu cầu này."}
                 </p>
               )}
