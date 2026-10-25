@@ -32,6 +32,7 @@ export type DemoWorkspaceAction =
   | { type: "workChanged"; work: WorkState }
   | { type: "taskTransitioned"; tasks: Task[]; notice: string }
   | { type: "resultSaved"; tasks: Task[]; work: WorkState; notice: string }
+  | { type: "assignmentReplaced"; tasks: Task[]; work: WorkState; notice: string }
   | { type: "noticeChanged"; notice: string }
   | { type: "reset" }
 
@@ -94,6 +95,7 @@ export function demoWorkspaceReducer(
     case "taskTransitioned":
       return { ...state, tasks: action.tasks, notice: action.notice }
     case "resultSaved":
+    case "assignmentReplaced":
       return { ...state, tasks: action.tasks, work: action.work, notice: action.notice }
     case "noticeChanged":
       return { ...state, notice: action.notice }

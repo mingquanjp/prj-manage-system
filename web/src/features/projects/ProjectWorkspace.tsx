@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils"
 import { CorrectionRequests } from "@/features/work-logs/CorrectionRequests"
 import { contributionFor } from "@/demo/corrections"
 import type { LifecycleCommand } from "@/demo/project-lifecycle"
+import type { ReassignmentCommand } from "@/demo/reassignment"
 
 export function ProjectWorkspace({
   actorId,
@@ -52,6 +53,7 @@ export function ProjectWorkspace({
   onReview,
   onWorkChange,
   onLifecycle,
+  onReassign,
 }: {
   actorId: string
   projects: Project[]
@@ -66,6 +68,7 @@ export function ProjectWorkspace({
   work: WorkState
   onWorkChange: (work: WorkState) => void
   onLifecycle: (command: LifecycleCommand) => void
+  onReassign: (command: ReassignmentCommand) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
   const { projectId } = useParams()
@@ -471,6 +474,7 @@ export function ProjectWorkspace({
                 onReview={onReview}
                 tasks={tasks}
                 onLifecycle={transitionLifecycle}
+                onReassign={onReassign}
               />
             )}
           </div>

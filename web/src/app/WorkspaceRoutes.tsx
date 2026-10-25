@@ -69,6 +69,7 @@ export function WorkspaceRoutes({
             events={events}
             onProjectChange={actions.changeProject}
             onLifecycle={actions.transitionLifecycle}
+            onReassign={actions.reassignTask}
             tasks={tasks}
             groups={groups}
             work={work}

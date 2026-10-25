@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { TaskReviewPanel } from "./TaskReviewPanel"
 import { ProjectLifecycleActions } from "./ProjectLifecycleActions"
 import type { LifecycleCommand } from "@/demo/project-lifecycle"
+import type { ReassignmentCommand } from "@/demo/reassignment"
+import { TaskReassignment } from "@/features/assignment/TaskReassignment"
 
 export function ProjectTaskSidebar({
   currentTask,
@@ -27,6 +29,7 @@ export function ProjectTaskSidebar({
   onReview,
   tasks,
   onLifecycle,
+  onReassign,
 }: {
   currentTask: Task | undefined
   project: Project
@@ -44,6 +47,7 @@ export function ProjectTaskSidebar({
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
   tasks: Task[]
   onLifecycle: (command: LifecycleCommand) => void
+  onReassign: (command: ReassignmentCommand) => void
 }) {
   return (
     <aside
@@ -166,6 +170,17 @@ export function ProjectTaskSidebar({
                   </dd>
                 </div>
               </dl>
+              {allowed && (
+                <TaskReassignment
+                  key={`reassignment-${currentTask.id}`}
+                  project={project}
+                  task={currentTask}
+                  tasks={tasks}
+                  work={work}
+                  actorId={actorId}
+                  onReassign={onReassign}
+                />
+              )}
               <div className="mt-5 border-t border-border pt-4 text-sm">
                 Ước tính <span className="float-right font-medium">{currentTask.estimate} giờ</span>
               </div>

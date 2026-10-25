@@ -10,6 +10,7 @@ import {
 } from "./effort.ts"
 import type { DemoWorkspaceAction, DemoWorkspaceState } from "./workspace-state.ts"
 import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lifecycle.ts"
+import { reassignUnstartedTask, type ReassignmentCommand } from "./reassignment.ts"
 
 // Biên thao tác demo: chuẩn bị kết quả trước dispatch để lỗi vẫn trả về form gọi.
 // Đây không phải transaction/API server; callback dùng snapshot render hiện tại.
@@ -19,6 +20,16 @@ export function createDemoWorkspaceActions(
   actorId: string,
 ) {
   return {
+    reassignTask(command: ReassignmentCommand) {
+      const next = reassignUnstartedTask(
+        state,
+        actorId,
+        command,
+        new Date().toISOString(),
+        crypto.randomUUID(),
+      )
+      dispatch({ type: "assignmentReplaced", ...next })
+    },
     transitionLifecycle(command: LifecycleCommand) {
       const next = transitionProjectLifecycle(state, actorId, command, new Date().toISOString())
       dispatch({ type: "lifecycleChanged", ...next })
