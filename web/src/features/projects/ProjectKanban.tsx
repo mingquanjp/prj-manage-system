@@ -1,6 +1,6 @@
+import { usePeople } from "@/components/people-directory"
 import { FileTextIcon } from "@radix-ui/react-icons"
 import { Avatar, StatusBadge } from "@/components/shared"
-import { getPerson } from "@/demo/identity"
 import type { Task } from "@/models/workspace"
 import { projectBoard } from "@/demo/kanban"
 import { cn } from "@/lib/utils"
@@ -20,6 +20,7 @@ export function ProjectKanban({
   onToggle: (id: string) => void
   onSelect: (task: Task, trigger: HTMLButtonElement) => void
 }) {
+  const { getPerson } = usePeople()
   return (
     <div
       role="region"

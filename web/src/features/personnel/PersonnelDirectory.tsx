@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { usePeople } from "@/components/people-directory"
 import { Avatar, EmptyState, SearchInput } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -15,6 +16,7 @@ export function PersonnelDirectory({
   tasks: Task[]
   actorId: string
 }) {
+  const { people } = usePeople()
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string>()
   if (!canLookupPersonnel(projects, actorId)) {
@@ -25,7 +27,7 @@ export function PersonnelDirectory({
       />
     )
   }
-  const profiles = personnelProfiles(projects, tasks, actorId, query)
+  const profiles = personnelProfiles(projects, tasks, actorId, query, people)
   const selected = profiles.find((person) => person.id === selectedId)
 
   return (

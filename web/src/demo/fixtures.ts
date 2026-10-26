@@ -17,6 +17,7 @@ export const demoUsers: { personId: string; systemRoles: SystemRole[] }[] = [
   { personId: "binh", systemRoles: [] },
   { personId: "dung", systemRoles: [] },
   { personId: "ha", systemRoles: ["DIRECTOR"] },
+  { personId: "hr", systemRoles: ["HR"] },
 ]
 
 // Mẫu: Thanh từng góp đầu ra cho T007, hiện Cường nộp và chưa được nghiệm thu.
@@ -25,6 +26,16 @@ export const initialOutputConflicts: OutputConflict[] = [
 ]
 
 export const people: Person[] = [
+  {
+    id: "hr",
+    name: "Nguyễn Hoài An",
+    initials: "HA",
+    position: "Chuyên viên nhân sự",
+    seniority: "Middle",
+    active: true,
+    skills: {},
+    backgroundLoad: 0,
+  },
   {
     id: "ha",
     name: "Đặng Thu Hà",

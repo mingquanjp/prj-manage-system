@@ -1,7 +1,8 @@
-import type { Project, Task } from "../models/workspace.ts"
-import { canViewProject, getPerson } from "../demo/identity.ts"
+import type { Person, Project, Task } from "../models/workspace.ts"
+import { canViewProject, isHr } from "../demo/identity.ts"
 import { personalTasks } from "../demo/execution.ts"
-import { demoUsers } from "../demo/fixtures.ts"
+import { demoUsers, people } from "../demo/fixtures.ts"
+import { canReviewProfiles } from "../demo/profiles.ts"
 import { canLookupPersonnel } from "../demo/personnel.ts"
 
 export function selectWorkspaceNavigation(
@@ -13,19 +14,40 @@ export function selectWorkspaceNavigation(
   const ownTasks = personalTasks(projects, tasks, actorId)
   const personalView = pathname === "/my-work"
   const personnelView = pathname === "/personnel"
+  const profileView = pathname === "/my-profile"
+  const profileReviewView = pathname === "/profile-requests"
+  const organizationView = pathname === "/organization"
+  const canManageOrganization = isHr(actorId)
+  const canReviewProfile = canReviewProfiles(actorId)
   const canLookup = canLookupPersonnel(projects, actorId)
   const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
   const currentProject = projects.find(
     (p) => pathname === `/projects/${p.id}` && canViewProject(p, actorId),
   )
 
-  return { ownTasks, personalView, personnelView, canLookup, visibleProjects, currentProject }
+  return {
+    ownTasks,
+    personalView,
+    personnelView,
+    profileView,
+    profileReviewView,
+    organizationView,
+    canManageOrganization,
+    canReviewProfile,
+    canLookup,
+    visibleProjects,
+    currentProject,
+  }
 }
 export type WorkspaceNavigation = ReturnType<typeof selectWorkspaceNavigation>
 
-export function demoIdentityOptions(projects: Project[], currentProject?: Project) {
+export function demoIdentityOptions(
+  projects: Project[],
+  currentProject?: Project,
+  directory: Person[] = people,
+) {
   // Thứ tự trình diễn; không dùng để cấp quyền hoặc đổi trách nhiệm dự án.
-  const demoOrder = ["thanh", "khoa", "dung", "ha", "cuong", "an", "binh"]
+  const demoOrder = ["thanh", "khoa", "dung", "ha", "hr", "cuong", "an", "binh"]
   const demoIdentities = [...demoUsers]
     .sort((a, b) => demoOrder.indexOf(a.personId) - demoOrder.indexOf(b.personId))
     .map((u) => {
@@ -44,7 +66,7 @@ export function demoIdentityOptions(projects: Project[], currentProject?: Projec
       ]
       return {
         id: u.personId,
-        name: getPerson(u.personId)?.name,
+        name: directory.find((person) => person.id === u.personId)?.name,
         responsibility: labels.length ? labels.join("; ") : "Nhân viên",
       }
     })

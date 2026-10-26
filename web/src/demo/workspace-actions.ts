@@ -11,6 +11,10 @@ import {
 import type { DemoWorkspaceAction, DemoWorkspaceState } from "./workspace-state.ts"
 import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lifecycle.ts"
 import { reassignUnstartedTask, type ReassignmentCommand } from "./reassignment.ts"
+import { requestProfileChange, resolveProfileRequest } from "./profiles.ts"
+import type { ProfileValues } from "../models/profile.ts"
+import type { OrganizationCommand } from "../models/organization.ts"
+import { changeOrganization } from "./organization.ts"
 
 // Biên thao tác demo: chuẩn bị kết quả trước dispatch để lỗi vẫn trả về form gọi.
 // Đây không phải transaction/API server; callback dùng snapshot render hiện tại.
@@ -20,6 +24,57 @@ export function createDemoWorkspaceActions(
   actorId: string,
 ) {
   return {
+    changeOrganization(command: OrganizationCommand) {
+      const organization = changeOrganization(
+        state.organization,
+        state.profileState.profiles,
+        actorId,
+        command,
+        command.action === "create" ? crypto.randomUUID() : "",
+      )
+      dispatch({
+        type: "organizationChanged",
+        organization,
+        notice:
+          command.action === "delete"
+            ? "Đã xóa mục khỏi danh mục."
+            : "Đã lưu danh mục. Thông tin liên quan được cập nhật trong phiên mô phỏng.",
+      })
+    },
+    requestProfileChange(before: ProfileValues, proposed: ProfileValues, explanation: string) {
+      const profileState = requestProfileChange(
+        state.profileState,
+        actorId,
+        before,
+        proposed,
+        explanation,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "profilesChanged",
+        profileState,
+        notice: "Đã gửi đề nghị. Thông tin chính thức chỉ thay đổi sau khi HR chấp thuận.",
+      })
+    },
+    resolveProfileRequest(requestId: string, decision: "APPROVED" | "REJECTED", reason: string) {
+      const profileState = resolveProfileRequest(
+        state.profileState,
+        actorId,
+        requestId,
+        decision,
+        reason,
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "profilesChanged",
+        profileState,
+        notice:
+          decision === "APPROVED"
+            ? "Đã chấp thuận và cập nhật hồ sơ chính thức."
+            : "Đã từ chối yêu cầu; hồ sơ chính thức giữ nguyên.",
+      })
+    },
     reassignTask(command: ReassignmentCommand) {
       const next = reassignUnstartedTask(
         state,

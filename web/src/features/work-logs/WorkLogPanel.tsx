@@ -1,8 +1,8 @@
+import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Pencil1Icon, TrashIcon, PlusIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { getPerson } from "@/demo/identity"
 import type { Project, Task } from "@/models/workspace"
 import {
   dailyMinutes,
@@ -45,6 +45,7 @@ export function WorkLogPanel({
   onChange: (work: WorkState) => void
   contribution?: Contribution
 }) {
+  const { getPerson } = usePeople()
   const [editor, setEditor] = useState<{
     before?: WorkLog
     correction: boolean

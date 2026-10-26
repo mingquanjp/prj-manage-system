@@ -3,6 +3,7 @@ import { canAssign, getPerson, isEligible } from "./identity.ts"
 import { skillGaps } from "./assignment.ts"
 import { rememberContributions, type WorkState } from "./effort.ts"
 import type { DemoWorkspaceState } from "./workspace-state.ts"
+import { professionalPeople } from "./profiles.ts"
 
 export type ReassignmentCommand = {
   projectId: string
@@ -72,7 +73,11 @@ export function reassignUnstartedTask(
   const overrideReason = command.overrideReason.trim()
   const gaps = skillGaps(task, person)
   if (gaps.length && !overrideReason) throw new Error("Vui lòng nhập lý do ngoại lệ kỹ năng.")
-  const historyReason = `Đổi người: ${getPerson(task.assigneeId)?.name ?? task.assigneeId} → ${person.name}. ${reason}${gaps.length ? ` Ngoại lệ kỹ năng: ${overrideReason}` : ""}`
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const personName = directory.find((entry) => entry.id === person.id)!.name
+  const previousName =
+    directory.find((entry) => entry.id === task.assigneeId)?.name ?? task.assigneeId
+  const historyReason = `Đổi người: ${previousName} → ${personName}. ${reason}${gaps.length ? ` Ngoại lệ kỹ năng: ${overrideReason}` : ""}`
   const endedTask: Task = {
     ...task,
     currentAssignment: {
@@ -97,6 +102,6 @@ export function reassignUnstartedTask(
   return {
     tasks,
     work,
-    notice: `Đã chuyển ${task.code} cho ${person.name}. Người mới cần bấm Bắt đầu.`,
+    notice: `Đã chuyển ${task.code} cho ${personName}. Người mới cần bấm Bắt đầu.`,
   }
 }

@@ -1,5 +1,6 @@
 import type { Task, Person, Draft, Project } from "../models/workspace.ts"
 import { getPerson, isEligible, canAssign } from "./identity.ts"
+import { people } from "./fixtures.ts"
 
 export function skillGaps(task: Task, person: Person) {
   return task.requirements.filter((r) => r.mandatory && (person.skills[r.skill] ?? 0) < r.level)
@@ -30,7 +31,7 @@ const demoRanks = {
   Frontend: ["cuong", "binh"],
 }
 
-export function recommendations(project: Project, task: Task) {
+export function recommendations(project: Project, task: Task, directory = people) {
   const fixtureGroup = task.requirements.some((r) => r.skill === "React")
     ? "Frontend"
     : task.requirements.some((r) => r.skill === "Node.js")
@@ -38,7 +39,7 @@ export function recommendations(project: Project, task: Task) {
       : undefined
   const ids = fixtureGroup ? demoRanks[fixtureGroup] : []
   return ids
-    .map((id) => getPerson(id)!)
+    .map((id) => directory.find((person) => person.id === id)!)
     .filter((p) => isEligible(project, p) && skillGaps(task, p).length === 0)
     .slice(0, 3)
     .map((person, index) => ({

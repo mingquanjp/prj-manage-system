@@ -1,3 +1,4 @@
+import { usePeople } from "@/components/people-directory"
 import type { ReactNode } from "react"
 import { Link, NavLink } from "react-router"
 import {
@@ -13,7 +14,7 @@ import {
 } from "@radix-ui/react-icons"
 import { Avatar } from "@/components/shared"
 import { Button } from "@/components/ui/button"
-import { getPerson, isDirector } from "@/demo/identity"
+import { isDirector } from "@/demo/identity"
 import type { Project } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 import { demoIdentityOptions, type WorkspaceNavigation } from "./navigation"
@@ -39,10 +40,22 @@ export function AppShell({
   children: ReactNode
   dialogs: ReactNode
 }) {
-  const { ownTasks, personalView, personnelView, canLookup, visibleProjects, currentProject } =
-    navigation
+  const { people, getPerson } = usePeople()
+  const {
+    ownTasks,
+    personalView,
+    personnelView,
+    profileView,
+    profileReviewView,
+    organizationView,
+    canManageOrganization,
+    canReviewProfile,
+    canLookup,
+    visibleProjects,
+    currentProject,
+  } = navigation
   const person = getPerson(actorId)!
-  const demoIdentities = demoIdentityOptions(projects, currentProject)
+  const demoIdentities = demoIdentityOptions(projects, currentProject, people)
   const identityOptions = demoIdentities.map((identity) => (
     <option key={identity.id} value={identity.id}>
       {identity.name} · {identity.responsibility}
@@ -54,7 +67,7 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
-      <aside className="hidden flex-col border-r border-border bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-dvh">
+      <aside className="hidden flex-col overflow-y-auto border-r border-border bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-dvh">
         <Link to="/" className="flex h-[76px] items-center gap-3 px-5">
           <span className="grid size-9 place-items-center rounded-lg bg-primary text-white">
             <ArchiveIcon className="size-5" />
@@ -128,11 +141,54 @@ export function AppShell({
               Tra cứu nhân sự
             </NavLink>
           )}
+          <div className="mt-5 border-t border-border pt-3">
+            <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">Cá nhân</p>
+            <NavLink
+              to="/my-profile"
+              className={({ isActive }) =>
+                cn(
+                  "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                  isActive ? "bg-accent" : "hover:bg-accent",
+                )
+              }
+            >
+              <PersonIcon /> Hồ sơ của tôi
+            </NavLink>
+          </div>
+          {(canReviewProfile || canManageOrganization) && (
+            <div className="mt-4 border-t border-border pt-3">
+              <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">Quản trị</p>
+              <NavLink
+                to="/profile-requests"
+                className={({ isActive }) =>
+                  cn(
+                    "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                    isActive ? "bg-accent" : "hover:bg-accent",
+                  )
+                }
+              >
+                Yêu cầu thông tin cá nhân
+              </NavLink>
+              {canManageOrganization && (
+                <NavLink
+                  to="/organization"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Phòng ban và vị trí
+                </NavLink>
+              )}
+            </div>
+          )}
         </div>
         <div className="mx-5 mt-8 border-t border-border pt-5 text-sm leading-6 text-muted-foreground">
           <p className="font-medium text-foreground">Bản duyệt thiết kế</p>
           <p className="mt-1">
-            Dự án, thực hiện công việc và tra cứu nghề nghiệp. Các khu vực khác sẽ bổ sung sau.
+            Dự án, công việc, hồ sơ cá nhân và yêu cầu cập nhật. Dữ liệu chỉ trong phiên mô phỏng.
           </p>
         </div>
         <div className="mt-auto px-4 pb-5 pt-8">
@@ -169,9 +225,7 @@ export function AppShell({
             <Avatar initials={person.initials} />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{person.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {isDirector(actorId) ? "Giám đốc" : "Trách nhiệm theo từng dự án"}
-              </p>
+              <p className="text-xs text-muted-foreground">{identityResponsibility}</p>
             </div>
           </div>
         </div>
@@ -183,10 +237,32 @@ export function AppShell({
             className="flex min-w-0 items-center gap-2 text-muted-foreground"
           >
             <Link
-              to={personnelView ? "/personnel" : personalView ? "/my-work" : "/"}
+              to={
+                profileView
+                  ? "/my-profile"
+                  : profileReviewView
+                    ? "/profile-requests"
+                    : organizationView
+                      ? "/organization"
+                      : personnelView
+                        ? "/personnel"
+                        : personalView
+                          ? "/my-work"
+                          : "/"
+              }
               className="hover:text-foreground"
             >
-              {personnelView ? "Tra cứu nhân sự" : personalView ? "Không gian cá nhân" : "Dự án"}
+              {profileView
+                ? "Hồ sơ của tôi"
+                : profileReviewView
+                  ? "Yêu cầu thông tin cá nhân"
+                  : organizationView
+                    ? "Phòng ban và vị trí"
+                    : personnelView
+                      ? "Tra cứu nhân sự"
+                      : personalView
+                        ? "Không gian cá nhân"
+                        : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -251,6 +327,34 @@ export function AppShell({
               }
             >
               Tra cứu nhân sự
+            </NavLink>
+          )}
+          <NavLink
+            to="/my-profile"
+            className={({ isActive }) =>
+              cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+            }
+          >
+            Hồ sơ của tôi
+          </NavLink>
+          {canReviewProfile && (
+            <NavLink
+              to="/profile-requests"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Yêu cầu cá nhân
+            </NavLink>
+          )}
+          {canManageOrganization && (
+            <NavLink
+              to="/organization"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Phòng ban và vị trí
             </NavLink>
           )}
         </nav>
