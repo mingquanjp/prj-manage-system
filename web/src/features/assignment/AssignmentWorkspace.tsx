@@ -1,3 +1,4 @@
+import { usePeople } from "@/components/people-directory"
 import { AssignmentTaskList } from "./AssignmentTaskList"
 import { AssignmentCandidateTable } from "./AssignmentCandidateTable"
 import { AssignmentDraftPanel } from "./AssignmentDraftPanel"
@@ -7,9 +8,8 @@ import { EmptyState, SearchInput } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { commitDraft, recommendations, skillGaps, validateDraft } from "@/demo/assignment"
-import { getPerson, isEligible } from "@/demo/identity"
+import { isEligible } from "@/demo/identity"
 import { levels } from "@/models/workspace-labels"
-import { people } from "@/demo/fixtures"
 import type { Choice, Draft, Project, Task } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +35,7 @@ export function AssignmentWorkspace({
   onBack: () => void
   onCommit: (tasks: Task[]) => void
 }) {
+  const { people, getPerson } = usePeople()
   const [ids, setIds] = useState(selectedIds)
   const [activeId, setActiveId] = useState(selectedIds[0])
   const [modes, setModes] = useState<Record<string, Mode>>({})
@@ -49,7 +50,7 @@ export function AssignmentWorkspace({
   const task = tasks.find((t) => t.id === activeId)!
   const selectedTasks = ids.map((id) => tasks.find((t) => t.id === id)!).filter(Boolean)
   const mode = modes[activeId] ?? initialMode
-  const ranked = task ? recommendations(project, task) : []
+  const ranked = task ? recommendations(project, task, people) : []
   const candidates = task
     ? (mode === "recommended"
         ? ranked.map((r) => r.person)

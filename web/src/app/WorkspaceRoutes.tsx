@@ -7,6 +7,8 @@ import { PersonalWork } from "@/features/personal-work/PersonalWork"
 import { PersonnelDirectory } from "@/features/personnel/PersonnelDirectory"
 import { ProjectList } from "@/features/projects/ProjectList"
 import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
+import { PersonalProfile } from "@/features/profiles/PersonalProfile"
+import { ProfileRequests } from "@/features/profiles/ProfileRequests"
 import type { WorkspaceNavigation } from "./navigation"
 
 export function WorkspaceRoutes({
@@ -25,6 +27,28 @@ export function WorkspaceRoutes({
   const { projects, tasks, groups, events, work } = state
   return (
     <Routes>
+      <Route
+        path="/my-profile"
+        element={
+          <PersonalProfile
+            key={actorId}
+            actorId={actorId}
+            state={state.profileState}
+            onRequest={actions.requestProfileChange}
+          />
+        }
+      />
+      <Route
+        path="/profile-requests"
+        element={
+          <ProfileRequests
+            key={actorId}
+            actorId={actorId}
+            state={state.profileState}
+            onResolve={actions.resolveProfileRequest}
+          />
+        }
+      />
       <Route
         path="/personnel"
         element={

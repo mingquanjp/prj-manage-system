@@ -1,4 +1,4 @@
-import { getPerson } from "@/demo/identity"
+import { usePeople } from "@/components/people-directory"
 import { formatMinutes, type Submission } from "@/demo/effort"
 
 // Cùng một cách đọc kết quả ở cá nhân và dự án; caller giới hạn dữ liệu theo tư cách.
@@ -9,6 +9,7 @@ export function SubmissionHistory({
   submissions: Submission[]
   showLogs?: boolean
 }) {
+  const { getPerson } = usePeople()
   return (
     <ol className="mt-4 space-y-4" aria-label="Lịch sử nộp và nghiệm thu">
       {[...submissions].reverse().map((s, index) => (

@@ -1,8 +1,8 @@
+import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { ChevronDownIcon, PersonIcon } from "@radix-ui/react-icons"
 import { Avatar } from "@/components/shared"
 import { addedLoad, loadFor } from "@/demo/assignment"
-import { getPerson } from "@/demo/identity"
 import type { Draft, Task } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 
@@ -25,6 +25,7 @@ export function AssignmentDraftPanel({
   error: string
   onSelectTask: (id: string) => void
 }) {
+  const { getPerson } = usePeople()
   const [draftExpanded, setDraftExpanded] = useState(true)
   return (
     <aside

@@ -1,7 +1,7 @@
+import { usePeople } from "@/components/people-directory"
 import { LockClosedIcon, Pencil1Icon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
-import { getPerson } from "@/demo/identity"
 import { isTaskFrozen } from "@/demo/task-structure"
 import type { Project, Task, OutputConflict } from "@/models/workspace"
 import type { ReviewResult, WorkState } from "@/demo/effort"
@@ -49,6 +49,7 @@ export function ProjectTaskSidebar({
   onLifecycle: (command: LifecycleCommand) => void
   onReassign: (command: ReassignmentCommand) => void
 }) {
+  const { getPerson } = usePeople()
   return (
     <aside
       className={cn(

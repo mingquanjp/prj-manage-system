@@ -36,10 +36,11 @@ export function personnelProfiles(
   tasks: Task[],
   actorId: string,
   query = "",
+  directory = people,
 ): ProfessionalProfile[] {
   if (!canLookupPersonnel(projects, actorId)) return []
   const needle = searchKey(query)
-  return people
+  return directory
     .filter((person) => person.active)
     .map((person) => ({
       id: person.id,

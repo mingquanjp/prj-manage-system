@@ -1,5 +1,7 @@
 import type { Project, ProjectEvent, Task, TaskGroup } from "../models/workspace.ts"
 import { initialGroups, initialTasks, projects } from "./fixtures.ts"
+import { createProfileState } from "./profiles.ts"
+import type { ProfileState } from "../models/profile.ts"
 import {
   emptyWorkState,
   recordAssignmentChanges,
@@ -13,10 +15,12 @@ export type DemoWorkspaceState = {
   groups: TaskGroup[]
   events: ProjectEvent[]
   work: WorkState
+  profileState: ProfileState
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "profilesChanged"; profileState: ProfileState; notice: string }
   | {
       type: "lifecycleChanged"
       project: Project
@@ -43,6 +47,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     groups: structuredClone(initialGroups),
     events: [],
     work: rememberContributions(emptyWorkState(), initialTasks),
+    profileState: createProfileState(),
     notice: "",
   }
 }
@@ -53,6 +58,8 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "profilesChanged":
+      return { ...state, profileState: action.profileState, notice: action.notice }
     case "lifecycleChanged":
       return {
         ...state,

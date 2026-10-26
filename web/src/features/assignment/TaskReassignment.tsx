@@ -1,9 +1,9 @@
+import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { SearchInput } from "@/components/shared"
-import { people } from "@/demo/fixtures"
-import { getPerson, isEligible } from "@/demo/identity"
+import { isEligible } from "@/demo/identity"
 import { loadFor, skillGaps } from "@/demo/assignment"
 import { reassignmentBlockReason, type ReassignmentCommand } from "@/demo/reassignment"
 import type { WorkState } from "@/demo/effort"
@@ -25,6 +25,7 @@ export function TaskReassignment({
   actorId: string
   onReassign: (command: ReassignmentCommand) => void
 }) {
+  const { people, getPerson } = usePeople()
   const [expectedAssignmentId, setExpectedAssignmentId] = useState<string | null>(null)
   const [personId, setPersonId] = useState("")
   const [query, setQuery] = useState("")

@@ -1,3 +1,4 @@
+import { usePeople } from "@/components/people-directory"
 import { useRef, useState } from "react"
 import {
   FileTextIcon,
@@ -11,7 +12,6 @@ import { Dialog } from "@/components/ui/dialog"
 import { EmptyState, SearchInput, StatusBadge } from "@/components/shared"
 import { TaskDetailHeader, TaskSpecification } from "@/components/task-detail"
 import { executionBlockReason, personalTasks } from "@/demo/execution"
-import { getPerson } from "@/demo/identity"
 import { statusLabels } from "@/models/workspace-labels"
 import type { ExecutionAction, Project, Task, TaskStatus } from "@/models/workspace"
 import { cn } from "@/lib/utils"
@@ -43,6 +43,7 @@ export function PersonalWork({
     reason?: string,
   ) => void
 }) {
+  const { getPerson } = usePeople()
   const [search, setSearch] = useState("")
   const [projectId, setProjectId] = useState("all")
   const [status, setStatus] = useState("all")

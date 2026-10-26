@@ -1,10 +1,9 @@
+import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { ChevronDownIcon, GearIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { appointPtcm, ptcmBlockReason, startProject } from "@/demo/projects"
-import { getPerson } from "@/demo/identity"
-import { people } from "@/demo/fixtures"
 import type { OutputConflict, Project, ProjectEvent, Task } from "@/models/workspace"
 import type { WorkState } from "@/demo/effort"
 import type { LifecycleCommand } from "@/demo/project-lifecycle"
@@ -32,6 +31,7 @@ export function ProjectResponsibilities({
   onLifecycle: (command: LifecycleCommand) => void
   hasDraft: boolean
 }) {
+  const { people, getPerson } = usePeople()
   const [editing, setEditing] = useState(false)
   const [candidate, setCandidate] = useState(project.ptcmId ?? "")
   const [error, setError] = useState("")

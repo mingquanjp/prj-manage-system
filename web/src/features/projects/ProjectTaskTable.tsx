@@ -1,6 +1,6 @@
+import { usePeople } from "@/components/people-directory"
 import { FileTextIcon } from "@radix-ui/react-icons"
 import { Avatar, StatusBadge } from "@/components/shared"
-import { getPerson } from "@/demo/identity"
 import type { Task } from "@/models/workspace"
 import { cn } from "@/lib/utils"
 
@@ -25,6 +25,7 @@ export function ProjectTaskTable({
   onToggle: (id: string) => void
   onOpenTask: (task: Task, trigger: HTMLButtonElement) => void
 }) {
+  const { getPerson } = usePeople()
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[650px] text-left text-sm">

@@ -1,7 +1,7 @@
+import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
-import { getPerson } from "@/demo/identity"
 import type { Project, Task } from "@/models/workspace"
 import {
   formatMinutes,
@@ -53,6 +53,7 @@ export function CorrectionRequests({
   projectId?: string
   onChange: (work: WorkState) => void
 }) {
+  const { getPerson } = usePeople()
   const [filter, setFilter] = useState("all")
   const [decision, setDecision] = useState<{
     request: LogChangeRequest
