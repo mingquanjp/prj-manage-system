@@ -47,6 +47,8 @@ export function AppShell({
     personnelView,
     profileView,
     profileReviewView,
+    organizationView,
+    canManageOrganization,
     canReviewProfile,
     canLookup,
     visibleProjects,
@@ -153,7 +155,7 @@ export function AppShell({
               <PersonIcon /> Hồ sơ của tôi
             </NavLink>
           </div>
-          {canReviewProfile && (
+          {(canReviewProfile || canManageOrganization) && (
             <div className="mt-4 border-t border-border pt-3">
               <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">Quản trị</p>
               <NavLink
@@ -167,6 +169,19 @@ export function AppShell({
               >
                 Yêu cầu thông tin cá nhân
               </NavLink>
+              {canManageOrganization && (
+                <NavLink
+                  to="/organization"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Phòng ban và vị trí
+                </NavLink>
+              )}
             </div>
           )}
         </div>
@@ -227,11 +242,13 @@ export function AppShell({
                   ? "/my-profile"
                   : profileReviewView
                     ? "/profile-requests"
-                    : personnelView
-                      ? "/personnel"
-                      : personalView
-                        ? "/my-work"
-                        : "/"
+                    : organizationView
+                      ? "/organization"
+                      : personnelView
+                        ? "/personnel"
+                        : personalView
+                          ? "/my-work"
+                          : "/"
               }
               className="hover:text-foreground"
             >
@@ -239,11 +256,13 @@ export function AppShell({
                 ? "Hồ sơ của tôi"
                 : profileReviewView
                   ? "Yêu cầu thông tin cá nhân"
-                  : personnelView
-                    ? "Tra cứu nhân sự"
-                    : personalView
-                      ? "Không gian cá nhân"
-                      : "Dự án"}
+                  : organizationView
+                    ? "Phòng ban và vị trí"
+                    : personnelView
+                      ? "Tra cứu nhân sự"
+                      : personalView
+                        ? "Không gian cá nhân"
+                        : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -326,6 +345,16 @@ export function AppShell({
               }
             >
               Yêu cầu cá nhân
+            </NavLink>
+          )}
+          {canManageOrganization && (
+            <NavLink
+              to="/organization"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Phòng ban và vị trí
             </NavLink>
           )}
         </nav>

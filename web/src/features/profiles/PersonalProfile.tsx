@@ -4,6 +4,7 @@ import { Avatar, EmptyState } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { usePeople } from "@/components/people-directory"
 import type { ProfileState, ProfileValues } from "@/models/profile"
+import type { OrganizationState } from "@/models/organization"
 import { describeProfileChanges } from "@/demo/profiles"
 import { ProfileChangeForm } from "./ProfileChangeForm"
 import { ProfileRequestBadge, ProfileRequestDetails } from "./ProfileRequestDetails"
@@ -11,10 +12,12 @@ import { ProfileRequestBadge, ProfileRequestDetails } from "./ProfileRequestDeta
 export function PersonalProfile({
   actorId,
   state,
+  organization,
   onRequest,
 }: {
   actorId: string
   state: ProfileState
+  organization: OrganizationState
   onRequest: (before: ProfileValues, proposed: ProfileValues, explanation: string) => void
 }) {
   const { getPerson } = usePeople()
@@ -81,7 +84,11 @@ export function PersonalProfile({
             <ProfileFields
               fields={[
                 ["Email công ty", profile.companyEmail],
-                ["Phòng ban", profile.department],
+                [
+                  "Phòng ban",
+                  organization.departments.find((entry) => entry.id === profile.departmentId)
+                    ?.name ?? null,
+                ],
                 ["Vị trí công việc", person.position],
                 ["Cấp bậc", person.seniority],
               ]}

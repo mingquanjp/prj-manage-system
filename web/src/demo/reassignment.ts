@@ -73,7 +73,7 @@ export function reassignUnstartedTask(
   const overrideReason = command.overrideReason.trim()
   const gaps = skillGaps(task, person)
   if (gaps.length && !overrideReason) throw new Error("Vui lòng nhập lý do ngoại lệ kỹ năng.")
-  const directory = professionalPeople(state.profileState.profiles)
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
   const personName = directory.find((entry) => entry.id === person.id)!.name
   const previousName =
     directory.find((entry) => entry.id === task.assigneeId)?.name ?? task.assigneeId

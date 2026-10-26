@@ -13,6 +13,8 @@ import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lif
 import { reassignUnstartedTask, type ReassignmentCommand } from "./reassignment.ts"
 import { requestProfileChange, resolveProfileRequest } from "./profiles.ts"
 import type { ProfileValues } from "../models/profile.ts"
+import type { OrganizationCommand } from "../models/organization.ts"
+import { changeOrganization } from "./organization.ts"
 
 // Biên thao tác demo: chuẩn bị kết quả trước dispatch để lỗi vẫn trả về form gọi.
 // Đây không phải transaction/API server; callback dùng snapshot render hiện tại.
@@ -22,6 +24,23 @@ export function createDemoWorkspaceActions(
   actorId: string,
 ) {
   return {
+    changeOrganization(command: OrganizationCommand) {
+      const organization = changeOrganization(
+        state.organization,
+        state.profileState.profiles,
+        actorId,
+        command,
+        command.action === "create" ? crypto.randomUUID() : "",
+      )
+      dispatch({
+        type: "organizationChanged",
+        organization,
+        notice:
+          command.action === "delete"
+            ? "Đã xóa mục khỏi danh mục."
+            : "Đã lưu danh mục. Thông tin liên quan được cập nhật trong phiên mô phỏng.",
+      })
+    },
     requestProfileChange(before: ProfileValues, proposed: ProfileValues, explanation: string) {
       const profileState = requestProfileChange(
         state.profileState,

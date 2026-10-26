@@ -4,6 +4,10 @@ import type { Project, Person } from "../models/workspace.ts"
 export const isDirector = (actorId: string) =>
   demoUsers.some((u) => u.personId === actorId && u.systemRoles.includes("DIRECTOR"))
 
+export const isHr = (actorId: string) =>
+  Boolean(getPerson(actorId)?.active) &&
+  demoUsers.some((user) => user.personId === actorId && user.systemRoles.includes("HR"))
+
 export const canViewProject = (project: Project, actorId: string) =>
   isDirector(actorId) || project.pmId === actorId || project.ptcmId === actorId
 

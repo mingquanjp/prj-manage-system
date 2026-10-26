@@ -1,5 +1,5 @@
 import type { Person, Project, Task } from "../models/workspace.ts"
-import { canViewProject } from "../demo/identity.ts"
+import { canViewProject, isHr } from "../demo/identity.ts"
 import { personalTasks } from "../demo/execution.ts"
 import { demoUsers, people } from "../demo/fixtures.ts"
 import { canReviewProfiles } from "../demo/profiles.ts"
@@ -16,6 +16,8 @@ export function selectWorkspaceNavigation(
   const personnelView = pathname === "/personnel"
   const profileView = pathname === "/my-profile"
   const profileReviewView = pathname === "/profile-requests"
+  const organizationView = pathname === "/organization"
+  const canManageOrganization = isHr(actorId)
   const canReviewProfile = canReviewProfiles(actorId)
   const canLookup = canLookupPersonnel(projects, actorId)
   const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
@@ -29,6 +31,8 @@ export function selectWorkspaceNavigation(
     personnelView,
     profileView,
     profileReviewView,
+    organizationView,
+    canManageOrganization,
     canReviewProfile,
     canLookup,
     visibleProjects,

@@ -6,8 +6,10 @@ import type {
   ProfileValues,
 } from "../models/profile.ts"
 import { profileFields, profileFieldLabels } from "../models/profile.ts"
-import { people, demoUsers } from "./fixtures.ts"
-import { getPerson } from "./identity.ts"
+import { people } from "./fixtures.ts"
+import { getPerson, isHr } from "./identity.ts"
+import { initialEmployment } from "./organization.ts"
+import type { OrganizationState } from "../models/organization.ts"
 
 export function createProfileState(): ProfileState {
   return {
@@ -18,25 +20,25 @@ export function createProfileState(): ProfileState {
       companyEmail: `${person.id}@congty.example`,
       phone: null,
       address: null,
-      department:
-        person.id === "hr" ? "Nhân sự" : person.id === "ha" ? null : "Công nghệ thông tin",
+      ...initialEmployment[person.id],
     })),
     requests: [],
   }
 }
 
-export const canReviewProfiles = (actorId: string) =>
-  Boolean(getPerson(actorId)?.active) &&
-  demoUsers.some((user) => user.personId === actorId && user.systemRoles.includes("HR"))
+export const canReviewProfiles = isHr
 
-// Chỉ tên/viết tắt được ghép vào Person; không đưa liên hệ/địa chỉ sang miền chuyên môn.
-export function professionalPeople(profiles: EmployeeProfile[]) {
+// Ghép tên/viết tắt và tên vị trí hiện hành; không đưa liên hệ/địa chỉ sang miền chuyên môn.
+export function professionalPeople(profiles: EmployeeProfile[], organization: OrganizationState) {
   return people.map((person) => {
     const profile = profiles.find((entry) => entry.personId === person.id)
     if (!profile) return person
     return {
       ...person,
       name: profile.fullname,
+      position:
+        organization.positions.find((entry) => entry.id === profile.positionId)?.name ??
+        person.position,
       initials: profile.fullname
         .split(/\s+/)
         .slice(-2)

@@ -6,7 +6,8 @@ export type EmployeeProfile = {
   companyEmail: string
   phone: string | null
   address: string | null
-  department: string | null
+  departmentId: string | null
+  positionId: string
 }
 
 export const profileFields = ["fullname", "phone", "address"] as const

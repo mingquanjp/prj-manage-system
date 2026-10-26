@@ -16,6 +16,7 @@ import { createDemoWorkspaceActions } from "./workspace-actions.ts"
 import { personnelProfiles } from "./personnel.ts"
 import { recommendations } from "./assignment.ts"
 import { demoIdentityOptions, selectWorkspaceNavigation } from "../app/navigation.ts"
+import { createOrganizationState } from "./organization.ts"
 
 const at = "2026-10-26T08:00:00.000Z"
 const setup = () => {
@@ -197,6 +198,8 @@ test("địa chỉ thiếu không ép patch họ tên/SĐT; địa chỉ đã c�
     phone: "0901234567",
     companyEmail: "khac@example.com",
     department: "Khác",
+    departmentId: "Khác",
+    positionId: "Khác",
   }
   const pending = requestProfileChange(state, "dung", profile, expandedProposal, "", "r1", at)
   assert.deepEqual(Object.keys(pending.requests[0].proposed), ["phone"])
@@ -228,10 +231,17 @@ test("tên chính thức đồng bộ projection/tra cứu/gợi ý/demo identit
   )
   const approved = resolveProfileRequest(pending, "hr", "r1", "APPROVED", "", at)
   const workspace = createDemoWorkspaceState()
-  const directory = professionalPeople(approved.profiles)
+  const directory = professionalPeople(approved.profiles, createOrganizationState())
   const person = directory.find((entry) => entry.id === "dung")!
   assert.equal(person.name, "Phạm Dũng Mới")
-  for (const field of ["phone", "address", "companyEmail", "department"])
+  for (const field of [
+    "phone",
+    "address",
+    "companyEmail",
+    "department",
+    "departmentId",
+    "positionId",
+  ])
     assert.equal(field in person, false)
   const lookup = personnelProfiles(
     workspace.projects,

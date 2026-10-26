@@ -33,15 +33,17 @@ export default function App() {
         ? "/my-profile"
         : navigation.profileReviewView
           ? "/profile-requests"
-          : navigation.personalView
-            ? "/my-work"
-            : navigation.personnelView
-              ? "/personnel"
-              : "/",
+          : navigation.organizationView
+            ? "/organization"
+            : navigation.personalView
+              ? "/my-work"
+              : navigation.personnelView
+                ? "/personnel"
+                : "/",
     )
   }
   return (
-    <PeopleDirectory people={professionalPeople(state.profileState.profiles)}>
+    <PeopleDirectory people={professionalPeople(state.profileState.profiles, state.organization)}>
       <AppShell
         actorId={actorId}
         projects={state.projects}
@@ -68,7 +70,7 @@ export default function App() {
               open={resetOpen}
               onOpenChange={setResetOpen}
               title="Khôi phục dữ liệu mẫu?"
-              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ và yêu cầu cập nhật trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
+              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, yêu cầu cập nhật và danh mục phòng ban/vị trí trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
             >
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setResetOpen(false)}>

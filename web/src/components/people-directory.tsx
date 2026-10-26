@@ -3,7 +3,7 @@ import type { Person } from "@/models/workspace"
 
 const PeopleContext = createContext<Person[] | null>(null)
 
-// Chỉ chia sẻ projection nghề nghiệp để tên chính thức đồng bộ; không giữ state/quyền riêng.
+// Chia sẻ tên/vị trí nghề nghiệp hiện hành; không giữ state/quyền hoặc liên hệ riêng.
 export function PeopleDirectory({ people, children }: { people: Person[]; children: ReactNode }) {
   return <PeopleContext.Provider value={people}>{children}</PeopleContext.Provider>
 }

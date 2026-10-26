@@ -9,6 +9,7 @@ import { ProjectList } from "@/features/projects/ProjectList"
 import { ProjectWorkspace } from "@/features/projects/ProjectWorkspace"
 import { PersonalProfile } from "@/features/profiles/PersonalProfile"
 import { ProfileRequests } from "@/features/profiles/ProfileRequests"
+import { OrganizationCatalogs } from "@/features/organization/OrganizationCatalogs"
 import type { WorkspaceNavigation } from "./navigation"
 
 export function WorkspaceRoutes({
@@ -28,12 +29,25 @@ export function WorkspaceRoutes({
   return (
     <Routes>
       <Route
+        path="/organization"
+        element={
+          <OrganizationCatalogs
+            key={actorId}
+            actorId={actorId}
+            organization={state.organization}
+            profiles={state.profileState.profiles}
+            onChange={actions.changeOrganization}
+          />
+        }
+      />
+      <Route
         path="/my-profile"
         element={
           <PersonalProfile
             key={actorId}
             actorId={actorId}
             state={state.profileState}
+            organization={state.organization}
             onRequest={actions.requestProfileChange}
           />
         }
