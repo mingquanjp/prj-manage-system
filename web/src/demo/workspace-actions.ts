@@ -12,6 +12,8 @@ import type { DemoWorkspaceAction, DemoWorkspaceState } from "./workspace-state.
 import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lifecycle.ts"
 import { reassignUnstartedTask, type ReassignmentCommand } from "./reassignment.ts"
 import { requestProfileChange, resolveProfileRequest } from "./profiles.ts"
+import { updateEmployeeProfile } from "./employee-administration.ts"
+import type { EmployeeProfile, EmployeeEditValues } from "../models/profile.ts"
 import type { ProfileValues } from "../models/profile.ts"
 import type { OrganizationCommand } from "../models/organization.ts"
 import { changeOrganization } from "./organization.ts"
@@ -24,6 +26,22 @@ export function createDemoWorkspaceActions(
   actorId: string,
 ) {
   return {
+    updateEmployeeProfile(before: EmployeeProfile, proposed: EmployeeEditValues) {
+      const profileState = updateEmployeeProfile(
+        state.profileState,
+        state.organization,
+        actorId,
+        before,
+        proposed,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "profilesChanged",
+        profileState,
+        notice: "Đã cập nhật hồ sơ chính thức trong phiên mô phỏng.",
+      })
+    },
     changeOrganization(command: OrganizationCommand) {
       const organization = changeOrganization(
         state.organization,

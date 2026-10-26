@@ -1,6 +1,6 @@
 # Vai trò và phân quyền — nghiệp vụ hiện hành
 
-**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 32 bảng. Chưa triển khai code/DDL/migration.
+**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
 > Baseline nghiệp vụ hiện hành: [2026-10-12](../../docs/business-baseline-2026-10-12.md), PTCM phân công và nghiệm thu, không nhận task trong dự án phụ trách; tra cứu giới hạn dữ liệu nghề nghiệp. Phần kỹ thuật V2 chưa đồng bộ không được ghi đè quyết định mới; công thức và quy tắc không bị thay thế giữ nguyên.
@@ -89,6 +89,6 @@ Cookie secret ngẫu nhiên → SHA-256 để tra auth_sessions.token_hash → k
 
 Cookie host-only/HttpOnly/Secure/SameSite=Lax, Path=/api; production HTTPS. Mutation kiểm tra Origin và token CSRF gắn phiên; login kiểm tra nguồn. Logout thu hồi phiên và xóa cookie đúng path; khóa/reset/đổi role thu hồi các phiên trong giao dịch. Timeout tuyệt đối/idle và cleanup chưa chốt; bộ sáu cột không cam kết idle timeout, không tự thêm last_seen_at.
 
-HR quản trị departments/positions; Giám đốc quản trị skill_categories/skills. Quyền danh mục không cấp thêm quyền khác. Username khác email công ty. Nhân viên có tư cách từ employees, PM/PTCM từ projects; user_roles chỉ ADMIN/HR/DIRECTOR. Không thêm bảng permission.
+HR quản trị departments/positions/job_levels; Giám đốc quản trị skill_categories/skills. Quyền danh mục không cấp thêm quyền khác. Username khác email công ty. Nhân viên có tư cách từ employees, PM/PTCM từ projects; user_roles chỉ ADMIN/HR/DIRECTOR. Không thêm bảng permission.
 
 Bcrypt và chính sách mật khẩu xem security.md; seed chỉ dev, không dùng mật khẩu mẫu triển khai thực.

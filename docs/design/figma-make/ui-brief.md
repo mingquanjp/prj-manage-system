@@ -13,7 +13,7 @@ Kế hoạch chi tiết chia sẻ ngoài hệ thống. Theo dõi tiến độ di
 | Tư cách hiện hành | Chức năng được hiển thị |
 |---|---|
 | Admin | Tài khoản: tạo kèm hồ sơ ban đầu, khóa/mở, cấp/thu hồi vai trò, reset theo chính sách được đặc tả |
-| HR | Hồ sơ nhân sự/CV; yêu cầu thông tin cá nhân; phòng ban và vị trí công việc |
+| HR | Hồ sơ nhân sự/CV; yêu cầu thông tin cá nhân; phòng ban, vị trí và cấp bậc |
 | Giám đốc | Tạo dự án kèm PM, thay PM; xét duyệt kỹ năng; danh mục kỹ năng gồm nhóm và kỹ năng |
 | PM theo dự án | Theo dõi/cập nhật dự án theo quyền, chỉ định PTCM; bắt đầu/hoàn thành/đóng/hủy; tra cứu nghề nghiệp |
 | PTCM theo dự án | Nhóm/task/requirements; phân công/thay/thu hồi; nghiệm thu; duyệt hiệu chỉnh; tra cứu nghề nghiệp |
@@ -42,7 +42,7 @@ Nếu dùng bộ chọn người/role để demo, ghi rõ đây là điều khi�
 
 ## Cách tổ chức màn hình
 
-Dùng các trang danh sách/chi tiết cùng dialog hoặc drawer cho hành động liên quan. Danh mục nhóm kỹ năng và kỹ năng có thể chung một trang; phòng ban và vị trí công việc có thể chung trang với hai tab. Đây là tổ chức UI, không thêm tầng UC.
+Dùng các trang danh sách/chi tiết cùng dialog hoặc drawer cho hành động liên quan. Danh mục nhóm kỹ năng và kỹ năng có thể chung một trang; phòng ban, vị trí và cấp bậc có thể chung trang với ba nhóm danh mục. Đây là tổ chức UI, không thêm tầng UC.
 
 Dự án có chi tiết/nhóm công việc/tiến độ và các hành động theo trách nhiệm. Công việc cá nhân có thể giữ Kanban; kéo thả không thay thế thao tác Start/Pause/Resume/Nộp/nghiệm thu. Không bổ sung dashboard KPI, sprint, timer, roster, reviewer riêng, duyệt CV hoặc tích hợp Slack/GitHub.
 

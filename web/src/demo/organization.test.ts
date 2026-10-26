@@ -260,3 +260,82 @@ test("action lỗi không dispatch; cập nhật không đổi profile/request v
   assert.deepEqual(reset.organization, state.organization)
   assert.deepEqual(reset.profileState, state.profileState)
 })
+
+test("cấp bậc do HR đặt tên theo công ty, không suy từ vị trí/quyền và không xóa khi đang dùng", () => {
+  const { profiles } = createProfileState()
+  const initial = createOrganizationState()
+  for (const profile of profiles)
+    assert.ok(
+      profile.jobLevelId === null ||
+        initial.jobLevels.some((entry) => entry.id === profile.jobLevelId),
+    )
+  for (const actor of ["dung", "khoa", "thanh", "ha"])
+    assert.throws(
+      () =>
+        changeOrganization(
+          initial,
+          profiles,
+          actor,
+          { action: "create", kind: "jobLevels", name: "Chuyên viên bậc 3" },
+          "level-3",
+        ),
+      /Chỉ HR/,
+    )
+  const created = changeOrganization(
+    initial,
+    profiles,
+    "hr",
+    { action: "create", kind: "jobLevels", name: "  Chuyên viên bậc 3  " },
+    "level-3",
+  )
+  assert.equal(created.jobLevels.find((entry) => entry.id === "level-3")!.name, "Chuyên viên bậc 3")
+  for (const name of [" ", "x".repeat(101), "CHUYÊN VIÊN BẬC 3"])
+    assert.throws(() =>
+      changeOrganization(
+        created,
+        profiles,
+        "hr",
+        { action: "create", kind: "jobLevels", name },
+        "another",
+      ),
+    )
+  assert.throws(
+    () =>
+      changeOrganization(
+        created,
+        profiles,
+        "hr",
+        { action: "delete", kind: "jobLevels", id: "middle", beforeName: "Middle" },
+        "",
+      ),
+    /hồ sơ/,
+  )
+  const removed = changeOrganization(
+    created,
+    profiles,
+    "hr",
+    { action: "delete", kind: "jobLevels", id: "level-3", beforeName: "Chuyên viên bậc 3" },
+    "",
+  )
+  assert.deepEqual(removed, initial)
+  const renamed = changeOrganization(
+    initial,
+    profiles,
+    "hr",
+    {
+      action: "update",
+      kind: "jobLevels",
+      id: "middle",
+      beforeName: "Middle",
+      name: "Bậc chuyên viên",
+    },
+    "",
+  )
+  const before = professionalPeople(profiles, initial).find((entry) => entry.id === "dung")!
+  const after = professionalPeople(profiles, renamed).find((entry) => entry.id === "dung")!
+  assert.equal(after.seniority, "Bậc chuyên viên")
+  assert.equal(after.position, before.position)
+  assert.deepEqual(after.skills, before.skills)
+  assert.equal(after.active, before.active)
+  assert.equal(after.backgroundLoad, before.backgroundLoad)
+})

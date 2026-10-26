@@ -33,13 +33,15 @@ export default function App() {
         ? "/my-profile"
         : navigation.profileReviewView
           ? "/profile-requests"
-          : navigation.organizationView
-            ? "/organization"
-            : navigation.personalView
-              ? "/my-work"
-              : navigation.personnelView
-                ? "/personnel"
-                : "/",
+          : navigation.employeeProfilesView
+            ? "/employee-profiles"
+            : navigation.organizationView
+              ? "/organization"
+              : navigation.personalView
+                ? "/my-work"
+                : navigation.personnelView
+                  ? "/personnel"
+                  : "/",
     )
   }
   return (
@@ -70,7 +72,7 @@ export default function App() {
               open={resetOpen}
               onOpenChange={setResetOpen}
               title="Khôi phục dữ liệu mẫu?"
-              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, yêu cầu cập nhật và danh mục phòng ban/vị trí trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
+              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, yêu cầu cập nhật và danh mục phòng ban/vị trí/cấp bậc trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
             >
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setResetOpen(false)}>

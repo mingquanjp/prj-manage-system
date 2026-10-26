@@ -2,7 +2,7 @@
 
 **Bổ sung 20/10/2026:** [quyết định địa chỉ](../../docs/business-baseline-2026-10-20.md): `employees.address TEXT NULL` hỗ trợ hồ sơ chưa bổ sung lúc tạo; cần có khi hoàn thiện hồ sơ. Allowlist yêu cầu fullname/phone/address; HR duyệt hoặc cập nhật trực tiếp, không xóa trắng địa chỉ đã có. Không DTO tra cứu/gợi ý, không thêm bảng/trạng thái, không chặn làm việc vì thiếu địa chỉ. Dictionary 5B/DBML là thiết kế đã đồng bộ; chưa migration.
 
-Đồng bộ 15/10/2026 theo [quyết định hiện hành/Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md). [Bản hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là điểm đọc chính; [5A — 11 bảng](../../docs/design/database-step5a-core-dictionary-2026-10-14.md), [5B — 21 bảng](../../docs/design/database-step5b-supporting-dictionary-2026-10-14.md), [DBML 32 bảng](../../docs/design/database-proposal-2026-10-14.dbml), [mapping chuyển đổi](../../docs/design/database-step5c-migration-map-2026-10-14.md).
+Đồng bộ 15/10/2026 theo [quyết định hiện hành/Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md). [Bản hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là điểm đọc chính; [5A — 11 bảng](../../docs/design/database-step5a-core-dictionary-2026-10-14.md), [5B — 22 bảng](../../docs/design/database-step5b-supporting-dictionary-2026-10-14.md), [DBML 33 bảng (cấp bậc theo chốt 26/10/2026)](../../docs/design/database-proposal-2026-10-14.dbml), [mapping chuyển đổi](../../docs/design/database-step5c-migration-map-2026-10-14.md).
 
 Đích không roster/assignment_events/refresh_tokens. Session phía server; nhật ký suy người/task từ assignment, xóa mềm deleted_at; history UPDATE/DELETE; yêu cầu ADD đã duyệt truy result_log_id. PTCM duyệt hiệu chỉnh. Official chỉ năng lực hiện tại, request giữ lịch sử/source; request.version kỹ năng vẫn còn. Upload minh chứng dùng metadata JSON trên request.
 
@@ -43,7 +43,7 @@ Không ghi số thứ tự migration cố định trước khi chia dependency v
 
 ## 2. Hiện trạng 000001
 
-Users/employees/departments/positions; skills/categories/employee_skills;
+Users/employees/departments/positions/job_levels; skills/categories/employee_skills;
 projects/project_members/task_groups/tasks/task_requirements;
 recommendation_runs/items; assignments/work_logs/comments/task_status_history;
 notifications; employee_cvs/cv_extractions/cv_extracted_skills.

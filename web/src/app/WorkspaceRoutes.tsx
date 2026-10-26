@@ -1,3 +1,4 @@
+import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
 import { Link, Route, Routes } from "react-router"
 import { Button } from "@/components/ui/button"
 import { initialOutputConflicts } from "@/demo/fixtures"
@@ -28,6 +29,18 @@ export function WorkspaceRoutes({
   const { projects, tasks, groups, events, work } = state
   return (
     <Routes>
+      <Route
+        path="/employee-profiles"
+        element={
+          <EmployeeProfiles
+            key={actorId}
+            actorId={actorId}
+            state={state.profileState}
+            organization={state.organization}
+            onSave={actions.updateEmployeeProfile}
+          />
+        }
+      />
       <Route
         path="/organization"
         element={

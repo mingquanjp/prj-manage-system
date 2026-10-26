@@ -2,6 +2,17 @@
 
 Ngày bắt đầu: 14/10/2026.
 
+## Quyết định tiếp nối 26/10/2026 — cấp bậc theo công ty (hiện hành)
+
+Người dùng đã đồng ý thay cấp bậc nhập tự do bằng danh mục do HR quản lý. Nội dung này ưu tiên các chốt C01/C06 cũ đúng phần cấp bậc, số bảng và quyền quản trị danh mục; giữ nguyên các quyết định khác.
+
+- Thêm `job_levels`: `job_level_id` PK, `job_level_name VARCHAR(100) NOT NULL UNIQUE`, `created_at`/`updated_at`. Tên có nội dung sau trim; dùng cùng quy tắc so trùng tên với danh mục tổ chức. Công ty tự đặt tên; Junior/Senior chỉ là dữ liệu minh họa, không enum/bộ mặc định bắt buộc.
+- Thay `employees.seniority_level VARCHAR(30)` bằng `employees.job_level_id INT NULL` FK tới `job_levels.job_level_id`, NO ACTION. NULL là chưa cập nhật; không ép nhân viên chọn cấp bậc hoặc suy từ chức danh. Index FK theo truy vấn danh sách. Đổi tên danh mục giữ ID; không xóa mục còn hồ sơ tham chiếu, không tự xóa/đặt NULL theo dây chuyền.
+- HR được thêm/sửa tên cấp bậc; chỉ xóa khi không còn hồ sơ tham chiếu; HR chọn cấp bậc khi cập nhật hành chính. Admin chỉ có thể chọn danh mục có sẵn ở bước tạo tài khoản kèm hồ sơ theo quyền hiện có, không mặc nhiên được CRUD danh mục. Nhân viên không đề nghị tự đổi cấp bậc qua yêu cầu fullname/phone/address.
+- UC hỗ trợ HR mở rộng thành **Quản lý phòng ban, vị trí và cấp bậc**; có thể chung một màn hình, không cần UC CRUD riêng ở tổng quan. Cấp bậc tách biệt vị trí, mức kỹ năng và quyền hệ thống/trách nhiệm dự án; không thêm thứ tự cao/thấp, hệ số, cây tổ chức, danh mục theo phòng ban/vị trí hoặc bảng công ty/multi-tenant.
+- Thiết kế hiện hành **33 bảng = 6 + 6 + 3 + 9 + 3 + 2 + 4**; dictionary 5A giữ 11 bảng, 5B thành 22 bảng. Các số 32 và trường seniority_level trong ghi chép lịch sử mô tả mốc trước quyết định này; không dùng để khôi phục nhập tự do. Snapshot gợi ý/audit cũ giữ giá trị đã chụp, không sửa ngược lịch sử khi danh mục đổi tên.
+- Bàn giao: đồng bộ workflow/UC, dictionary, proposal, DBML, mapping/pitch và frontend mô phỏng. Dữ liệu cũ phải rà tên, chuẩn hóa/đối chiếu HR rồi map ID khi có đợt migration được giao; không tự gán nhầm hoặc tạo cấp bậc mặc định. Chưa chạy DDL/migration/seed, không thay DB thật hoặc bảng lương/công thức.
+
 **Quyết định tiếp nối 20/10/2026 — ưu tiên về địa chỉ:** theo [baseline 20/10](../business-baseline-2026-10-20.md), thêm `employees.address TEXT NULL`. Địa chỉ phải bổ sung khi hoàn thiện hồ sơ nhưng không bắt Admin nhập khi tạo; NULL biểu thị chưa bổ sung. Nhân viên đề nghị fullname/phone/address, HR duyệt hoặc sửa trực tiếp; giá trị địa chỉ được cung cấp phải có nội dung, không xóa trắng địa chỉ đã có. Không tra cứu chuyên môn, không chặn đăng nhập/công việc vì thiếu, không thêm trạng thái/bảng. Dictionary 5B/DBML đã đồng bộ thiết kế, tổng vẫn 32 bảng, chưa migration. Các ghi chép 15/10 chỉ fullname/phone được giữ để truy vết và bị quyết định này thay đúng phần địa chỉ.
 
 **Bản bàn giao đã rà lại: 15/10/2026.** Người dùng đã đồng ý phương án upload minh chứng bằng một trường metadata JSON, không thêm bảng. Đọc các phần hiện hành và hướng dẫn bàn giao cuối file; phần trong `<details>` chỉ là lịch sử, không phải yêu cầu triển khai.
@@ -22,14 +33,14 @@ Nguồn đối chiếu:
 
 - [Bản đề xuất tổng hợp](database-proposal-2026-10-14.md).
 - [Dictionary 5A — 11 bảng](database-step5a-core-dictionary-2026-10-14.md).
-- [Dictionary 5B — 21 bảng](database-step5b-supporting-dictionary-2026-10-14.md).
+- [Dictionary 5B — 22 bảng](database-step5b-supporting-dictionary-2026-10-14.md).
 - [Sơ đồ DBML](database-proposal-2026-10-14.dbml).
 
 ## Tiến độ
 
 | Nhóm | Số bảng hiện tại | Trạng thái |
 |---|---:|---|
-| 1. Tài khoản, nhân viên và cơ cấu công tác | 5 | Đã chốt cấu trúc và chức danh/cấp bậc; HR quản trị cơ cấu |
+| 1. Tài khoản, nhân viên và cơ cấu công tác | 6 | Đã chốt cấu trúc và chức danh/cấp bậc; HR quản trị cơ cấu |
 | 2. Danh mục kỹ năng, năng lực chính thức và yêu cầu thay đổi | 6 | Đã chốt source/allowlist, CV căn cứ và upload metadata JSON |
 | 3. CV và dữ liệu trích xuất | 3 | Đã chốt hướng giản lược; chi tiết vận hành chờ thiết kế triển khai |
 | 4. Dự án, công việc, phân công và nghiệm thu | 9 | Đã chốt; PTCM đặt weight theo task, miền giá trị theo công thức |
@@ -37,9 +48,11 @@ Nguồn đối chiếu:
 | 6. Gợi ý phân công | 2 | Đã đồng ý cấu trúc và rà nhất quán; contract công thức chờ chốt |
 | 7. Phiên đăng nhập, chống ghi lặp, lịch sử kiểm toán và thông báo | 4 | Đã chốt session phía server và phạm vi các bảng kỹ thuật |
 
-Tổng đích dự kiến hiện tại: **32 bảng** = 5 + 6 + 3 + 9 + 3 + 2 + 4. Giảm từ 34 do đã chốt bỏ `assignment_events` và `refresh_tokens`. Các số 33/34 trong phần lịch sử phản ánh mốc trước các quyết định này.
+Tổng đích hiện tại: **33 bảng** = 6 + 6 + 3 + 9 + 3 + 2 + 4 theo chốt cấp bậc 26/10. Mốc 15/10 có 32 bảng. Giảm từ 34 do đã chốt bỏ `assignment_events` và `refresh_tokens`. Các số 33/34 trong phần lịch sử phản ánh mốc trước các quyết định này.
 
 ## Tóm tắt quyết định hiện hành đến 15/10/2026
+
+Tóm tắt tại mốc 15/10 để truy vết; phần cấp bậc, địa chỉ và tổng số bảng ưu tiên chốt tiếp nối 20/10 và 26/10 ở đầu file cùng mục Bàn giao. Không áp dụng seniority_level hoặc allowlist chỉ fullname/phone dưới đây cho thiết kế hiện tại.
 
 - Nhóm 1: bỏ `users.must_change_password`, `users.version`, `employees.version`; giữ `position_id` bắt buộc và `seniority_level` nullable với nghĩa khác nhau, theo mục 1 hiện hành bên dưới. HR quản trị departments/positions; quyền nhân viên từ hồ sơ, PM/PTCM theo dự án, user_roles giữ ADMIN/HR/DIRECTOR.
 - Nhóm 2: giữ skill_categories, bỏ skills.status; employee_skills chỉ chứa năng lực hiện được công nhận, bỏ source/is_effective/version. REMOVE được duyệt gỡ dòng hiện tại, giữ lịch sử; công nhận lại qua yêu cầu mới. Yêu cầu kỹ năng bỏ base_version, giữ before_values và request.version; nguồn MANUAL/CV vẫn ở request. Profile request bỏ base_version, nhân viên đề nghị sửa fullname/phone, email công ty/cơ cấu do HR sửa trực tiếp. Giữ nhiều minh chứng task, tối đa một CV dẫn trực tiếp và upload tùy chọn qua evidence_attachments JSONB, không thêm bảng. Lý do quyết định hồ sơ có thể trống khi chờ/chấp thuận, từ chối cần lý do.
@@ -122,15 +135,15 @@ Người dùng đã đồng ý upload; tên trường/JSON metadata là phương
 
 </details>
 
-## 1. Tài khoản, nhân viên và cơ cấu công tác — 5 bảng
+## 1. Tài khoản, nhân viên và cơ cấu công tác — 6 bảng
 
 ### Quyết định hiện hành
 
 - `users`: còn user_id, username, password_hash, status, created_at, updated_at; bỏ must_change_password/version. Username duy nhất; không tự đổi username thành email.
 - `user_roles`: giữ user_id/role_code, PK ghép; ADMIN/HR/DIRECTOR. Nhân viên được xác định qua employees, PM/PTCM qua projects; không thêm bảng role/permission hoặc role EMPLOYEE chỉ để biểu thị hồ sơ.
-- `employees`: giữ employee_id, user_id, employee_code, fullname, email, phone, department_id, position_id, seniority_level, employment_status, created_at, updated_at; bỏ version. Bổ sung address TEXT NULL theo quyết định 20/10 ở đầu file. User 1–0..1 employee, user_id và employee_code duy nhất. Department/position 1–n employees; position_id bắt buộc, department_id/seniority_level có thể trống theo thiết kế hiện tại.
-- Giữ cả position_id (Developer/Tester…) và seniority_level (Junior/Middle/Senior…), không gộp cấp bậc vào tên chức danh, không suy mức từng kỹ năng hoặc tự cộng điểm phân công.
-- `departments`: department_id, department_name, created_at, updated_at; `positions`: position_id, position_name, created_at, updated_at. HR quản trị hai danh mục; không thêm cây tổ chức hoặc lịch sử chuyển phòng riêng.
+- `employees`: giữ employee_id, user_id, employee_code, fullname, email, phone, department_id, position_id, job_level_id, employment_status, created_at, updated_at; bỏ version. Bổ sung address TEXT NULL theo quyết định 20/10 ở đầu file. User 1–0..1 employee, user_id và employee_code duy nhất. Department/position/job level 1–n employees; position_id bắt buộc, department_id/job_level_id có thể trống theo thiết kế hiện tại.
+- Giữ cả position_id (Developer/Tester…) và job_level_id (tham chiếu danh mục công ty), không gộp cấp bậc vào tên chức danh, không suy mức từng kỹ năng hoặc tự cộng điểm phân công.
+- `departments`: department_id, department_name, created_at, updated_at; `positions`: position_id, position_name, created_at, updated_at. `job_levels`: job_level_id, job_level_name, created_at, updated_at. HR quản trị ba danh mục; không thêm cây tổ chức hoặc lịch sử chuyển phòng riêng.
 - Nhân viên đề nghị sửa fullname/phone/address qua profile request (address bổ sung 20/10); HR sửa email công ty/cơ cấu trực tiếp. Bỏ profile request.base_version, đối chiếu before_values của đúng trường đề nghị sửa trong giao dịch. Dữ liệu email legacy cần phân loại, không tự đổi nghĩa.
 - Không lưu workload, project_count, KPI hoặc danh sách kỹ năng trong employees. Các chính sách reset mật khẩu/phiên cụ thể thuộc thiết kế triển khai, không khôi phục cột đã bỏ.
 
@@ -702,6 +715,8 @@ Trong vòng rà soát theo nhóm, chỉ file ghi nhận này được tạo và 
 
 ### 1. Nguồn chuẩn và phạm vi
 
+Đối với cấp bậc, ưu tiên quyết định tiếp nối 26/10 ở đầu file: job_levels do HR quản lý, employees.job_level_id nullable thay seniority_level. Không dùng các ghi nhận C01 cũ để khôi phục nhập tự do.
+
 Đối với địa chỉ, đọc quyết định tiếp nối 20/10 ở đầu file và baseline được dẫn: address nullable lúc tạo, phải bổ sung khi hoàn thiện, không xóa trắng; allowlist fullname/phone/address. Không dùng bản chốt C03 hai trường của ngày 15/10 để bỏ địa chỉ hoặc ép NOT NULL ngay khi tạo.
 
 File này là **đầu vào quyết định thay đổi**, không phải từ điển đầy đủ của mọi cột. Đọc cùng dictionary 5A/5B và DBML để giữ các phần không thay đổi. Ưu tiên quyết định hiện hành ở đầu mỗi nhóm và phần chốt C01–C06/upload; không dùng nội dung trong `<details>` hoặc schema cũ để khôi phục trường/bảng/quyền đã bỏ.
@@ -710,11 +725,11 @@ File này là **đầu vào quyết định thay đổi**, không phải từ đ
 
 Đợt tiếp theo là đồng bộ **tài liệu và schema thiết kế**. Không coi đó là quyền chạy migration lên Neon, reset DB, chuyển đổi dữ liệu thật, cài thư viện hoặc triển khai auth/upload. Nếu cần tạo SQL migration, phải kiểm kê hiện trạng và kiểm thử trên DB thử nghiệm; không sửa/xóa migration đã áp dụng để giả rằng schema mới đã có từ đầu.
 
-### 2. Danh mục đích — đúng 32 bảng
+### 2. Danh mục đích — 33 bảng sau chốt 26/10/2026
 
 | Nhóm | Các bảng giữ |
 |---|---|
-| 1 — 5 | users, user_roles, employees, departments, positions |
+| 1 — 6 | users, user_roles, employees, departments, positions, job_levels |
 | 2 — 6 | skill_categories, skills, employee_skills, employee_skill_change_requests, employee_profile_change_requests, skill_request_task_evidence |
 | 3 — 3 | employee_cvs, cv_extractions, cv_extracted_skills |
 | 4 — 9 | projects, project_status_history, task_groups, tasks, task_requirements, assignments, task_submissions, task_status_history, task_comments |
@@ -751,7 +766,7 @@ Các điểm trên không mở lại quyết định nghiệp vụ hoặc buộc
 
 ### 5. Tài liệu cần đồng bộ và kiểm tra bàn giao
 
-1. Cập nhật `database-step5a-core-dictionary-2026-10-14.md`, `database-step5b-supporting-dictionary-2026-10-14.md`, `database-proposal-2026-10-14.md` và `.dbml`: 32 bảng, đầy đủ cột/kiểu/NULL/default/PK/FK/UNIQUE/CHECK/index và quan hệ. Phân bổ lại 5A/5B theo bảng thực giữ, không duy trì nhãn 12+22 cũ. Không đoán tổng số cột/FK trước kiểm đếm.
+1. Cập nhật `database-step5a-core-dictionary-2026-10-14.md`, `database-step5b-supporting-dictionary-2026-10-14.md`, `database-proposal-2026-10-14.md` và `.dbml`: 33 bảng theo chốt 26/10, đầy đủ cột/kiểu/NULL/default/PK/FK/UNIQUE/CHECK/index và quan hệ. Phân bổ lại 5A/5B theo bảng thực giữ, không duy trì nhãn 12+22 cũ. Không đoán tổng số cột/FK trước kiểm đếm.
 2. Đồng bộ `.claude/docs/`: database_schema, domain_rules, roles_permissions, employee_profile_workflow, skill_approval_workflow, cv_extraction_approval_workflow, project_task_assignment_workflow, work_effort_workflow, ai_recommendation_workflow, security, architecture, api_design, product_scope, testing_verification; cập nhật chỉ mục CLAUDE/README nếu mô tả hiện hành bị ảnh hưởng.
 3. Cập nhật bản đồ chuyển đổi `database-step5c-migration-map-2026-10-14.md` và bản trình bày `database-pitch-2026-10-14.md`. Tài liệu review/baseline lịch sử giữ nguyên sự kiện cũ hoặc thêm nhãn/link thay thế, không viết lại thành kết quả kiểm thử schema mới.
 4. Rà tham chiếu trường/bảng/quyền đã bỏ **trong tài liệu hiện hành**. Không thay thế chuỗi hàng loạt trong lịch sử, không xóa request.version/engine_version/schema_version/parser_version chỉ vì cùng có từ version. Không xóa source ở request hoặc status của các bảng khác vì bỏ skills.status.

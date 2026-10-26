@@ -1,11 +1,13 @@
-# Bước 5B — Dictionary 21 bảng còn lại
+# Bước 5B — Dictionary 22 bảng còn lại
 
-**Bổ sung 20/10/2026:** [quyết định địa chỉ](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối--địa-chỉ-khi-hoàn-thiện-hồ-sơ) thêm `employees.address TEXT NULL`; cần bổ sung khi hoàn thiện hồ sơ nhưng không bắt Admin nhập khi tạo. Allowlist yêu cầu hồ sơ có address; không cho xóa trắng. Tổng vẫn 32 bảng, chưa DDL/migration.
+**Chốt tiếp nối 26/10/2026:** cấp bậc theo công ty: thêm job_levels (mục 5.1), employees.job_level_id nullable thay seniority_level; HR quản trị và chọn từ danh mục. Tổng hiện hành 33 bảng, chưa DDL/migration. [Quyết định hiện hành](database-review-decisions-2026-10-14.md#quyết-định-tiếp-nối-26102026--cấp-bậc-theo-công-ty-hiện-hành).
+
+**Bổ sung 20/10/2026:** [quyết định địa chỉ](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối--địa-chỉ-khi-hoàn-thiện-hồ-sơ) thêm `employees.address TEXT NULL`; cần bổ sung khi hoàn thiện hồ sơ nhưng không bắt Admin nhập khi tạo. Allowlist yêu cầu hồ sơ có address; không cho xóa trắng. Tại mốc 20/10 tổng vẫn 32 bảng; chốt 26/10 ở trên thay phần cấp bậc/tổng số, chưa DDL/migration.
 
 **Đồng bộ 15/10/2026:** ưu tiên [quyết định hiện hành và Bàn giao](database-review-decisions-2026-10-14.md), gồm xác nhận result_log_id. Chỉ thiết kế tài liệu, chưa DDL/migration. Các bước 1–4 là lịch sử.
 
 
-Ngày 14/10/2026. **Bản thiết kế đề xuất để review, chưa DDL/migration.** Cùng [5A](database-step5a-core-dictionary-2026-10-14.md) bao phủ danh mục 32 bảng; bao phủ danh mục không có nghĩa mọi chính sách đã chốt.
+Ngày 14/10/2026. **Bản thiết kế đề xuất để review, chưa DDL/migration.** Cùng [5A](database-step5a-core-dictionary-2026-10-14.md) bao phủ danh mục 33 bảng sau chốt 26/10; bao phủ danh mục không có nghĩa mọi chính sách đã chốt.
 
 Nguồn: [3B](database-step3b-effort-profile-skills-cv-2026-10-13.md), [3C](database-step3c-roles-recommendation-technical-2026-10-13.md), [4C](database-step4c-shared-pool-2026-10-13.md), [quy trình kỹ năng](../../.claude/docs/skill_approval_workflow.md), [hồ sơ](../../.claude/docs/employee_profile_workflow.md), [bảo mật](../../.claude/docs/security.md). Quyết định nghiệp vụ mới ưu tiên hơn V2 và migration hiện có.
 
@@ -51,21 +53,33 @@ PK(user_id, role_code). Không thêm EMPLOYEE/PM/PTCM vào bảng này: tư các
 | address | TEXT ? / NULL | Địa chỉ phải bổ sung khi hoàn thiện hồ sơ; chưa có khi tạo được giữ NULL; HR quản lý, không DTO tra cứu chuyên môn |
 | department_id | INT ? FK departments | Phòng ban |
 | position_id | INT NN FK positions | Chức danh, không cấp quyền |
-| seniority_level | VARCHAR(30) ? | Thông tin công tác, không tự đổi thành điểm kỹ năng |
+| job_level_id | INT ? FK job_levels | Cấp bậc do HR quản lý trong danh mục công ty; NULL khi chưa cập nhật, không suy điểm kỹ năng |
 | employment_status | employment_status NN / ACTIVE | HR quản lý, khác khóa tài khoản |
 | timestamps | Như quy ước | Server |
 
-Nhân viên đề nghị sửa fullname/phone/address qua HR. Email công ty/cơ cấu do HR sửa trực tiếp; position và seniority_level khác nghĩa (Developer + Senior). Địa chỉ được bổ sung theo quyết định 20/10, không mở thêm DOB/CCCD/lương. Tạo user+employee nguyên tử, không bắt địa chỉ tại bước tạo. Đối chiếu giá trị nền theo trường khi sửa, không còn profile version. Index department_id/position_id theo truy vấn danh sách; không lưu workload/project_count trên employee.
+Nhân viên đề nghị sửa fullname/phone/address qua HR. Email công ty/cơ cấu do HR sửa trực tiếp; position_id và job_level_id khác nghĩa; tên cấp bậc do công ty đặt. Địa chỉ được bổ sung theo quyết định 20/10, không mở thêm DOB/CCCD/lương. Tạo user+employee nguyên tử, không bắt địa chỉ tại bước tạo. Đối chiếu giá trị nền theo trường khi sửa, không còn profile version. Index department_id/position_id/job_level_id theo truy vấn danh sách; không lưu workload/project_count trên employee.
 
 `address` cho phép NULL vì hồ sơ ban đầu có thể chưa được bổ sung; không dùng NOT NULL hoặc default chuỗi giả. Nếu có giá trị, phải có nội dung sau trim; ràng buộc tĩnh đích là NULL hoặc chuỗi có nội dung. Service không cho chuyển địa chỉ đã có về NULL/rỗng, cả cập nhật HR lẫn duyệt yêu cầu. Không cần trigger/bảng lịch sử địa chỉ riêng; dùng audit hiện có. Không chặn nghiệp vụ dự án vì địa chỉ NULL; UI nhắc bổ sung, không thêm trạng thái hồ sơ. Không đưa address vào DTO ứng viên/tra cứu/snapshot gợi ý.
 
 ## 4. departments
 
-department_id PK; department_name VARCHAR(100) NN UQ; timestamps. Một phòng ban, không cây tổ chức mới. Không xóa cứng khi còn employee tham chiếu. HR quản trị departments/positions; không mặc định Admin có quyền HR.
+department_id PK; department_name VARCHAR(100) NN UQ; timestamps. Một phòng ban, không cây tổ chức mới. Không xóa cứng khi còn employee tham chiếu. HR quản trị departments/positions/job_levels; không mặc định Admin có quyền HR.
 
 ## 5. positions
 
 position_id PK; position_name VARCHAR(100) NN UQ; timestamps. Một chức danh, không role hệ thống. Không tự tạo chức danh từ tên actor.
+
+## 5.1. job_levels — bổ sung 26/10/2026
+
+Một cấp bậc trong danh mục công ty, không phải cấp độ kỹ năng hoặc vai trò. Giữ số mục cũ để các tham chiếu 6–21 không bị dịch.
+
+| Cột | Kiểu / NULL / default | Nghĩa |
+|---|---|---|
+| job_level_id | PK | Định danh cấp bậc |
+| job_level_name | VARCHAR(100) NN UQ | Tên do HR cấu hình, có nội dung sau trim; cùng quy tắc kiểm tra tên trùng của danh mục tổ chức |
+| timestamps | Như quy ước | Server |
+
+HR được thêm/sửa tên; chỉ xóa khi không còn employee tham chiếu. FK employees.job_level_id nullable, NO ACTION; không cascade/set NULL khi xóa. Không thêm thứ tự, điểm, trạng thái ACTIVE/INACTIVE, công ty/multi-tenant hoặc liên kết vị trí/phòng ban. Không hardcode danh sách Intern/Junior/Senior cho mọi công ty. Chọn ID khi HR sửa hồ sơ (Admin chỉ chọn mục có sẵn khi tạo ban đầu theo quyền hiện có); nhân viên không đổi qua profile request. Snapshot/audit lưu tên lúc quyết định để đổi tên danh mục không viết lại lịch sử.
 
 ## 6. skill_categories
 
@@ -199,16 +213,16 @@ Yêu cầu hiệu chỉnh gửi PTCM hiện hành, không PM từ trách nhiệm
 
 ## Kiểm kê và giới hạn
 
-Nhóm nền tảng 8: users, user_roles, employees, departments, positions, skill_categories, skills, employee_skills.
+Nhóm nền tảng 9: users, user_roles, employees, departments, positions, job_levels, skill_categories, skills, employee_skills.
 Nhóm yêu cầu/căn cứ 3: employee_skill_change_requests, employee_profile_change_requests, skill_request_task_evidence.
 Nhóm CV 3: employee_cvs, cv_extractions, cv_extracted_skills.
 Còn lại: task_comments (1), recommendation_runs/items (2), auth_sessions/idempotency_records/audit_events/notifications (4).
 
-Tổng **21** bảng, cộng **11** bảng ở 5A thành **32**. Đã bỏ assignment_events và refresh_tokens; metadata upload không tăng bảng. Các mục quy ước/sơ đồ không phải bảng.
+Tổng **22** bảng, cộng **11** bảng ở 5A thành **33**. Đã bỏ assignment_events và refresh_tokens; metadata upload không tăng bảng. Các mục quy ước/sơ đồ không phải bảng.
 
 ## Cổng hoàn thiện bản đề xuất cuối
 
-1. Hợp nhất ERD 32 bảng, chỉ rõ FK khai báo và liên kết kiểm tra ở service; không vẽ quan hệ suy diễn như FK thật.
+1. Hợp nhất ERD 33 bảng, chỉ rõ FK khai báo và liên kết kiểm tra ở service; không vẽ quan hệ suy diễn như FK thật.
 2. Đối chiếu hiện trạng→đích: đổi actor employee→user bằng JOIN, bỏ membership sau kiểm kê, giữ dữ liệu legacy và không sửa migration đã áp dụng.
 3. D05 allowlist/C06 chủ danh mục đã chốt; còn DTO chi tiết, mapping muộn, contract công thức, auth/retention và chính sách tệp. Các điểm này không cần biến thành bảng mới nhưng không được coi đã giải quyết.
 4. Review CHECK xử lý NULL, unique có điều kiện, FK ghép và giao dịch cạnh tranh trước SQL. Dictionary không thay kiểm thử thực tế.

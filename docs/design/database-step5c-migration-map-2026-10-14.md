@@ -2,6 +2,8 @@
 
 Cập nhật 15/10/2026 theo [quyết định hiện hành](database-review-decisions-2026-10-14.md). Nguồn hiện trạng là [000001](../../migrations/000001_init.up.sql) trong repo, **không phải kiểm kê dữ liệu/schema đang chạy trên Neon**. Đích là [bản hợp nhất](database-proposal-2026-10-14.md). Chưa viết/chạy migration, không sửa migration đã áp dụng.
 
+**Tiếp nối 26/10/2026:** đích có 33 bảng, thêm job_levels và employees.job_level_id nullable thay seniority_level. Kiểm kê giá trị cấp bậc cũ (kể cả text ở phiên FE), đối chiếu/chuẩn hóa tên với HR rồi tạo danh mục và map ID; trống giữ NULL, giá trị chưa xác minh phải phân loại, không đoán cấp bậc từ tên vị trí. Giữ snapshot/audit cũ. Đây là hướng chuyển đổi tài liệu, không đã backfill/chạy migration; giữ nguyên 000001.
+
 ## 1. Kiểm kê 22 bảng hiện có
 
 | Bảng hiện trạng | Đích | Kiểm tra/chuyển đổi cần thiết trước ràng buộc mới |
@@ -9,7 +11,7 @@ Cập nhật 15/10/2026 theo [quyết định hiện hành](database-review-deci
 | users | Giữ sáu cột, không version/force-change; role sang user_roles | ADMIN có thể ánh xạ theo dữ liệu; PM lấy từ project, HR/DIRECTOR cần xác nhận; không suy từ chức danh |
 | departments | Giữ | Kiểm tra tên/unique và tham chiếu, không mở CRUD ngoài quyền đã chốt |
 | positions | Giữ | Như danh mục; không biến chức danh thành quyền |
-| employees | Giữ, không profile version; email công ty; bổ sung address TEXT NULL theo chốt 20/10 | Kiểm tra user 1–1, email/position/status; địa chỉ chưa có giữ NULL, không backfill giả hoặc siết NOT NULL; không giả quyền sửa allowlist |
+| employees | Giữ, không profile version; email công ty; bổ sung address TEXT NULL theo chốt 20/10; job_level_id theo chốt 26/10 | Kiểm tra user 1–1, email/position/status; địa chỉ chưa có giữ NULL, không backfill giả hoặc siết NOT NULL; không giả quyền sửa allowlist |
 | skill_categories | Giữ | Giữ ID và liên kết skills |
 | skills | Giữ | Bỏ trạng thái danh mục; kiểm kê ý nghĩa trạng thái legacy, không xóa dữ liệu tham chiếu |
 | employee_skills | Chỉ official hiện tại; không source/hiệu lực/version, đổi actor sang user | Approval cũ NULL phải kiểm tra nguồn, không bịa người/ngày duyệt; actor JOIN employee.user_id |
@@ -31,10 +33,11 @@ Cập nhật 15/10/2026 theo [quyết định hiện hành](database-review-deci
 
 Giữ PK khi có thể. Mọi đổi employee actor → user dùng JOIN theo quan hệ, không cast/copy ID vì có thể tình cờ trùng số. Không tự xem dữ liệu cũ là vô hiệu chỉ vì không đủ cột mới.
 
-## 2. 11 bảng mới trong thiết kế
+## 2. 12 bảng mới trong thiết kế
 
 | Bảng | Lý do có thêm | Nguồn khởi tạo |
 |---|---|---|
+| job_levels | Danh mục cấp bậc do công ty cấu hình, thay chuỗi tự do | Tên đối chiếu với HR; giá trị cũ chưa rõ không tự map |
 | user_roles | Một người nhiều quyền hệ thống, khác trách nhiệm dự án | Role xác nhận; audit khi đổi |
 | employee_skill_change_requests | Đề nghị và quyết định khác official | Yêu cầu mới; lịch sử cũ chỉ chuyển nếu đủ căn cứ |
 | employee_profile_change_requests | Hồ sơ chờ HR duyệt | Yêu cầu mới |
@@ -47,7 +50,7 @@ Giữ PK khi có thể. Mọi đổi employee actor → user dùng JOIN theo qua
 | idempotency_records | Retry mutation không lặp | Mutation theo hợp đồng mới |
 | audit_events | Thay đổi chưa có lịch sử miền đầy đủ | Sự kiện thật, không dựng lại quá khứ thiếu căn cứ |
 
-**22 hiện có − 1 membership + 11 mới = 32 bảng đích.** Con số không thay việc kiểm kê dữ liệu. Nếu dữ liệu legacy không thỏa đích, phải chọn phương án bảo toàn/ngoại lệ chuyển đổi trước SQL; chưa thêm một kho/bảng legacy vào danh mục chỉ vì có rủi ro.
+**22 hiện có − 1 membership + 12 mới = 33 bảng đích.** Con số không thay việc kiểm kê dữ liệu. Nếu dữ liệu legacy không thỏa đích, phải chọn phương án bảo toàn/ngoại lệ chuyển đổi trước SQL; chưa thêm một kho/bảng legacy vào danh mục chỉ vì có rủi ro.
 
 ## 3. Trình tự chuyển đổi đề xuất — chưa thực thi
 

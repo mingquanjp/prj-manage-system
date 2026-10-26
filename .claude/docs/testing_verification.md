@@ -1,6 +1,6 @@
 # Kiểm thử và nghiệm thu — V2
 
-**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 32 bảng. Chưa triển khai code/DDL/migration.
+**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
 ## Bổ sung 2026-10-13 — Nguồn nhân lực chung
@@ -48,6 +48,7 @@ Không chạy integration/reset trên DB thật hoặc seed lại để “test�
 | Quyền | PM chéo project; nhân viên cũ sau reassign; CV không phải bản hiện tại; notification/run/download không bypass |
 | Skill | Pending không đổi chính thức; stale before_values/request.version; hai thao tác Giám đốc approve; ADD/UPDATE/REMOVE; HR không duyệt hoặc sửa trực tiếp official skill |
 | Profile | HR xét duyệt; pending/từ chối không đổi hồ sơ, từ chối có lý do; đối chiếu before_values; chỉ fullname/phone/address qua yêu cầu. Address chưa có được NULL khi tạo, UI nhắc bổ sung; thêm/sửa cần nội dung, không xóa trắng, không lộ tra cứu chuyên môn |
+| Danh mục cấp bậc (26/10) | HR thêm/sửa tên, tên bắt buộc/không trùng; chặn xóa còn employee tham chiếu. Hồ sơ nhận job_level_id hợp lệ hoặc NULL, không tạo mục ngầm từ text; nhân viên không đổi qua profile request. Đổi tên giữ ID và snapshot lịch sử; không suy kỹ năng/quyền/thứ hạng từ tên cấp bậc |
 | CV | Tệp hợp lệ vẫn dùng được khi parse lỗi; không skill; map trùng; chưa map/level NULL; hai lần xác nhận CV hiện tại cạnh tranh |
 | Project | Start chưa có ASSIGNED; task không start trong PLANNING; complete còn việc bị chặn; COMPLETED cho correction không làm thêm; close chặn pending; cancel kết thúc pending/giữ log; terminal chỉ đọc |
 | Task | Group chéo project; thiếu requirement; ngày thiếu cặp/ngoài project; spec frozen sau unassign; không reopen DONE |

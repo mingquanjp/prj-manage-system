@@ -23,6 +23,7 @@ export function createProfileState(): ProfileState {
       ...initialEmployment[person.id],
     })),
     requests: [],
+    edits: [],
   }
 }
 
@@ -36,6 +37,9 @@ export function professionalPeople(profiles: EmployeeProfile[], organization: Or
     return {
       ...person,
       name: profile.fullname,
+      seniority:
+        organization.jobLevels.find((entry) => entry.id === profile.jobLevelId)?.name ??
+        "Chưa cập nhật",
       position:
         organization.positions.find((entry) => entry.id === profile.positionId)?.name ??
         person.position,
@@ -161,6 +165,7 @@ export function resolveProfileRequest(
     }
   }
   return {
+    ...state,
     profiles: state.profiles.map((entry) =>
       entry.personId === profile.personId ? updated : entry,
     ),

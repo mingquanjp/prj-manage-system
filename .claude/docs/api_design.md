@@ -1,6 +1,6 @@
 # Thiết kế API — đồng bộ quyết định 15/10/2026
 
-Nguồn: [sổ quyết định hiện hành](../../docs/design/database-review-decisions-2026-10-14.md), [dictionary/DBML 32 bảng](../../docs/design/database-proposal-2026-10-14.md), workflow trong thư mục này. Đây là hợp đồng thiết kế; chỉ GET /api/healthz có trong skeleton, không tuyên bố các route dưới đây đã chạy. Không triển khai auth/upload/migration trong đợt đồng bộ.
+Nguồn: [sổ quyết định hiện hành](../../docs/design/database-review-decisions-2026-10-14.md), [dictionary/DBML 33 bảng (cấp bậc theo chốt 26/10/2026)](../../docs/design/database-proposal-2026-10-14.md), workflow trong thư mục này. Đây là hợp đồng thiết kế; chỉ GET /api/healthz có trong skeleton, không tuyên bố các route dưới đây đã chạy. Không triển khai auth/upload/migration trong đợt đồng bộ.
 
 ## 1. Quy ước và quyền
 
@@ -30,10 +30,13 @@ GET  /api/employees                           # DTO HR/chủ hồ sơ/tra cứu 
 GET|PATCH /api/employees/{id}                 # PATCH HR allowlist, không official skill
 GET|POST /api/departments                     # mutation HR
 GET|POST /api/positions                       # mutation HR
+GET|POST /api/job-levels                      # mutation HR, danh mục cấp bậc công ty
 GET|POST /api/skill-categories                # mutation Giám đốc
 GET|POST /api/skills                          # mutation Giám đốc, không status danh mục
 PATCH /api/departments/{id}
 PATCH /api/positions/{id}
+PATCH /api/job-levels/{id}
+DELETE /api/job-levels/{id}                   # HR, chỉ khi không còn hồ sơ tham chiếu
 PATCH /api/skill-categories/{id}
 PATCH /api/skills/{id}
 POST /api/employees/{id}/profile-change-requests
@@ -48,6 +51,8 @@ POST /api/skill-change-requests/{id}/withdraw
 ```
 
 Auth session phía server/cookie secret: tra token_hash, kiểm tra status/quyền/expiry/revocation; không access JWT hoặc refresh route. Cookie/CSRF/Origin theo security.md. Reset không ngầm khôi phục must_change_password. Timeout/reset chi tiết chờ đặc tả.
+
+Theo chốt 26/10, HR cập nhật job_level_id nullable bằng ID từ job_levels; NULL là chưa cập nhật/không gán cấp bậc. Không nhận seniority_level tự do, không tạo danh mục ngầm từ tên nhập trên form hồ sơ. DTO chủ hồ sơ/HR có ID và tên cấp bậc; projection nghề nghiệp chỉ cần tên hiện hành, không cấp thêm quyền. Các route trên là thiết kế, chưa triển khai backend.
 
 Profile request chỉ fullname/phone/address, chính chủ gửi HR duyệt. Email công ty/cơ cấu HR sửa trực tiếp, username không tự đổi theo email. Không thêm withdraw profile hoặc bổ sung Pending như skill request. Giám đốc duyệt kỹ năng có căn cứ/lý do, không tự duyệt. REMOVE gỡ official hiện tại giữ request; công nhận lại tạo dòng mới. Source MANUAL/CV ở request.
 

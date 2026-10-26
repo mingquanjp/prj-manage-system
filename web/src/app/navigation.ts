@@ -16,6 +16,7 @@ export function selectWorkspaceNavigation(
   const personnelView = pathname === "/personnel"
   const profileView = pathname === "/my-profile"
   const profileReviewView = pathname === "/profile-requests"
+  const employeeProfilesView = pathname === "/employee-profiles"
   const organizationView = pathname === "/organization"
   const canManageOrganization = isHr(actorId)
   const canReviewProfile = canReviewProfiles(actorId)
@@ -32,6 +33,7 @@ export function selectWorkspaceNavigation(
     profileView,
     profileReviewView,
     organizationView,
+    employeeProfilesView,
     canManageOrganization,
     canReviewProfile,
     canLookup,

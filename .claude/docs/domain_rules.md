@@ -1,6 +1,6 @@
 # Quy tắc nghiệp vụ — baseline hiện hành
 
-**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 32 bảng. Chưa triển khai code/DDL/migration.
+**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
 > Baseline nghiệp vụ hiện hành: [2026-10-12](../../docs/business-baseline-2026-10-12.md), PTCM phân công và nghiệm thu, không nhận task trong dự án phụ trách; tra cứu giới hạn dữ liệu nghề nghiệp. Phần kỹ thuật V2 chưa đồng bộ không được ghi đè quyết định mới; công thức và quy tắc không bị thay thế giữ nguyên.
@@ -40,7 +40,7 @@ NO_CHANGE chỉ khi toàn bộ giá trị nghiệp vụ được đề nghị gi
 R03: yêu cầu đã kết thúc giữ nguyên quyết định; bổ sung bằng yêu cầu kỹ năng mới, có thể dùng CV cũ làm minh chứng. Không mở lại mục trích xuất đã xử lý; xem cv_extraction_approval_workflow.md.
 
 Yêu cầu cập nhật thông tin cá nhân do nhân viên gửi, HR xét duyệt. Pending chưa đổi hồ sơ chính thức; chấp thuận cập nhật đúng nội dung được duyệt, từ chối giữ nguyên hồ sơ và có lý do. Giữ lịch sử, kiểm tra quyền/giá trị nền và ràng buộc dữ liệu áp dụng, không ghi đè từ yêu cầu lỗi thời.
-Nhân viên đề nghị sửa fullname/phone/address; HR sửa trực tiếp email công ty/cơ cấu và quản trị departments/positions; Giám đốc quản trị skill_categories/skills. Không nhận role, trạng thái, thông tin tổ chức, trách nhiệm dự án hoặc kỹ năng chính thức qua yêu cầu cá nhân. Không mặc định mọi trường cần duyệt hoặc tự chọn trường được sửa trực tiếp.
+Nhân viên đề nghị sửa fullname/phone/address; HR sửa trực tiếp email công ty/cơ cấu và quản trị departments/positions/job_levels; Giám đốc quản trị skill_categories/skills. Không nhận role, trạng thái, thông tin tổ chức, trách nhiệm dự án hoặc kỹ năng chính thức qua yêu cầu cá nhân. Không mặc định mọi trường cần duyệt hoặc tự chọn trường được sửa trực tiếp.
 
 Địa chỉ cần bổ sung khi hoàn thiện hồ sơ, không bắt nhập lúc Admin tạo tài khoản; employees.address nullable cho giai đoạn chưa bổ sung. Khi cung cấp/sửa phải có nội dung sau trim; không xóa địa chỉ đã có về NULL/rỗng. HR được duyệt đề nghị hoặc cập nhật trực tiếp có lịch sử; patch bỏ qua address là không đổi. Không thêm trạng thái hồ sơ, hạn bổ sung hoặc chặn đăng nhập/nhận việc/thực hiện vì thiếu địa chỉ; UI nhắc bổ sung. Không trả địa chỉ trong tra cứu nghề nghiệp/ứng viên/snapshot gợi ý. Chi tiết theo [quy trình hồ sơ](employee_profile_workflow.md) và quyết định 20/10.
 HR quản lý hồ sơ hành chính/CV, được cập nhật trực tiếp theo quyền nhưng không sửa kỹ năng chính thức để bỏ qua xét duyệt. Giám đốc xét duyệt kỹ năng, không thêm tầng HR tiền kiểm. Quản trị viên quản lý tài khoản. Vô hiệu hóa hồ sơ (HR) khác khóa tài khoản (Admin); giữ điều kiện active và lịch sử, không tự bàn giao công việc. Xem [quy trình hồ sơ](employee_profile_workflow.md).
