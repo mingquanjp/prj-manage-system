@@ -10,7 +10,7 @@ Mốc 2026-09-06 và [baseline V2](../../docs/reviews/system-design-baseline-v2.
 
 ## 1. Tiếp nhận và xử lý
 
-Nhân viên upload CV của mình; HR quản lý CV nhân sự và có thể upload thay mặt, ghi người thao tác. Giám đốc đọc CV làm căn cứ xét duyệt kỹ năng, không có quyền quản lý/upload thay chỉ từ vai trò Giám đốc. Không có tầng HR duyệt trước khi Giám đốc xét kỹ năng.
+Luồng chính: nhân viên chủ động upload CV của mình và xác nhận bản hiện tại. HR quản lý CV nhân sự, hỗ trợ upload thay khi cần và ghi đúng người thao tác; đây không phải bước bắt buộc hoặc cấp duyệt CV. Nhãn thao tác trong hồ sơ người khác: “Bổ sung CV thay nhân viên”. Giám đốc đọc CV làm căn cứ xét duyệt kỹ năng, không có quyền quản lý/upload thay chỉ từ vai trò Giám đốc. Không có tầng HR duyệt trước khi Giám đốc xét kỹ năng.
 PDF có text/DOCX, tối đa 10 MiB; không OCR/PDF mã hóa. CV Việt/Anh là phạm vi thử nghiệm phải đo riêng.
 Một dịch vụ cloud cấu hình chung qua storage.Provider; storage_key không là URL công khai, download phân quyền. Chưa chọn nhà cung cấp, không mở ảnh/OCR.
 Kiểm tra kiểu nội dung thật, giới hạn giải nén DOCX, thời gian/bộ nhớ parser; không chỉ kiểm tra đuôi file.

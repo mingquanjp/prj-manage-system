@@ -1,3 +1,5 @@
+import { EmployeeCvs, type CvActions } from "@/features/cvs/EmployeeCvs"
+import type { EmployeeCvsState } from "@/models/employee-cvs"
 import { PersonalSkills, type PersonalSkillActions } from "@/features/skills/PersonalSkills"
 import type { EmployeeSkillsState } from "@/models/employee-skills"
 import type { Task } from "@/models/workspace"
@@ -24,8 +26,12 @@ export function PersonalProfile({
   work,
   tasks,
   skillActions,
+  cvs,
+  cvActions,
 }: {
   actorId: string
+  cvs: EmployeeCvsState
+  cvActions: CvActions
   employeeSkills: EmployeeSkillsState
   work: WorkState
   tasks: Task[]
@@ -64,12 +70,13 @@ export function PersonalProfile({
         )}
       </div>
       <div
-        className="mb-6 flex gap-1 border-b border-border pb-3"
+        className="mb-6 flex flex-wrap gap-1 border-b border-border pb-3"
         role="group"
         aria-label="Nội dung hồ sơ cá nhân"
       >
         {[
           ["information", "Thông tin cá nhân"],
+          ["cvs", "CV của tôi"],
           ["skills", "Kỹ năng"],
         ].map(([id, label]) => (
           <button
@@ -83,7 +90,15 @@ export function PersonalProfile({
           </button>
         ))}
       </div>
-      {tab === "skills" ? (
+      {tab === "cvs" ? (
+        <EmployeeCvs
+          actorId={actorId}
+          employeeId={actorId}
+          isActive={person.active}
+          state={cvs}
+          actions={cvActions}
+        />
+      ) : tab === "skills" ? (
         <PersonalSkills
           actorId={actorId}
           state={employeeSkills}

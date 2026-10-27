@@ -1,3 +1,6 @@
+import { EmployeeCvs, type CvActions } from "@/features/cvs/EmployeeCvs"
+import type { EmployeeCvsState } from "@/models/employee-cvs"
+import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { Pencil1Icon } from "@radix-ui/react-icons"
 import { Avatar, EmptyState, SearchInput } from "@/components/shared"
@@ -22,8 +25,12 @@ export function EmployeeProfiles({
   projects,
   tasks,
   onDeactivate,
+  cvs,
+  cvActions,
 }: {
   actorId: string
+  cvs: EmployeeCvsState
+  cvActions: CvActions
   state: ProfileState
   organization: OrganizationState
   projects: Project[]
@@ -38,6 +45,7 @@ export function EmployeeProfiles({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [tab, setTab] = useState("information")
   const [status, setStatus] = useState("ACTIVE")
   if (!isHr(actorId))
     return (
@@ -151,7 +159,10 @@ export function EmployeeProfiles({
                 <td className="px-4 py-4">
                   <button
                     className="font-medium text-left underline-offset-4 hover:underline"
-                    onClick={() => setSelectedId(profile.personId)}
+                    onClick={() => {
+                      setSelectedId(profile.personId)
+                      setTab("information")
+                    }}
                   >
                     {profile.fullname}
                   </button>
@@ -191,104 +202,140 @@ export function EmployeeProfiles({
                 {display("positionId", selected.positionId)}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              <Pencil1Icon /> Chỉnh sửa
-            </Button>
-          </div>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-accent p-3 text-sm">
-            <span className="font-medium">
-              {selected.employmentStatus === "ACTIVE" ? "Đang hoạt động" : "Đã vô hiệu hóa"}
-            </span>
-            {selected.employmentStatus === "ACTIVE" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-warning"
-                onClick={() => setDeactivating(true)}
-              >
-                Vô hiệu hóa hồ sơ
+            {tab === "information" && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil1Icon /> Chỉnh sửa
               </Button>
             )}
           </div>
-          {state.deactivations
-            .filter((entry) => entry.employeeId === selected.personId)
-            .map((entry) => (
-              <p key={entry.id} className="mb-4 text-xs leading-5 text-muted-foreground">
-                Vô hiệu hóa bởi {getPerson(entry.actorId)?.name ?? entry.actorId} ·{" "}
-                {new Date(entry.at).toLocaleString("vi-VN")}. Hồ sơ và lịch sử được giữ nguyên.
-              </p>
+          <div
+            className="mb-5 flex gap-1 border-b border-border pb-3"
+            role="group"
+            aria-label="Nội dung hồ sơ nhân sự"
+          >
+            {[
+              ["information", "Thông tin"],
+              ["cvs", "CV nhân sự"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                className={cn("filter-chip", tab === id && "filter-active")}
+                aria-pressed={tab === id}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
             ))}
-          <section className="border-t border-border pt-4">
-            <h3 className="section-title mb-3">Thông tin cá nhân</h3>
-            <ProfileFields
-              fields={[
-                ["Họ và tên", selected.fullname],
-                ["Số điện thoại", selected.phone],
-                ["Địa chỉ", selected.address],
-              ]}
+          </div>
+          {tab === "cvs" ? (
+            <EmployeeCvs
+              key={selected.personId}
+              actorId={actorId}
+              employeeId={selected.personId}
+              isActive={selected.employmentStatus === "ACTIVE"}
+              state={cvs}
+              actions={cvActions}
             />
-            {!selected.address && (
-              <p className="mt-2 text-xs text-warning">
-                Chưa bổ sung địa chỉ khi hoàn thiện hồ sơ.
-              </p>
-            )}
-          </section>
-          <section className="mt-5 border-t border-border pt-4">
-            <h3 className="section-title mb-3">Thông tin công tác</h3>
-            <ProfileFields
-              fields={[
-                ["Email công ty", selected.companyEmail],
-                ["Phòng ban", display("departmentId", selected.departmentId)],
-                ["Vị trí công việc", display("positionId", selected.positionId)],
-                ["Cấp bậc", nameOf("jobLevels", selected.jobLevelId)],
-              ]}
-            />
-          </section>
-          <section className="mt-6 border-t border-border pt-4">
-            <h3 className="section-title">Lịch sử HR cập nhật</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Các lần HR chỉnh sửa trực tiếp trong phiên mô phỏng.
-            </p>
-            {state.edits
-              .filter((edit) => edit.employeeId === selected.personId)
-              .slice()
-              .reverse()
-              .map((edit) => (
-                <details key={edit.id} className="mt-3 rounded-lg border border-border p-3">
-                  <summary className="cursor-pointer text-sm">
-                    <span className="font-medium">
-                      {getPerson(edit.actorId)?.name ?? edit.actorId}
-                    </span>{" "}
-                    · {new Date(edit.at).toLocaleString("vi-VN")}
-                  </summary>
-                  <dl className="mt-3 space-y-3 text-sm">
-                    {employeeEditFields
-                      .filter((field) => field in edit.after)
-                      .map((field) => (
-                        <div key={field}>
-                          <dt className="field-label">{employeeEditLabels[field]}</dt>
-                          <dd className="mt-1 whitespace-pre-wrap break-words">
-                            <span className="text-muted-foreground">
-                              {edit.beforeDisplay[field] ??
-                                (field === "departmentId"
-                                  ? "Chưa thuộc phòng ban"
-                                  : "Chưa cập nhật")}
-                            </span>{" "}
-                            →{" "}
-                            {edit.afterDisplay[field] ??
-                              (field === "departmentId" ? "Chưa thuộc phòng ban" : "Chưa cập nhật")}
-                          </dd>
-                        </div>
-                      ))}
-                  </dl>
-                </details>
-              ))}
-            {!state.edits.some((edit) => edit.employeeId === selected.personId) && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Chưa có thay đổi trực tiếp từ HR trong phiên này.
-              </p>
-            )}
-          </section>
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-accent p-3 text-sm">
+                <span className="font-medium">
+                  {selected.employmentStatus === "ACTIVE" ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+                </span>
+                {selected.employmentStatus === "ACTIVE" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-warning"
+                    onClick={() => setDeactivating(true)}
+                  >
+                    Vô hiệu hóa hồ sơ
+                  </Button>
+                )}
+              </div>
+              {state.deactivations
+                .filter((entry) => entry.employeeId === selected.personId)
+                .map((entry) => (
+                  <p key={entry.id} className="mb-4 text-xs leading-5 text-muted-foreground">
+                    Vô hiệu hóa bởi {getPerson(entry.actorId)?.name ?? entry.actorId} ·{" "}
+                    {new Date(entry.at).toLocaleString("vi-VN")}. Hồ sơ và lịch sử được giữ nguyên.
+                  </p>
+                ))}
+              <section className="border-t border-border pt-4">
+                <h3 className="section-title mb-3">Thông tin cá nhân</h3>
+                <ProfileFields
+                  fields={[
+                    ["Họ và tên", selected.fullname],
+                    ["Số điện thoại", selected.phone],
+                    ["Địa chỉ", selected.address],
+                  ]}
+                />
+                {!selected.address && (
+                  <p className="mt-2 text-xs text-warning">
+                    Chưa bổ sung địa chỉ khi hoàn thiện hồ sơ.
+                  </p>
+                )}
+              </section>
+              <section className="mt-5 border-t border-border pt-4">
+                <h3 className="section-title mb-3">Thông tin công tác</h3>
+                <ProfileFields
+                  fields={[
+                    ["Email công ty", selected.companyEmail],
+                    ["Phòng ban", display("departmentId", selected.departmentId)],
+                    ["Vị trí công việc", display("positionId", selected.positionId)],
+                    ["Cấp bậc", nameOf("jobLevels", selected.jobLevelId)],
+                  ]}
+                />
+              </section>
+              <section className="mt-6 border-t border-border pt-4">
+                <h3 className="section-title">Lịch sử HR cập nhật</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Các lần HR chỉnh sửa trực tiếp trong phiên mô phỏng.
+                </p>
+                {state.edits
+                  .filter((edit) => edit.employeeId === selected.personId)
+                  .slice()
+                  .reverse()
+                  .map((edit) => (
+                    <details key={edit.id} className="mt-3 rounded-lg border border-border p-3">
+                      <summary className="cursor-pointer text-sm">
+                        <span className="font-medium">
+                          {getPerson(edit.actorId)?.name ?? edit.actorId}
+                        </span>{" "}
+                        · {new Date(edit.at).toLocaleString("vi-VN")}
+                      </summary>
+                      <dl className="mt-3 space-y-3 text-sm">
+                        {employeeEditFields
+                          .filter((field) => field in edit.after)
+                          .map((field) => (
+                            <div key={field}>
+                              <dt className="field-label">{employeeEditLabels[field]}</dt>
+                              <dd className="mt-1 whitespace-pre-wrap break-words">
+                                <span className="text-muted-foreground">
+                                  {edit.beforeDisplay[field] ??
+                                    (field === "departmentId"
+                                      ? "Chưa thuộc phòng ban"
+                                      : "Chưa cập nhật")}
+                                </span>{" "}
+                                →{" "}
+                                {edit.afterDisplay[field] ??
+                                  (field === "departmentId"
+                                    ? "Chưa thuộc phòng ban"
+                                    : "Chưa cập nhật")}
+                              </dd>
+                            </div>
+                          ))}
+                      </dl>
+                    </details>
+                  ))}
+                {!state.edits.some((edit) => edit.employeeId === selected.personId) && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Chưa có thay đổi trực tiếp từ HR trong phiên này.
+                  </p>
+                )}
+              </section>
+            </>
+          )}
           {deactivating && (
             <EmployeeDeactivationDialog
               profile={selected}
