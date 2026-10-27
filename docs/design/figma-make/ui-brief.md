@@ -1,5 +1,7 @@
 # Brief sửa giao diện — nghiệp vụ hiện hành 20/10/2026
 
+**Tiếp nối 27/10/2026:** đề nghị kỹ năng nhân viên chỉ bổ sung/điều chỉnh, không chọn loại/gỡ; màn Giám đốc theo UI-06/07 tại [screen-contracts](screen-contracts.md), làm rõ nhận diện, mức đề nghị, đóng góp, tình trạng căn cứ và lịch sử trước quyết định. Không đổi schema hoặc thêm quyền gỡ.
+
 Sửa prototype DATN hiện có theo [ma trận](screen-contracts.md) và [Guidelines](Guidelines.md). Giữ phong cách, component và các tương tác còn đúng. Nguồn nghiệp vụ: [phạm vi](../../../.claude/docs/product_scope.md), [phân quyền](../../../.claude/docs/roles_permissions.md), [workflow dự án](../../../.claude/docs/project_task_assignment_workflow.md), [nhật ký](../../../.claude/docs/work_effort_workflow.md), [quyết định mới](../../business-baseline-2026-10-20.md). Nội dung này thay brief/prompt và bản import trước 20/10 trong Make.
 
 ## Hành trình chính

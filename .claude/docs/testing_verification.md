@@ -1,5 +1,7 @@
 # Kiểm thử và nghiệm thu — V2
 
+**Chốt kiểm thử 27/10/2026:** luồng nhân viên chỉ tạo ADD/UPDATE theo official, không bộ chọn loại/gỡ; thử gửi REMOVE mới phải bị chặn. REMOVE trong thiết kế và ca xử lý cũ bên dưới chỉ là tương thích dữ liệu/lịch sử, không là chức năng tạo yêu cầu mới. Không bổ sung ngoại lệ Giám đốc tự duyệt; kỹ năng cá nhân của Giám đốc đang hoãn xem xét theo [workflow](skill_approval_workflow.md). Đây là kỳ vọng kiểm thử, kết quả thực chạy xem web/README.
+
 **Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
@@ -46,7 +48,7 @@ Không chạy integration/reset trên DB thật hoặc seed lại để “test�
 | User/role | Tạo user+employee atomic; role/status hiện hành; ADMIN cuối; thêm vai trò không bị chặn chỉ vì còn việc; chặn thu hồi quyền cần cho trách nhiệm đang mở; khóa khẩn cấp vẫn được phép |
 | Tạo ban đầu 20/10 | Admin tạo user+employee cùng một lần, lỗi rollback cả hai; quyền tạo không cho Admin sửa hồ sơ hành chính về sau; HR tiếp tục quản lý hồ sơ |
 | Quyền | PM chéo project; nhân viên cũ sau reassign; CV không phải bản hiện tại; notification/run/download không bypass |
-| Skill | Pending không đổi chính thức; stale before_values/request.version; hai thao tác Giám đốc approve; ADD/UPDATE/REMOVE; HR không duyệt hoặc sửa trực tiếp official skill |
+| Skill | Pending không đổi chính thức; stale before_values/request.version; hai thao tác Giám đốc approve; tạo ADD/UPDATE, chặn REMOVE mới, giữ tương thích bản ghi REMOVE cũ; HR không duyệt hoặc sửa trực tiếp official skill |
 | Profile | HR xét duyệt; pending/từ chối không đổi hồ sơ, từ chối có lý do; đối chiếu before_values; chỉ fullname/phone/address qua yêu cầu. Address chưa có được NULL khi tạo, UI nhắc bổ sung; thêm/sửa cần nội dung, không xóa trắng, không lộ tra cứu chuyên môn |
 | Danh mục cấp bậc (26/10) | HR thêm/sửa tên, tên bắt buộc/không trùng; chặn xóa còn employee tham chiếu. Hồ sơ nhận job_level_id hợp lệ hoặc NULL, không tạo mục ngầm từ text; nhân viên không đổi qua profile request. Đổi tên giữ ID và snapshot lịch sử; không suy kỹ năng/quyền/thứ hạng từ tên cấp bậc |
 | CV | Tệp hợp lệ vẫn dùng được khi parse lỗi; không skill; map trùng; chưa map/level NULL; hai lần xác nhận CV hiện tại cạnh tranh |
@@ -223,7 +225,7 @@ Các ca dưới đây là hợp đồng kiểm thử đích, **chưa chạy trê
 | Giao lại/thu hồi/DONE/hủy | Ghi bộ ended một lần, tối đa một lượt mở/task; đóng dự án không ghi đè bộ ended; tải dựa cả state |
 | Hủy trong khi chờ review | Không giả REJECTED; giữ submission/log, kết thúc lượt nguyên tử và loại khỏi hàng chờ bằng state |
 | Tạo dự án không chọn PM | Từ chối; không tạo project PM NULL |
-| REMOVE official rồi ADD lại | Gỡ dòng hiện tại, giữ request/căn cứ; công nhận lại tạo dòng mới |
+| Bản ghi REMOVE cũ rồi ADD lại (tương thích lịch sử) | Không tạo REMOVE mới qua luồng nhân viên; xử lý bản ghi cũ giữ request/căn cứ, công nhận lại tạo dòng mới |
 | Kỹ năng vắng lúc run nhưng xuất hiện trước confirm | Phát hiện thay đổi; không chỉ so các dòng đã tồn tại |
 | Bổ sung tệp PENDING rồi duyệt từ màn hình cũ | Metadata upload do server xác thực, request.version đổi; duyệt cũ bị chặn; terminal bất biến |
 | Session | token_hash unique; không secret/JWT/refresh trong DB/log; revoke/expiry/quyền kiểm tra hiện hành; timeout/idle/reset cụ thể chờ contract |

@@ -1,7 +1,8 @@
+import type { EmployeeSkillsState } from "../models/employee-skills.ts"
+import { createEmployeeSkillsState } from "./employee-skills.ts"
 import type { SkillCatalogCommand, SkillCatalogState } from "../models/skill-catalog.ts"
 import type { EmployeeProfile } from "../models/profile.ts"
 import type { Task } from "../models/workspace.ts"
-import { people } from "./fixtures.ts"
 import { isDirector } from "./identity.ts"
 
 export function createSkillCatalogState(): SkillCatalogState {
@@ -30,14 +31,21 @@ export function skillReferences(
   tasks: Task[],
   kind: "categories" | "skills",
   id: string,
+  employeeSkills: EmployeeSkillsState = createEmployeeSkillsState(),
 ) {
   if (kind === "categories") {
     const count = catalog.skills.filter((skill) => skill.categoryId === id).length
     return count ? [`${count} kỹ năng thuộc nhóm này`] : []
   }
-  const profiles = people.filter((person) => Object.hasOwn(person.skills, id)).length
+  const profiles = employeeSkills.official.filter((s) => s.skillId === id).length
+  const requests = employeeSkills.requests.filter(
+    (r) =>
+      r.skillId === id ||
+      r.evidence.some((e) => e.requirements.some((requirement) => requirement.skill === id)),
+  ).length
   const requirements = tasks.filter((task) => task.requirements.some((r) => r.skill === id)).length
   return [
+    ...(requests ? [`${requests} đề nghị hoặc căn cứ kỹ năng tham chiếu`] : []),
     ...(profiles ? [`${profiles} hồ sơ có kỹ năng chính thức`] : []),
     ...(requirements ? [`${requirements} công việc tham chiếu kỹ năng`] : []),
   ]
@@ -50,6 +58,7 @@ export function changeSkillCatalog(
   actorId: string,
   command: SkillCatalogCommand,
   newId: string,
+  employeeSkills: EmployeeSkillsState = createEmployeeSkillsState(),
 ): SkillCatalogState {
   if (
     !isDirector(actorId) ||
@@ -67,7 +76,7 @@ export function changeSkillCatalog(
     )
       throw new Error("Danh mục đã thay đổi. Đóng hộp thoại và kiểm tra lại trước khi lưu.")
     if (command.action === "delete") {
-      if (skillReferences(catalog, tasks, command.kind, command.id).length)
+      if (skillReferences(catalog, tasks, command.kind, command.id, employeeSkills).length)
         throw new Error(
           "Chưa thể xóa vì mục này còn được tham chiếu. Dữ liệu đang dùng và lịch sử phải được giữ nguyên.",
         )

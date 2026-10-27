@@ -1,3 +1,5 @@
+import { createEmployeeSkillsState } from "./employee-skills.ts"
+import type { EmployeeSkillsState } from "../models/employee-skills.ts"
 import type {
   EmployeeProfile,
   ProfileChangeRequest,
@@ -32,12 +34,19 @@ export function createProfileState(): ProfileState {
 export const canReviewProfiles = isHr
 
 // Ghép tên/viết tắt và tên vị trí hiện hành; không đưa liên hệ/địa chỉ sang miền chuyên môn.
-export function professionalPeople(profiles: EmployeeProfile[], organization: OrganizationState) {
+export function professionalPeople(
+  profiles: EmployeeProfile[],
+  organization: OrganizationState,
+  skills: EmployeeSkillsState = createEmployeeSkillsState(),
+) {
   return people.map((person) => {
     const profile = profiles.find((entry) => entry.personId === person.id)
     if (!profile) return person
     return {
       ...person,
+      skills: Object.fromEntries(
+        skills.official.filter((s) => s.employeeId === person.id).map((s) => [s.skillId, s.level]),
+      ),
       name: profile.fullname,
       active: person.active && profile.employmentStatus === "ACTIVE",
       seniority:

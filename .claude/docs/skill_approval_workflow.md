@@ -1,5 +1,7 @@
 # Phê duyệt cập nhật kỹ năng
 
+**Chốt tiếp nối 27/10/2026 — đề nghị kỹ năng của nhân viên:** luồng hiện tại chỉ bổ sung hoặc điều chỉnh; suy ADD khi chưa có official, UPDATE khi đã có, không cho chọn loại hoặc gửi đề nghị gỡ. Không thêm quyền gỡ trực tiếp cho Giám đốc/HR. Giá trị REMOVE và mô tả xử lý bản ghi cũ được giữ để tương thích thiết kế/lịch sử, không là chức năng tạo đề nghị mới. Không đổi cấu trúc DB; việc thu hồi kỹ năng ngoài luồng này chưa triển khai. Chốt này ưu tiên các mô tả ADD/UPDATE/REMOVE cũ đúng phần thao tác của nhân viên.
+
 **Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
@@ -12,9 +14,11 @@ Xác nhận thông tin năng lực có căn cứ để sử dụng trong hồ s�
 - Nhân viên đề nghị cập nhật và giải trình căn cứ của mình.
 - Giám đốc chịu trách nhiệm đánh giá và phê duyệt kỹ năng; chức danh quản lý không mặc nhiên chứng minh chuyên môn trong mọi lĩnh vực.
 - HR quản lý hồ sơ hành chính/CV và duyệt cập nhật thông tin cá nhân, không duyệt kỹ năng hoặc sửa kỹ năng chính thức qua quyền cập nhật hồ sơ. Không thêm tầng HR duyệt trước. Phân định theo [baseline 2026-10-12](../../docs/business-baseline-2026-10-12.md).
-- Giám đốc tự đánh giá khi đủ chuyên môn. Nếu không đủ khả năng đánh giá lĩnh vực đó, phải có ý kiến chuyên môn phù hợp trước khi phê duyệt.
+- Giám đốc trực tiếp đánh giá đề nghị của người khác khi đủ chuyên môn. Nếu không đủ khả năng đánh giá lĩnh vực đó, phải có ý kiến chuyên môn phù hợp trước khi phê duyệt.
 - Người góp ý chuyên môn có thể là người phụ trách chuyên môn, người hướng dẫn hoặc người đã quan sát công việc. Đây không phải vai trò hệ thống mới hay một cấp phê duyệt bắt buộc cho mọi yêu cầu.
 - Không được duyệt yêu cầu kỹ năng của chính mình, kể cả Giám đốc có hồ sơ cá nhân. Không bổ sung ngoại lệ tự duyệt khi tổ chức chỉ có một Giám đốc.
+
+**Điểm hoãn xem xét 27/10/2026:** người dùng nhận xét kỹ năng cá nhân ít cần thiết với Giám đốc chủ yếu quản lý; thống nhất chưa ưu tiên xử lý trường hợp này trong MVP. Chưa chốt ẩn/bỏ kỹ năng cá nhân theo vai trò, chưa cấm Giám đốc thực hiện công việc và chưa thêm ngoại lệ tự duyệt hoặc người duyệt thay thế. Giữ giao diện/quyền hiện tại; nếu chỉ có một Giám đốc thì đề nghị của chính người đó không có đường tự phê duyệt. Không dùng trường hợp này làm luồng demo chính; xem xét lại phạm vi kiêm nhiệm trước khi thay đổi.
 
 ## 2. Nội dung đề nghị và căn cứ
 
@@ -24,11 +28,13 @@ Tệp, liên kết, chứng chỉ, tài liệu đào tạo, công việc nội b
 
 **Chốt bổ sung ngày 2026-10-13:** một yêu cầu được dẫn nhiều công việc trong hệ thống và/hoặc căn cứ ngoài hệ thống. Số công việc nội bộ được dẫn có thể là 0, 1 hoặc nhiều; mỗi căn cứ phải gắn đúng đóng góp của người đề nghị theo mục 5. Không có task nội bộ không miễn yêu cầu giải trình phù hợp và không tự đủ điều kiện phê duyệt. Đã chốt tiếp 15/10: tối đa một CV dẫn trực tiếp qua evidence_cv_id; CV nguồn suy qua extracted_skill_id, không lặp. Cho upload nhiều tệp riêng tùy chọn qua evidence_attachments JSONB metadata, file trên cloud cấu hình chung, không thêm bảng. Loại/số/dung lượng tệp và cleanup còn cần đặc tả.
 
-Đề nghị sửa sai hoặc loại thông tin kỹ năng phải nêu thông tin cần sửa và lý do, không buộc chứng minh năng lực như một đề nghị nâng mức.
+Đề nghị điều chỉnh thông tin kỹ năng đã có phải nêu thông tin cần sửa và lý do; không buộc chứng minh năng lực như một đề nghị nâng mức. Luồng nhân viên không có đề nghị gỡ theo chốt 27/10 ở đầu file.
 
 Kỹ năng trích xuất từ CV chỉ là dữ liệu đề xuất. Trước khi duyệt vẫn phải xác định kỹ năng, mức và căn cứ theo quy trình này; không tự suy mức từ tên kỹ năng xuất hiện trong CV.
 
 ## 3. Tiêu chí đối chiếu
+
+Màn xét duyệt hiển thị mã nhân viên, vị trí nghề nghiệp, ngày gửi; so trước/đề nghị, hướng dẫn của mức đề nghị và lịch sử quyết định cùng người/kỹ năng. Căn cứ công việc cần để lộ phần đóng góp/liên hệ với kỹ năng và tình trạng nộp/nghiệm thu trước khi mở chi tiết. Yêu cầu công việc không ghi kỹ năng đề nghị thì nhắc đối chiếu giải trình, không tự loại. Ý kiến chuyên môn có thể ghi trước khi chọn chấp thuận/từ chối. Không thêm dữ liệu liên hệ riêng tư, quyền dự án hay ngưỡng ký tự/năm/số task. Trong bản mô phỏng, lịch sử chỉ bao gồm dữ liệu có trong phiên.
 
 Người duyệt xem xét ba điểm:
 

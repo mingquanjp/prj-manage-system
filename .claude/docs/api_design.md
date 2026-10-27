@@ -1,5 +1,7 @@
 # Thiết kế API — đồng bộ quyết định 15/10/2026
 
+**Chốt tiếp nối 27/10/2026 — đề nghị kỹ năng của nhân viên:** luồng hiện tại chỉ bổ sung hoặc điều chỉnh; suy ADD khi chưa có official, UPDATE khi đã có, không cho chọn loại hoặc gửi đề nghị gỡ. Không thêm quyền gỡ trực tiếp cho Giám đốc/HR. Giá trị REMOVE và mô tả xử lý bản ghi cũ được giữ để tương thích thiết kế/lịch sử, không là chức năng tạo đề nghị mới. Không đổi cấu trúc DB; việc thu hồi kỹ năng ngoài luồng này chưa triển khai. Chốt này ưu tiên các mô tả ADD/UPDATE/REMOVE cũ đúng phần thao tác của nhân viên.
+
 Nguồn: [sổ quyết định hiện hành](../../docs/design/database-review-decisions-2026-10-14.md), [dictionary/DBML 33 bảng (cấp bậc theo chốt 26/10/2026)](../../docs/design/database-proposal-2026-10-14.md), workflow trong thư mục này. Đây là hợp đồng thiết kế; chỉ GET /api/healthz có trong skeleton, không tuyên bố các route dưới đây đã chạy. Không triển khai auth/upload/migration trong đợt đồng bộ.
 
 ## 1. Quy ước và quyền

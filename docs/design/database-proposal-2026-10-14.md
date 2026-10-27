@@ -1,5 +1,7 @@
 # Thiết kế database hợp nhất — bản đề xuất trình bày
 
+**Tiếp nối 27/10/2026:** đề nghị kỹ năng nhân viên chỉ tạo ADD/UPDATE; REMOVE giữ tương thích thiết kế/lịch sử, không thêm quyền gỡ. Không đổi bảng/cột/ràng buộc. Xem [chốt hiện hành](database-review-decisions-2026-10-14.md) và [workflow kỹ năng](../../.claude/docs/skill_approval_workflow.md); không suy việc giữ giá trị operation thành quyền tạo đề nghị gỡ.
+
 Cập nhật 26/10/2026 · Bước 5C · **33 bảng đề xuất; chưa phải DDL đã chốt hoặc DB đã triển khai.**
 
 **Bổ sung 26/10/2026:** thêm job_levels do HR quản trị; employees.job_level_id nullable thay seniority_level nhập tự do, không enum cấp bậc cố định. Xem [quyết định tiếp nối](database-review-decisions-2026-10-14.md).

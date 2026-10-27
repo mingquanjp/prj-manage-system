@@ -1,5 +1,7 @@
 # Bước 5B — Dictionary 22 bảng còn lại
 
+**Chốt tiếp nối 27/10/2026 — đề nghị kỹ năng của nhân viên:** luồng hiện tại chỉ bổ sung hoặc điều chỉnh; suy ADD khi chưa có official, UPDATE khi đã có, không cho chọn loại hoặc gửi đề nghị gỡ. Không thêm quyền gỡ trực tiếp cho Giám đốc/HR. Giá trị REMOVE và mô tả xử lý bản ghi cũ được giữ để tương thích thiết kế/lịch sử, không là chức năng tạo đề nghị mới. Không đổi cấu trúc DB; việc thu hồi kỹ năng ngoài luồng này chưa triển khai. Chốt này ưu tiên các mô tả ADD/UPDATE/REMOVE cũ đúng phần thao tác của nhân viên.
+
 **Chốt tiếp nối 26/10/2026:** cấp bậc theo công ty: thêm job_levels (mục 5.1), employees.job_level_id nullable thay seniority_level; HR quản trị và chọn từ danh mục. Tổng hiện hành 33 bảng, chưa DDL/migration. [Quyết định hiện hành](database-review-decisions-2026-10-14.md#quyết-định-tiếp-nối-26102026--cấp-bậc-theo-công-ty-hiện-hành).
 
 **Bổ sung 20/10/2026:** [quyết định địa chỉ](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối--địa-chỉ-khi-hoàn-thiện-hồ-sơ) thêm `employees.address TEXT NULL`; cần bổ sung khi hoàn thiện hồ sơ nhưng không bắt Admin nhập khi tạo. Allowlist yêu cầu hồ sơ có address; không cho xóa trắng. Tại mốc 20/10 tổng vẫn 32 bảng; chốt 26/10 ở trên thay phần cấp bậc/tổng số, chưa DDL/migration.
@@ -110,11 +112,11 @@ Chỉ quyết định hợp lệ ghi bảng này; không tạo dòng pending gi�
 |---|---|---|
 | request_id | PK | Một đề nghị cho một kỹ năng |
 | employee_id, skill_id | INT NN FK employees/skills | Subject |
-| operation | ADD/UPDATE/REMOVE NN | Loại thay đổi |
+| operation | ADD/UPDATE/REMOVE NN | Nhân viên chỉ tạo ADD/UPDATE theo chốt 27/10; REMOVE giữ tương thích thiết kế/lịch sử, không tạo mới từ luồng này |
 | source | MANUAL/CV NN | Đường khởi tạo |
 | before_values | JSONB ? | Bản official đối chiếu; NULL nếu chưa có |
 | proposed_values | JSONB ? | Level/years/note; REMOVE không cần đề xuất mức mới |
-| explanation | TEXT NN | Giải trình hoặc lý do gỡ/sửa |
+| explanation | TEXT NN | Giải trình bổ sung/điều chỉnh; lý do gỡ chỉ thuộc bản ghi cũ |
 | external_evidence | TEXT ? | Căn cứ/đường dẫn ngoài, không quản lý file giả |
 | expert_opinion | TEXT ? | Nguồn và nội dung ý kiến ngoài; không giả chữ ký |
 | extracted_skill_id | INT ? FK cv_extracted_skills | Nguồn CV gốc, UQ khi khác NULL |

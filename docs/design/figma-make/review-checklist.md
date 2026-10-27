@@ -32,7 +32,7 @@ Ngày 20/10/2026. Đây là tình huống phải kiểm tra trên preview, chưa
 | T26 | Admin/HR/Giám đốc thao tác chéo quyền | Admin tài khoản; HR hồ sơ/cơ cấu; Giám đốc kỹ năng/nhóm kỹ năng; không quyền superset |
 | T27 | HR sửa trực tiếp / nhân viên gửi profile | Nhân viên fullname/phone/address; HR email/cơ cấu; before_values cũ không ghi đè; pending không đổi hồ sơ. Address chưa bổ sung được NULL lúc tạo, UI nhắc nhưng không chặn làm việc; bổ sung/sửa cần nội dung, không xóa trắng/NULL, bỏ khóa là không đổi; không lộ ở tra cứu/gợi ý |
 | T28 | HR upload CV / nhân viên chọn CV hiện tại / parse FAILED | HR không chọn thay; tệp hợp lệ vẫn dùng được; không nút duyệt CV |
-| T29 | Yêu cầu kỹ năng không có task nội bộ / bổ sung pending / quyết định terminal | Vẫn gửi có giải trình; bổ sung cập nhật nội dung duyệt; terminal bất biến, bổ sung sau bằng yêu cầu mới |
+| T29 | Đề nghị kỹ năng bổ sung/điều chỉnh; không có task nội bộ / bổ sung pending / quyết định terminal | Suy ADD/UPDATE theo official, không bộ chọn loại/gỡ; REMOVE mới bị chặn. Vẫn gửi có giải trình khi không dẫn task; bổ sung cập nhật nội dung duyệt; terminal bất biến, bổ sung sau bằng yêu cầu mới |
 | T30 | Giám đốc duyệt kỹ năng của mình / HR duyệt kỹ năng | Bị chặn; hai luồng MANUAL/CV cùng tiêu chí; không tự suy level từ tên CV |
 | T31 | Tra cứu PM/PTCM / nhân viên thường / Giám đốc xem căn cứ | PM/PTCM nghề nghiệp giới hạn; nhân viên thường không xem người khác; Giám đốc chỉ căn cứ liên quan |
 | T32 | Xóa danh mục còn tham chiếu | Bị chặn và có giải thích; không tạo INACTIVE để thay thế |
@@ -42,3 +42,11 @@ Ngày 20/10/2026. Đây là tình huống phải kiểm tra trên preview, chưa
 | T36 | HR quản lý phòng ban/vị trí/cấp bậc; xóa mục còn tham chiếu | HR thêm/sửa tên; tên bắt buộc/không trùng, chỉ xóa khi không còn tham chiếu. Hồ sơ chọn cấp bậc từ danh mục công ty hoặc Chưa cập nhật; không nhập tự do/enum IT cố định. Đổi tên cập nhật hiển thị hiện hành, không viết lại snapshot lịch sử; nhân viên không đổi cấp bậc qua yêu cầu cá nhân. Không tạo INACTIVE để thay thế |
 
 Review tài liệu tĩnh chỉ kiểm tra hướng dẫn nhất quán. Chỉ đánh dấu tình huống pass sau khi thao tác preview thật; build/typecheck xanh không thay kiểm tra quyền và luồng.
+
+## Đối chiếu bổ sung 27/10/2026 — UI-06/07
+
+- Màn duyệt thể hiện mã nhân viên/vị trí/ngày gửi, trước/đề nghị và hướng dẫn mức đề nghị, lịch sử cùng kỹ năng; đóng góp và trạng thái nộp/nghiệm thu không bị ẩn hết trong vùng mở rộng. Ý kiến chuyên môn nhập trước quyết định và được lưu cùng kết quả.
+- Không suy mức từ số năm/task; công việc chưa nộp hoặc requirement không có kỹ năng đang xét cần đối chiếu giải trình, không tự coi là chứng nhận hoặc tự loại đề nghị. Không bắt tệp/task nội bộ hoặc tự thêm ngưỡng ký tự.
+- Kỹ năng cá nhân của Giám đốc đang hoãn xem xét; T30 vẫn chặn tự duyệt, không diễn giải thành quyền tự chấp thuận hoặc đã ẩn phần kỹ năng theo vai trò.
+
+Các mục này là kỳ vọng, không phải bằng chứng đã kiểm thử đầy đủ; kết quả theo từng đợt xem web/README.

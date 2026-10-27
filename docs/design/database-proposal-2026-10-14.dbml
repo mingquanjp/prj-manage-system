@@ -1,3 +1,5 @@
+// Chốt 27/10/2026: nhân viên chỉ tạo ADD/UPDATE, không đề nghị gỡ;
+// REMOVE giữ tương thích thiết kế/lịch sử, không cấp quyền gỡ mới. Không đổi cấu trúc.
 // Bản trực quan dictionary 5A/5B, đồng bộ 15/10/2026; KHÔNG phải migration.
 // Bổ sung 20/10/2026: address nullable khi tạo, cần bổ sung khi hoàn thiện hồ sơ;
 // không cho ghi địa chỉ rỗng hoặc xóa địa chỉ đã có. Đọc baseline 20/10.
@@ -92,7 +94,7 @@ Table employee_skill_change_requests {
   request_id int [pk, increment]
   employee_id int [not null, ref: > employees.employee_id]
   skill_id int [not null, ref: > skills.skill_id]
-  operation text [not null, note: 'ADD / UPDATE / REMOVE']
+  operation text [not null, note: 'ADD / UPDATE cho đề nghị nhân viên; REMOVE giữ tương thích thiết kế/lịch sử, không tạo mới theo chốt 27/10/2026']
   source text [not null, note: 'MANUAL / CV']
   before_values jsonb
   proposed_values jsonb
