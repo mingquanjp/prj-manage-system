@@ -42,6 +42,8 @@ export function AppShell({
 }) {
   const { people, getPerson } = usePeople()
   const {
+    skillCatalogView,
+    canManageSkills,
     ownTasks,
     personalView,
     personnelView,
@@ -156,20 +158,22 @@ export function AppShell({
               <PersonIcon /> Hồ sơ của tôi
             </NavLink>
           </div>
-          {(canReviewProfile || canManageOrganization) && (
+          {(canReviewProfile || canManageOrganization || canManageSkills) && (
             <div className="mt-4 border-t border-border pt-3">
               <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">Quản trị</p>
-              <NavLink
-                to="/profile-requests"
-                className={({ isActive }) =>
-                  cn(
-                    "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
-                    isActive ? "bg-accent" : "hover:bg-accent",
-                  )
-                }
-              >
-                Yêu cầu thông tin cá nhân
-              </NavLink>
+              {canReviewProfile && (
+                <NavLink
+                  to="/profile-requests"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Yêu cầu thông tin cá nhân
+                </NavLink>
+              )}
               {canReviewProfile && (
                 <NavLink
                   to="/employee-profiles"
@@ -181,6 +185,19 @@ export function AppShell({
                   }
                 >
                   Hồ sơ nhân sự
+                </NavLink>
+              )}
+              {canManageSkills && (
+                <NavLink
+                  to="/skill-catalog"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Danh mục kỹ năng
                 </NavLink>
               )}
               {canManageOrganization && (
@@ -252,35 +269,39 @@ export function AppShell({
           >
             <Link
               to={
-                employeeProfilesView
-                  ? "/employee-profiles"
-                  : profileView
-                    ? "/my-profile"
-                    : profileReviewView
-                      ? "/profile-requests"
-                      : organizationView
-                        ? "/organization"
-                        : personnelView
-                          ? "/personnel"
-                          : personalView
-                            ? "/my-work"
-                            : "/"
+                skillCatalogView
+                  ? "/skill-catalog"
+                  : employeeProfilesView
+                    ? "/employee-profiles"
+                    : profileView
+                      ? "/my-profile"
+                      : profileReviewView
+                        ? "/profile-requests"
+                        : organizationView
+                          ? "/organization"
+                          : personnelView
+                            ? "/personnel"
+                            : personalView
+                              ? "/my-work"
+                              : "/"
               }
               className="hover:text-foreground"
             >
-              {employeeProfilesView
-                ? "Hồ sơ nhân sự"
-                : profileView
-                  ? "Hồ sơ của tôi"
-                  : profileReviewView
-                    ? "Yêu cầu thông tin cá nhân"
-                    : organizationView
-                      ? "Danh mục tổ chức"
-                      : personnelView
-                        ? "Tra cứu nhân sự"
-                        : personalView
-                          ? "Không gian cá nhân"
-                          : "Dự án"}
+              {skillCatalogView
+                ? "Danh mục kỹ năng"
+                : employeeProfilesView
+                  ? "Hồ sơ nhân sự"
+                  : profileView
+                    ? "Hồ sơ của tôi"
+                    : profileReviewView
+                      ? "Yêu cầu thông tin cá nhân"
+                      : organizationView
+                        ? "Danh mục tổ chức"
+                        : personnelView
+                          ? "Tra cứu nhân sự"
+                          : personalView
+                            ? "Không gian cá nhân"
+                            : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -373,6 +394,19 @@ export function AppShell({
               }
             >
               Hồ sơ nhân sự
+            </NavLink>
+          )}
+          {canManageSkills && (
+            <NavLink
+              to="/skill-catalog"
+              className={({ isActive }) =>
+                cn(
+                  "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                  isActive ? "bg-accent" : "hover:bg-accent",
+                )
+              }
+            >
+              Danh mục kỹ năng
             </NavLink>
           )}
           {canManageOrganization && (

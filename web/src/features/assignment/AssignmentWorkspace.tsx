@@ -1,3 +1,4 @@
+import { useSkillCatalog } from "@/components/skill-catalog"
 import { usePeople } from "@/components/people-directory"
 import { AssignmentTaskList } from "./AssignmentTaskList"
 import { AssignmentCandidateTable } from "./AssignmentCandidateTable"
@@ -35,6 +36,7 @@ export function AssignmentWorkspace({
   onBack: () => void
   onCommit: (tasks: Task[]) => void
 }) {
+  const { skillName } = useSkillCatalog()
   const { people, getPerson } = usePeople()
   const [ids, setIds] = useState(selectedIds)
   const [activeId, setActiveId] = useState(selectedIds[0])
@@ -188,7 +190,7 @@ export function AssignmentWorkspace({
                       key={r.skill}
                       className="rounded border border-border bg-background px-2 py-1 text-xs"
                     >
-                      <span className="font-medium">{r.skill}</span> · {levels[r.level]}
+                      <span className="font-medium">{skillName(r.skill)}</span> · {levels[r.level]}
                       {r.mandatory ? " · bắt buộc" : ""}
                     </span>
                   ))}

@@ -1,5 +1,5 @@
 import type { Task, Project, TaskGroup, TaskInput, FormErrors } from "../models/workspace.ts"
-import { skillCatalog } from "./fixtures.ts"
+import { createSkillCatalogState } from "./skill-catalog.ts"
 import { canAssign } from "./identity.ts"
 
 export function isTaskFrozen(task: Task) {
@@ -12,6 +12,7 @@ export function validateTaskInput(
   tasks: Task[],
   input: TaskInput,
   editingId?: string,
+  catalog = createSkillCatalogState(),
 ): FormErrors {
   const errors: FormErrors = {}
   if (!input.code.trim() || input.code.trim().length > 30)
@@ -60,7 +61,8 @@ export function validateTaskInput(
   }
   if (!input.requirements.length) errors.requirements = "Thêm ít nhất một yêu cầu kỹ năng."
   input.requirements.forEach((r, i) => {
-    if (!skillCatalog.includes(r.skill)) errors[`skill-${i}`] = "Chọn kỹ năng trong danh mục."
+    if (!catalog.skills.some((skill) => skill.id === r.skill))
+      errors[`skill-${i}`] = "Chọn kỹ năng trong danh mục."
     else if (input.requirements.some((other, j) => j !== i && other.skill === r.skill))
       errors[`skill-${i}`] = "Kỹ năng này đã có trong công việc."
     if (!Number.isInteger(r.level) || r.level < 1 || r.level > 4)
@@ -78,6 +80,7 @@ export function saveTask(
   tasks: Task[],
   input: TaskInput,
   editingId?: string,
+  catalog = createSkillCatalogState(),
 ): Task[] {
   if (!canAssign(project, actorId))
     throw new Error("Chỉ PTCM của dự án đang lập kế hoạch/triển khai được sửa cấu trúc.")
@@ -86,7 +89,7 @@ export function saveTask(
     : undefined
   if (editingId && (!existing || isTaskFrozen(existing)))
     throw new Error("Công việc đã từng phân công không được sửa lại đặc tả bằng biểu mẫu này.")
-  const errors = validateTaskInput(project, groups, tasks, input, editingId)
+  const errors = validateTaskInput(project, groups, tasks, input, editingId, catalog)
   if (Object.keys(errors).length) throw new Error(Object.values(errors).join(" "))
   const group = groups.find((g) => g.id === input.groupId)!
   const task: Task = {

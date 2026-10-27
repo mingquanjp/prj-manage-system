@@ -1,3 +1,4 @@
+import { createSkillCatalogState, catalogSkillName } from "./skill-catalog.ts"
 import { getPerson } from "./identity.ts"
 import { loadFor } from "./assignment.ts"
 import { people } from "./fixtures.ts"
@@ -37,6 +38,7 @@ export function personnelProfiles(
   actorId: string,
   query = "",
   directory = people,
+  catalog = createSkillCatalogState(),
 ): ProfessionalProfile[] {
   if (!canLookupPersonnel(projects, actorId)) return []
   const needle = searchKey(query)
@@ -48,7 +50,10 @@ export function personnelProfiles(
       initials: person.initials,
       position: person.position,
       seniority: person.seniority,
-      skills: Object.entries(person.skills).map(([name, level]) => ({ name, level })),
+      skills: Object.entries(person.skills).map(([id, level]) => ({
+        name: catalogSkillName(catalog, id),
+        level,
+      })),
       currentLoad: loadFor(person.id, tasks),
     }))
     .filter((person) =>

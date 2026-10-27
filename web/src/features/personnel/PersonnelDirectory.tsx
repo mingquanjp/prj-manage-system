@@ -1,3 +1,4 @@
+import { useSkillCatalog } from "@/components/skill-catalog"
 import { useState } from "react"
 import { usePeople } from "@/components/people-directory"
 import { Avatar, EmptyState, SearchInput } from "@/components/shared"
@@ -16,6 +17,7 @@ export function PersonnelDirectory({
   tasks: Task[]
   actorId: string
 }) {
+  const { catalog } = useSkillCatalog()
   const { people } = usePeople()
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string>()
@@ -27,7 +29,7 @@ export function PersonnelDirectory({
       />
     )
   }
-  const profiles = personnelProfiles(projects, tasks, actorId, query, people)
+  const profiles = personnelProfiles(projects, tasks, actorId, query, people, catalog)
   const selected = profiles.find((person) => person.id === selectedId)
 
   return (
