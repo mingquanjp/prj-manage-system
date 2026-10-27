@@ -1,5 +1,7 @@
 # Ghi nhận quyết định rà soát database theo từng nhóm
 
+**Chốt tiếp nối 27/10/2026 — đề nghị kỹ năng của nhân viên:** luồng hiện tại chỉ bổ sung hoặc điều chỉnh; suy ADD khi chưa có official, UPDATE khi đã có, không cho chọn loại hoặc gửi đề nghị gỡ. Không thêm quyền gỡ trực tiếp cho Giám đốc/HR. Giá trị REMOVE và mô tả xử lý bản ghi cũ được giữ để tương thích thiết kế/lịch sử, không là chức năng tạo đề nghị mới. Không đổi cấu trúc DB; việc thu hồi kỹ năng ngoài luồng này chưa triển khai. Chốt này ưu tiên các mô tả ADD/UPDATE/REMOVE cũ đúng phần thao tác của nhân viên.
+
 Ngày bắt đầu: 14/10/2026.
 
 ## Quyết định tiếp nối 26/10/2026 — cấp bậc theo công ty (hiện hành)

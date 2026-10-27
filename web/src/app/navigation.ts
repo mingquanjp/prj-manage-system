@@ -19,6 +19,7 @@ export function selectWorkspaceNavigation(
   const profileView = pathname === "/my-profile"
   const profileReviewView = pathname === "/profile-requests"
   const employeeProfilesView = pathname === "/employee-profiles"
+  const skillReviewView = pathname === "/skill-requests"
   const skillCatalogView = pathname === "/skill-catalog"
   const canManageSkills = active && isDirector(actorId)
   const organizationView = pathname === "/organization"
@@ -31,6 +32,7 @@ export function selectWorkspaceNavigation(
   )
 
   return {
+    skillReviewView,
     skillCatalogView,
     canManageSkills,
     ownTasks,

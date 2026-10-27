@@ -1,3 +1,4 @@
+import type { EmployeeSkillsState } from "@/models/employee-skills"
 import { useState } from "react"
 import { Pencil1Icon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
@@ -16,11 +17,13 @@ export function SkillCatalogs({
   actorId,
   catalog,
   tasks,
+  employeeSkills,
   onChange,
 }: {
   actorId: string
   catalog: SkillCatalogState
   tasks: Task[]
+  employeeSkills: EmployeeSkillsState
   onChange: (command: SkillCatalogCommand) => void
 }) {
   const [kind, setKind] = useState<"categories" | "skills">("skills")
@@ -43,7 +46,9 @@ export function SkillCatalogs({
         !category ||
         catalog.skills.find((skill) => skill.id === entry.id)?.categoryId === category),
   )
-  const references = removing ? skillReferences(catalog, tasks, removing.kind, removing.id) : []
+  const references = removing
+    ? skillReferences(catalog, tasks, removing.kind, removing.id, employeeSkills)
+    : []
   return (
     <div className="w-full">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">

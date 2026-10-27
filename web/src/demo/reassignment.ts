@@ -64,7 +64,11 @@ export function reassignUnstartedTask(
   if (block) throw new Error(block)
   if (task.currentAssignment!.id !== command.expectedAssignmentId)
     throw new Error("Phân công đã thay đổi. Đóng hộp thoại và kiểm tra lại người thực hiện.")
-  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const directory = professionalPeople(
+    state.profileState.profiles,
+    state.organization,
+    state.employeeSkills,
+  )
   const person = directory.find((entry) => entry.id === command.personId)
   if (!person || !isEligible(project, person))
     throw new Error("Người được chọn không đủ điều kiện nhận công việc.")

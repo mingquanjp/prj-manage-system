@@ -1,3 +1,4 @@
+import { SkillRequests } from "@/features/skills/SkillRequests"
 import { SkillCatalogs } from "@/features/skill-catalog/SkillCatalogs"
 import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
 import { EmptyState } from "@/components/shared"
@@ -41,12 +42,28 @@ export function WorkspaceRoutes({
   return (
     <Routes>
       <Route
+        path="/skill-requests"
+        element={
+          <SkillRequests
+            key={actorId}
+            actorId={actorId}
+            state={state.employeeSkills}
+            employees={state.profileState.profiles.map(({ personId, employeeCode }) => ({
+              personId,
+              employeeCode,
+            }))}
+            onResolve={actions.resolveSkillChange}
+          />
+        }
+      />
+      <Route
         path="/skill-catalog"
         element={
           <SkillCatalogs
             key={actorId}
             actorId={actorId}
             catalog={state.skillCatalog}
+            employeeSkills={state.employeeSkills}
             tasks={tasks}
             onChange={actions.changeSkillCatalog}
           />
@@ -88,6 +105,10 @@ export function WorkspaceRoutes({
             state={state.profileState}
             organization={state.organization}
             onRequest={actions.requestProfileChange}
+            employeeSkills={state.employeeSkills}
+            work={work}
+            tasks={tasks}
+            skillActions={actions}
           />
         }
       />

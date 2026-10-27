@@ -1,3 +1,14 @@
+import {
+  submitSkillRequest,
+  supplementSkillRequest,
+  withdrawSkillRequest,
+  resolveSkillRequest,
+} from "./employee-skills.ts"
+import type {
+  SkillRequestInput,
+  SkillSupplement,
+  SkillDecision,
+} from "../models/employee-skills.ts"
 import type { SkillCatalogCommand } from "../models/skill-catalog.ts"
 import { changeSkillCatalog } from "./skill-catalog.ts"
 import type { ExecutionAction, Project, Task, TaskGroup, TaskStatus } from "../models/workspace.ts"
@@ -28,7 +39,11 @@ export function createDemoWorkspaceActions(
   dispatch: (action: DemoWorkspaceAction) => void,
   actorId: string,
 ) {
-  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const directory = professionalPeople(
+    state.profileState.profiles,
+    state.organization,
+    state.employeeSkills,
+  )
   const requireActiveActor = () => {
     if (!directory.find((p) => p.id === actorId)?.active)
       throw new Error("Hồ sơ của bạn đã được vô hiệu hóa; không thể thực hiện nghiệp vụ.")
@@ -38,6 +53,80 @@ export function createDemoWorkspaceActions(
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    requestSkillChange(input: SkillRequestInput) {
+      requireActiveActor()
+      const employeeSkills = submitSkillRequest(
+        state.employeeSkills,
+        state.profileState.profiles,
+        state.skillCatalog,
+        state.work,
+        state.tasks,
+        actorId,
+        input,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "employeeSkillsChanged",
+        employeeSkills,
+        notice: "Đã gửi đề nghị kỹ năng. Năng lực chính thức chưa thay đổi.",
+      })
+    },
+    supplementSkillChange(requestId: string, version: number, input: SkillSupplement) {
+      requireActiveActor()
+      const employeeSkills = supplementSkillRequest(
+        state.employeeSkills,
+        state.profileState.profiles,
+        state.work,
+        state.tasks,
+        actorId,
+        requestId,
+        version,
+        input,
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "employeeSkillsChanged",
+        employeeSkills,
+        notice: "Đã bổ sung căn cứ cho đề nghị đang chờ.",
+      })
+    },
+    withdrawSkillChange(requestId: string, version: number, reason: string) {
+      requireActiveActor()
+      const employeeSkills = withdrawSkillRequest(
+        state.employeeSkills,
+        state.profileState.profiles,
+        actorId,
+        requestId,
+        version,
+        reason,
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "employeeSkillsChanged",
+        employeeSkills,
+        notice: "Đã rút đề nghị. Năng lực chính thức giữ nguyên.",
+      })
+    },
+    resolveSkillChange(decision: SkillDecision) {
+      requireActiveActor()
+      const employeeSkills = resolveSkillRequest(
+        state.employeeSkills,
+        state.profileState.profiles,
+        actorId,
+        decision,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "employeeSkillsChanged",
+        employeeSkills,
+        notice:
+          decision.decision === "APPROVED"
+            ? "Đã chấp thuận và cập nhật kỹ năng chính thức."
+            : "Đã từ chối. Năng lực chính thức giữ nguyên.",
+      })
+    },
     changeSkillCatalog(command: SkillCatalogCommand) {
       requireActiveActor()
       const skillCatalog = changeSkillCatalog(
@@ -47,6 +136,7 @@ export function createDemoWorkspaceActions(
         actorId,
         command,
         crypto.randomUUID(),
+        state.employeeSkills,
       )
       dispatch({
         type: "skillCatalogChanged",
