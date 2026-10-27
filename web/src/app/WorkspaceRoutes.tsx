@@ -81,6 +81,8 @@ export function WorkspaceRoutes({
             projects={projects}
             tasks={tasks}
             onDeactivate={actions.deactivateEmployee}
+            cvs={state.employeeCvs}
+            cvActions={actions}
           />
         }
       />
@@ -109,6 +111,8 @@ export function WorkspaceRoutes({
             work={work}
             tasks={tasks}
             skillActions={actions}
+            cvs={state.employeeCvs}
+            cvActions={actions}
           />
         }
       />

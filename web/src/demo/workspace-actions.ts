@@ -1,3 +1,5 @@
+import { addEmployeeCv, selectCurrentCv, simulateCvProcessing } from "./employee-cvs.ts"
+import type { CvFileInput, CvProcessingStatus } from "../models/employee-cvs.ts"
 import {
   submitSkillRequest,
   supplementSkillRequest,
@@ -53,6 +55,49 @@ export function createDemoWorkspaceActions(
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    addCv(employeeId: string, file: CvFileInput) {
+      const employeeCvs = addEmployeeCv(
+        state.employeeCvs,
+        state.profileState.profiles,
+        actorId,
+        employeeId,
+        file,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "employeeCvsChanged",
+        employeeCvs,
+        notice: "Đã bổ sung phiên bản CV mô phỏng. CV hiện tại và kỹ năng giữ nguyên.",
+      })
+    },
+    selectCurrentCv(cvId: string) {
+      const employeeCvs = selectCurrentCv(
+        state.employeeCvs,
+        state.profileState.profiles,
+        actorId,
+        cvId,
+      )
+      dispatch({
+        type: "employeeCvsChanged",
+        employeeCvs,
+        notice: "Đã chọn CV hiện tại trong phiên mô phỏng. Kỹ năng chính thức giữ nguyên.",
+      })
+    },
+    simulateCvProcessing(cvId: string, status: CvProcessingStatus) {
+      const employeeCvs = simulateCvProcessing(
+        state.employeeCvs,
+        state.profileState.profiles,
+        actorId,
+        cvId,
+        status,
+      )
+      dispatch({
+        type: "employeeCvsChanged",
+        employeeCvs,
+        notice: "Đã đổi trạng thái trích xuất mô phỏng; không có xử lý AI thật.",
+      })
+    },
     requestSkillChange(input: SkillRequestInput) {
       requireActiveActor()
       const employeeSkills = submitSkillRequest(

@@ -1,3 +1,5 @@
+import { createEmployeeCvsState } from "./employee-cvs.ts"
+import type { EmployeeCvsState } from "../models/employee-cvs.ts"
 import { createEmployeeSkillsState } from "./employee-skills.ts"
 import type { EmployeeSkillsState } from "../models/employee-skills.ts"
 import type { SkillCatalogState } from "../models/skill-catalog.ts"
@@ -23,12 +25,14 @@ export type DemoWorkspaceState = {
   work: WorkState
   profileState: ProfileState
   organization: OrganizationState
+  employeeCvs: EmployeeCvsState
   employeeSkills: EmployeeSkillsState
   skillCatalog: SkillCatalogState
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "employeeCvsChanged"; employeeCvs: EmployeeCvsState; notice: string }
   | { type: "employeeSkillsChanged"; employeeSkills: EmployeeSkillsState; notice: string }
   | { type: "skillCatalogChanged"; skillCatalog: SkillCatalogState; notice: string }
   | { type: "organizationChanged"; organization: OrganizationState; notice: string }
@@ -63,6 +67,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     organization: createOrganizationState(),
     skillCatalog: createSkillCatalogState(),
     employeeSkills: createEmployeeSkillsState(),
+    employeeCvs: createEmployeeCvsState(),
     notice: "",
   }
 }
@@ -73,6 +78,8 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "employeeCvsChanged":
+      return { ...state, employeeCvs: action.employeeCvs, notice: action.notice }
     case "employeeSkillsChanged":
       return { ...state, employeeSkills: action.employeeSkills, notice: action.notice }
     case "skillCatalogChanged":
