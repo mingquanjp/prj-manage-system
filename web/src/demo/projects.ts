@@ -6,16 +6,22 @@ import type {
   OutputConflict,
 } from "../models/workspace.ts"
 import { getPerson, isDirector } from "./identity.ts"
+import { people } from "./fixtures.ts"
 import { priorities } from "../models/workspace-labels.ts"
 
-export function validateProjectInput(all: Project[], input: ProjectInput): FormErrors {
+export function validateProjectInput(
+  all: Project[],
+  input: ProjectInput,
+  directory = people,
+): FormErrors {
   const errors: FormErrors = {}
   if (!input.code.trim() || input.code.trim().length > 30)
     errors.code = "Nhập mã dự án, tối đa 30 ký tự."
   else if (all.some((p) => p.code === input.code.trim())) errors.code = "Mã dự án đã tồn tại."
   if (!input.name.trim() || input.name.trim().length > 150)
     errors.name = "Nhập tên dự án, tối đa 150 ký tự."
-  if (!getPerson(input.pmId)?.active) errors.pmId = "Chọn nhân viên đang hoạt động làm PM."
+  if (!directory.find((p) => p.id === input.pmId)?.active)
+    errors.pmId = "Chọn nhân viên đang hoạt động làm PM."
   const validDate = (value: string) =>
     /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) &&
@@ -28,10 +34,15 @@ export function validateProjectInput(all: Project[], input: ProjectInput): FormE
   return errors
 }
 
-export function createProject(all: Project[], actorId: string, input: ProjectInput): Project[] {
-  if (!isDirector(actorId) || !getPerson(actorId)?.active)
+export function createProject(
+  all: Project[],
+  actorId: string,
+  input: ProjectInput,
+  directory = people,
+): Project[] {
+  if (!isDirector(actorId) || !directory.find((p) => p.id === actorId)?.active)
     throw new Error("Chỉ Giám đốc được tạo dự án.")
-  const errors = validateProjectInput(all, input)
+  const errors = validateProjectInput(all, input, directory)
   if (Object.keys(errors).length) throw new Error(Object.values(errors)[0])
   return [
     ...all,
@@ -51,8 +62,9 @@ export function ptcmBlockReason(
   personId: string,
   tasks: Task[],
   conflicts: OutputConflict[],
+  directory = people,
 ): string | undefined {
-  if (!getPerson(personId)?.active) return "Nhân viên không còn hoạt động."
+  if (!directory.find((p) => p.id === personId)?.active) return "Nhân viên không còn hoạt động."
   if (
     tasks.some(
       (t) =>
@@ -84,14 +96,15 @@ export function appointPtcm(
   personId: string,
   tasks: Task[],
   conflicts: OutputConflict[],
+  directory = people,
 ): Project {
   if (
     project.pmId !== actorId ||
-    !getPerson(actorId)?.active ||
+    !directory.find((p) => p.id === actorId)?.active ||
     !["PLANNING", "IN_PROGRESS"].includes(project.status)
   )
     throw new Error("Chỉ PM của dự án đang lập kế hoạch hoặc triển khai được chỉ định PTCM.")
-  const reason = ptcmBlockReason(project, personId, tasks, conflicts)
+  const reason = ptcmBlockReason(project, personId, tasks, conflicts, directory)
   if (reason) throw new Error(reason)
   return { ...project, ptcmId: personId }
 }

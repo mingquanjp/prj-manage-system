@@ -1,6 +1,6 @@
 # Bảo mật — thiết kế đích V2
 
-**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 32 bảng. Chưa triển khai code/DDL/migration.
+**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
 > Quyền nghiệp vụ theo [baseline 2026-10-12](../../docs/business-baseline-2026-10-12.md) và [phân quyền](roles_permissions.md). Admin quản lý tài khoản; HR quản lý hồ sơ hành chính/CV, duyệt thông tin cá nhân; Giám đốc duyệt kỹ năng. Không vai trò nào mặc nhiên là superset; HR không được sửa official skill hoặc đọc toàn dự án. Thiết kế role/claims cũ chưa đồng bộ, không thay kiểm tra quyền hiện hành.

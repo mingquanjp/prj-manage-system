@@ -3,7 +3,7 @@
 **Đồng bộ 15/10/2026:** ưu tiên [quyết định hiện hành và Bàn giao](database-review-decisions-2026-10-14.md), gồm xác nhận result_log_id. Chỉ thiết kế tài liệu, chưa DDL/migration. Các bước 1–4 là lịch sử.
 
 
-Cập nhật 15/10/2026. **Thiết kế đề xuất, chưa DDL/migration.** Cụ thể hóa 11 bảng lõi. [5B](database-step5b-supporting-dictionary-2026-10-14.md) bổ sung 21 bảng còn lại; tổng 32 sau khi bỏ assignment_events và refresh_tokens.
+Cập nhật 15/10/2026. **Thiết kế đề xuất, chưa DDL/migration.** Cụ thể hóa 11 bảng lõi. [5B](database-step5b-supporting-dictionary-2026-10-14.md) bổ sung 22 bảng còn lại; tổng hiện hành 33 sau chốt danh mục cấp bậc 26/10/2026. Bản 15/10 có 32 sau khi bỏ assignment_events và refresh_tokens; phần lõi 5A không đổi.
 
 Nguồn: [3A](database-step3a-core-relations-2026-10-13.md), [3B](database-step3b-effort-profile-skills-cv-2026-10-13.md), [3C](database-step3c-roles-recommendation-technical-2026-10-13.md), [4C](database-step4c-shared-pool-2026-10-13.md), [effort](../../.claude/docs/work_effort_workflow.md). Khi khác V2 lịch sử, dùng baseline 12–13/10 và các quyết định tiếp nối.
 

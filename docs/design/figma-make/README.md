@@ -16,6 +16,8 @@ File đích: [DATN trên Figma Make](https://www.figma.com/make/fOXzi51sKaRQbuSK
 
 ## Phần đã chốt và phần cần giữ chỗ
 
+- Chốt tiếp nối cấp bậc 26/10: theo [quyết định hiện hành](../database-review-decisions-2026-10-14.md#quyết-định-tiếp-nối-26102026--cấp-bậc-theo-công-ty-hiện-hành), HR quản trị danh mục công ty; hồ sơ chọn mục có sẵn hoặc Chưa cập nhật. Xem UI-02/UI-08 trong [contract](screen-contracts.md). Không nhập cấp bậc tự do hoặc mặc định tập cấp bậc IT cho mọi công ty. Thay đổi trong repo không tự cập nhật bản import trên Make.
+
 - Chốt tiếp nối địa chỉ 20/10: cần bổ sung khi hoàn thiện hồ sơ, không bắt Admin nhập lúc tạo; NULL khi chưa bổ sung, không xóa trắng khi đã có. Nhân viên đề nghị để HR duyệt, HR được sửa trực tiếp. Chỉ nhắc khi thiếu, không chặn công việc hoặc thêm trạng thái; không tra cứu chuyên môn. Xem [quyết định](../../business-baseline-2026-10-20.md). Quy tắc này thay prompt polish từng cho xóa trường tùy chọn; bản Make đã chạy không tự được cập nhật từ việc sửa các file cục bộ.
 
 - Đã chốt 20/10: Admin tạo user và hồ sơ nhân viên ban đầu cùng một lần; HR quản lý hồ sơ về sau. Chi tiết ở [quyết định](../../business-baseline-2026-10-20.md).

@@ -48,6 +48,7 @@ export function AppShell({
     profileView,
     profileReviewView,
     organizationView,
+    employeeProfilesView,
     canManageOrganization,
     canReviewProfile,
     canLookup,
@@ -169,6 +170,19 @@ export function AppShell({
               >
                 Yêu cầu thông tin cá nhân
               </NavLink>
+              {canReviewProfile && (
+                <NavLink
+                  to="/employee-profiles"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Hồ sơ nhân sự
+                </NavLink>
+              )}
               {canManageOrganization && (
                 <NavLink
                   to="/organization"
@@ -179,7 +193,7 @@ export function AppShell({
                     )
                   }
                 >
-                  Phòng ban và vị trí
+                  Danh mục tổ chức
                 </NavLink>
               )}
             </div>
@@ -238,31 +252,35 @@ export function AppShell({
           >
             <Link
               to={
-                profileView
-                  ? "/my-profile"
-                  : profileReviewView
-                    ? "/profile-requests"
-                    : organizationView
-                      ? "/organization"
-                      : personnelView
-                        ? "/personnel"
-                        : personalView
-                          ? "/my-work"
-                          : "/"
+                employeeProfilesView
+                  ? "/employee-profiles"
+                  : profileView
+                    ? "/my-profile"
+                    : profileReviewView
+                      ? "/profile-requests"
+                      : organizationView
+                        ? "/organization"
+                        : personnelView
+                          ? "/personnel"
+                          : personalView
+                            ? "/my-work"
+                            : "/"
               }
               className="hover:text-foreground"
             >
-              {profileView
-                ? "Hồ sơ của tôi"
-                : profileReviewView
-                  ? "Yêu cầu thông tin cá nhân"
-                  : organizationView
-                    ? "Phòng ban và vị trí"
-                    : personnelView
-                      ? "Tra cứu nhân sự"
-                      : personalView
-                        ? "Không gian cá nhân"
-                        : "Dự án"}
+              {employeeProfilesView
+                ? "Hồ sơ nhân sự"
+                : profileView
+                  ? "Hồ sơ của tôi"
+                  : profileReviewView
+                    ? "Yêu cầu thông tin cá nhân"
+                    : organizationView
+                      ? "Danh mục tổ chức"
+                      : personnelView
+                        ? "Tra cứu nhân sự"
+                        : personalView
+                          ? "Không gian cá nhân"
+                          : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -347,6 +365,16 @@ export function AppShell({
               Yêu cầu cá nhân
             </NavLink>
           )}
+          {canReviewProfile && (
+            <NavLink
+              to="/employee-profiles"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Hồ sơ nhân sự
+            </NavLink>
+          )}
           {canManageOrganization && (
             <NavLink
               to="/organization"
@@ -354,7 +382,7 @@ export function AppShell({
                 cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
               }
             >
-              Phòng ban và vị trí
+              Danh mục tổ chức
             </NavLink>
           )}
         </nav>

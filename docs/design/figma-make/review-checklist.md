@@ -39,5 +39,6 @@ Ngày 20/10/2026. Đây là tình huống phải kiểm tra trên preview, chưa
 | T33 | Người đã bị thay mở đóng góp cũ | Chỉ đóng góp của mình; không thấy toàn task hiện tại/log người mới hoặc dữ liệu project khác |
 | T34 | Đổi demo identity rồi quay lại danh sách/detail | Cùng state mô phỏng, quyền theo người/trách nhiệm; điều khiển demo không tự cấp quyền sản phẩm |
 | T35 | Soát giao diện và keyboard | Đúng token chung, tiếng Việt rõ, focus/dialog hợp lý; không nút giả đã hoạt động hoặc KPI tự đặt |
+| T36 | HR quản lý phòng ban/vị trí/cấp bậc; xóa mục còn tham chiếu | HR thêm/sửa tên; tên bắt buộc/không trùng, chỉ xóa khi không còn tham chiếu. Hồ sơ chọn cấp bậc từ danh mục công ty hoặc Chưa cập nhật; không nhập tự do/enum IT cố định. Đổi tên cập nhật hiển thị hiện hành, không viết lại snapshot lịch sử; nhân viên không đổi cấp bậc qua yêu cầu cá nhân. Không tạo INACTIVE để thay thế |
 
 Review tài liệu tĩnh chỉ kiểm tra hướng dẫn nhất quán. Chỉ đánh dấu tình huống pass sau khi thao tác preview thật; build/typecheck xanh không thay kiểm tra quyền và luồng.

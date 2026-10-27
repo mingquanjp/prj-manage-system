@@ -1,6 +1,8 @@
 # Thiết kế database hợp nhất — bản đề xuất trình bày
 
-Cập nhật 15/10/2026 · Bước 5C · **32 bảng đề xuất; chưa phải DDL đã chốt hoặc DB đã triển khai.**
+Cập nhật 26/10/2026 · Bước 5C · **33 bảng đề xuất; chưa phải DDL đã chốt hoặc DB đã triển khai.**
+
+**Bổ sung 26/10/2026:** thêm job_levels do HR quản trị; employees.job_level_id nullable thay seniority_level nhập tự do, không enum cấp bậc cố định. Xem [quyết định tiếp nối](database-review-decisions-2026-10-14.md).
 
 **Bổ sung 20/10/2026:** [địa chỉ khi hoàn thiện hồ sơ](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối--địa-chỉ-khi-hoàn-thiện-hồ-sơ): thêm `employees.address TEXT NULL`, không bắt Admin nhập khi tạo; nhân viên đề nghị bổ sung/sửa, HR duyệt hoặc cập nhật trực tiếp. Không cho xóa trắng địa chỉ đã có, không đưa vào tra cứu chuyên môn. Dictionary 5B/DBML đã cập nhật thiết kế; không thêm bảng hoặc chạy migration.
 
@@ -8,7 +10,7 @@ Cập nhật 15/10/2026 · Bước 5C · **32 bảng đề xuất; chưa phải 
 
 ## 1. Luận điểm thiết kế
 
-**Xem bảng và trường trực quan:** [DBML 32 bảng](database-proposal-2026-10-14.dbml). Sao chép toàn bộ file vào trình soạn thảo DBML của dbdiagram.io để dựng sơ đồ. File chia 7 nhóm khớp bảng tổng hợp bên dưới. DBML là bản biểu diễn từ dictionary 5A/5B, không phải nguồn nghiệp vụ mới. Khi sửa dictionary cần đồng bộ file này.
+**Xem bảng và trường trực quan:** [DBML 33 bảng](database-proposal-2026-10-14.dbml). Sao chép toàn bộ file vào trình soạn thảo DBML của dbdiagram.io để dựng sơ đồ. File chia 7 nhóm khớp bảng tổng hợp bên dưới. DBML là bản biểu diễn từ dictionary 5A/5B, không phải nguồn nghiệp vụ mới. Khi sửa dictionary cần đồng bộ file này.
 
 DBML có các cột, PK, quan hệ FK đơn/ghép và khóa duy nhất chính. Các CHECK, partial index, hợp đồng JSON và kiểm tra quyền/giao dịch được mô tả trong note/dictionary, chưa được mã hóa đầy đủ. Trạng thái dùng text để chưa chốt ENUM vật lý. Không dùng SQL xuất từ sơ đồ làm migration. Không chứa dữ liệu nhân viên thật; cân nhắc quyền riêng tư của dịch vụ trước khi tải thiết kế lên.
 
@@ -20,18 +22,18 @@ Không roster trước, không bảng phân công reviewer, không quản lý k�
 
 | Nhóm | Các bảng | Số | Dictionary |
 |---|---|---:|---|
-| Tài khoản và cơ cấu | users, user_roles, employees, departments, positions | 5 | 5B mục 1–5 |
+| Tài khoản và cơ cấu | users, user_roles, employees, departments, positions, job_levels | 6 | 5B mục 1–5.1 |
 | Kỹ năng và yêu cầu | skill_categories, skills, employee_skills, employee_skill_change_requests, employee_profile_change_requests, skill_request_task_evidence | 6 | 5B mục 6–11 |
 | CV | employee_cvs, cv_extractions, cv_extracted_skills | 3 | 5B mục 12–14 |
 | Dự án/công việc | projects, project_status_history, task_groups, tasks, task_requirements, assignments, task_submissions, task_status_history, task_comments | 9 | 5A; comments ở 5B mục 15 |
 | Effort | work_logs, work_log_history, work_log_change_requests | 3 | 5A mục 11–13 |
 | Gợi ý | recommendation_runs, recommendation_items | 2 | 5B mục 16–17 |
 | Hạ tầng | auth_sessions, idempotency_records, audit_events, notifications | 4 | 5B mục 18–21 |
-| Tổng | 11 bảng ở 5A + 21 bảng ở 5B | 32 | Không roster/event phân công/token refresh riêng |
+| Tổng | 11 bảng ở 5A + 22 bảng ở 5B | 33 | Không roster/event phân công/token refresh riêng |
 
 ## 3. ERD tổng thể theo quan hệ chính
 
-Hình bao phủ **tất cả 32 bảng**, nhưng lược các FK actor lặp lại và thuộc tính để đọc được. Đây là bản đồ quan hệ, không thay dictionary/FK ghép ở mục 4. Ký hiệu 0..n thể hiện giới hạn FK, không khẳng định một giao dịch hợp lệ được thiếu requirement/history. Quan hệ tùy chọn là nullable ở phía con. Không vẽ quyền truy cập hoặc ID trong JSON như FK.
+Hình bao phủ **tất cả 33 bảng**, nhưng lược các FK actor lặp lại và thuộc tính để đọc được. Đây là bản đồ quan hệ, không thay dictionary/FK ghép ở mục 4. Ký hiệu 0..n thể hiện giới hạn FK, không khẳng định một giao dịch hợp lệ được thiếu requirement/history. Quan hệ tùy chọn là nullable ở phía con. Không vẽ quyền truy cập hoặc ID trong JSON như FK.
 
 ```mermaid
 erDiagram
@@ -39,6 +41,7 @@ erDiagram
     users ||--o{ user_roles : user_id
     departments o|--o{ employees : department_id
     positions ||--o{ employees : position_id
+    job_levels o|--o{ employees : job_level_id
     skill_categories ||--o{ skills : category_id
     employees ||--o{ employee_skills : employee_id
     skills ||--o{ employee_skills : skill_id
@@ -127,16 +130,16 @@ Không khẳng định toàn schema “3NF tuyệt đối”: projection và sna
 
 ## 7. Đọc và trình bày thế nào
 
-- Trình bày chính: [pitch 8 slide](database-pitch-2026-10-14.md); dùng nhóm dữ liệu và luồng, không đọc 32 bảng tuần tự.
+- Trình bày chính: [pitch 8 slide](database-pitch-2026-10-14.md); dùng nhóm dữ liệu và luồng, không đọc 33 bảng tuần tự.
 - Trả lời “cột này để làm gì”: dictionary 5A/5B.
 - Trả lời “DB cũ đổi ra sao”: [mapping chuyển đổi](database-step5c-migration-map-2026-10-14.md).
 - Trả lời “đã chạy chưa”: mới review tài liệu và kiểm kê tĩnh, chưa SQL/live DB/concurrency test.
 
 ## 8. Trạng thái chốt: đề xuất để phản biện, chưa chốt triển khai
 
-**Đã hợp nhất:** danh mục 32 bảng, bản đồ quan hệ, dictionary theo nhóm, nguồn dữ liệu, ranh giới DB–service, hướng chuyển đổi. Không đổi công thức hoặc mở lại lựa chọn nguồn nhân lực chung.
+**Đã hợp nhất:** danh mục 33 bảng, bản đồ quan hệ, dictionary theo nhóm, nguồn dữ liệu, ranh giới DB–service, hướng chuyển đổi. Không đổi công thức hoặc mở lại lựa chọn nguồn nhân lực chung.
 
-**Đã chốt và không mở lại:** 32 bảng; HR quản trị cơ cấu/duyệt fullname/phone/address (address bổ sung 20/10), Giám đốc quản trị danh mục kỹ năng; official không source/is_effective/version; PTCM duyệt hiệu chỉnh; một cloud provider cấu hình chung; session phía server; upload metadata JSON. result_log_id cho ADD đã duyệt được người dùng xác nhận thêm ngày 15/10.
+**Đã chốt theo các quyết định được xác nhận, cập nhật 26/10:** 33 bảng; HR quản trị cơ cấu/duyệt fullname/phone/address (address bổ sung 20/10), Giám đốc quản trị danh mục kỹ năng; official không source/is_effective/version; PTCM duyệt hiệu chỉnh; một cloud provider cấu hình chung; session phía server; upload metadata JSON. result_log_id cho ADD đã duyệt được người dùng xác nhận thêm ngày 15/10.
 
 **Chi tiết còn phải đặc tả/kiểm chứng trước code:**
 

@@ -1,6 +1,6 @@
 # Hồ sơ nhân sự và cập nhật thông tin cá nhân
 
-**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 32 bảng. Chưa triển khai code/DDL/migration.
+**Đồng bộ quyết định 15/10/2026:** [sổ quyết định, phần hiện hành và Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md) ưu tiên cho nội dung đã thay thế; [dictionary/DBML hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là thiết kế 33 bảng (cấp bậc theo chốt 26/10/2026). Đây là thiết kế DB, chưa triển khai DDL/migration hoặc backend nghiệp vụ; tiến độ frontend mô phỏng xem [sổ công việc](../../web/README.md#sổ-công-việc).
 
 
 Nghiệp vụ đích theo [baseline 2026-10-12](../../docs/business-baseline-2026-10-12.md); chưa phải thiết kế DB/API hoặc chức năng đã triển khai.
@@ -65,6 +65,6 @@ Hai luồng kỹ năng do Giám đốc xử lý theo [quy trình kỹ năng](ski
 
 Xem hồ sơ bao gồm phần năng lực được phép xem; không buộc tạo thêm UC chỉ để biểu diễn một phần màn hình. Tên UC tổng quan không cấp chung mọi quyền của HR cho Giám đốc hoặc ngược lại.
 
-HR quản trị departments/positions; giữ chức danh riêng cấp bậc nullable (ví dụ Developer + Senior). Không cây cơ cấu, quyền mới hoặc suy mức kỹ năng từ cấp bậc.
+HR quản trị departments/positions/job_levels; cấp bậc là danh mục do công ty đặt tên, tách biệt vị trí và mức kỹ năng. Theo chốt 26/10/2026, `employees.job_level_id` nullable thay `seniority_level` nhập tự do. HR chọn mục có sẵn hoặc để “Chưa cập nhật”; không enum cố định Intern/Junior/Senior cho mọi công ty, không suy từ tên vị trí, không thứ tự/hệ số hoặc quan hệ theo từng vị trí/phòng ban. HR thêm/sửa tên/xóa cấp bậc như danh mục tổ chức: tên bắt buộc, không trùng, chặn xóa khi còn hồ sơ tham chiếu; giữ ID và lịch sử đã chụp khi đổi tên. Không tự cấp quyền hoặc suy mức kỹ năng. Nhân viên không đề nghị đổi cấp bậc qua yêu cầu thông tin cá nhân.
 
-**Đối chiếu UC danh mục dùng chung (16/10/2026):** HR thực hiện **Quản lý phòng ban và vị trí công việc**; Giám đốc thực hiện **Quản lý danh mục kỹ năng**, bao gồm nhóm kỹ năng và kỹ năng. Đây là hai UC hỗ trợ riêng ở tổng quan, không phải các bước của cập nhật hồ sơ cá nhân hoặc xét duyệt kỹ năng. Không bắt buộc sơ đồ phân rã riêng. Xem tổng hợp tại [phạm vi sản phẩm](product_scope.md#2-tác-nhân-và-chức-năng); không thay đổi quyền quản trị hoặc quy tắc bảo vệ dữ liệu đã chốt.
+**Đối chiếu UC danh mục dùng chung (16/10, cập nhật 26/10/2026):** HR thực hiện **Quản lý phòng ban, vị trí và cấp bậc**; Giám đốc thực hiện **Quản lý danh mục kỹ năng**, bao gồm nhóm kỹ năng và kỹ năng. Đây là hai UC hỗ trợ riêng ở tổng quan, không phải các bước của cập nhật hồ sơ cá nhân hoặc xét duyệt kỹ năng. Không bắt buộc sơ đồ phân rã riêng. Xem tổng hợp tại [phạm vi sản phẩm](product_scope.md#2-tác-nhân-và-chức-năng); không thay đổi quyền quản trị hoặc quy tắc bảo vệ dữ liệu đã chốt.

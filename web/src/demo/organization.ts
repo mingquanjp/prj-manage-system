@@ -12,6 +12,11 @@ export function createOrganizationState(): OrganizationState {
       { id: "engineering", name: "Công nghệ thông tin" },
       { id: "human-resources", name: "Nhân sự" },
     ],
+    // Chỉ minh họa công ty trong demo; không là tập cấp bậc bắt buộc của sản phẩm.
+    jobLevels: [
+      { id: "middle", name: "Middle" },
+      { id: "senior", name: "Senior" },
+    ],
     positions: [
       { id: "software-engineer", name: "Kỹ sư phần mềm" },
       { id: "backend-engineer", name: "Kỹ sư Backend" },
@@ -26,16 +31,16 @@ export function createOrganizationState(): OrganizationState {
 // Tham chiếu mẫu được khai báo riêng, không suy chức danh/quyền từ tên actor.
 export const initialEmployment: Record<
   string,
-  { departmentId: string | null; positionId: string }
+  { departmentId: string | null; positionId: string; jobLevelId: string | null }
 > = {
-  hr: { departmentId: "human-resources", positionId: "hr-specialist" },
-  ha: { departmentId: null, positionId: "director" },
-  khoa: { departmentId: "engineering", positionId: "software-engineer" },
-  thanh: { departmentId: "engineering", positionId: "project-manager" },
-  an: { departmentId: "engineering", positionId: "backend-engineer" },
-  binh: { departmentId: "engineering", positionId: "frontend-engineer" },
-  dung: { departmentId: "engineering", positionId: "software-engineer" },
-  cuong: { departmentId: "engineering", positionId: "frontend-engineer" },
+  hr: { departmentId: "human-resources", positionId: "hr-specialist", jobLevelId: "middle" },
+  ha: { departmentId: null, positionId: "director", jobLevelId: "senior" },
+  khoa: { departmentId: "engineering", positionId: "software-engineer", jobLevelId: "senior" },
+  thanh: { departmentId: "engineering", positionId: "project-manager", jobLevelId: "senior" },
+  an: { departmentId: "engineering", positionId: "backend-engineer", jobLevelId: "senior" },
+  binh: { departmentId: "engineering", positionId: "frontend-engineer", jobLevelId: "middle" },
+  dung: { departmentId: "engineering", positionId: "software-engineer", jobLevelId: "middle" },
+  cuong: { departmentId: "engineering", positionId: "frontend-engineer", jobLevelId: "senior" },
 }
 
 export function organizationReferences(
@@ -44,7 +49,12 @@ export function organizationReferences(
   id: string,
 ) {
   return profiles.filter(
-    (profile) => (kind === "departments" ? profile.departmentId : profile.positionId) === id,
+    (profile) =>
+      (kind === "departments"
+        ? profile.departmentId
+        : kind === "positions"
+          ? profile.positionId
+          : profile.jobLevelId) === id,
   )
 }
 
@@ -55,7 +65,8 @@ export function changeOrganization(
   command: OrganizationCommand,
   newId: string,
 ): OrganizationState {
-  if (!isHr(actorId)) throw new Error("Chỉ HR được quản lý phòng ban và vị trí công việc.")
+  if (!isHr(actorId) || profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE")
+    throw new Error("Chỉ HR được quản lý danh mục tổ chức.")
   const entries = state[command.kind]
   if (command.action !== "create") {
     const current = entries.find((entry) => entry.id === command.id)

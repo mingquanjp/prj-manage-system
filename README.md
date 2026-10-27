@@ -4,7 +4,7 @@
 
 Hướng nghiệp vụ dành cho doanh nghiệp nhỏ–vừa: **năng lực đã công nhận → yêu cầu công việc → tra cứu/gợi ý → xác nhận phân công → thực hiện → nghiệm thu**. Hệ thống hỗ trợ quyết định, không tự động giao việc.
 
-> **Hiện trạng — 21/10/2026:** đang phát triển frontend bằng dữ liệu mô phỏng và duy trì backend skeleton. Chưa có sản phẩm nghiệp vụ chạy xuyên suốt với API/DB. Thiết kế DB đích gồm 32 bảng, chưa được triển khai bằng migration.
+> **Hiện trạng — 26/10/2026:** đang phát triển frontend bằng dữ liệu mô phỏng và duy trì backend skeleton. Chưa có sản phẩm nghiệp vụ chạy xuyên suốt với API/DB. Thiết kế DB đích gồm 33 bảng, chưa được triển khai bằng migration.
 
 ## Mục lục
 
@@ -27,7 +27,7 @@ Hướng nghiệp vụ dành cho doanh nghiệp nhỏ–vừa: **năng lực đ�
 | Phân công | Tra cứu thủ công, gợi ý mẫu, chọn vào nháp và xác nhận cập nhật state chung | Điểm/hạng minh họa, không phải engine thật; chưa transaction DB |
 | Các phân hệ khác | Đã có đặc tả nghiệp vụ/UI | Chưa dựng đầy đủ hồ sơ, CV, duyệt kỹ năng, nhật ký, nghiệm thu và quản trị trong frontend local |
 | Backend | Go HTTP skeleton, `GET /api/healthz`, cấu hình kết nối, công cụ migration/seed và test an toàn | Chưa triển khai các service nghiệp vụ hoặc API tích hợp frontend |
-| Database | Migration/seed legacy; dictionary và DBML thiết kế đích 32 bảng | Schema legacy khác thiết kế đích; chưa chuyển đổi DB |
+| Database | Migration/seed legacy; dictionary và DBML thiết kế đích 33 bảng | Schema legacy khác thiết kế đích; chưa chuyển đổi DB |
 | Harness phát triển | Chỉ dẫn agent, mục lục nguồn, kiểm tra đường dẫn/nguồn, test và lệnh kiểm tra frontend | Không tự kiểm chứng ngữ nghĩa nghiệp vụ hoặc thay kiểm thử tích hợp/E2E |
 
 Phạm vi chi tiết và bằng chứng kiểm tra từng đợt được ghi tại [web/README.md](web/README.md). Không dùng prototype Make cũ hoặc sự tồn tại của một bảng để kết luận chức năng đã được triển khai.
@@ -41,7 +41,7 @@ Phạm vi chi tiết và bằng chứng kiểm tra từng đợt được ghi t�
 | Vai trò / trách nhiệm | Phạm vi chính |
 |---|---|
 | Quản trị viên — Admin | Quản lý tài khoản; tạo tài khoản kèm hồ sơ nhân viên ban đầu trong cùng thao tác |
-| Nhân sự — HR | Quản lý hồ sơ hành chính/CV; duyệt cập nhật thông tin cá nhân; quản lý phòng ban và vị trí công việc |
+| Nhân sự — HR | Quản lý hồ sơ hành chính/CV; duyệt cập nhật thông tin cá nhân; quản lý phòng ban, vị trí và cấp bậc |
 | Giám đốc — Director | Quản lý nhóm/danh mục kỹ năng, xét duyệt kỹ năng có căn cứ; tạo dự án kèm chọn PM và thay PM |
 | Quản lý dự án — PM | Chỉ định PTCM; theo dõi, bắt đầu, hoàn thành, đóng hoặc hủy dự án theo điều kiện |
 | Phụ trách chuyên môn — PTCM | Thiết lập nhóm/task, yêu cầu kỹ năng; phân công, thay/thu hồi người thực hiện và nghiệm thu; duyệt hiệu chỉnh nhật ký sau khóa |
@@ -111,7 +111,7 @@ PM chỉ theo dõi và PTCM có hành động khác nhau; người không có tr
 
 [Migration 000001](migrations/000001_init.up.sql) và dữ liệu seed hiện tại thuộc schema legacy. Tài khoản/role, quy trình kỹ năng và cấu trúc dữ liệu trong đó **không đại diện đầy đủ cho nghiệp vụ mới**.
 
-Thiết kế đích được mô tả bằng [bản hợp nhất 32 bảng](docs/design/database-proposal-2026-10-14.md), dictionary và DBML. Chưa có migration triển khai thiết kế này; không sửa migration đã áp dụng hoặc chạy reset để giả lập việc nâng cấp.
+Thiết kế đích được mô tả bằng [bản hợp nhất 33 bảng](docs/design/database-proposal-2026-10-14.md), dictionary và DBML. Chưa có migration triển khai thiết kế này; không sửa migration đã áp dụng hoặc chạy reset để giả lập việc nâng cấp.
 
 ### Chạy skeleton khi cần làm backend
 
@@ -131,7 +131,7 @@ Mặc định API ở [http://localhost:8080](http://localhost:8080). Khi server
 curl http://localhost:8080/api/healthz
 ```
 
-Health kiểm tra kết nối DB, trả trạng thái tổng quát. Health thành công **không chứng minh** schema đã khớp thiết kế 32 bảng hoặc API nghiệp vụ đã có.
+Health kiểm tra kết nối DB, trả trạng thái tổng quát. Health thành công **không chứng minh** schema đã khớp thiết kế 33 bảng hoặc API nghiệp vụ đã có.
 
 | Lệnh vận hành | Tác động / điều kiện |
 |---|---|
@@ -220,7 +220,7 @@ Bắt đầu tại **[docs/README.md](docs/README.md)** để chọn đúng tài
 | Phạm vi, vai trò và workflow | [Phạm vi](.claude/docs/product_scope.md), [phân quyền](.claude/docs/roles_permissions.md), [dự án/phân công](.claude/docs/project_task_assignment_workflow.md) |
 | Quyết định DB hiện hành | [Sổ quyết định — ưu tiên phần hiện hành/Bàn giao](docs/design/database-review-decisions-2026-10-14.md) |
 | Chốt tạo tài khoản và địa chỉ | [Bổ sung 20/10/2026](docs/business-baseline-2026-10-20.md) |
-| Bảng, quan hệ và trường dữ liệu | [Tổng quan 32 bảng](docs/design/database-proposal-2026-10-14.md), [dictionary 5A](docs/design/database-step5a-core-dictionary-2026-10-14.md), [dictionary 5B](docs/design/database-step5b-supporting-dictionary-2026-10-14.md), [DBML](docs/design/database-proposal-2026-10-14.dbml) |
+| Bảng, quan hệ và trường dữ liệu | [Tổng quan 33 bảng](docs/design/database-proposal-2026-10-14.md), [dictionary 5A](docs/design/database-step5a-core-dictionary-2026-10-14.md), [dictionary 5B](docs/design/database-step5b-supporting-dictionary-2026-10-14.md), [DBML](docs/design/database-proposal-2026-10-14.dbml) |
 | Chuẩn bị chuyển đổi schema | [Mapping hiện trạng → đích](docs/design/database-step5c-migration-map-2026-10-14.md) |
 | Frontend và harness | [web/README.md](web/README.md), [AGENTS.md](AGENTS.md) |
 | Kiến trúc, API, bảo mật | [Kiến trúc](.claude/docs/architecture.md), [API contract](.claude/docs/api_design.md), [bảo mật](.claude/docs/security.md) |

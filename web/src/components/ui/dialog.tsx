@@ -12,6 +12,7 @@ export function Dialog({
   children,
   side = false,
   wide = false,
+  alert = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -20,12 +21,17 @@ export function Dialog({
   children: ReactNode
   side?: boolean
   wide?: boolean
+  alert?: boolean
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-30 bg-foreground/20" />
         <DialogPrimitive.Content
+          role={alert ? "alertdialog" : "dialog"}
+          onInteractOutside={(event) => {
+            if (alert) event.preventDefault()
+          }}
           className={cn(
             "fixed z-40 overflow-auto border border-border bg-white shadow-xl outline-none",
             side

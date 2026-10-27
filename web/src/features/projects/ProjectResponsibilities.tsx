@@ -40,7 +40,9 @@ export function ProjectResponsibilities({
   const pm = project.pmId === actorId
   const editable = ["PLANNING", "IN_PROGRESS"].includes(project.status)
   const manageable = editable || project.status === "COMPLETED"
-  const block = candidate ? ptcmBlockReason(project, candidate, tasks, conflicts) : undefined
+  const block = candidate
+    ? ptcmBlockReason(project, candidate, tasks, conflicts, people)
+    : undefined
   const hasAssigned = tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED")
   const history = events.filter((e) => e.projectId === project.id)
   return (
@@ -191,7 +193,7 @@ export function ProjectResponsibilities({
               e.preventDefault()
               try {
                 onChange(
-                  appointPtcm(project, actorId, candidate, tasks, conflicts),
+                  appointPtcm(project, actorId, candidate, tasks, conflicts, people),
                   "Chỉ định PTCM",
                 )
                 setEditing(false)

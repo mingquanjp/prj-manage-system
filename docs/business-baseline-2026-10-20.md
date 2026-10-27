@@ -2,6 +2,8 @@
 
 Tiếp nối [baseline 12/10](business-baseline-2026-10-12.md), [nguồn nhân lực chung 13/10](business-baseline-2026-10-13.md) và [quyết định DB/Bàn giao](design/database-review-decisions-2026-10-14.md). Bổ sung quyền tạo ban đầu và quyết định địa chỉ đã được người dùng xác nhận; các ranh giới khác giữ theo nguồn hiện hành.
 
+> Tiếp nối 26/10: phần cấp bậc và tổng số bảng ưu tiên [quyết định cấp bậc theo công ty](design/database-review-decisions-2026-10-14.md#quyết-định-tiếp-nối-26102026--cấp-bậc-theo-công-ty-hiện-hành). Mốc 20/10 dưới đây có 32 bảng; hiện tại là 33, cấp bậc dùng danh mục HR và khóa ngoại nullable. Các quy tắc tạo ban đầu/địa chỉ giữ nguyên.
+
 ## Quyết định đã xác nhận
 
 **Admin tạo tài khoản kèm hồ sơ nhân viên ban đầu trong một lần; HR quản lý/cập nhật hồ sơ về sau.**

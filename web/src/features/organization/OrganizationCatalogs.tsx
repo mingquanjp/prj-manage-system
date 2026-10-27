@@ -36,7 +36,7 @@ export function OrganizationCatalogs({
     return (
       <EmptyState
         title="Bạn không có quyền quản lý danh mục"
-        detail="Chức năng phòng ban và vị trí công việc dành cho HR."
+        detail="Chức năng danh mục tổ chức dành cho HR."
       />
     )
   const entries = organization[kind].filter((entry) =>
@@ -50,19 +50,25 @@ export function OrganizationCatalogs({
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="eyebrow">QUẢN TRỊ · HR</p>
-          <h1 className="mt-2 text-2xl font-semibold text-balance">Phòng ban và vị trí</h1>
+          <h1 className="mt-2 text-2xl font-semibold text-balance">Danh mục tổ chức</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Danh mục dùng chung cho thông tin công tác của nhân viên.
+            {kind === "jobLevels"
+              ? "HR đặt tên cấp bậc theo cơ cấu công ty. Cấp bậc không thay thế vị trí, mức kỹ năng hoặc quyền truy cập."
+              : "Danh mục dùng chung cho thông tin công tác của nhân viên."}
           </p>
         </div>
         <Button onClick={() => setEditor({ kind })}>
           <PlusIcon />
-          {kind === "departments" ? "Thêm phòng ban" : "Thêm vị trí"}
+          {kind === "departments"
+            ? "Thêm phòng ban"
+            : kind === "positions"
+              ? "Thêm vị trí"
+              : "Thêm cấp bậc"}
         </Button>
       </div>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div className="flex gap-1" role="group" aria-label="Chọn danh mục tổ chức">
-          {(["departments", "positions"] as const).map((value) => (
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Chọn danh mục tổ chức">
+          {(["departments", "positions", "jobLevels"] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -81,7 +87,13 @@ export function OrganizationCatalogs({
           <SearchInput
             value={query}
             onChange={setQuery}
-            placeholder={kind === "departments" ? "Tìm phòng ban…" : "Tìm vị trí công việc…"}
+            placeholder={
+              kind === "departments"
+                ? "Tìm phòng ban…"
+                : kind === "positions"
+                  ? "Tìm vị trí công việc…"
+                  : "Tìm cấp bậc…"
+            }
           />
         </div>
       </div>
@@ -90,7 +102,11 @@ export function OrganizationCatalogs({
           <thead className="table-heading">
             <tr>
               <th scope="col" className="px-5 py-3">
-                {kind === "departments" ? "Tên phòng ban" : "Tên vị trí công việc"}
+                {kind === "departments"
+                  ? "Tên phòng ban"
+                  : kind === "positions"
+                    ? "Tên vị trí công việc"
+                    : "Tên cấp bậc"}
               </th>
               <th scope="col" className="px-5 py-3 text-right">
                 Hồ sơ sử dụng

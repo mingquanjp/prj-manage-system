@@ -21,7 +21,8 @@ export function CatalogEntryForm({
   const [name, setName] = useState(entry?.name ?? "")
   const [error, setError] = useState("")
   const [discard, setDiscard] = useState(false)
-  const label = kind === "departments" ? "phòng ban" : "vị trí công việc"
+  const label =
+    kind === "departments" ? "phòng ban" : kind === "positions" ? "vị trí công việc" : "cấp bậc"
   const dirty = name !== (entry?.name ?? "")
   const requestClose = () => (dirty ? setDiscard(true) : onClose())
   return (
@@ -86,7 +87,8 @@ export function CatalogEntryForm({
               Hủy
             </Button>
             <Button type="submit" disabled={Boolean(entry) && name.trim() === entry?.name}>
-              Lưu {kind === "departments" ? "phòng ban" : "vị trí"}
+              Lưu{" "}
+              {kind === "departments" ? "phòng ban" : kind === "positions" ? "vị trí" : "cấp bậc"}
             </Button>
           </div>
         </form>

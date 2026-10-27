@@ -54,13 +54,15 @@ export function validateDraft(
   actorId: string,
   tasks: Task[],
   draft: Draft,
+  directory = people,
 ): string[] {
-  if (!canAssign(project, actorId)) return ["Bạn không có trách nhiệm phân công tại dự án này."]
+  if (!directory.find((p) => p.id === actorId)?.active || !canAssign(project, actorId))
+    return ["Bạn không có trách nhiệm phân công tại dự án này."]
   if (!Object.keys(draft).length) return ["Chưa có lựa chọn trong bản nháp."]
   const errors: string[] = []
   for (const [id, choice] of Object.entries(draft)) {
     const task = tasks.find((t) => t.id === id && t.projectId === project.id)
-    const person = getPerson(choice.personId)
+    const person = directory.find((p) => p.id === choice.personId)
     if (!task || task.status !== "PENDING_ASSIGNMENT") {
       errors.push("Có công việc không còn chờ phân công.")
       continue
@@ -71,7 +73,7 @@ export function validateDraft(
     }
     if (
       choice.mode === "recommended" &&
-      !recommendations(project, task).some(
+      !recommendations(project, task, directory).some(
         (r) => r.person.id === person.id && r.rank === choice.rank,
       )
     )
@@ -96,8 +98,9 @@ export function commitDraft(
   actorId: string,
   tasks: Task[],
   draft: Draft,
+  directory = people,
 ): Task[] {
-  const errors = validateDraft(project, actorId, tasks, draft)
+  const errors = validateDraft(project, actorId, tasks, draft, directory)
   if (errors.length) throw new Error(errors.join(" "))
   return tasks.map((task) =>
     draft[task.id]

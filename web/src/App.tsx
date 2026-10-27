@@ -18,11 +18,14 @@ export default function App() {
   const { state, actions } = useDemoWorkspace(actorId)
   const location = useLocation()
   const navigate = useNavigate()
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const active = Boolean(directory.find((p) => p.id === actorId)?.active)
   const navigation = selectWorkspaceNavigation(
     state.projects,
     state.tasks,
     actorId,
     location.pathname,
+    directory,
   )
   const switchIdentity = (id: string) => {
     setActorId(id)
@@ -33,17 +36,19 @@ export default function App() {
         ? "/my-profile"
         : navigation.profileReviewView
           ? "/profile-requests"
-          : navigation.organizationView
-            ? "/organization"
-            : navigation.personalView
-              ? "/my-work"
-              : navigation.personnelView
-                ? "/personnel"
-                : "/",
+          : navigation.employeeProfilesView
+            ? "/employee-profiles"
+            : navigation.organizationView
+              ? "/organization"
+              : navigation.personalView
+                ? "/my-work"
+                : navigation.personnelView
+                  ? "/personnel"
+                  : "/",
     )
   }
   return (
-    <PeopleDirectory people={professionalPeople(state.profileState.profiles, state.organization)}>
+    <PeopleDirectory people={directory}>
       <AppShell
         actorId={actorId}
         projects={state.projects}
@@ -54,7 +59,7 @@ export default function App() {
         onDismissNotice={() => actions.setNotice("")}
         dialogs={
           <>
-            {creating && isDirector(actorId) && (
+            {creating && active && isDirector(actorId) && (
               <CreateProjectDialog
                 projects={state.projects}
                 actorId={actorId}
@@ -70,7 +75,7 @@ export default function App() {
               open={resetOpen}
               onOpenChange={setResetOpen}
               title="Khôi phục dữ liệu mẫu?"
-              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, yêu cầu cập nhật và danh mục phòng ban/vị trí trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
+              description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, yêu cầu cập nhật và danh mục phòng ban/vị trí/cấp bậc trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
             >
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setResetOpen(false)}>
