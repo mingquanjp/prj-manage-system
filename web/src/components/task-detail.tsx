@@ -1,3 +1,4 @@
+import { useSkillCatalog } from "@/components/skill-catalog"
 import { Cross2Icon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/shared"
@@ -33,6 +34,7 @@ export function TaskSpecification({
   task: Task
   showWeights?: boolean
 }) {
+  const { skillName } = useSkillCatalog()
   return (
     <section
       aria-label="Đặc tả công việc"
@@ -59,7 +61,7 @@ export function TaskSpecification({
           {task.requirements.map((r) => (
             <li key={r.skill}>
               <div className="flex justify-between gap-3">
-                <span>{r.skill}</span>
+                <span>{skillName(r.skill)}</span>
                 <span className="text-right text-muted-foreground">{levels[r.level]}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">

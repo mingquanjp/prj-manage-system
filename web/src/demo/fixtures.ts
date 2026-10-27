@@ -147,8 +147,6 @@ const frontend: Requirement[] = [
   { skill: "TypeScript", level: 3, mandatory: false, weight: 1 },
 ]
 
-export const skillCatalog = ["Node.js", "PostgreSQL", "React", "TypeScript"]
-
 export const initialGroups: TaskGroup[] = projects.flatMap((project) => [
   {
     id: `${project.id}-backend`,

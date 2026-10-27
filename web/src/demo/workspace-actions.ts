@@ -1,3 +1,5 @@
+import type { SkillCatalogCommand } from "../models/skill-catalog.ts"
+import { changeSkillCatalog } from "./skill-catalog.ts"
 import type { ExecutionAction, Project, Task, TaskGroup, TaskStatus } from "../models/workspace.ts"
 import { transitionPersonalTask } from "./execution.ts"
 import { initialOutputConflicts } from "./fixtures.ts"
@@ -36,6 +38,22 @@ export function createDemoWorkspaceActions(
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    changeSkillCatalog(command: SkillCatalogCommand) {
+      requireActiveActor()
+      const skillCatalog = changeSkillCatalog(
+        state.skillCatalog,
+        state.profileState.profiles,
+        state.tasks,
+        actorId,
+        command,
+        crypto.randomUUID(),
+      )
+      dispatch({
+        type: "skillCatalogChanged",
+        skillCatalog,
+        notice: "Đã cập nhật danh mục kỹ năng trong phiên mô phỏng.",
+      })
+    },
     deactivateEmployee(personId: string) {
       requireActiveActor()
       const profileState = deactivateEmployeeProfile(
@@ -150,6 +168,16 @@ export function createDemoWorkspaceActions(
     },
     changeTasks(tasks: Task[]) {
       requireActiveActor()
+      if (
+        tasks.some((task) =>
+          task.requirements.some(
+            (r) => !state.skillCatalog.skills.some((skill) => skill.id === r.skill),
+          ),
+        )
+      )
+        throw new Error(
+          "Danh mục kỹ năng đã thay đổi. Kiểm tra lại yêu cầu công việc trước khi lưu.",
+        )
       for (const task of tasks) {
         const before = state.tasks.find((t) => t.id === task.id)
         if (

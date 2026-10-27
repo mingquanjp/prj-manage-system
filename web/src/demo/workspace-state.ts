@@ -1,3 +1,5 @@
+import type { SkillCatalogState } from "../models/skill-catalog.ts"
+import { createSkillCatalogState } from "./skill-catalog.ts"
 import type { Project, ProjectEvent, Task, TaskGroup } from "../models/workspace.ts"
 import { initialGroups, initialTasks, projects } from "./fixtures.ts"
 import { createProfileState } from "./profiles.ts"
@@ -19,10 +21,12 @@ export type DemoWorkspaceState = {
   work: WorkState
   profileState: ProfileState
   organization: OrganizationState
+  skillCatalog: SkillCatalogState
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "skillCatalogChanged"; skillCatalog: SkillCatalogState; notice: string }
   | { type: "organizationChanged"; organization: OrganizationState; notice: string }
   | { type: "profilesChanged"; profileState: ProfileState; notice: string }
   | {
@@ -53,6 +57,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     work: rememberContributions(emptyWorkState(), initialTasks),
     profileState: createProfileState(),
     organization: createOrganizationState(),
+    skillCatalog: createSkillCatalogState(),
     notice: "",
   }
 }
@@ -63,6 +68,8 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "skillCatalogChanged":
+      return { ...state, skillCatalog: action.skillCatalog, notice: action.notice }
     case "organizationChanged":
       return { ...state, organization: action.organization, notice: action.notice }
     case "profilesChanged":

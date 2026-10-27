@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { levels } from "@/models/workspace-labels"
 import { saveTask, validateTaskInput } from "@/demo/task-structure"
-import { skillCatalog } from "@/demo/fixtures"
+import { useSkillCatalog } from "@/components/skill-catalog"
 import type { FormErrors, Project, Task, TaskGroup, TaskInput } from "@/models/workspace"
 
 function Field({
@@ -59,6 +59,7 @@ export function TaskEditor({
   onClose: () => void
   onSave: (tasks: Task[], taskId: string) => void
 }) {
+  const { catalog } = useSkillCatalog()
   const [input, setInput] = useState<TaskInput>(() =>
     task
       ? structuredClone(task)
@@ -103,7 +104,7 @@ export function TaskEditor({
         noValidate
         onSubmit={(event) => {
           event.preventDefault()
-          const nextErrors = validateTaskInput(project, groups, tasks, input, task?.id)
+          const nextErrors = validateTaskInput(project, groups, tasks, input, task?.id, catalog)
           setErrors(nextErrors)
           setFailure("")
           if (Object.keys(nextErrors).length) {
@@ -113,7 +114,7 @@ export function TaskEditor({
             return
           }
           try {
-            const next = saveTask(project, actorId, groups, tasks, input, task?.id)
+            const next = saveTask(project, actorId, groups, tasks, input, task?.id, catalog)
             onSave(next, task?.id ?? next[next.length - 1].id)
           } catch (error) {
             setFailure((error as Error).message)
@@ -313,14 +314,15 @@ export function TaskEditor({
                       {...a11y(`skill-${i}`)}
                     >
                       <option value="">Chọn kỹ năng</option>
-                      {skillCatalog.map((s) => (
+                      {catalog.skills.map((s) => (
                         <option
-                          key={s}
+                          key={s.id}
+                          value={s.id}
                           disabled={input.requirements.some(
-                            (other, j) => j !== i && other.skill === s,
+                            (other, j) => j !== i && other.skill === s.id,
                           )}
                         >
-                          {s}
+                          {s.name}
                         </option>
                       ))}
                     </select>

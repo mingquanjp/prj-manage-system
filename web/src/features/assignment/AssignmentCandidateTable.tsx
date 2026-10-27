@@ -1,3 +1,4 @@
+import { useSkillCatalog } from "@/components/skill-catalog"
 import { CheckIcon } from "@radix-ui/react-icons"
 import { Avatar, EmptyState } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ export function AssignmentCandidateTable({
   query: string
   onSelectPerson: (id: string) => void
 }) {
+  const { skillName } = useSkillCatalog()
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[470px] text-left text-sm">
@@ -73,7 +75,7 @@ export function AssignmentCandidateTable({
                               )}
                             >
                               <strong className="text-sm font-medium text-foreground">
-                                {r.skill}
+                                {skillName(r.skill)}
                               </strong>
                               {r.mandatory ? " · Bắt buộc" : " · Bổ trợ"}
                               <span className="block text-muted-foreground">

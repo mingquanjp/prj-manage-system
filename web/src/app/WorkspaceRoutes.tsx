@@ -1,3 +1,4 @@
+import { SkillCatalogs } from "@/features/skill-catalog/SkillCatalogs"
 import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
 import { EmptyState } from "@/components/shared"
 import { Link, Route, Routes } from "react-router"
@@ -39,6 +40,18 @@ export function WorkspaceRoutes({
     )
   return (
     <Routes>
+      <Route
+        path="/skill-catalog"
+        element={
+          <SkillCatalogs
+            key={actorId}
+            actorId={actorId}
+            catalog={state.skillCatalog}
+            tasks={tasks}
+            onChange={actions.changeSkillCatalog}
+          />
+        }
+      />
       <Route
         path="/employee-profiles"
         element={

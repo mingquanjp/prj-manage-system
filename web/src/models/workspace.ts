@@ -25,6 +25,7 @@ export type Project = {
 }
 
 export type Requirement = {
+  // ID kỹ năng ổn định trong adapter; không dùng tên hiển thị làm tham chiếu mới.
   skill: string
   level: number
   mandatory: boolean
