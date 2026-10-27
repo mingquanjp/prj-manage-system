@@ -67,7 +67,11 @@ export function updateEmployeeProfile(
   id: string,
   at: string,
 ): ProfileState {
-  if (!isHr(actorId)) throw new Error("Chỉ HR được cập nhật hồ sơ nhân sự.")
+  if (
+    !isHr(actorId) ||
+    state.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
+  )
+    throw new Error("Chỉ HR được cập nhật hồ sơ nhân sự.")
   const current = state.profiles.find((entry) => entry.personId === before.personId)
   if (!current) throw new Error("Không tìm thấy hồ sơ nhân viên.")
   const values = normalizeEmployeeEdit(proposed)

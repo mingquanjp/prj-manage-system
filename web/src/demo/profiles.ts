@@ -15,6 +15,7 @@ export function createProfileState(): ProfileState {
   return {
     profiles: people.map((person, index) => ({
       personId: person.id,
+      employmentStatus: person.active ? "ACTIVE" : "INACTIVE",
       employeeCode: `E${String(index + 1).padStart(3, "0")}`,
       fullname: person.name,
       companyEmail: `${person.id}@congty.example`,
@@ -24,6 +25,7 @@ export function createProfileState(): ProfileState {
     })),
     requests: [],
     edits: [],
+    deactivations: [],
   }
 }
 
@@ -37,6 +39,7 @@ export function professionalPeople(profiles: EmployeeProfile[], organization: Or
     return {
       ...person,
       name: profile.fullname,
+      active: person.active && profile.employmentStatus === "ACTIVE",
       seniority:
         organization.jobLevels.find((entry) => entry.id === profile.jobLevelId)?.name ??
         "Chưa cập nhật",
@@ -101,7 +104,7 @@ export function requestProfileChange(
   at: string,
 ): ProfileState {
   const profile = state.profiles.find((entry) => entry.personId === actorId)
-  if (!profile || !getPerson(actorId)?.active)
+  if (!profile || profile.employmentStatus !== "ACTIVE" || !getPerson(actorId)?.active)
     throw new Error("Bạn không có quyền gửi yêu cầu cập nhật hồ sơ này.")
   const patch = profilePatch(before, proposed)
   if (!Object.keys(patch).length) throw new Error("Chưa có thông tin thay đổi.")
@@ -142,12 +145,16 @@ export function resolveProfileRequest(
   reason: string,
   at: string,
 ): ProfileState {
-  if (!canReviewProfiles(actorId)) throw new Error("Chỉ HR được xử lý yêu cầu thông tin cá nhân.")
+  if (
+    !canReviewProfiles(actorId) ||
+    state.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
+  )
+    throw new Error("Chỉ HR được xử lý yêu cầu thông tin cá nhân.")
   const request = state.requests.find((entry) => entry.id === requestId)
   const profile = state.profiles.find((entry) => entry.personId === request?.employeeId)
   if (!request || !profile) throw new Error("Không tìm thấy yêu cầu hoặc hồ sơ.")
   if (request.status !== "PENDING") throw new Error("Yêu cầu đã được xử lý. Vui lòng kiểm tra lại.")
-  if (!getPerson(request.employeeId)?.active)
+  if (profile.employmentStatus !== "ACTIVE" || !getPerson(request.employeeId)?.active)
     throw new Error("Hồ sơ nhân viên không còn hoạt động.")
   if (decision === "REJECTED" && !reason.trim()) throw new Error("Vui lòng nhập lý do từ chối.")
   if (decision === "APPROVED") {

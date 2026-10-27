@@ -64,7 +64,8 @@ export function reassignUnstartedTask(
   if (block) throw new Error(block)
   if (task.currentAssignment!.id !== command.expectedAssignmentId)
     throw new Error("Phân công đã thay đổi. Đóng hộp thoại và kiểm tra lại người thực hiện.")
-  const person = getPerson(command.personId)
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const person = directory.find((entry) => entry.id === command.personId)
   if (!person || !isEligible(project, person))
     throw new Error("Người được chọn không đủ điều kiện nhận công việc.")
   if (person.id === task.assigneeId) throw new Error("Vui lòng chọn người thực hiện khác.")
@@ -73,7 +74,6 @@ export function reassignUnstartedTask(
   const overrideReason = command.overrideReason.trim()
   const gaps = skillGaps(task, person)
   if (gaps.length && !overrideReason) throw new Error("Vui lòng nhập lý do ngoại lệ kỹ năng.")
-  const directory = professionalPeople(state.profileState.profiles, state.organization)
   const personName = directory.find((entry) => entry.id === person.id)!.name
   const previousName =
     directory.find((entry) => entry.id === task.assigneeId)?.name ?? task.assigneeId

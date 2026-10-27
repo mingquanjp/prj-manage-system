@@ -9,6 +9,8 @@ import { searchKey } from "@/demo/personnel"
 import type { EmployeeProfile, EmployeeEditValues, ProfileState } from "@/models/profile"
 import { employeeEditFields, employeeEditLabels } from "@/models/profile"
 import type { OrganizationState } from "@/models/organization"
+import type { Project, Task } from "@/models/workspace"
+import { EmployeeDeactivationDialog } from "./EmployeeDeactivationDialog"
 import { EmployeeEditForm } from "./EmployeeEditForm"
 import { ProfileFields } from "./ProfileFields"
 
@@ -17,10 +19,16 @@ export function EmployeeProfiles({
   state,
   organization,
   onSave,
+  projects,
+  tasks,
+  onDeactivate,
 }: {
   actorId: string
   state: ProfileState
   organization: OrganizationState
+  projects: Project[]
+  tasks: Task[]
+  onDeactivate: (personId: string) => void
   onSave: (before: EmployeeProfile, values: EmployeeEditValues) => void
 }) {
   const { getPerson } = usePeople()
@@ -29,6 +37,8 @@ export function EmployeeProfiles({
   const [position, setPosition] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
+  const [status, setStatus] = useState("ACTIVE")
   if (!isHr(actorId))
     return (
       <EmptyState
@@ -41,6 +51,7 @@ export function EmployeeProfiles({
     organization[kind].find((entry) => entry.id === id)?.name ?? null
   const filtered = state.profiles.filter(
     (profile) =>
+      (!status || profile.employmentStatus === status) &&
       (!department || profile.departmentId === department) &&
       (!position || profile.positionId === position) &&
       searchKey(`${profile.employeeCode} ${profile.fullname} ${profile.companyEmail}`).includes(
@@ -72,6 +83,21 @@ export function EmployeeProfiles({
             placeholder="Tìm theo mã, tên hoặc email công ty…"
           />
         </div>
+        <div className="min-w-44">
+          <label className="field-label mb-2 block" htmlFor="employee-status">
+            Trạng thái hồ sơ
+          </label>
+          <select
+            id="employee-status"
+            className="field w-full"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="INACTIVE">Đã vô hiệu hóa</option>
+            <option value="">Tất cả trạng thái</option>
+          </select>
+        </div>
         {(["departments", "positions"] as const).map((kind) => (
           <div key={kind} className="min-w-44">
             <label className="field-label mb-2 block" htmlFor={`filter-${kind}`}>
@@ -101,13 +127,18 @@ export function EmployeeProfiles({
         <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="table-heading border-b border-border bg-sidebar">
             <tr>
-              {["Mã nhân viên", "Họ và tên", "Email công ty", "Phòng ban", "Vị trí công việc"].map(
-                (label) => (
-                  <th key={label} className="px-4 py-3">
-                    {label}
-                  </th>
-                ),
-              )}
+              {[
+                "Mã nhân viên",
+                "Họ và tên",
+                "Email công ty",
+                "Phòng ban",
+                "Vị trí công việc",
+                "Trạng thái",
+              ].map((label) => (
+                <th key={label} className="px-4 py-3">
+                  {label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -128,6 +159,9 @@ export function EmployeeProfiles({
                 <td className="px-4 py-4">{profile.companyEmail}</td>
                 <td className="px-4 py-4">{display("departmentId", profile.departmentId)}</td>
                 <td className="px-4 py-4">{display("positionId", profile.positionId)}</td>
+                <td className="px-4 py-4 whitespace-nowrap">
+                  {profile.employmentStatus === "ACTIVE" ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -161,6 +195,29 @@ export function EmployeeProfiles({
               <Pencil1Icon /> Chỉnh sửa
             </Button>
           </div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-accent p-3 text-sm">
+            <span className="font-medium">
+              {selected.employmentStatus === "ACTIVE" ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+            </span>
+            {selected.employmentStatus === "ACTIVE" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-warning"
+                onClick={() => setDeactivating(true)}
+              >
+                Vô hiệu hóa hồ sơ
+              </Button>
+            )}
+          </div>
+          {state.deactivations
+            .filter((entry) => entry.employeeId === selected.personId)
+            .map((entry) => (
+              <p key={entry.id} className="mb-4 text-xs leading-5 text-muted-foreground">
+                Vô hiệu hóa bởi {getPerson(entry.actorId)?.name ?? entry.actorId} ·{" "}
+                {new Date(entry.at).toLocaleString("vi-VN")}. Hồ sơ và lịch sử được giữ nguyên.
+              </p>
+            ))}
           <section className="border-t border-border pt-4">
             <h3 className="section-title mb-3">Thông tin cá nhân</h3>
             <ProfileFields
@@ -232,6 +289,16 @@ export function EmployeeProfiles({
               </p>
             )}
           </section>
+          {deactivating && (
+            <EmployeeDeactivationDialog
+              profile={selected}
+              profiles={state.profiles}
+              projects={projects}
+              tasks={tasks}
+              onConfirm={onDeactivate}
+              onClose={() => setDeactivating(false)}
+            />
+          )}
           {editing && (
             <EmployeeEditForm
               profile={selected}

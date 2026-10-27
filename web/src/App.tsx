@@ -18,11 +18,14 @@ export default function App() {
   const { state, actions } = useDemoWorkspace(actorId)
   const location = useLocation()
   const navigate = useNavigate()
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const active = Boolean(directory.find((p) => p.id === actorId)?.active)
   const navigation = selectWorkspaceNavigation(
     state.projects,
     state.tasks,
     actorId,
     location.pathname,
+    directory,
   )
   const switchIdentity = (id: string) => {
     setActorId(id)
@@ -45,7 +48,7 @@ export default function App() {
     )
   }
   return (
-    <PeopleDirectory people={professionalPeople(state.profileState.profiles, state.organization)}>
+    <PeopleDirectory people={directory}>
       <AppShell
         actorId={actorId}
         projects={state.projects}
@@ -56,7 +59,7 @@ export default function App() {
         onDismissNotice={() => actions.setNotice("")}
         dialogs={
           <>
-            {creating && isDirector(actorId) && (
+            {creating && active && isDirector(actorId) && (
               <CreateProjectDialog
                 projects={state.projects}
                 actorId={actorId}

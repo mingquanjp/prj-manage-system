@@ -65,7 +65,8 @@ export function changeOrganization(
   command: OrganizationCommand,
   newId: string,
 ): OrganizationState {
-  if (!isHr(actorId)) throw new Error("Chỉ HR được quản lý danh mục tổ chức.")
+  if (!isHr(actorId) || profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE")
+    throw new Error("Chỉ HR được quản lý danh mục tổ chức.")
   const entries = state[command.kind]
   if (command.action !== "create") {
     const current = entries.find((entry) => entry.id === command.id)

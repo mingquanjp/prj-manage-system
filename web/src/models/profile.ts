@@ -1,6 +1,7 @@
 // Projection hồ sơ và yêu cầu trong phiên frontend; không phải schema/DTO server.
 export type EmployeeProfile = {
   personId: string
+  employmentStatus: "ACTIVE" | "INACTIVE"
   employeeCode: string
   fullname: string
   companyEmail: string
@@ -64,8 +65,16 @@ export type EmployeeProfileEdit = {
   afterDisplay: Partial<Record<EmployeeEditField, string | null>>
 }
 
+export type EmployeeDeactivation = {
+  id: string
+  employeeId: string
+  actorId: string
+  at: string
+}
+
 export type ProfileState = {
   profiles: EmployeeProfile[]
   requests: ProfileChangeRequest[]
   edits: EmployeeProfileEdit[]
+  deactivations: EmployeeDeactivation[]
 }

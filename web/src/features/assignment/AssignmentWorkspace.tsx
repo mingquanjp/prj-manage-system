@@ -59,7 +59,7 @@ export function AssignmentWorkspace({
         `${p.name} ${p.position}`.toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")),
       )
     : []
-  const errors = validateDraft(project, actorId, tasks, draft)
+  const errors = validateDraft(project, actorId, tasks, draft, people)
   const complete = selectedTasks.length > 0 && selectedTasks.every((t) => draft[t.id])
   const total = selectedTasks.reduce((sum, t) => sum + t.estimate, 0)
   const chosen = task ? draft[task.id] : undefined
@@ -355,7 +355,7 @@ export function AssignmentWorkspace({
           <Button
             onClick={() => {
               try {
-                const next = commitDraft(project, actorId, tasks, draft)
+                const next = commitDraft(project, actorId, tasks, draft, people)
                 setConfirm(false)
                 onCommit(next)
               } catch (err) {

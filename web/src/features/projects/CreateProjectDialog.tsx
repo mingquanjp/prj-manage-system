@@ -63,7 +63,7 @@ export function CreateProjectDialog({
         noValidate
         onSubmit={(e) => {
           e.preventDefault()
-          const nextErrors = validateProjectInput(projects, input)
+          const nextErrors = validateProjectInput(projects, input, people)
           setErrors(nextErrors)
           setError("")
           if (Object.keys(nextErrors).length) {
@@ -71,7 +71,7 @@ export function CreateProjectDialog({
             return
           }
           try {
-            onSave(createProject(projects, actorId, input))
+            onSave(createProject(projects, actorId, input, people))
           } catch (err) {
             setError((err as Error).message)
           }

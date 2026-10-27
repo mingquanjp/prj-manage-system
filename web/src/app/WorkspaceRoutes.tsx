@@ -1,4 +1,5 @@
 import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
+import { EmptyState } from "@/components/shared"
 import { Link, Route, Routes } from "react-router"
 import { Button } from "@/components/ui/button"
 import { initialOutputConflicts } from "@/demo/fixtures"
@@ -27,6 +28,15 @@ export function WorkspaceRoutes({
   onCreate: () => void
 }) {
   const { projects, tasks, groups, events, work } = state
+  if (
+    state.profileState.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
+  )
+    return (
+      <EmptyState
+        title="Hồ sơ đã được vô hiệu hóa"
+        detail="Bạn không thể thực hiện nghiệp vụ. Có thể đổi danh tính bằng Điều khiển prototype để tiếp tục xem bản demo."
+      />
+    )
   return (
     <Routes>
       <Route
@@ -38,6 +48,9 @@ export function WorkspaceRoutes({
             state={state.profileState}
             organization={state.organization}
             onSave={actions.updateEmployeeProfile}
+            projects={projects}
+            tasks={tasks}
+            onDeactivate={actions.deactivateEmployee}
           />
         }
       />

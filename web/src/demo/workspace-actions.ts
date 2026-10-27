@@ -11,7 +11,8 @@ import {
 import type { DemoWorkspaceAction, DemoWorkspaceState } from "./workspace-state.ts"
 import { transitionProjectLifecycle, type LifecycleCommand } from "./project-lifecycle.ts"
 import { reassignUnstartedTask, type ReassignmentCommand } from "./reassignment.ts"
-import { requestProfileChange, resolveProfileRequest } from "./profiles.ts"
+import { deactivateEmployeeProfile } from "./employee-deactivation.ts"
+import { requestProfileChange, resolveProfileRequest, professionalPeople } from "./profiles.ts"
 import { updateEmployeeProfile } from "./employee-administration.ts"
 import type { EmployeeProfile, EmployeeEditValues } from "../models/profile.ts"
 import type { ProfileValues } from "../models/profile.ts"
@@ -25,8 +26,35 @@ export function createDemoWorkspaceActions(
   dispatch: (action: DemoWorkspaceAction) => void,
   actorId: string,
 ) {
+  const directory = professionalPeople(state.profileState.profiles, state.organization)
+  const requireActiveActor = () => {
+    if (!directory.find((p) => p.id === actorId)?.active)
+      throw new Error("Hồ sơ của bạn đã được vô hiệu hóa; không thể thực hiện nghiệp vụ.")
+  }
+  const requireActivePerson = (personId: string) => {
+    if (!directory.find((p) => p.id === personId)?.active)
+      throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
+  }
   return {
+    deactivateEmployee(personId: string) {
+      requireActiveActor()
+      const profileState = deactivateEmployeeProfile(
+        state.profileState,
+        state.projects,
+        state.tasks,
+        actorId,
+        personId,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "profilesChanged",
+        profileState,
+        notice: "Đã vô hiệu hóa hồ sơ trong phiên mô phỏng. Lịch sử được giữ nguyên.",
+      })
+    },
     updateEmployeeProfile(before: EmployeeProfile, proposed: EmployeeEditValues) {
+      requireActiveActor()
       const profileState = updateEmployeeProfile(
         state.profileState,
         state.organization,
@@ -43,6 +71,7 @@ export function createDemoWorkspaceActions(
       })
     },
     changeOrganization(command: OrganizationCommand) {
+      requireActiveActor()
       const organization = changeOrganization(
         state.organization,
         state.profileState.profiles,
@@ -60,6 +89,7 @@ export function createDemoWorkspaceActions(
       })
     },
     requestProfileChange(before: ProfileValues, proposed: ProfileValues, explanation: string) {
+      requireActiveActor()
       const profileState = requestProfileChange(
         state.profileState,
         actorId,
@@ -76,6 +106,7 @@ export function createDemoWorkspaceActions(
       })
     },
     resolveProfileRequest(requestId: string, decision: "APPROVED" | "REJECTED", reason: string) {
+      requireActiveActor()
       const profileState = resolveProfileRequest(
         state.profileState,
         actorId,
@@ -94,6 +125,8 @@ export function createDemoWorkspaceActions(
       })
     },
     reassignTask(command: ReassignmentCommand) {
+      requireActiveActor()
+      requireActivePerson(command.personId)
       const next = reassignUnstartedTask(
         state,
         actorId,
@@ -104,6 +137,7 @@ export function createDemoWorkspaceActions(
       dispatch({ type: "assignmentReplaced", ...next })
     },
     transitionLifecycle(command: LifecycleCommand) {
+      requireActiveActor()
       const next = transitionProjectLifecycle(state, actorId, command, new Date().toISOString())
       dispatch({ type: "lifecycleChanged", ...next })
     },
@@ -111,15 +145,35 @@ export function createDemoWorkspaceActions(
       dispatch({ type: "noticeChanged", notice })
     },
     changeGroups(groups: TaskGroup[]) {
+      requireActiveActor()
       dispatch({ type: "groupsChanged", groups })
     },
     changeTasks(tasks: Task[]) {
+      requireActiveActor()
+      for (const task of tasks) {
+        const before = state.tasks.find((t) => t.id === task.id)
+        if (
+          task.assigneeId &&
+          (task.assigneeId !== before?.assigneeId ||
+            task.currentAssignment?.id !== before?.currentAssignment?.id)
+        )
+          requireActivePerson(task.assigneeId)
+      }
       dispatch({ type: "tasksChanged", tasks, at: new Date().toISOString() })
     },
     changeWork(work: WorkState) {
+      requireActiveActor()
       dispatch({ type: "workChanged", work })
     },
     changeProject(project: Project, action: string) {
+      requireActiveActor()
+      if (project.pmId !== state.projects.find((p) => p.id === project.id)?.pmId)
+        requireActivePerson(project.pmId)
+      if (
+        project.ptcmId &&
+        project.ptcmId !== state.projects.find((p) => p.id === project.id)?.ptcmId
+      )
+        requireActivePerson(project.ptcmId)
       dispatch({
         type: "projectChanged",
         project,
@@ -137,7 +191,9 @@ export function createDemoWorkspaceActions(
       })
     },
     saveCreatedProject(projects: Project[]) {
+      requireActiveActor()
       const created = projects[projects.length - 1]
+      requireActivePerson(created.pmId)
       dispatch({
         type: "projectCreated",
         projects,
@@ -152,6 +208,7 @@ export function createDemoWorkspaceActions(
       return created.id
     },
     transitionTask(taskId: string, expected: TaskStatus, action: ExecutionAction, reason?: string) {
+      requireActiveActor()
       const tasks = transitionPersonalTask(
         state.projects,
         state.tasks,
@@ -173,6 +230,7 @@ export function createDemoWorkspaceActions(
       })
     },
     submitResult(taskId: string, summary: string, links: string) {
+      requireActiveActor()
       const next = submitResult(
         state.projects,
         state.tasks,
@@ -190,6 +248,7 @@ export function createDemoWorkspaceActions(
       })
     },
     reviewResult(submissionId: string, result: ReviewResult, comment: string) {
+      requireActiveActor()
       const next = reviewSubmission(
         state.projects,
         state.tasks,

@@ -10,20 +10,22 @@ export function selectWorkspaceNavigation(
   tasks: Task[],
   actorId: string,
   pathname: string,
+  directory: Person[] = people,
 ) {
-  const ownTasks = personalTasks(projects, tasks, actorId)
+  const active = Boolean(directory.find((p) => p.id === actorId)?.active)
+  const ownTasks = active ? personalTasks(projects, tasks, actorId) : []
   const personalView = pathname === "/my-work"
   const personnelView = pathname === "/personnel"
   const profileView = pathname === "/my-profile"
   const profileReviewView = pathname === "/profile-requests"
   const employeeProfilesView = pathname === "/employee-profiles"
   const organizationView = pathname === "/organization"
-  const canManageOrganization = isHr(actorId)
-  const canReviewProfile = canReviewProfiles(actorId)
-  const canLookup = canLookupPersonnel(projects, actorId)
-  const visibleProjects = projects.filter((p) => canViewProject(p, actorId))
+  const canManageOrganization = active && isHr(actorId)
+  const canReviewProfile = active && canReviewProfiles(actorId)
+  const canLookup = active && canLookupPersonnel(projects, actorId)
+  const visibleProjects = projects.filter((p) => active && canViewProject(p, actorId))
   const currentProject = projects.find(
-    (p) => pathname === `/projects/${p.id}` && canViewProject(p, actorId),
+    (p) => active && pathname === `/projects/${p.id}` && canViewProject(p, actorId),
   )
 
   return {
