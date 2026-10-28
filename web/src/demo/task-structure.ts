@@ -104,6 +104,8 @@ export function saveTask(
     group: group.name,
     start: input.start || undefined,
     end: input.end || undefined,
+    originalStart: existing?.originalStart ?? existing?.start ?? (input.start || undefined),
+    originalEnd: existing?.originalEnd ?? existing?.end ?? (input.end || undefined),
     status: existing?.status ?? "PENDING_ASSIGNMENT",
   }
   return existing ? tasks.map((t) => (t.id === task.id ? task : t)) : [...tasks, task]

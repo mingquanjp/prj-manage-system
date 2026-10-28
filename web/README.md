@@ -96,6 +96,30 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 
 ## Sổ công việc
 
+### Bàn giao Git đợt cộng tác task — 29/10/2026
+
+- Người dùng đã kiểm tra chức năng OK, đồng ý đóng gói đợt hiện tại trước khi làm thông báo dùng chung. Commit trên feature/project-task-collaboration, tiếng Anh và attribution Codex; không push.
+- Review cuối giữ ba thao tác đúng phạm vi, bảo toàn đặc tả/estimate/PTCM và dữ liệu miền khác; UX khung chi tiết chật đã ghi riêng để xử lý sau. Không đổi DB/Go/dependency hoặc thêm tính năng ngoài duyệt.
+- pnpm check chạy lại đạt 117 test model, 7 test harness, 170 nguồn, lint/format/typecheck và build. Cảnh báo bundle >500 kB vẫn giữ; kết quả browser automation còn giới hạn như mục trước, không thay bằng lời xác nhận test của agent.
+- Kiểm tra bàn giao Git: kiểm kê --staged và git diff --cached --check trước commit; không tự merge/push. Các mục chưa commit bên dưới ghi nhận trạng thái ở thời điểm trước bàn giao này.
+
+### Ghi nhận UX chi tiết task — 29/10/2026 — hoãn tới đợt hoàn thiện FE
+
+- Nguồn: người dùng kiểm tra và xác nhận chức năng đợt thay PM/hạn task/trao đổi đã OK; hai ảnh phản hồi cho thấy khung chi tiết bên phải chật, nội dung dài và chiếm bề rộng Kanban. Đây là kết quả thử của người dùng, không thay thế phần browser automation chưa hoàn tất ở mục 28/10.
+- Mục tiêu đã đồng ý: xem xét khung bên phải chỉ để xem nhanh, có thao tác Mở chi tiết đưa nhật ký/kết quả/trao đổi vào vùng rộng hơn; thống nhất cách mở giữa Công việc của tôi và workspace dự án. Bố cục cụ thể cần duyệt ở đợt UX, chưa triển khai và chưa thay chuẩn side peek hiện hành.
+- Phạm vi lượt này chỉ ghi nhận tại sổ; không sửa UI/nghiệp vụ/quyền/schema, không mở thêm feature hoặc commit. Tiêu chí: mục tồn đọng có vị trí rõ trong đợt hoàn thiện/bàn giao FE, giữ nguyên các thay đổi có sẵn.
+- Kiểm tra: kiểm kê harness và git diff --check cho thay đổi tài liệu; không chạy lại build/test model vì không đổi code.
+
+### Thay PM, hạn task và trao đổi — 28/10/2026 — đã triển khai, chờ kiểm tra UI
+
+- Mục tiêu: ba thao tác đã được người dùng duyệt; nguồn project_task_assignment_workflow UC001/002, domain_rules mục 3/5, roles_permissions và screen-contracts UI-10/14, dictionary 5A (ngày ban đầu)/5B task_comments; chốt tiếp nối trong hội thoại: PTCM gia hạn có lý do, giữ estimate/ngày ban đầu, nhân viên trao đổi với PTCM.
+- Phạm vi: helper/model demo, state/actions, quản lý dự án và chi tiết task cá nhân/dự án; giữ convention và token hiện hành. Không làm rõ/sửa scope, CV/tệp/AI, thông báo dùng chung, auth/API/DB/migration/dependency hoặc commit.
+- Tiêu chí: Giám đốc thay PM không đổi PTCM/task/lịch sử cũ; hạn mới trong dự án, task chưa kết thúc, giữ kế hoạch gốc và estimate; trao đổi chỉ chính chủ đang được giao/PTCM hiện hành, đọc lịch sử theo quyền hiện hành và chỉ gửi khi dự án/task còn mở. Không mở quyền cho PM-only/Admin/Giám đốc chỉ từ quyền hệ thống.
+- Kết quả: Giám đốc có dialog Thay PM và lịch sử trước/sau trong Quản lý dự án; biên action đối chiếu PM cũ và quyền hiện hành. PTCM đặt cặp kế hoạch đầu/gia hạn task, giữ start đã lưu, cặp gốc và estimate; lịch sử hiển thị ở chi tiết cá nhân/dự án. Tab Trao đổi dùng chung nguồn comments, tác giả/thời điểm và quyền người được giao/PTCM; reset xóa dữ liệu phiên. Không sửa actor cũ, phân công, effort/submission hoặc official skills.
+- Review/check: pnpm check đạt 7 test harness, kiểm kê 170 nguồn, lint/format/typecheck, 117 test model (7 ca mới) và build; git diff --check đạt. Test bao phủ thay PM và quyền độc lập, dữ liệu cũ/người khóa/dự án COMPLETED, gia hạn nhiều lần/giữ mốc gốc/không đổi spec, ngày ngoài dự án/terminal, trao đổi đúng người/đổi PTCM/chỉ đọc khi kết thúc, action/reducer và reset. Lượt lint đầu bắt biến test chưa dùng; đã bổ sung kiểm tra giá trị và chạy lại toàn bộ đạt, không nới quy tắc.
+- Browser: đã mở Kho/KHO-T006 ở danh tính Khoa, thấy tab Trao đổi, vùng kế hoạch ban đầu/hiện tại và dialog Đặt thời hạn. Nhập date qua automation không ghi giá trị; sau đó tab bị treo ở native confirm, tab mới cũng không tương tác được. Chưa xác minh lưu/gia hạn hoặc vòng trao đổi/thay PM qua UI; không ghi là đã pass, không chạy kiểm tra responsive/console trong lượt này. Không có React/E2E tự động.
+- Giới hạn/bàn giao: state trong phiên, chưa API/auth/persistence/server audit hoặc notification dùng chung. Browser automation bị chặn không được dùng làm bằng chứng UI đạt. Build còn cảnh báo bundle >500 kB (~692,86 kB); không tăng ngưỡng. Đã đồng bộ quyết định tiếp nối/workflow/quyền/domain/UI contract; không đổi schema/migration/Go/dependency/Make, không stage/commit/push. Bước tiếp: người dùng kiểm tra ba hành trình chính trước khi đóng gói Git.
+
 ### Bàn giao Git quản trị tài khoản — 28/10/2026
 
 - Người dùng duyệt kết quả và yêu cầu chia commit trên cùng nhánh feature/account-management. Chia hai phần: code/test quản trị tài khoản cùng tích hợp danh tính hiện hành; tài liệu nghiệp vụ, dictionary/ghi chú DBML và sổ harness. Không tách tích hợp quyền thành commit thiếu màn hình/provider; không mở nhánh mới hoặc push.

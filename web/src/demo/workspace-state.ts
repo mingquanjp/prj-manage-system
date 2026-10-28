@@ -1,3 +1,4 @@
+import type { TaskComment } from "../models/task-collaboration.ts"
 import type { AccountsState } from "../models/accounts.ts"
 import { createAccountsState } from "./accounts.ts"
 import { createEmployeeCvsState } from "./employee-cvs.ts"
@@ -31,10 +32,13 @@ export type DemoWorkspaceState = {
   employeeSkills: EmployeeSkillsState
   skillCatalog: SkillCatalogState
   accounts: AccountsState
+  comments: TaskComment[]
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "taskCommentsChanged"; comments: TaskComment[] }
+  | { type: "taskDeadlineChanged"; task: Task }
   | { type: "accountCreated"; accounts: AccountsState; profileState: ProfileState; notice: string }
   | { type: "accountChanged"; accounts: AccountsState; notice: string }
   | { type: "employeeCvsChanged"; employeeCvs: EmployeeCvsState; notice: string }
@@ -67,6 +71,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     tasks: structuredClone(initialTasks),
     groups: structuredClone(initialGroups),
     events: [],
+    comments: [],
     work: rememberContributions(emptyWorkState(), initialTasks),
     profileState: createProfileState(),
     organization: createOrganizationState(),
@@ -84,6 +89,14 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "taskCommentsChanged":
+      return { ...state, comments: action.comments, notice: "Đã gửi trao đổi." }
+    case "taskDeadlineChanged":
+      return {
+        ...state,
+        tasks: state.tasks.map((task) => (task.id === action.task.id ? action.task : task)),
+        notice: "Đã cập nhật hạn công việc; giữ nguyên ước tính.",
+      }
     case "accountCreated":
       return {
         ...state,

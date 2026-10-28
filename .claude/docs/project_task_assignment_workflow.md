@@ -30,6 +30,8 @@ PM đóng project COMPLETED khi không còn yêu cầu sửa effort PENDING: chu
 Hủy project đang PLANNING/IN_PROGRESS: bắt buộc lý do, hủy task mở, giữ DONE/effort/lịch sử; kết thúc yêu cầu effort PENDING với lý do hủy dự án.
 Giám đốc thay PM bằng thao tác chỉnh sửa người quản lý dự án: chọn PM mới đủ điều kiện và lưu một lần. Lưu thành công thì PM mới thay PM cũ; nếu lưu thất bại, PM cũ vẫn giữ trách nhiệm. Không yêu cầu xóa PM cũ trước, không có quy trình bàn giao riêng hoặc chờ PM cũ xác nhận. Giữ lịch sử thay đổi; không thay đổi trạng thái dự án, phân công công việc hoặc đóng góp đã có. PM mới chỉ có quyền hợp lệ theo trạng thái hiện hành; các trách nhiệm khác của PM cũ được xét độc lập. Với COMPLETED, PM mới đóng project khi đủ điều kiện; PTCM hiện hành xử lý correction, không nghiệm thu thêm/tạo task/phân công/thay người/mở lại execution hoặc đưa project về IN_PROGRESS.
 
+Theo [chốt tiếp nối 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--thay-pm-hạn-task-và-trao-đổi), thay PM chỉ ở PLANNING/IN_PROGRESS/COMPLETED; CLOSED/CANCELLED giữ chỉ đọc.
+
 ## UC002 — Nhóm và task
 
 Phụ trách chuyên môn thực hiện; PM chỉ thực hiện khi kiêm nhiệm trách nhiệm này.
@@ -104,3 +106,7 @@ Kỹ năng không tự hết hạn; official chỉ chứa năng lực hiện đ�
 R01–R05 đã được giản lược theo cơ sở hiện hành; vẫn giữ lịch sử, giới hạn quyền và kiểm tra dữ liệu. Hiệu chỉnh do người thực hiện tự gửi, PTCM hiện hành duyệt, không có quyền PM tự duyệt hoặc ghi thay.
 
 Kết thúc lượt giao theo dictionary 5A: ghi ended_at/ended_by/end_reason cùng transaction khi giao lại, thu hồi, DONE hoặc hủy; không sửa nội dung lượt cũ. Hủy khi đang review giữ submission chưa kết luận, loại khỏi hàng chờ qua trạng thái task/project, không giả REJECTED và không tự đổi Q/T.
+
+## Tiếp nối 28/10 — hạn task và trao đổi
+
+Áp dụng [quyết định đã duyệt](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--thay-pm-hạn-task-và-trao-đổi) cho quyền PTCM gia hạn, mốc gốc và ma trận trao đổi nhân viên/PTCM. Không dùng bình luận để sửa scope hoặc thay nghiệm thu; không mở quyền trao đổi từ vai trò PM-only/Giám đốc/Admin. Đặc tả làm rõ riêng và tệp CV chưa triển khai trong đợt này.

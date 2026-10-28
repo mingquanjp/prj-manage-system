@@ -1,3 +1,4 @@
+import type { TaskPlanEvent } from "./task-collaboration.ts"
 // Kiểu dữ liệu frontend hiện hành; không phải DTO API hoặc schema database.
 export type TaskStatus =
   | "PENDING_ASSIGNMENT"
@@ -66,6 +67,9 @@ export type Task = {
   priority: "Thấp" | "Trung bình" | "Cao" | "Khẩn cấp"
   start?: string
   end?: string
+  originalStart?: string
+  originalEnd?: string
+  planHistory?: TaskPlanEvent[]
   // Lịch sử trạng thái trong phiên demo, không phải nhật ký thời gian hay audit server.
   executionHistory?: TaskExecutionEvent[]
 }

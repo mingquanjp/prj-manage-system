@@ -1,3 +1,8 @@
+import { useIdentity } from "@/components/identity"
+import { TaskDiscussion } from "@/features/task-collaboration/TaskDiscussion"
+import { TaskDeadline } from "@/features/task-collaboration/TaskDeadline"
+import { canReadTaskDiscussion } from "@/demo/task-collaboration"
+import type { TaskDeadlineCommand, TaskComment } from "@/models/task-collaboration"
 import { usePeople } from "@/components/people-directory"
 import { LockClosedIcon, Pencil1Icon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
@@ -30,26 +35,34 @@ export function ProjectTaskSidebar({
   tasks,
   onLifecycle,
   onReassign,
+  onExtendDeadline,
+  comments,
+  onPostComment,
 }: {
   currentTask: Task | undefined
   project: Project
   actorId: string
   allowed: boolean
   canReadResults: boolean
-  detailTab: "details" | "results"
+  detailTab: "details" | "results" | "discussion"
   work: WorkState
   conflicts: OutputConflict[]
   percent: number | null
   related: Task[]
   onCloseDetail: () => void
-  onDetailTabChange: (tab: "details" | "results") => void
+  onDetailTabChange: (tab: "details" | "results" | "discussion") => void
   onEditTask: (task: Task) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
   tasks: Task[]
   onLifecycle: (command: LifecycleCommand) => void
+  onExtendDeadline: (command: TaskDeadlineCommand) => void
+  comments: TaskComment[]
+  onPostComment: (taskId: string, content: string) => void
   onReassign: (command: ReassignmentCommand) => void
 }) {
+  const identity = useIdentity()
   const { getPerson } = usePeople()
+  const canDiscuss = currentTask && canReadTaskDiscussion(project, currentTask, actorId, identity)
   return (
     <aside
       className={cn(
@@ -107,9 +120,29 @@ export function ProjectTaskSidebar({
               >
                 Kết quả
               </Button>
+              {canDiscuss && (
+                <Button
+                  size="sm"
+                  variant={detailTab === "discussion" ? "default" : "ghost"}
+                  aria-pressed={detailTab === "discussion"}
+                  className="workspace-tab"
+                  onClick={() => onDetailTabChange("discussion")}
+                >
+                  Trao đổi
+                </Button>
+              )}
             </div>
           )}
-          {detailTab === "results" && canReadResults ? (
+          {detailTab === "discussion" && canDiscuss ? (
+            <TaskDiscussion
+              key={currentTask.id}
+              task={currentTask}
+              project={project}
+              actorId={actorId}
+              comments={comments}
+              onPost={onPostComment}
+            />
+          ) : detailTab === "results" && canReadResults ? (
             <>
               <details className="mt-4 rounded-md border border-border p-3 text-sm" open>
                 <summary className="section-title cursor-pointer">Tiêu chí nghiệm thu</summary>
@@ -133,8 +166,8 @@ export function ProjectTaskSidebar({
                 (isTaskFrozen(currentTask) ? (
                   <p className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
                     <LockClosedIcon className="mt-0.5" />
-                    Đặc tả đã khóa sau lần phân công đầu. Biểu mẫu sửa làm rõ/gia hạn chưa dựng
-                    trong đợt này.
+                    Đặc tả đã khóa sau lần phân công đầu. Gia hạn bên dưới không thay đổi phạm vi
+                    hoặc ước tính.
                   </p>
                 ) : (
                   <Button
@@ -162,14 +195,6 @@ export function ProjectTaskSidebar({
                   <dt className="field-label">Ưu tiên</dt>
                   <dd>{currentTask.priority}</dd>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="field-label">Kế hoạch</dt>
-                  <dd className="text-right">
-                    {currentTask.start && currentTask.end
-                      ? `${currentTask.start.split("-").reverse().join("/")} – ${currentTask.end.split("-").reverse().join("/")}`
-                      : "Chưa đặt ngày"}
-                  </dd>
-                </div>
               </dl>
               {allowed && (
                 <TaskReassignment
@@ -185,6 +210,13 @@ export function ProjectTaskSidebar({
               <div className="mt-5 border-t border-border pt-4 text-sm">
                 Ước tính <span className="float-right font-medium">{currentTask.estimate} giờ</span>
               </div>
+              <TaskDeadline
+                key={`plan-${currentTask.id}`}
+                task={currentTask}
+                project={project}
+                actorId={actorId}
+                onExtend={onExtendDeadline}
+              />
               <TaskSpecification key={currentTask.id} task={currentTask} showWeights />
             </>
           )}

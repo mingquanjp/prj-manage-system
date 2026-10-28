@@ -54,3 +54,14 @@ File đích do người dùng cung cấp: [DATN](https://www.figma.com/make/fOXz
 - Thay yêu cầu nhập username/employee_code tại bước tạo trước đây; hai cột vẫn bắt buộc và duy nhất. Không thêm bảng/cột hoặc đổi cấu trúc DB; không chạy migration từ đợt UI.
 - Nhãn UI “Quyền hệ thống” thay “Vai trò hệ thống”; “Quản lý nhân sự” là nhãn quyền HR. Mã kỹ thuật ADMIN/HR/DIRECTOR giữ nguyên. Nhân viên có quyền nền; vị trí/phòng ban/cấp bậc không tự cấp quyền. PM/PTCM vẫn là trách nhiệm dự án.
 - Email công ty do Admin nhập khi tạo, HR quản lý về sau; không đồng nhất email với tên đăng nhập và không tạo hộp thư. Mật khẩu, kênh cấp tài khoản và xác thực thật tiếp tục hoãn.
+
+## Quyết định tiếp nối 28/10/2026 — thay PM, hạn task và trao đổi
+
+Người dùng duyệt triển khai ba phần sau rà soát đợt 3; không thay cấu trúc database:
+
+- Giám đốc thay PM theo UC001 hiện hành; không có bước PM cũ duyệt/bàn giao, không thay PTCM/phân công hoặc actor lịch sử. Cho PLANNING/IN_PROGRESS/COMPLETED; CLOSED/CANCELLED chỉ đọc.
+- PTCM gia hạn task chưa kết thúc trong project PLANNING/IN_PROGRESS: hạn mới sau hạn hiện hành, trong kế hoạch project; lý do và lịch sử trước/sau bắt buộc. Không đổi estimate, ngày bắt đầu đã lưu hoặc đặc tả. Task chưa có cặp ngày được đặt cặp kế hoạch đầu tiên theo dictionary 5A; giữ cặp đầu tiên làm mốc gốc. Không dựng chỉnh kế hoạch dự án trong đợt này. Ngày quá hạn không chặn effort thực tế hợp lệ.
+- Trao đổi trong task dành cho người hiện được giao và PTCM hiện hành, theo mục đích hỏi/báo khó khăn/hướng dẫn. Có tác giả/thời điểm/nội dung; không sửa/xóa, thread/tệp, mention hoặc thay quyết định nghiệm thu. Đọc theo quyền hiện hành; không quyền tự động cho PM-only/Admin/Giám đốc. Chỉ gửi khi project PLANNING/IN_PROGRESS và task chưa DONE/CLOSED/CANCELLED. Người cũ đã mất phân công không dùng luồng trao đổi để đọc task hiện hành; lịch sử đóng góp riêng vẫn giữ.
+- Làm rõ đặc tả sau phân công chưa chốt cách thể hiện, không mở lại biểu mẫu sửa scope. CV làm căn cứ MANUAL cần thiết nhưng hoãn cùng lưu/đọc tệp CV có phân quyền; trích xuất bằng model tiếp tục hoãn. Thông báo dùng chung là đợt riêng.
+
+Frontend chỉ mô phỏng trong phiên; các điều kiện phải kiểm tra lại tại server khi triển khai backend.

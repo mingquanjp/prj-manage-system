@@ -69,3 +69,10 @@ Chốt bố cục tiếp nối 21/10 cho UI-10/UI-14: PM và PTCM có Danh sách
 Dùng chung shell/menu theo quyền, bộ lọc, bảng, badge, form, drawer căn cứ, dialog xác nhận và thông báo. Mỗi màn hình cần loading/rỗng/lỗi/không có quyền, lỗi từng trường, lỗi dữ liệu đã đổi, hủy form và lưu thành công. Nút không hợp lệ hiển thị lý do khi cần giải thích; ẩn hành động hoàn toàn ngoài quyền.
 
 Chỉ đưa trường/chỉ số đã có nguồn vào mock. Công thức/miền weight và chi tiết DTO còn mở được ghi trong kết quả sửa, không biến thành yêu cầu mới. Menu/màu/layout là quyết định giao diện có thể tinh chỉnh mà không đổi nghiệp vụ.
+
+## Tiếp nối 28/10 — ba thao tác trong dự án/task
+
+- UI-10: vùng Quản lý dự án cho Giám đốc có Thay PM (PLANNING/IN_PROGRESS/COMPLETED), dialog chọn người đang hoạt động và lưu một lần; xem PM trước/sau trong lịch sử. Không quyền PTCM tự phát sinh khi thay PM.
+- Chi tiết task: PTCM có Gia hạn (hoặc Đặt thời hạn nếu chưa có kế hoạch), lý do bắt buộc, giữ start đã có/estimate/đặc tả. Hiển thị kế hoạch gốc/hiện hành và lịch sử cho người được đọc task; không ép sửa hạn mới cho phép ghi log.
+- Chi tiết cá nhân và dự án dùng cùng tab Trao đổi, cùng nguồn dữ liệu cho người hiện được giao/PTCM hiện hành. PM-only/Giám đốc/Admin không có tab này chỉ từ quyền tương ứng; task/project kết thúc giữ lịch sử chỉ đọc theo quyền. Không biến phản hồi trao đổi thành nghiệm thu.
+- Theo [baseline tiếp nối](../../business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--thay-pm-hạn-task-và-trao-đổi). Chưa làm rõ scope, thông báo dùng chung hoặc CV làm căn cứ/tệp thật.

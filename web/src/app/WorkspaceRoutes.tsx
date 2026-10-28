@@ -167,6 +167,8 @@ export function WorkspaceRoutes({
         path="/my-work"
         element={
           <PersonalWork
+            comments={state.comments}
+            onPostComment={actions.postTaskComment}
             key={actorId}
             projects={projects}
             tasks={tasks}
@@ -194,6 +196,10 @@ export function WorkspaceRoutes({
         path="/projects/:projectId"
         element={
           <ProjectWorkspace
+            comments={state.comments}
+            onPostComment={actions.postTaskComment}
+            onExtendDeadline={actions.extendDeadline}
+            onReplacePm={actions.replacePm}
             key={`${navigation.currentProject?.id}-${actorId}`}
             actorId={actorId}
             projects={projects}

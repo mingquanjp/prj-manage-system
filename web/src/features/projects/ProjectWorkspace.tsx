@@ -1,3 +1,4 @@
+import type { PmChangeCommand, TaskDeadlineCommand, TaskComment } from "@/models/task-collaboration"
 import { useIdentity } from "@/components/identity"
 import { ProjectTaskTable } from "./ProjectTaskTable"
 import { ProjectTaskToolbar } from "./ProjectTaskToolbar"
@@ -55,6 +56,10 @@ export function ProjectWorkspace({
   onWorkChange,
   onLifecycle,
   onReassign,
+  onReplacePm,
+  onExtendDeadline,
+  comments,
+  onPostComment,
 }: {
   actorId: string
   projects: Project[]
@@ -69,6 +74,10 @@ export function ProjectWorkspace({
   work: WorkState
   onWorkChange: (work: WorkState) => void
   onLifecycle: (command: LifecycleCommand) => void
+  onReplacePm: (command: PmChangeCommand) => void
+  onExtendDeadline: (command: TaskDeadlineCommand) => void
+  comments: TaskComment[]
+  onPostComment: (taskId: string, content: string) => void
   onReassign: (command: ReassignmentCommand) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
@@ -81,7 +90,7 @@ export function ProjectWorkspace({
   const [group, setGroup] = useState("all")
   const [view, setView] = useState<"list" | "groups" | "kanban">("list")
   const [tab, setTab] = useState<"tasks" | "structure" | "reviews" | "corrections">("tasks")
-  const [detailTab, setDetailTab] = useState<"details" | "results">("details")
+  const [detailTab, setDetailTab] = useState<"details" | "results" | "discussion">("details")
   const [editor, setEditor] = useState<{
     task?: Task
     groupId?: string
@@ -214,6 +223,7 @@ export function ProjectWorkspace({
         </div>
       </div>
       <ProjectResponsibilities
+        onReplacePm={onReplacePm}
         project={project}
         actorId={actorId}
         tasks={tasks}
@@ -461,6 +471,9 @@ export function ProjectWorkspace({
             </section>
             {(info || currentTask) && (
               <ProjectTaskSidebar
+                onExtendDeadline={onExtendDeadline}
+                comments={comments}
+                onPostComment={onPostComment}
                 currentTask={currentTask}
                 project={project}
                 actorId={actorId}

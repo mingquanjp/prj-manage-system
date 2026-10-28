@@ -1,3 +1,6 @@
+import { TaskDiscussion } from "@/features/task-collaboration/TaskDiscussion"
+import { TaskDeadline } from "@/features/task-collaboration/TaskDeadline"
+import type { TaskComment } from "@/models/task-collaboration"
 import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useRef, useState } from "react"
@@ -30,7 +33,11 @@ export function PersonalWork({
   work,
   onWorkChange,
   onSubmitResult,
+  comments,
+  onPostComment,
 }: {
+  comments: TaskComment[]
+  onPostComment: (taskId: string, content: string) => void
   projects: Project[]
   tasks: Task[]
   actorId: string
@@ -52,7 +59,9 @@ export function PersonalWork({
   const [status, setStatus] = useState("all")
   const [view, setView] = useState<"list" | "kanban">("list")
   const [detailId, setDetailId] = useState<string | null>(null)
-  const [detailTab, setDetailTab] = useState<"details" | "logs" | "results">("details")
+  const [detailTab, setDetailTab] = useState<"details" | "logs" | "results" | "discussion">(
+    "details",
+  )
   const [pausing, setPausing] = useState(false)
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
@@ -300,6 +309,7 @@ export function PersonalWork({
                   ["details", "Chi tiết"],
                   ["logs", "Nhật ký"],
                   ["results", "Kết quả"],
+                  ["discussion", "Trao đổi"],
                 ] as const
               ).map(([id, label]) => (
                 <button
@@ -316,6 +326,16 @@ export function PersonalWork({
                 </button>
               ))}
             </div>
+            {detailTab === "discussion" && (
+              <TaskDiscussion
+                key={detail.id}
+                task={detail}
+                project={project}
+                actorId={actorId}
+                comments={comments}
+                onPost={onPostComment}
+              />
+            )}
             {detailTab === "logs" && (
               <WorkLogPanel
                 key={detail.id}
@@ -326,6 +346,14 @@ export function PersonalWork({
                 actorId={actorId}
                 work={work}
                 onChange={onWorkChange}
+              />
+            )}
+            {detailTab === "details" && (
+              <TaskDeadline
+                key={`plan-${detail.id}`}
+                task={detail}
+                project={project}
+                actorId={actorId}
               />
             )}
             {detailTab === "results" && (
