@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import { getPerson } from "./identity.ts"
 import { personalTasks } from "./execution.ts"
 import type { Project, Task } from "../models/workspace.ts"
@@ -41,10 +42,11 @@ export function historicalContributions(
   tasks: Task[],
   state: WorkState,
   actorId: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
-  if (!getPerson(actorId)?.active) return []
+  if (!getPerson(actorId, identity)?.active) return []
   const visibleAssignments = new Set(
-    personalTasks(projects, tasks, actorId).map((task) => task.currentAssignment?.id),
+    personalTasks(projects, tasks, actorId, identity).map((task) => task.currentAssignment?.id),
   )
   return state.contributions.filter(
     (entry) =>
@@ -79,9 +81,10 @@ export function correctionBlockReason(
   task: Task,
   contribution: Contribution,
   actorId: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
   if (
-    !getPerson(actorId)?.active ||
+    !getPerson(actorId, identity)?.active ||
     contribution.assignment.employeeId !== actorId ||
     contribution.taskId !== task.id ||
     contribution.projectId !== project.id
@@ -123,8 +126,9 @@ export function canReadRequest(
   state: WorkState,
   request: LogChangeRequest,
   actorId: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
-  if (!getPerson(actorId)?.active) return false
+  if (!getPerson(actorId, identity)?.active) return false
   const contribution = contributionFor(state, tasks, request.assignmentId)
   const project = projects.find((p) => p.id === contribution?.projectId)
   return Boolean(project && (request.requestedBy === actorId || project.ptcmId === actorId))
@@ -164,9 +168,10 @@ export function sendLogChange(
   expected?: WorkLog,
   requestId: string = crypto.randomUUID(),
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ): WorkState {
   const { contribution, task, project } = requestContext(projects, tasks, state, assignmentId)
-  const block = correctionBlockReason(project, task, contribution, actorId)
+  const block = correctionBlockReason(project, task, contribution, actorId, identity)
   if (block) throw new Error(block)
   if (!["ADD", "UPDATE", "DELETE"].includes(operation))
     throw new Error("Loại yêu cầu không hợp lệ.")
@@ -263,9 +268,10 @@ export function resolveLogChange(
   action: "APPROVED" | "REJECTED" | "WITHDRAWN",
   reason: string,
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ): WorkState {
   const request = state.requests.find((r) => r.id === requestId)
-  if (!request || !canReadRequest(projects, tasks, state, request, actorId))
+  if (!request || !canReadRequest(projects, tasks, state, request, actorId, identity))
     throw new Error("Không có quyền xử lý yêu cầu.")
   if (request.status !== "PENDING") throw new Error("Yêu cầu đã kết thúc; không xử lý lại.")
   const { contribution, task, project } = requestContext(

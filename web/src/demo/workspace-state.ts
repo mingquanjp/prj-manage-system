@@ -1,3 +1,5 @@
+import type { AccountsState } from "../models/accounts.ts"
+import { createAccountsState } from "./accounts.ts"
 import { createEmployeeCvsState } from "./employee-cvs.ts"
 import type { EmployeeCvsState } from "../models/employee-cvs.ts"
 import { createEmployeeSkillsState } from "./employee-skills.ts"
@@ -28,10 +30,13 @@ export type DemoWorkspaceState = {
   employeeCvs: EmployeeCvsState
   employeeSkills: EmployeeSkillsState
   skillCatalog: SkillCatalogState
+  accounts: AccountsState
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "accountCreated"; accounts: AccountsState; profileState: ProfileState; notice: string }
+  | { type: "accountChanged"; accounts: AccountsState; notice: string }
   | { type: "employeeCvsChanged"; employeeCvs: EmployeeCvsState; notice: string }
   | { type: "employeeSkillsChanged"; employeeSkills: EmployeeSkillsState; notice: string }
   | { type: "skillCatalogChanged"; skillCatalog: SkillCatalogState; notice: string }
@@ -68,6 +73,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     skillCatalog: createSkillCatalogState(),
     employeeSkills: createEmployeeSkillsState(),
     employeeCvs: createEmployeeCvsState(),
+    accounts: createAccountsState(),
     notice: "",
   }
 }
@@ -78,6 +84,15 @@ export function demoWorkspaceReducer(
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "accountCreated":
+      return {
+        ...state,
+        accounts: action.accounts,
+        profileState: action.profileState,
+        notice: action.notice,
+      }
+    case "accountChanged":
+      return { ...state, accounts: action.accounts, notice: action.notice }
     case "employeeCvsChanged":
       return { ...state, employeeCvs: action.employeeCvs, notice: action.notice }
     case "employeeSkillsChanged":

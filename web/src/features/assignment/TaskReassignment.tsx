@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,8 @@ export function TaskReassignment({
   actorId: string
   onReassign: (command: ReassignmentCommand) => void
 }) {
+  const identity = useIdentity()
+
   const { people, getPerson } = usePeople()
   const [expectedAssignmentId, setExpectedAssignmentId] = useState<string | null>(null)
   const [personId, setPersonId] = useState("")
@@ -33,7 +36,7 @@ export function TaskReassignment({
   const [overrideReason, setOverrideReason] = useState("")
   const [error, setError] = useState("")
   const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const block = reassignmentBlockReason(project, task, work, actorId)
+  const block = reassignmentBlockReason(project, task, work, actorId, identity)
   const person = getPerson(personId)
   const gaps = person ? skillGaps(task, person) : []
   const chosen: Choice | undefined = person
@@ -155,9 +158,10 @@ export function TaskReassignment({
           {person && (
             <p className="rounded-md bg-accent p-3 text-sm leading-6" aria-live="polite">
               Đang chọn: <strong>{person.name}</strong>. Sau xác nhận, tải người mới là{" "}
-              {loadFor(personId, tasks) + task.estimate} giờ; tải {getPerson(task.assigneeId)?.name}{" "}
-              còn {loadFor(task.assigneeId!, tasks) - task.estimate} giờ. Người mới cần bấm Bắt đầu
-              trước khi ghi nhật ký.
+              {loadFor(personId, tasks, identity) + task.estimate} giờ; tải{" "}
+              {getPerson(task.assigneeId)?.name} còn{" "}
+              {loadFor(task.assigneeId!, tasks, identity) - task.estimate} giờ. Người mới cần bấm
+              Bắt đầu trước khi ghi nhật ký.
             </p>
           )}
           <label className="block">

@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import { executionBlockReason } from "./execution.ts"
 import { getPerson } from "./identity.ts"
 import type { OutputConflict, Project, Task } from "../models/workspace.ts"
@@ -143,8 +144,13 @@ export const vietnamDay = (now = new Date()) =>
 export const formatMinutes = (minutes: number) =>
   `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`
 
-export function logBlockReason(project: Project, task: Task, actorId: string) {
-  const block = executionBlockReason(project, task, actorId)
+export function logBlockReason(
+  project: Project,
+  task: Task,
+  actorId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
+  const block = executionBlockReason(project, task, actorId, identity)
   if (block)
     return ["PENDING_REVIEW", "DONE", "CLOSED", "CANCELLED"].includes(task.status) &&
       project.status === "IN_PROGRESS"
@@ -179,11 +185,17 @@ export function dailyMinutes(state: WorkState, actorId: string, day: string, exc
     )
     .reduce((sum, l) => sum + l.minutes, 0)
 }
-function context(projects: Project[], tasks: Task[], actorId: string, taskId: string) {
+function context(
+  projects: Project[],
+  tasks: Task[],
+  actorId: string,
+  taskId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
   const task = tasks.find((t) => t.id === taskId)
   const project = projects.find((p) => p.id === task?.projectId)
   if (!task || !project) throw new Error("Không tìm thấy công việc.")
-  const block = logBlockReason(project, task, actorId)
+  const block = logBlockReason(project, task, actorId, identity)
   if (block) throw new Error(block)
   return { task, project }
 }
@@ -240,8 +252,9 @@ export function saveLog(
   input: LogInput,
   edit?: { before: WorkLog; reason: string },
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ): WorkState {
-  const { task, project } = context(projects, tasks, actorId, taskId)
+  const { task, project } = context(projects, tasks, actorId, taskId, identity)
   const before = edit ? currentLog(state, task, actorId, edit.before) : undefined
   const errors = validInput(state, actorId, project, task, input, now, before?.id)
   if (edit && !edit.reason.trim()) errors.reason = "Cần lý do chỉnh sửa nhật ký."
@@ -298,8 +311,9 @@ export function deleteLog(
   expected: WorkLog,
   reason: string,
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ): WorkState {
-  const { task } = context(projects, tasks, actorId, taskId)
+  const { task } = context(projects, tasks, actorId, taskId, identity)
   const before = currentLog(state, task, actorId, expected)
   if (!reason.trim()) throw new WorkValidationError({ reason: "Cần lý do xóa nhật ký." })
   const at = now.toISOString(),
@@ -349,8 +363,9 @@ export function submitResult(
   summary: string,
   linkText: string,
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ) {
-  const { task } = context(projects, tasks, actorId, taskId)
+  const { task } = context(projects, tasks, actorId, taskId, identity)
   if (state.submissions.some((s) => s.taskId === task.id && !s.review))
     throw new Error("Công việc vẫn còn lần nộp chưa có kết luận. Vui lòng kiểm tra lại.")
   if (task.status !== "IN_PROGRESS")
@@ -409,8 +424,13 @@ export function reviewBlockReason(
   actorId: string,
   submissionId: string,
   conflicts: OutputConflict[],
+  identity: IdentitySource = defaultIdentity,
 ) {
-  if (project.id !== task.projectId || project.ptcmId !== actorId || !getPerson(actorId)?.active)
+  if (
+    project.id !== task.projectId ||
+    project.ptcmId !== actorId ||
+    !getPerson(actorId, identity)?.active
+  )
     return "Chỉ PTCM hiện hành của dự án được quyết định nghiệm thu."
   if (project.status !== "IN_PROGRESS" || task.status !== "PENDING_REVIEW")
     return "Chỉ nghiệm thu công việc đang chờ trong dự án đang triển khai."
@@ -452,12 +472,13 @@ export function reviewSubmission(
   comment: string,
   conflicts: OutputConflict[],
   now = new Date(),
+  identity: IdentitySource = defaultIdentity,
 ) {
   const submission = state.submissions.find((s) => s.id === submissionId)
   const task = tasks.find((t) => t.id === submission?.taskId)
   const project = projects.find((p) => p.id === task?.projectId)
   if (!submission || !task || !project) throw new Error("Không tìm thấy lần nộp.")
-  const block = reviewBlockReason(project, task, state, actorId, submissionId, conflicts)
+  const block = reviewBlockReason(project, task, state, actorId, submissionId, conflicts, identity)
   if (block) throw new Error(block)
   if (!["ACCEPTED", "REJECTED"].includes(result)) throw new Error("Kết luận không hợp lệ.")
   if (result === "REJECTED" && !comment.trim())

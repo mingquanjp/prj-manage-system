@@ -1,8 +1,14 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { Project, Task, TaskStatus, ExecutionAction } from "../models/workspace.ts"
 import { getPerson } from "./identity.ts"
 
-export function personalTasks(projects: Project[], tasks: Task[], actorId: string) {
-  const person = getPerson(actorId)
+export function personalTasks(
+  projects: Project[],
+  tasks: Task[],
+  actorId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
+  const person = getPerson(actorId, identity)
   if (!person?.active) return []
   return tasks.filter((task) => {
     const project = projects.find((p) => p.id === task.projectId)
@@ -15,11 +21,16 @@ export function personalTasks(projects: Project[], tasks: Task[], actorId: strin
   })
 }
 
-export function executionBlockReason(project: Project, task: Task, actorId: string) {
+export function executionBlockReason(
+  project: Project,
+  task: Task,
+  actorId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
   if (
     task.projectId !== project.id ||
     task.assigneeId !== actorId ||
-    !getPerson(actorId)?.active ||
+    !getPerson(actorId, identity)?.active ||
     project.ptcmId === actorId
   )
     return "Bạn không có quyền thực hiện công việc này."
@@ -40,11 +51,12 @@ export function transitionPersonalTask(
   expectedStatus: TaskStatus,
   action: ExecutionAction,
   reason = "",
+  identity: IdentitySource = defaultIdentity,
 ): Task[] {
   const task = tasks.find((t) => t.id === taskId)
   const project = projects.find((p) => p.id === task?.projectId)
   if (!task || !project) throw new Error("Không tìm thấy công việc.")
-  const block = executionBlockReason(project, task, actorId)
+  const block = executionBlockReason(project, task, actorId, identity)
   if (block) throw new Error(block)
   if (task.status !== expectedStatus)
     throw new Error("Trạng thái công việc đã thay đổi. Vui lòng kiểm tra lại.")

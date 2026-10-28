@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import { createSkillCatalogState, catalogSkillName } from "./skill-catalog.ts"
 import { getPerson } from "./identity.ts"
 import { loadFor } from "./assignment.ts"
@@ -15,9 +16,13 @@ export type ProfessionalProfile = {
   currentLoad: number
 }
 
-export function canLookupPersonnel(projects: Project[], actorId: string) {
+export function canLookupPersonnel(
+  projects: Project[],
+  actorId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
   return (
-    Boolean(getPerson(actorId)?.active) &&
+    Boolean(getPerson(actorId, identity)?.active) &&
     projects.some((project) => project.pmId === actorId || project.ptcmId === actorId)
   )
 }
@@ -39,8 +44,9 @@ export function personnelProfiles(
   query = "",
   directory = people,
   catalog = createSkillCatalogState(),
+  identity: IdentitySource = defaultIdentity,
 ): ProfessionalProfile[] {
-  if (!canLookupPersonnel(projects, actorId)) return []
+  if (!canLookupPersonnel(projects, actorId, identity)) return []
   const needle = searchKey(query)
   return directory
     .filter((person) => person.active)
@@ -54,7 +60,7 @@ export function personnelProfiles(
         name: catalogSkillName(catalog, id),
         level,
       })),
-      currentLoad: loadFor(person.id, tasks),
+      currentLoad: loadFor(person.id, tasks, identity),
     }))
     .filter((person) =>
       searchKey(

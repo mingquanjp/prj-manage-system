@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Pencil1Icon, TrashIcon, PlusIcon } from "@radix-ui/react-icons"
@@ -45,6 +46,8 @@ export function WorkLogPanel({
   onChange: (work: WorkState) => void
   contribution?: Contribution
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [editor, setEditor] = useState<{
     before?: WorkLog
@@ -64,7 +67,7 @@ export function WorkLogPanel({
   const contribution =
     historical ?? (assignmentId ? contributionFor(work, tasks, assignmentId) : undefined)
   const correctionBlock = contribution
-    ? correctionBlockReason(project, task, contribution, actorId)
+    ? correctionBlockReason(project, task, contribution, actorId, identity)
     : "Thiếu dữ liệu lượt giao."
   const canRequest = !correctionBlock
   const rows = (
@@ -77,7 +80,7 @@ export function WorkLogPanel({
   ).sort((a, b) => b.workDate.localeCompare(a.workDate) || b.createdAt.localeCompare(a.createdAt))
   const block = historical
     ? "Đây là nhật ký đóng góp lịch sử của bạn, không phải quyền thực hiện công việc hiện tại. Chỉ gửi yêu cầu hiệu chỉnh khi đủ điều kiện."
-    : logBlockReason(project, task, actorId)
+    : logBlockReason(project, task, actorId, identity)
   const { min: earliestDay, max: latestDay } = logDateBounds(project, contribution)
   const duration = Number(hours) * 60 + Number(minutes)
   const totalDay = dailyMinutes(work, actorId, date, editor?.before?.id) + duration
@@ -299,6 +302,8 @@ export function WorkLogPanel({
                       },
                       editor.before,
                       editor.requestId,
+                      undefined,
+                      identity,
                     )
                   : saveLog(
                       projects,
@@ -313,6 +318,8 @@ export function WorkLogPanel({
                         overLimitReason: overReason,
                       },
                       editor.before ? { before: editor.before, reason } : undefined,
+                      undefined,
+                      identity,
                     ),
               )
               setEditor(null)
@@ -465,8 +472,21 @@ export function WorkLogPanel({
                       reason,
                       undefined,
                       deleting,
+                      undefined,
+                      undefined,
+                      identity,
                     )
-                  : deleteLog(projects, tasks, work, actorId, task.id, deleting, reason),
+                  : deleteLog(
+                      projects,
+                      tasks,
+                      work,
+                      actorId,
+                      task.id,
+                      deleting,
+                      reason,
+                      undefined,
+                      identity,
+                    ),
               )
               setDeleting(null)
               setNotice(

@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { FileTextIcon, PlusIcon, CheckIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
@@ -28,11 +29,13 @@ export function EmployeeCvs({
   state: EmployeeCvsState
   actions: CvActions
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [uploading, setUploading] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [error, setError] = useState("")
-  if (!canManageCvs(actorId, employeeId))
+  if (!canManageCvs(actorId, employeeId, identity))
     return (
       <EmptyState
         title="Không có quyền quản lý CV"

@@ -1,3 +1,5 @@
+import type { DemoAccount } from "../models/accounts.ts"
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import { createEmployeeSkillsState } from "./employee-skills.ts"
 import type { EmployeeSkillsState } from "../models/employee-skills.ts"
 import type {
@@ -38,17 +40,29 @@ export function professionalPeople(
   profiles: EmployeeProfile[],
   organization: OrganizationState,
   skills: EmployeeSkillsState = createEmployeeSkillsState(),
+  accounts?: DemoAccount[],
 ) {
-  return people.map((person) => {
-    const profile = profiles.find((entry) => entry.personId === person.id)
-    if (!profile) return person
+  return profiles.map((profile) => {
+    const person = people.find((entry) => entry.id === profile.personId) ?? {
+      id: profile.personId,
+      name: profile.fullname,
+      initials: "",
+      position: "",
+      seniority: "",
+      active: true,
+      skills: {},
+      backgroundLoad: 0,
+    }
     return {
       ...person,
       skills: Object.fromEntries(
         skills.official.filter((s) => s.employeeId === person.id).map((s) => [s.skillId, s.level]),
       ),
       name: profile.fullname,
-      active: person.active && profile.employmentStatus === "ACTIVE",
+      active:
+        person.active &&
+        profile.employmentStatus === "ACTIVE" &&
+        (!accounts || accounts.some((a) => a.personId === person.id && a.status === "ACTIVE")),
       seniority:
         organization.jobLevels.find((entry) => entry.id === profile.jobLevelId)?.name ??
         "Chưa cập nhật",
@@ -111,9 +125,10 @@ export function requestProfileChange(
   explanation: string,
   id: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): ProfileState {
   const profile = state.profiles.find((entry) => entry.personId === actorId)
-  if (!profile || profile.employmentStatus !== "ACTIVE" || !getPerson(actorId)?.active)
+  if (!profile || profile.employmentStatus !== "ACTIVE" || !getPerson(actorId, identity)?.active)
     throw new Error("Bạn không có quyền gửi yêu cầu cập nhật hồ sơ này.")
   const patch = profilePatch(before, proposed)
   if (!Object.keys(patch).length) throw new Error("Chưa có thông tin thay đổi.")
@@ -153,9 +168,10 @@ export function resolveProfileRequest(
   decision: "APPROVED" | "REJECTED",
   reason: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): ProfileState {
   if (
-    !canReviewProfiles(actorId) ||
+    !canReviewProfiles(actorId, identity) ||
     state.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Chỉ HR được xử lý yêu cầu thông tin cá nhân.")
@@ -163,8 +179,7 @@ export function resolveProfileRequest(
   const profile = state.profiles.find((entry) => entry.personId === request?.employeeId)
   if (!request || !profile) throw new Error("Không tìm thấy yêu cầu hoặc hồ sơ.")
   if (request.status !== "PENDING") throw new Error("Yêu cầu đã được xử lý. Vui lòng kiểm tra lại.")
-  if (profile.employmentStatus !== "ACTIVE" || !getPerson(request.employeeId)?.active)
-    throw new Error("Hồ sơ nhân viên không còn hoạt động.")
+  if (profile.employmentStatus !== "ACTIVE") throw new Error("Hồ sơ nhân viên không còn hoạt động.")
   if (decision === "REJECTED" && !reason.trim()) throw new Error("Vui lòng nhập lý do từ chối.")
   if (decision === "APPROVED") {
     if (profileConflict(profile, request))

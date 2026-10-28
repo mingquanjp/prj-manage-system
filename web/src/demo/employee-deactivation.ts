@@ -1,6 +1,6 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { ProfileState } from "../models/profile.ts"
 import type { Project, Task } from "../models/workspace.ts"
-import { demoUsers } from "./fixtures.ts"
 import { isHr } from "./identity.ts"
 
 export type DeactivationBlocker = { kind: "task" | "responsibility" | "admin"; label: string }
@@ -11,6 +11,7 @@ export function employeeDeactivationBlockers(
   projects: Project[],
   tasks: Task[],
   profiles: ProfileState["profiles"],
+  identity: IdentitySource = defaultIdentity,
 ): DeactivationBlocker[] {
   const blockers: DeactivationBlocker[] = []
   for (const task of tasks) {
@@ -32,8 +33,9 @@ export function employeeDeactivationBlockers(
         label: `Trách nhiệm ${roles.join(" + ")} tại ${project.code} chưa kết thúc.`,
       })
   }
-  const admins = demoUsers.filter(
+  const admins = identity.accounts.filter(
     (user) =>
+      user.status === "ACTIVE" &&
       user.systemRoles.includes("ADMIN") &&
       profiles.some((p) => p.personId === user.personId && p.employmentStatus === "ACTIVE"),
   )
@@ -50,16 +52,17 @@ export function deactivateEmployeeProfile(
   personId: string,
   id: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): ProfileState {
   if (
-    !isHr(actorId) ||
+    !isHr(actorId, identity) ||
     state.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Chỉ HR đang hoạt động được vô hiệu hóa hồ sơ nhân sự.")
   const profile = state.profiles.find((p) => p.personId === personId)
   if (!profile) throw new Error("Không tìm thấy hồ sơ nhân viên.")
   if (profile.employmentStatus !== "ACTIVE") throw new Error("Hồ sơ đã được vô hiệu hóa.")
-  const blockers = employeeDeactivationBlockers(personId, projects, tasks, state.profiles)
+  const blockers = employeeDeactivationBlockers(personId, projects, tasks, state.profiles, identity)
   if (blockers.length)
     throw new Error(`Chưa thể vô hiệu hóa. ${blockers.map((b) => b.label).join(" ")}`)
   return {

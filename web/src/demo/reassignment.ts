@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { Project, Task } from "../models/workspace.ts"
 import { canAssign, getPerson, isEligible } from "./identity.ts"
 import { skillGaps } from "./assignment.ts"
@@ -19,8 +20,9 @@ export function reassignmentBlockReason(
   task: Task,
   work: WorkState,
   actorId: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
-  if (!canAssign(project, actorId) || !getPerson(actorId)?.active)
+  if (!canAssign(project, actorId) || !getPerson(actorId, identity)?.active)
     return "Chỉ PTCM hiện hành được đổi người khi dự án còn lập kế hoạch hoặc đang triển khai."
   if (
     task.projectId !== project.id ||
@@ -56,11 +58,12 @@ export function reassignUnstartedTask(
   command: ReassignmentCommand,
   at: string,
   assignmentId: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
   const project = state.projects.find((p) => p.id === command.projectId)
   const task = state.tasks.find((t) => t.id === command.taskId)
   if (!project || !task) throw new Error("Không tìm thấy công việc hoặc dự án.")
-  const block = reassignmentBlockReason(project, task, state.work, actorId)
+  const block = reassignmentBlockReason(project, task, state.work, actorId, identity)
   if (block) throw new Error(block)
   if (task.currentAssignment!.id !== command.expectedAssignmentId)
     throw new Error("Phân công đã thay đổi. Đóng hộp thoại và kiểm tra lại người thực hiện.")
@@ -68,6 +71,7 @@ export function reassignUnstartedTask(
     state.profileState.profiles,
     state.organization,
     state.employeeSkills,
+    state.accounts.accounts,
   )
   const person = directory.find((entry) => entry.id === command.personId)
   if (!person || !isEligible(project, person))

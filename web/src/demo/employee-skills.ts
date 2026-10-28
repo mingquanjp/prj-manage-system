@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import { people } from "./fixtures.ts"
 import { getPerson, isDirector } from "./identity.ts"
 import type { EmployeeProfile } from "../models/profile.ts"
@@ -43,9 +44,15 @@ export function sameSkillValues(a: SkillValues | null, b: SkillValues | null) {
     ? a === b
     : a.level === b.level && a.years === b.years && a.note === b.note
 }
-function requireActive(profiles: EmployeeProfile[], actorId: string) {
+function requireActive(
+  profiles: EmployeeProfile[],
+  actorId: string,
+  identity: IdentitySource = defaultIdentity,
+  isActor = true,
+) {
+  // Quyền truy cập của người duyệt khác trạng thái hồ sơ của người có đề nghị.
   if (
-    !getPerson(actorId)?.active ||
+    (isActor && !getPerson(actorId, identity)?.active) ||
     profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Hồ sơ không còn hoạt động.")
@@ -137,8 +144,9 @@ export function submitSkillRequest(
   input: SkillRequestInput,
   id: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeSkillsState {
-  requireActive(profiles, actorId)
+  requireActive(profiles, actorId, identity)
   if (input.operation !== "ADD" && input.operation !== "UPDATE")
     throw new Error("Nhân viên chỉ được đề nghị bổ sung hoặc điều chỉnh kỹ năng.")
   if (!catalog.skills.some((s) => s.id === input.skillId))
@@ -189,8 +197,9 @@ export function supplementSkillRequest(
   version: number,
   input: SkillSupplement,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeSkillsState {
-  requireActive(profiles, actorId)
+  requireActive(profiles, actorId, identity)
   const request = state.requests.find((r) => r.id === requestId)
   if (!request || request.employeeId !== actorId || request.status !== "PENDING")
     throw new Error("Chỉ chủ đề nghị đang chờ được bổ sung căn cứ.")
@@ -227,8 +236,9 @@ export function withdrawSkillRequest(
   version: number,
   reason: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeSkillsState {
-  requireActive(profiles, actorId)
+  requireActive(profiles, actorId, identity)
   const request = state.requests.find((r) => r.id === requestId)
   if (
     !request ||
@@ -260,14 +270,15 @@ export function resolveSkillRequest(
   decision: SkillDecision,
   newOfficialId: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeSkillsState {
-  requireActive(profiles, actorId)
-  if (!isDirector(actorId)) throw new Error("Chỉ Giám đốc được xét duyệt kỹ năng.")
+  requireActive(profiles, actorId, identity)
+  if (!isDirector(actorId, identity)) throw new Error("Chỉ Giám đốc được xét duyệt kỹ năng.")
   const request = state.requests.find((r) => r.id === decision.requestId)
   if (!request || request.status !== "PENDING") throw new Error("Đề nghị không còn chờ xét duyệt.")
   if (request.employeeId === actorId)
     throw new Error("Không được xét duyệt đề nghị của chính mình.")
-  requireActive(profiles, request.employeeId)
+  requireActive(profiles, request.employeeId, identity, false)
   if (request.version !== decision.version)
     throw new Error("Căn cứ đã được bổ sung. Đóng và mở lại đề nghị trước khi quyết định.")
   if (!decision.reason.trim()) throw new Error("Nhập lý do quyết định.")

@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -20,8 +21,10 @@ export function ContributionHistory({
   actorId: string
   onChange: (work: WorkState) => void
 }) {
+  const identity = useIdentity()
+
   const [selectedId, setSelectedId] = useState<string>()
-  const old = historicalContributions(projects, tasks, work, actorId)
+  const old = historicalContributions(projects, tasks, work, actorId, identity)
   const selected = old.find((entry) => entry.assignment.id === selectedId)
   const project = projects.find((p) => p.id === selected?.projectId)
   const task = tasks.find((t) => t.id === selected?.taskId)

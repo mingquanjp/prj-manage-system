@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type {
   Project,
   ProjectInput,
@@ -39,8 +40,9 @@ export function createProject(
   actorId: string,
   input: ProjectInput,
   directory = people,
+  identity: IdentitySource = defaultIdentity,
 ): Project[] {
-  if (!isDirector(actorId) || !directory.find((p) => p.id === actorId)?.active)
+  if (!isDirector(actorId, identity) || !directory.find((p) => p.id === actorId)?.active)
     throw new Error("Chỉ Giám đốc được tạo dự án.")
   const errors = validateProjectInput(all, input, directory)
   if (Object.keys(errors).length) throw new Error(Object.values(errors)[0])
@@ -109,8 +111,13 @@ export function appointPtcm(
   return { ...project, ptcmId: personId }
 }
 
-export function startProject(project: Project, actorId: string, tasks: Task[]): Project {
-  if (project.pmId !== actorId || !getPerson(actorId)?.active)
+export function startProject(
+  project: Project,
+  actorId: string,
+  tasks: Task[],
+  identity: IdentitySource = defaultIdentity,
+): Project {
+  if (project.pmId !== actorId || !getPerson(actorId, identity)?.active)
     throw new Error("Chỉ PM của dự án được bắt đầu triển khai.")
   if (project.status !== "PLANNING") throw new Error("Dự án không còn ở trạng thái lập kế hoạch.")
   if (!tasks.some((t) => t.projectId === project.id && t.status === "ASSIGNED"))

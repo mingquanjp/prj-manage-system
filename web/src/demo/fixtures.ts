@@ -10,6 +10,7 @@ import type {
 
 // Dữ liệu mẫu chỉ dùng cho adapter trong bộ nhớ; không phải nguồn nghiệp vụ hoặc dữ liệu server.
 export const demoUsers: { personId: string; systemRoles: SystemRole[] }[] = [
+  { personId: "admin", systemRoles: ["ADMIN"] },
   { personId: "khoa", systemRoles: [] },
   { personId: "thanh", systemRoles: [] },
   { personId: "cuong", systemRoles: [] },
@@ -105,6 +106,16 @@ export const people: Person[] = [
     active: true,
     skills: { React: 4, TypeScript: 4, "Node.js": 2 },
     backgroundLoad: 20,
+  },
+  {
+    id: "admin",
+    name: "Trần Quốc Bảo",
+    initials: "QB",
+    position: "Quản trị hệ thống",
+    seniority: "Chưa cập nhật",
+    active: true,
+    skills: {},
+    backgroundLoad: 0,
   },
 ]
 

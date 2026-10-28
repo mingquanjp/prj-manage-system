@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { EmployeeEditValues, EmployeeProfile, ProfileState } from "../models/profile.ts"
 import { employeeEditFields } from "../models/profile.ts"
 import type { OrganizationState } from "../models/organization.ts"
@@ -66,9 +67,10 @@ export function updateEmployeeProfile(
   proposed: EmployeeEditValues,
   id: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): ProfileState {
   if (
-    !isHr(actorId) ||
+    !isHr(actorId, identity) ||
     state.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Chỉ HR được cập nhật hồ sơ nhân sự.")

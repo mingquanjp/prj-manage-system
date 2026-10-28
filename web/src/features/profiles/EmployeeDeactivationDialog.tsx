@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Dialog } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -20,8 +21,15 @@ export function EmployeeDeactivationDialog({
   onConfirm: (personId: string) => void
   onClose: () => void
 }) {
+  const identity = useIdentity()
   const [error, setError] = useState("")
-  const blockers = employeeDeactivationBlockers(profile.personId, projects, tasks, profiles)
+  const blockers = employeeDeactivationBlockers(
+    profile.personId,
+    projects,
+    tasks,
+    profiles,
+    identity,
+  )
   return (
     <Dialog
       open

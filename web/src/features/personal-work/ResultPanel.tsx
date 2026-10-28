@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -25,6 +26,8 @@ export function ResultPanel({
   work: WorkState
   onSubmit: (taskId: string, summary: string, links: string) => void
 }) {
+  const identity = useIdentity()
+
   const [open, setOpen] = useState(false),
     [confirming, setConfirming] = useState(false)
   const [summary, setSummary] = useState(""),
@@ -34,7 +37,7 @@ export function ResultPanel({
     (s) => s.taskId === task.id && s.employeeId === actorId,
   )
   const logs = taskLogs(work, task, actorId)
-  const block = logBlockReason(project, task, actorId)
+  const block = logBlockReason(project, task, actorId, identity)
   const allowed = !block && task.status === "IN_PROGRESS"
   return (
     <section aria-label="Kết quả công việc" className="mt-4">

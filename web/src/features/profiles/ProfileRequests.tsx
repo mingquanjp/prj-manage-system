@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { EmptyState, SearchInput } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,8 @@ export function ProfileRequests({
   state: ProfileState
   onResolve: (requestId: string, decision: "APPROVED" | "REJECTED", reason: string) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [filter, setFilter] = useState("PENDING")
   const [query, setQuery] = useState("")
@@ -25,7 +28,7 @@ export function ProfileRequests({
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
   const [discard, setDiscard] = useState(false)
-  if (!canReviewProfiles(actorId))
+  if (!canReviewProfiles(actorId, identity))
     return (
       <EmptyState
         title="Bạn không có quyền xử lý yêu cầu"

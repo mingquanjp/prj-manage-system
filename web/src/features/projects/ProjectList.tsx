@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Link } from "react-router"
@@ -19,6 +20,8 @@ export function ProjectList({
   actorId: string
   onCreate: () => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
@@ -33,13 +36,13 @@ export function ProjectList({
         <div>
           <p className="eyebrow">KHÔNG GIAN LÀM VIỆC</p>
           <h1 className="mt-2 text-2xl font-semibold text-balance">
-            {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
+            {isDirector(actorId, identity) ? "Dự án" : "Dự án của tôi"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Theo dõi công việc và điều phối chuyên môn trong từng dự án.
           </p>
         </div>
-        {isDirector(actorId) && (
+        {isDirector(actorId, identity) && (
           <Button onClick={onCreate}>
             <PlusIcon />
             Tạo dự án

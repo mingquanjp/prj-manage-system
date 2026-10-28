@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useRef, useState } from "react"
 import {
@@ -43,6 +44,8 @@ export function PersonalWork({
     reason?: string,
   ) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [search, setSearch] = useState("")
   const [projectId, setProjectId] = useState("all")
@@ -55,7 +58,7 @@ export function PersonalWork({
   const [error, setError] = useState("")
   const trigger = useRef<HTMLButtonElement | null>(null)
   const viewControls = useRef<HTMLDivElement | null>(null)
-  const own = personalTasks(projects, tasks, actorId)
+  const own = personalTasks(projects, tasks, actorId, identity)
   const availableProjects = projects.filter((p) => own.some((t) => t.projectId === p.id))
   const filtered = own.filter(
     (t) =>
@@ -68,7 +71,8 @@ export function PersonalWork({
     (t) => t.status === "CLOSED" || t.status === "CANCELLED",
   ).length
   const project = projects.find((p) => p.id === detail?.projectId)
-  const block = detail && project ? executionBlockReason(project, detail, actorId) : undefined
+  const block =
+    detail && project ? executionBlockReason(project, detail, actorId, identity) : undefined
   const perform = (action: ExecutionAction) => {
     if (!detail) return
     try {
