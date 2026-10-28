@@ -71,6 +71,9 @@ Deny by default, ngoại lệ public khai báo tường minh.
 
 ## 3. Tài khoản và chỉnh sửa PM
 
+Chốt tiếp nối [28/10/2026](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản): hệ thống tự cấp employee_code khi tạo; form hiển thị dự kiến chỉ đọc, sau lưu trả mã được cấp. E001/e001 là quy ước mã/tên đăng nhập trong demo; cách đăng nhập và quy tắc username cho backend chưa chốt. Không đổi tài khoản cũ, không tái dùng mã khóa/vô hiệu hóa; backend bảo đảm cấp mã đồng thời và duy nhất. UI gọi “Quyền hệ thống”, HR hiển thị “Quản lý nhân sự”; mã role, ma trận quyền và trách nhiệm dự án giữ nguyên. Vị trí/cấp bậc không tự cấp quyền.
+
+
 
 Theo [quyết định 20/10/2026](../../docs/business-baseline-2026-10-20.md), Admin tạo user + employee atomically trong một lần, nhập thông tin hồ sơ ban đầu cần thiết. Quyền này chỉ phục vụ tạo mới, không cấp quyền cập nhật hành chính thường xuyên hoặc duyệt thông tin cá nhân; HR quản lý hồ sơ về sau. Không API tạo tài khoản mồ côi. Chính sách cấp/reset mật khẩu vẫn theo security.md, chưa tự bổ sung quy trình mới.
 Người thực hiện active nhận task nếu không là PTCM của dự án đó; PM kiêm PTCM cũng bị loại. Thêm vai trò hệ thống không bị chặn chỉ vì đang có công việc. Chỉ chặn thu hồi quyền nếu việc đó khiến người dùng không còn quyền xử lý công việc/trách nhiệm đang mở; xử lý trách nhiệm liên quan trước. Thay vai trò hệ thống không tự thay PM hoặc trách nhiệm chuyên môn trong dự án.

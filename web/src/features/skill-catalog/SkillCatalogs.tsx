@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import type { EmployeeSkillsState } from "@/models/employee-skills"
 import { useState } from "react"
 import { Pencil1Icon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
@@ -26,13 +27,15 @@ export function SkillCatalogs({
   employeeSkills: EmployeeSkillsState
   onChange: (command: SkillCatalogCommand) => void
 }) {
+  const identity = useIdentity()
+
   const [kind, setKind] = useState<"categories" | "skills">("skills")
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("")
   const [editor, setEditor] = useState<SkillCatalogEditor>()
   const [removing, setRemoving] = useState<Removing>()
   const [error, setError] = useState("")
-  if (!isDirector(actorId))
+  if (!isDirector(actorId, identity))
     return (
       <EmptyState
         title="Bạn không có quyền quản lý danh mục"

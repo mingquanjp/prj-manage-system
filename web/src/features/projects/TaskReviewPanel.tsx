@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -20,6 +21,8 @@ export function TaskReviewPanel({
   conflicts: OutputConflict[]
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
+  const identity = useIdentity()
+
   const [decision, setDecision] = useState<{
     result: ReviewResult
     submissionId: string
@@ -29,7 +32,15 @@ export function TaskReviewPanel({
   const submissions = work.submissions.filter((s) => s.taskId === task.id)
   const latest = submissions.at(-1)
   const isPtcm = project.ptcmId === actorId
-  const block = reviewBlockReason(project, task, work, actorId, latest?.id ?? "", conflicts)
+  const block = reviewBlockReason(
+    project,
+    task,
+    work,
+    actorId,
+    latest?.id ?? "",
+    conflicts,
+    identity,
+  )
   return (
     <section className="mt-4" aria-label="Kết quả và nghiệm thu công việc">
       <h3 className="section-title">Kết quả và nghiệm thu</h3>

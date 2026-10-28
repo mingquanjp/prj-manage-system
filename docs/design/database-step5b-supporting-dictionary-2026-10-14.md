@@ -26,7 +26,7 @@ Một tài khoản đăng nhập; không lưu lại PM/PTCM như quyền toàn h
 | Cột | Kiểu / NULL / default | Nguồn và nghĩa |
 |---|---|---|
 | user_id | PK | Identity |
-| username | VARCHAR(50) NN | Định danh đăng nhập UQ |
+| username | VARCHAR(50) NN | Định danh đăng nhập UQ; cách cấp/định danh đăng nhập backend chưa chốt. E001 → e001 chỉ là quy ước demo tạm theo chốt 28/10 tại baseline 20/10; không đổi dữ liệu cũ |
 | password_hash | VARCHAR(255) NN | Server bcrypt; không DTO/audit |
 | status | user_status NN / ACTIVE | Admin khóa/mở theo quyền |
 | timestamps | Như quy ước | Server |
@@ -48,7 +48,7 @@ PK(user_id, role_code). Không thêm EMPLOYEE/PM/PTCM vào bảng này: tư các
 |---|---|---|
 | employee_id | PK | Hồ sơ chính thức |
 | user_id | INT NN FK users, UQ | Một hồ sơ/tài khoản |
-| employee_code | VARCHAR(30) NN, UQ | Mã nhân viên |
+| employee_code | VARCHAR(30) NN, UQ | Mã nhân viên hệ thống tự cấp E001, E002…; không tái dùng mã khóa/vô hiệu hóa; server bảo đảm cấp đồng thời, không Admin nhập |
 | fullname | VARCHAR(100) NN | Họ tên hiện hành |
 | email | VARCHAR(100) NN, UQ | Email công ty; HR sửa trực tiếp, không đồng nghĩa username |
 | phone | VARCHAR(20) ? | Liên hệ, không đưa vào candidate DTO mặc định |

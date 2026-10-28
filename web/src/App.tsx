@@ -1,3 +1,4 @@
+import { IdentityProvider } from "@/components/identity"
 import { SkillCatalogProvider } from "@/components/skill-catalog"
 import { useState } from "react"
 import { useLocation, useNavigate } from "react-router"
@@ -23,7 +24,9 @@ export default function App() {
     state.profileState.profiles,
     state.organization,
     state.employeeSkills,
+    state.accounts.accounts,
   )
+  const identity = { people: directory, accounts: state.accounts.accounts }
   const active = Boolean(directory.find((p) => p.id === actorId)?.active)
   const navigation = selectWorkspaceNavigation(
     state.projects,
@@ -31,89 +34,95 @@ export default function App() {
     actorId,
     location.pathname,
     directory,
+    identity,
   )
   const switchIdentity = (id: string) => {
     setActorId(id)
     actions.setNotice("")
     setCreating(false)
     navigate(
-      navigation.skillReviewView
-        ? "/skill-requests"
-        : navigation.skillCatalogView
-          ? "/skill-catalog"
-          : navigation.profileView
-            ? "/my-profile"
-            : navigation.profileReviewView
-              ? "/profile-requests"
-              : navigation.employeeProfilesView
-                ? "/employee-profiles"
-                : navigation.organizationView
-                  ? "/organization"
-                  : navigation.personalView
-                    ? "/my-work"
-                    : navigation.personnelView
-                      ? "/personnel"
-                      : "/",
+      navigation.accountsView
+        ? "/accounts"
+        : navigation.skillReviewView
+          ? "/skill-requests"
+          : navigation.skillCatalogView
+            ? "/skill-catalog"
+            : navigation.profileView
+              ? "/my-profile"
+              : navigation.profileReviewView
+                ? "/profile-requests"
+                : navigation.employeeProfilesView
+                  ? "/employee-profiles"
+                  : navigation.organizationView
+                    ? "/organization"
+                    : navigation.personalView
+                      ? "/my-work"
+                      : navigation.personnelView
+                        ? "/personnel"
+                        : "/",
     )
   }
   return (
-    <SkillCatalogProvider catalog={state.skillCatalog}>
-      <PeopleDirectory people={directory}>
-        <AppShell
-          actorId={actorId}
-          projects={state.projects}
-          navigation={navigation}
-          notice={state.notice}
-          onSwitchIdentity={switchIdentity}
-          onRequestReset={() => setResetOpen(true)}
-          onDismissNotice={() => actions.setNotice("")}
-          dialogs={
-            <>
-              {creating && active && isDirector(actorId) && (
-                <CreateProjectDialog
-                  projects={state.projects}
-                  actorId={actorId}
-                  onClose={() => setCreating(false)}
-                  onSave={(next) => {
-                    const createdId = actions.saveCreatedProject(next)
-                    setCreating(false)
-                    navigate(`/projects/${createdId}`)
-                  }}
-                />
-              )}
-              <Dialog
-                open={resetOpen}
-                onOpenChange={setResetOpen}
-                title="Khôi phục dữ liệu mẫu?"
-                description="Dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, năng lực chính thức, yêu cầu cập nhật và danh mục tổ chức/kỹ năng trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
-              >
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setResetOpen(false)}>
-                    Giữ nguyên
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      actions.reset()
-                      navigate("/")
-                      setResetOpen(false)
-                    }}
-                  >
-                    Khôi phục
-                  </Button>
-                </div>
-              </Dialog>
-            </>
-          }
-        >
-          <WorkspaceRoutes
+    <IdentityProvider value={identity}>
+      <SkillCatalogProvider catalog={state.skillCatalog}>
+        <PeopleDirectory people={directory}>
+          <AppShell
             actorId={actorId}
-            state={state}
-            actions={actions}
+            projects={state.projects}
             navigation={navigation}
-            onCreate={() => setCreating(true)}
-          />
-        </AppShell>
-      </PeopleDirectory>
-    </SkillCatalogProvider>
+            notice={state.notice}
+            onSwitchIdentity={switchIdentity}
+            onRequestReset={() => setResetOpen(true)}
+            onDismissNotice={() => actions.setNotice("")}
+            dialogs={
+              <>
+                {creating && active && isDirector(actorId, identity) && (
+                  <CreateProjectDialog
+                    projects={state.projects}
+                    actorId={actorId}
+                    onClose={() => setCreating(false)}
+                    onSave={(next) => {
+                      const createdId = actions.saveCreatedProject(next)
+                      setCreating(false)
+                      navigate(`/projects/${createdId}`)
+                    }}
+                  />
+                )}
+                <Dialog
+                  open={resetOpen}
+                  onOpenChange={setResetOpen}
+                  title="Khôi phục dữ liệu mẫu?"
+                  description="Tài khoản, CV, dự án, công việc, phân công, nhật ký, kết quả, hồ sơ, năng lực chính thức, yêu cầu cập nhật và danh mục tổ chức/kỹ năng trong phiên sẽ được khôi phục về dữ liệu mẫu. Không có dữ liệu máy chủ bị thay đổi."
+                >
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setResetOpen(false)}>
+                      Giữ nguyên
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        actions.reset()
+                        setActorId("khoa")
+                        navigate("/")
+                        setResetOpen(false)
+                      }}
+                    >
+                      Khôi phục
+                    </Button>
+                  </div>
+                </Dialog>
+              </>
+            }
+          >
+            <WorkspaceRoutes
+              actorId={actorId}
+              state={state}
+              actions={actions}
+              navigation={navigation}
+              onCreate={() => setCreating(true)}
+            />
+          </AppShell>
+        </PeopleDirectory>
+      </SkillCatalogProvider>
+    </IdentityProvider>
   )
 }

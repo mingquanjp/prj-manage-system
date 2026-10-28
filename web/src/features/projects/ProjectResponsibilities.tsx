@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { ChevronDownIcon, GearIcon } from "@radix-ui/react-icons"
@@ -31,6 +32,8 @@ export function ProjectResponsibilities({
   onLifecycle: (command: LifecycleCommand) => void
   hasDraft: boolean
 }) {
+  const identity = useIdentity()
+
   const { people, getPerson } = usePeople()
   const [editing, setEditing] = useState(false)
   const [candidate, setCandidate] = useState(project.ptcmId ?? "")
@@ -270,7 +273,7 @@ export function ProjectResponsibilities({
             <Button
               onClick={() => {
                 try {
-                  onChange(startProject(project, actorId, tasks), "Bắt đầu dự án")
+                  onChange(startProject(project, actorId, tasks, identity), "Bắt đầu dự án")
                   setStarting(false)
                 } catch (err) {
                   setError((err as Error).message)

@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { ChevronDownIcon, PersonIcon } from "@radix-ui/react-icons"
@@ -25,6 +26,8 @@ export function AssignmentDraftPanel({
   error: string
   onSelectTask: (id: string) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [draftExpanded, setDraftExpanded] = useState(true)
   return (
@@ -98,12 +101,13 @@ export function AssignmentDraftPanel({
             <div key={id} className="text-xs">
               <p className="text-sm font-medium">{getPerson(id)?.name}</p>
               <p className="mt-1 text-muted-foreground tabular-nums">
-                Hiện tại {loadFor(id, tasks)} giờ · Nháp +{addedLoad(id, draft, tasks)} giờ
+                Hiện tại {loadFor(id, tasks, identity)} giờ · Nháp +{addedLoad(id, draft, tasks)}{" "}
+                giờ
               </p>
               <p className="mt-1 text-muted-foreground tabular-nums">
                 Dự kiến{" "}
                 <strong className="text-foreground">
-                  {loadFor(id, tasks) + addedLoad(id, draft, tasks)} giờ
+                  {loadFor(id, tasks, identity) + addedLoad(id, draft, tasks)} giờ
                 </strong>
               </p>
             </div>

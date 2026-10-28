@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -49,10 +50,12 @@ export function ProjectLifecycleActions({
   hasDraft?: boolean
   onTransition: (command: LifecycleCommand) => void
 }) {
+  const identity = useIdentity()
+
   const [command, setCommand] = useState<LifecycleCommand | null>(null)
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
-  if (project.pmId !== actorId || !getPerson(actorId)?.active) return null
+  if (project.pmId !== actorId || !getPerson(actorId, identity)?.active) return null
   const active = ["PLANNING", "IN_PROGRESS"].includes(project.status)
   const actions: LifecycleAction[] = task
     ? active && isOpenTask(task)
@@ -68,7 +71,7 @@ export function ProjectLifecycleActions({
   return (
     <div className={cn(task && "flex flex-wrap gap-2")}>
       {actions.map((action) => {
-        const block = lifecycleBlockReason(project, tasks, work, actorId, action, task)
+        const block = lifecycleBlockReason(project, tasks, work, actorId, action, task, identity)
         const button = (
           <Button
             size="sm"

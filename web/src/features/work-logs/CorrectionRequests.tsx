@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,8 @@ export function CorrectionRequests({
   projectId?: string
   onChange: (work: WorkState) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [filter, setFilter] = useState("all")
   const [decision, setDecision] = useState<{
@@ -66,7 +69,7 @@ export function CorrectionRequests({
     .filter((r) => {
       const contribution = contributionFor(work, tasks, r.assignmentId)
       return (
-        canReadRequest(projects, tasks, work, r, actorId) &&
+        canReadRequest(projects, tasks, work, r, actorId, identity) &&
         (projectId
           ? contribution?.projectId === projectId &&
             projects.some((p) => p.id === projectId && p.ptcmId === actorId)
@@ -251,6 +254,8 @@ export function CorrectionRequests({
                     decision.request.id,
                     decision.action,
                     reason,
+                    undefined,
+                    identity,
                   ),
                 )
                 setNotice(

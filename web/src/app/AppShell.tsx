@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import type { ReactNode } from "react"
 import { Link, NavLink } from "react-router"
@@ -40,8 +41,12 @@ export function AppShell({
   children: ReactNode
   dialogs: ReactNode
 }) {
+  const identity = useIdentity()
+
   const { people, getPerson } = usePeople()
   const {
+    accountsView,
+    canManageAccounts,
     skillReviewView,
     skillCatalogView,
     canManageSkills,
@@ -59,7 +64,7 @@ export function AppShell({
     currentProject,
   } = navigation
   const person = getPerson(actorId)!
-  const demoIdentities = demoIdentityOptions(projects, currentProject, people)
+  const demoIdentities = demoIdentityOptions(projects, currentProject, people, identity)
   const identityOptions = demoIdentities.map((identity) => (
     <option key={identity.id} value={identity.id}>
       {identity.name} · {identity.responsibility}
@@ -96,7 +101,7 @@ export function AppShell({
             }
           >
             <DashboardIcon />
-            {isDirector(actorId) ? "Dự án" : "Dự án của tôi"}
+            {isDirector(actorId, identity) ? "Dự án" : "Dự án của tôi"}
             <span className="ml-auto text-muted-foreground">{visibleProjects.length}</span>
           </NavLink>
           <nav aria-label="Dự án" className="mt-3 space-y-1 border-l border-border ml-5 pl-3">
@@ -159,9 +164,22 @@ export function AppShell({
               <PersonIcon /> Hồ sơ của tôi
             </NavLink>
           </div>
-          {(canReviewProfile || canManageOrganization || canManageSkills) && (
+          {(canManageAccounts || canReviewProfile || canManageOrganization || canManageSkills) && (
             <div className="mt-4 border-t border-border pt-3">
               <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">Quản trị</p>
+              {canManageAccounts && (
+                <NavLink
+                  to="/accounts"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium",
+                      isActive ? "bg-accent" : "hover:bg-accent",
+                    )
+                  }
+                >
+                  Quản lý tài khoản
+                </NavLink>
+              )}
               {canReviewProfile && (
                 <NavLink
                   to="/profile-requests"
@@ -283,43 +301,47 @@ export function AppShell({
           >
             <Link
               to={
-                skillReviewView
-                  ? "/skill-requests"
-                  : skillCatalogView
-                    ? "/skill-catalog"
-                    : employeeProfilesView
-                      ? "/employee-profiles"
-                      : profileView
-                        ? "/my-profile"
-                        : profileReviewView
-                          ? "/profile-requests"
-                          : organizationView
-                            ? "/organization"
-                            : personnelView
-                              ? "/personnel"
-                              : personalView
-                                ? "/my-work"
-                                : "/"
+                accountsView
+                  ? "/accounts"
+                  : skillReviewView
+                    ? "/skill-requests"
+                    : skillCatalogView
+                      ? "/skill-catalog"
+                      : employeeProfilesView
+                        ? "/employee-profiles"
+                        : profileView
+                          ? "/my-profile"
+                          : profileReviewView
+                            ? "/profile-requests"
+                            : organizationView
+                              ? "/organization"
+                              : personnelView
+                                ? "/personnel"
+                                : personalView
+                                  ? "/my-work"
+                                  : "/"
               }
               className="hover:text-foreground"
             >
-              {skillReviewView
-                ? "Xét duyệt kỹ năng"
-                : skillCatalogView
-                  ? "Danh mục kỹ năng"
-                  : employeeProfilesView
-                    ? "Hồ sơ nhân sự"
-                    : profileView
-                      ? "Hồ sơ của tôi"
-                      : profileReviewView
-                        ? "Yêu cầu thông tin cá nhân"
-                        : organizationView
-                          ? "Danh mục tổ chức"
-                          : personnelView
-                            ? "Tra cứu nhân sự"
-                            : personalView
-                              ? "Không gian cá nhân"
-                              : "Dự án"}
+              {accountsView
+                ? "Quản lý tài khoản"
+                : skillReviewView
+                  ? "Xét duyệt kỹ năng"
+                  : skillCatalogView
+                    ? "Danh mục kỹ năng"
+                    : employeeProfilesView
+                      ? "Hồ sơ nhân sự"
+                      : profileView
+                        ? "Hồ sơ của tôi"
+                        : profileReviewView
+                          ? "Yêu cầu thông tin cá nhân"
+                          : organizationView
+                            ? "Danh mục tổ chức"
+                            : personnelView
+                              ? "Tra cứu nhân sự"
+                              : personalView
+                                ? "Không gian cá nhân"
+                                : "Dự án"}
             </Link>
             {personalView && (
               <>
@@ -394,6 +416,16 @@ export function AppShell({
           >
             Hồ sơ của tôi
           </NavLink>
+          {canManageAccounts && (
+            <NavLink
+              to="/accounts"
+              className={({ isActive }) =>
+                cn("rounded-md px-3 py-2", isActive && "bg-accent font-medium")
+              }
+            >
+              Tài khoản
+            </NavLink>
+          )}
           {canReviewProfile && (
             <NavLink
               to="/profile-requests"

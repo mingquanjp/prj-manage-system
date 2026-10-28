@@ -44,3 +44,13 @@ Người dùng đã xác nhận luồng: Được phân công → Bắt đầu �
 [Bộ Figma Make](design/figma-make/README.md) chuyển nghiệp vụ thành màn hình và tình huống kiểm tra; không phải nguồn để tự mở rộng nghiệp vụ. “Yêu cầu chỉnh sửa kết quả” là kết luận review chưa đạt; thu hồi phân công là thao tác PTCM. Không suy thêm nút nhân viên tự trả việc từ tên gọi cũ.
 
 File đích do người dùng cung cấp: [DATN](https://www.figma.com/make/fOXzi51sKaRQbuSKmHZQmD/DATN). Cập nhật tài liệu không chứng minh đã sửa/kiểm thử prototype.
+
+
+## Quyết định tiếp nối 28/10/2026 — tự cấp mã và nhãn quyền tài khoản
+
+- Đã chốt: hệ thống tự cấp mã nhân viên khi tạo tài khoản kèm hồ sơ; form hiển thị chỉ đọc mã dự kiến, sau lưu trả mã được cấp. Dải E001, E002… dùng trong bản hiện tại. Không đổi mã nhân viên đã tồn tại.
+- Chốt làm rõ sau review: tên đăng nhập e001, e002… theo mã nhân viên chỉ là quy ước tạm của demo, hiển thị chỉ đọc. Chưa chốt định danh/cách đăng nhập cho backend (email, mã nhân viên hay tên riêng); cần đặc tả cùng xác thực và kênh cấp tài khoản. Không đổi tên đăng nhập cũ hoặc coi giá trị cấp trong demo là thông tin đăng nhập thật.
+- Cấp mã dựa trên dữ liệu hiện hành, không dùng số lượng hồ sơ cộng một, không dùng lại mã hồ sơ vô hiệu hóa hoặc tài khoản bị khóa. Backend phải bảo đảm uniqueness/cấp mã khi tạo đồng thời; cơ chế cấp số server cụ thể sẽ thiết kế cùng backend, không coi cách tính trong demo là giải pháp đồng thời production.
+- Thay yêu cầu nhập username/employee_code tại bước tạo trước đây; hai cột vẫn bắt buộc và duy nhất. Không thêm bảng/cột hoặc đổi cấu trúc DB; không chạy migration từ đợt UI.
+- Nhãn UI “Quyền hệ thống” thay “Vai trò hệ thống”; “Quản lý nhân sự” là nhãn quyền HR. Mã kỹ thuật ADMIN/HR/DIRECTOR giữ nguyên. Nhân viên có quyền nền; vị trí/phòng ban/cấp bậc không tự cấp quyền. PM/PTCM vẫn là trách nhiệm dự án.
+- Email công ty do Admin nhập khi tạo, HR quản lý về sau; không đồng nhất email với tên đăng nhập và không tạo hộp thư. Mật khẩu, kênh cấp tài khoản và xác thực thật tiếp tục hoãn.

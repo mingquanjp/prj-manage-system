@@ -1,5 +1,8 @@
 # Ghi nhận quyết định rà soát database theo từng nhóm
 
+**Tiếp nối 28/10/2026 — tài khoản:** xem [baseline 20/10, chốt tiếp nối 28/10](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản). Mã nhân viên được tự cấp; tên đăng nhập theo mã chỉ tạm cho demo, quy tắc đăng nhập backend chưa chốt. Nhãn UI “Quyền hệ thống”/“Quản lý nhân sự” không đổi mã ADMIN/HR/DIRECTOR hoặc ma trận quyền. Không đổi cấu trúc DB hoặc thêm bảng; dictionary/ghi chú DBML đã phản ánh giới hạn này.
+
+
 **Chốt tiếp nối 27/10/2026 — đề nghị kỹ năng của nhân viên:** luồng hiện tại chỉ bổ sung hoặc điều chỉnh; suy ADD khi chưa có official, UPDATE khi đã có, không cho chọn loại hoặc gửi đề nghị gỡ. Không thêm quyền gỡ trực tiếp cho Giám đốc/HR. Giá trị REMOVE và mô tả xử lý bản ghi cũ được giữ để tương thích thiết kế/lịch sử, không là chức năng tạo đề nghị mới. Không đổi cấu trúc DB; việc thu hồi kỹ năng ngoài luồng này chưa triển khai. Chốt này ưu tiên các mô tả ADD/UPDATE/REMOVE cũ đúng phần thao tác của nhân viên.
 
 Ngày bắt đầu: 14/10/2026.

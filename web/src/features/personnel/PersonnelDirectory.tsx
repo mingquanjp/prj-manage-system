@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useSkillCatalog } from "@/components/skill-catalog"
 import { useState } from "react"
 import { usePeople } from "@/components/people-directory"
@@ -17,11 +18,13 @@ export function PersonnelDirectory({
   tasks: Task[]
   actorId: string
 }) {
+  const identity = useIdentity()
+
   const { catalog } = useSkillCatalog()
   const { people } = usePeople()
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string>()
-  if (!canLookupPersonnel(projects, actorId)) {
+  if (!canLookupPersonnel(projects, actorId, identity)) {
     return (
       <EmptyState
         title="Bạn không có quyền tra cứu nhân sự"
@@ -29,7 +32,7 @@ export function PersonnelDirectory({
       />
     )
   }
-  const profiles = personnelProfiles(projects, tasks, actorId, query, people, catalog)
+  const profiles = personnelProfiles(projects, tasks, actorId, query, people, catalog, identity)
   const selected = profiles.find((person) => person.id === selectedId)
 
   return (

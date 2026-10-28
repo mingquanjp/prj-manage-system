@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { ProjectTaskTable } from "./ProjectTaskTable"
 import { ProjectTaskToolbar } from "./ProjectTaskToolbar"
 import { ProjectTaskSidebar } from "./ProjectTaskSidebar"
@@ -71,6 +72,8 @@ export function ProjectWorkspace({
   onReassign: (command: ReassignmentCommand) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
+  const identity = useIdentity()
+
   const { projectId } = useParams()
   const project = projects.find((p) => p.id === projectId)
   const [search, setSearch] = useState("")
@@ -92,7 +95,7 @@ export function ProjectWorkspace({
   >(null)
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(null)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
-  if (!project || !canViewProject(project, actorId))
+  if (!project || !canViewProject(project, actorId, identity))
     return (
       <EmptyState title="Không tìm thấy dự án" detail="Chọn dự án khác trong thanh điều hướng." />
     )
@@ -280,7 +283,7 @@ export function ProjectWorkspace({
               ? "PTCM"
               : project.pmId === actorId
                 ? "PM · chỉ theo dõi chuyên môn"
-                : isDirector(actorId)
+                : isDirector(actorId, identity)
                   ? "Giám đốc · chỉ theo dõi"
                   : "Chỉ xem"}
         </span>

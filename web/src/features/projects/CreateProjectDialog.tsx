@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,8 @@ export function CreateProjectDialog({
   onClose: () => void
   onSave: (projects: Project[]) => void
 }) {
+  const identity = useIdentity()
+
   const { people } = usePeople()
   const [input, setInput] = useState<ProjectInput>({
     code: "",
@@ -71,7 +74,7 @@ export function CreateProjectDialog({
             return
           }
           try {
-            onSave(createProject(projects, actorId, input, people))
+            onSave(createProject(projects, actorId, input, people, identity))
           } catch (err) {
             setError((err as Error).message)
           }

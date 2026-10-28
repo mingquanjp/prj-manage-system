@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { EmptyState, SearchInput } from "@/components/shared"
 import { usePeople } from "@/components/people-directory"
@@ -22,17 +23,19 @@ export function SkillRequests({
   onResolve,
 }: {
   actorId: string
-  employees: { personId: string; employeeCode: string }[]
+  employees: { personId: string; employeeCode: string; employmentStatus: "ACTIVE" | "INACTIVE" }[]
   state: EmployeeSkillsState
   onResolve: (decision: SkillDecision) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const { skillName } = useSkillCatalog()
   const [filter, setFilter] = useState("PENDING")
   const [query, setQuery] = useState("")
   // Giữ bản đã đọc để không tự duyệt nội dung vừa được người khác bổ sung.
   const [selected, setSelected] = useState<SkillRequest>()
-  if (!isDirector(actorId))
+  if (!isDirector(actorId, identity))
     return (
       <EmptyState
         title="Bạn không có quyền xét duyệt kỹ năng"
@@ -148,7 +151,9 @@ export function SkillRequests({
           state={state}
           actorId={actorId}
           employeeCode={employees.find((e) => e.personId === selected.employeeId)?.employeeCode}
-          employeeActive={Boolean(getPerson(selected.employeeId)?.active)}
+          employeeActive={
+            employees.find((e) => e.personId === selected.employeeId)?.employmentStatus === "ACTIVE"
+          }
           onResolve={onResolve}
           onClose={() => setSelected(undefined)}
         />

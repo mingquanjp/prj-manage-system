@@ -15,6 +15,7 @@ Project ai_staffing_proposal {
 
 Table users {
   user_id int [pk, increment]
+  // Quy tắc username BE chưa chốt; E001 → e001 chỉ tạm cho demo. Giữ tài khoản cũ.
   username varchar(50) [not null, unique]
   password_hash varchar(255) [not null]
   status text [not null, default: 'ACTIVE']
@@ -30,6 +31,7 @@ Table user_roles {
 Table employees {
   employee_id int [pk, increment]
   user_id int [not null, unique, ref: - users.user_id]
+  // Hệ thống tự cấp E001…; không tái dùng mã khóa/vô hiệu hóa; server bảo đảm cấp đồng thời.
   employee_code varchar(30) [not null, unique]
   fullname varchar(100) [not null]
   email varchar(100) [not null, unique, note: 'Email công ty, HR cập nhật']

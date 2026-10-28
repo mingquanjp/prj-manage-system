@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { EmployeeCvs, type CvActions } from "@/features/cvs/EmployeeCvs"
 import type { EmployeeCvsState } from "@/models/employee-cvs"
 import { cn } from "@/lib/utils"
@@ -38,6 +39,8 @@ export function EmployeeProfiles({
   onDeactivate: (personId: string) => void
   onSave: (before: EmployeeProfile, values: EmployeeEditValues) => void
 }) {
+  const identity = useIdentity()
+
   const { getPerson } = usePeople()
   const [query, setQuery] = useState("")
   const [department, setDepartment] = useState("")
@@ -47,7 +50,7 @@ export function EmployeeProfiles({
   const [deactivating, setDeactivating] = useState(false)
   const [tab, setTab] = useState("information")
   const [status, setStatus] = useState("ACTIVE")
-  if (!isHr(actorId))
+  if (!isHr(actorId, identity))
     return (
       <EmptyState
         title="Không có quyền xem hồ sơ nhân sự"

@@ -21,6 +21,8 @@ Kế hoạch chi tiết chia sẻ ngoài hệ thống. Theo dõi tiến độ di
 | PTCM theo dự án | Nhóm/task/requirements; phân công/thay/thu hồi; nghiệm thu; duyệt hiệu chỉnh; tra cứu nghề nghiệp |
 | Người có hồ sơ | Hồ sơ/CV/yêu cầu của mình; công việc đang giao và đóng góp lịch sử của mình |
 
+Theo chốt tiếp nối 28/10 tại [baseline](../../business-baseline-2026-10-20.md), Admin thấy mã nhân viên và tên đăng nhập dự kiến chỉ đọc; mã nhân viên được tự cấp, tên đăng nhập theo mã chỉ tạm cho demo, chưa chốt chính sách auth backend. Nhãn UI dùng “Quyền hệ thống”, HR hiển thị “Quản lý nhân sự”; vị trí/cấp bậc không tự cấp quyền.
+
 Một tài khoản có thể có nhiều vai trò hệ thống; PM/PTCM là trách nhiệm theo từng dự án. Nhân viên không phải vai trò cần Admin gán trong user_roles. Cho thấy trách nhiệm trong header dự án; PM không kiêm PTCM không có hành động chuyên môn. Người kiêm PM/PTCM có cả hai nhóm hành động và vẫn không nhận task tại dự án đó.
 
 Nếu dùng bộ chọn người/role để demo, ghi rõ đây là điều khiển mô phỏng; đổi demo identity không phải chức năng tự cấp quyền trong sản phẩm. Menu hợp nhất theo quyền hiện hành, không nhân đôi hồ sơ kỹ năng hoặc bắt người kiêm nhiệm đăng nhập hai tài khoản.

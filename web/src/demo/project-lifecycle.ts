@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { Project, Task, TaskStatus } from "../models/workspace.ts"
 import type { DemoWorkspaceState } from "./workspace-state.ts"
 import { contributionFor } from "./corrections.ts"
@@ -36,8 +37,9 @@ export function lifecycleBlockReason(
   actorId: string,
   action: LifecycleAction,
   task?: Task,
+  identity: IdentitySource = defaultIdentity,
 ): string | undefined {
-  if (!getPerson(actorId)?.active || project.pmId !== actorId)
+  if (!getPerson(actorId, identity)?.active || project.pmId !== actorId)
     return "Chỉ PM hiện hành của dự án được thực hiện thao tác này."
   const related = tasks.filter((entry) => entry.projectId === project.id)
   switch (action) {
@@ -86,6 +88,7 @@ export function transitionProjectLifecycle(
   actorId: string,
   command: LifecycleCommand,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ) {
   const project = state.projects.find((entry) => entry.id === command.projectId)
   if (!project) throw new Error("Không tìm thấy dự án.")
@@ -97,6 +100,7 @@ export function transitionProjectLifecycle(
     actorId,
     command.action,
     task,
+    identity,
   )
   if (
     project.status !== command.expectedStatus ||

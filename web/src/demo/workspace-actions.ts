@@ -1,3 +1,5 @@
+import { createAccountWithProfile, changeAccount } from "./accounts.ts"
+import type { AccountCreateInput, AccountCommand } from "../models/accounts.ts"
 import { addEmployeeCv, selectCurrentCv, simulateCvProcessing } from "./employee-cvs.ts"
 import type { CvFileInput, CvProcessingStatus } from "../models/employee-cvs.ts"
 import {
@@ -45,16 +47,55 @@ export function createDemoWorkspaceActions(
     state.profileState.profiles,
     state.organization,
     state.employeeSkills,
+    state.accounts.accounts,
   )
+  const identity = { people: directory, accounts: state.accounts.accounts }
   const requireActiveActor = () => {
     if (!directory.find((p) => p.id === actorId)?.active)
-      throw new Error("Hồ sơ của bạn đã được vô hiệu hóa; không thể thực hiện nghiệp vụ.")
+      throw new Error(
+        "Tài khoản đã bị khóa hoặc hồ sơ đã được vô hiệu hóa; không thể thực hiện nghiệp vụ.",
+      )
   }
   const requireActivePerson = (personId: string) => {
     if (!directory.find((p) => p.id === personId)?.active)
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    createAccount(input: AccountCreateInput) {
+      const next = createAccountWithProfile(
+        state.accounts,
+        state.profileState,
+        state.organization,
+        actorId,
+        input,
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "accountCreated",
+        ...next,
+        notice: `Đã tạo hồ sơ ${next.profileState.profiles.at(-1)!.employeeCode} · Tên đăng nhập: ${next.accounts.accounts.at(-1)!.username}. Chưa cấp thông tin đăng nhập thật.`,
+      })
+    },
+    changeAccount(command: AccountCommand) {
+      const accounts = changeAccount(
+        state.accounts,
+        state.profileState,
+        state.organization,
+        actorId,
+        command,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      )
+      dispatch({
+        type: "accountChanged",
+        accounts,
+        notice:
+          "Đã cập nhật tài khoản trong phiên mô phỏng. Chưa có phiên đăng nhập thật để thu hồi.",
+      })
+    },
     addCv(employeeId: string, file: CvFileInput) {
       const employeeCvs = addEmployeeCv(
         state.employeeCvs,
@@ -64,6 +105,7 @@ export function createDemoWorkspaceActions(
         file,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "employeeCvsChanged",
@@ -77,6 +119,7 @@ export function createDemoWorkspaceActions(
         state.profileState.profiles,
         actorId,
         cvId,
+        identity,
       )
       dispatch({
         type: "employeeCvsChanged",
@@ -91,6 +134,7 @@ export function createDemoWorkspaceActions(
         actorId,
         cvId,
         status,
+        identity,
       )
       dispatch({
         type: "employeeCvsChanged",
@@ -110,6 +154,7 @@ export function createDemoWorkspaceActions(
         input,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "employeeSkillsChanged",
@@ -129,6 +174,7 @@ export function createDemoWorkspaceActions(
         version,
         input,
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "employeeSkillsChanged",
@@ -146,6 +192,7 @@ export function createDemoWorkspaceActions(
         version,
         reason,
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "employeeSkillsChanged",
@@ -162,6 +209,7 @@ export function createDemoWorkspaceActions(
         decision,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "employeeSkillsChanged",
@@ -182,6 +230,7 @@ export function createDemoWorkspaceActions(
         command,
         crypto.randomUUID(),
         state.employeeSkills,
+        identity,
       )
       dispatch({
         type: "skillCatalogChanged",
@@ -199,6 +248,7 @@ export function createDemoWorkspaceActions(
         personId,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "profilesChanged",
@@ -216,6 +266,7 @@ export function createDemoWorkspaceActions(
         proposed,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "profilesChanged",
@@ -231,6 +282,7 @@ export function createDemoWorkspaceActions(
         actorId,
         command,
         command.action === "create" ? crypto.randomUUID() : "",
+        identity,
       )
       dispatch({
         type: "organizationChanged",
@@ -251,6 +303,7 @@ export function createDemoWorkspaceActions(
         explanation,
         crypto.randomUUID(),
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "profilesChanged",
@@ -267,6 +320,7 @@ export function createDemoWorkspaceActions(
         decision,
         reason,
         new Date().toISOString(),
+        identity,
       )
       dispatch({
         type: "profilesChanged",
@@ -286,12 +340,19 @@ export function createDemoWorkspaceActions(
         command,
         new Date().toISOString(),
         crypto.randomUUID(),
+        identity,
       )
       dispatch({ type: "assignmentReplaced", ...next })
     },
     transitionLifecycle(command: LifecycleCommand) {
       requireActiveActor()
-      const next = transitionProjectLifecycle(state, actorId, command, new Date().toISOString())
+      const next = transitionProjectLifecycle(
+        state,
+        actorId,
+        command,
+        new Date().toISOString(),
+        identity,
+      )
       dispatch({ type: "lifecycleChanged", ...next })
     },
     setNotice(notice: string) {
@@ -380,6 +441,7 @@ export function createDemoWorkspaceActions(
         expected,
         action,
         reason,
+        identity,
       )
       dispatch({
         type: "taskTransitioned",
@@ -402,6 +464,8 @@ export function createDemoWorkspaceActions(
         taskId,
         summary,
         links,
+        undefined,
+        identity,
       )
       dispatch({
         ...next,
@@ -421,6 +485,8 @@ export function createDemoWorkspaceActions(
         result,
         comment,
         initialOutputConflicts,
+        undefined,
+        identity,
       )
       dispatch({
         type: "resultSaved",

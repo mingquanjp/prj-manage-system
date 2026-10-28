@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { EmployeeSkillsState } from "../models/employee-skills.ts"
 import { createEmployeeSkillsState } from "./employee-skills.ts"
 import type { SkillCatalogCommand, SkillCatalogState } from "../models/skill-catalog.ts"
@@ -59,9 +60,10 @@ export function changeSkillCatalog(
   command: SkillCatalogCommand,
   newId: string,
   employeeSkills: EmployeeSkillsState = createEmployeeSkillsState(),
+  identity: IdentitySource = defaultIdentity,
 ): SkillCatalogState {
   if (
-    !isDirector(actorId) ||
+    !isDirector(actorId, identity) ||
     profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Chỉ Giám đốc đang hoạt động được quản lý danh mục kỹ năng.")

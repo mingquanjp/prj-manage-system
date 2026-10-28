@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { Pencil1Icon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
@@ -27,12 +28,14 @@ export function OrganizationCatalogs({
   profiles: EmployeeProfile[]
   onChange: (command: OrganizationCommand) => void
 }) {
+  const identity = useIdentity()
+
   const [kind, setKind] = useState<OrganizationKind>("departments")
   const [query, setQuery] = useState("")
   const [editor, setEditor] = useState<{ kind: OrganizationKind; entry?: OrganizationEntry }>()
   const [removing, setRemoving] = useState<{ kind: OrganizationKind; entry: OrganizationEntry }>()
   const [error, setError] = useState("")
-  if (!isHr(actorId))
+  if (!isHr(actorId, identity))
     return (
       <EmptyState
         title="Bạn không có quyền quản lý danh mục"

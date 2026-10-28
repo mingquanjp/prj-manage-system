@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { EmployeeProfile } from "../models/profile.ts"
 import type {
   OrganizationCommand,
@@ -18,6 +19,7 @@ export function createOrganizationState(): OrganizationState {
       { id: "senior", name: "Senior" },
     ],
     positions: [
+      { id: "system-administrator", name: "Quản trị hệ thống" },
       { id: "software-engineer", name: "Kỹ sư phần mềm" },
       { id: "backend-engineer", name: "Kỹ sư Backend" },
       { id: "frontend-engineer", name: "Kỹ sư Frontend" },
@@ -33,6 +35,7 @@ export const initialEmployment: Record<
   string,
   { departmentId: string | null; positionId: string; jobLevelId: string | null }
 > = {
+  admin: { departmentId: "engineering", positionId: "system-administrator", jobLevelId: null },
   hr: { departmentId: "human-resources", positionId: "hr-specialist", jobLevelId: "middle" },
   ha: { departmentId: null, positionId: "director", jobLevelId: "senior" },
   khoa: { departmentId: "engineering", positionId: "software-engineer", jobLevelId: "senior" },
@@ -64,8 +67,12 @@ export function changeOrganization(
   actorId: string,
   command: OrganizationCommand,
   newId: string,
+  identity: IdentitySource = defaultIdentity,
 ): OrganizationState {
-  if (!isHr(actorId) || profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE")
+  if (
+    !isHr(actorId, identity) ||
+    profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
+  )
     throw new Error("Chỉ HR được quản lý danh mục tổ chức.")
   const entries = state[command.kind]
   if (command.action !== "create") {

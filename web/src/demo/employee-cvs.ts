@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { CvFileInput, CvProcessingStatus, EmployeeCvsState } from "../models/employee-cvs.ts"
 import type { EmployeeProfile } from "../models/profile.ts"
 import { getPerson, isHr } from "./identity.ts"
@@ -35,16 +36,26 @@ export function createEmployeeCvsState(): EmployeeCvsState {
   }
 }
 
-function requireActive(profiles: EmployeeProfile[], personId: string) {
+function requireActive(
+  profiles: EmployeeProfile[],
+  personId: string,
+  identity: IdentitySource = defaultIdentity,
+  isActor = true,
+) {
+  // Khóa tài khoản chặn người thao tác; không tự vô hiệu hóa hồ sơ HR đang quản lý.
   if (
-    !getPerson(personId)?.active ||
+    (isActor && !getPerson(personId, identity)?.active) ||
     profiles.find((p) => p.personId === personId)?.employmentStatus !== "ACTIVE"
   )
     throw new Error("Hồ sơ không còn hoạt động; không thể cập nhật CV.")
 }
 
-export function canManageCvs(actorId: string, employeeId: string) {
-  return actorId === employeeId || isHr(actorId)
+export function canManageCvs(
+  actorId: string,
+  employeeId: string,
+  identity: IdentitySource = defaultIdentity,
+) {
+  return actorId === employeeId || isHr(actorId, identity)
 }
 
 // Kiểm tra sơ bộ ở trình duyệt, không thay xác minh nội dung/PDF text/container trên server.
@@ -68,10 +79,12 @@ export function addEmployeeCv(
   file: CvFileInput,
   id: string,
   at: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeCvsState {
-  requireActive(profiles, actorId)
-  requireActive(profiles, employeeId)
-  if (!canManageCvs(actorId, employeeId)) throw new Error("Chỉ chính chủ hoặc HR được bổ sung CV.")
+  requireActive(profiles, actorId, identity)
+  requireActive(profiles, employeeId, identity, false)
+  if (!canManageCvs(actorId, employeeId, identity))
+    throw new Error("Chỉ chính chủ hoặc HR được bổ sung CV.")
   const metadata = validateCvFile(file)
   return {
     versions: [
@@ -94,8 +107,9 @@ export function selectCurrentCv(
   profiles: EmployeeProfile[],
   actorId: string,
   cvId: string,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeCvsState {
-  requireActive(profiles, actorId)
+  requireActive(profiles, actorId, identity)
   const cv = state.versions.find((entry) => entry.id === cvId)
   if (!cv || cv.employeeId !== actorId)
     throw new Error("Chỉ chính chủ được xác nhận CV hiện tại của mình.")
@@ -112,12 +126,13 @@ export function simulateCvProcessing(
   actorId: string,
   cvId: string,
   status: CvProcessingStatus,
+  identity: IdentitySource = defaultIdentity,
 ): EmployeeCvsState {
-  requireActive(profiles, actorId)
+  requireActive(profiles, actorId, identity)
   const cv = state.versions.find((entry) => entry.id === cvId)
-  if (!cv || !canManageCvs(actorId, cv.employeeId))
+  if (!cv || !canManageCvs(actorId, cv.employeeId, identity))
     throw new Error("Không có quyền mô phỏng xử lý CV này.")
-  requireActive(profiles, cv.employeeId)
+  requireActive(profiles, cv.employeeId, identity, false)
   if (!["QUEUED", "PROCESSING", "SUCCEEDED", "FAILED"].includes(status))
     throw new Error("Trạng thái mô phỏng không hợp lệ.")
   return {

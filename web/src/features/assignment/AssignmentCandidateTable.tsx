@@ -1,3 +1,4 @@
+import { useIdentity } from "@/components/identity"
 import { useSkillCatalog } from "@/components/skill-catalog"
 import { CheckIcon } from "@radix-ui/react-icons"
 import { Avatar, EmptyState } from "@/components/shared"
@@ -28,6 +29,8 @@ export function AssignmentCandidateTable({
   query: string
   onSelectPerson: (id: string) => void
 }) {
+  const identity = useIdentity()
+
   const { skillName } = useSkillCatalog()
   return (
     <div className="overflow-x-auto">
@@ -94,13 +97,16 @@ export function AssignmentCandidateTable({
                   </div>
                 </td>
                 <td className="px-2 py-4 whitespace-nowrap tabular-nums">
-                  <span className="font-medium">Hiện tại {loadFor(person.id, tasks)} giờ</span>
+                  <span className="font-medium">
+                    Hiện tại {loadFor(person.id, tasks, identity)} giờ
+                  </span>
                   <p className="mt-1 text-xs text-muted-foreground">Xuyên dự án</p>
                   <p className="mt-2 text-xs text-muted-foreground">
                     Nháp +{addedLoad(person.id, draft, tasks)} giờ
                   </p>
                   <p className="mt-1 text-xs">
-                    Sau nháp {loadFor(person.id, tasks) + addedLoad(person.id, draft, tasks)} giờ
+                    Sau nháp{" "}
+                    {loadFor(person.id, tasks, identity) + addedLoad(person.id, draft, tasks)} giờ
                   </p>
                 </td>
                 {mode === "recommended" && (

@@ -1,3 +1,4 @@
+import { defaultIdentity, type IdentitySource } from "./identity.ts"
 import type { Task, Person, Draft, Project } from "../models/workspace.ts"
 import { getPerson, isEligible, canAssign } from "./identity.ts"
 import { people } from "./fixtures.ts"
@@ -6,9 +7,13 @@ export function skillGaps(task: Task, person: Person) {
   return task.requirements.filter((r) => r.mandatory && (person.skills[r.skill] ?? 0) < r.level)
 }
 
-export function loadFor(personId: string, tasks: Task[]) {
+export function loadFor(
+  personId: string,
+  tasks: Task[],
+  identity: IdentitySource = defaultIdentity,
+) {
   return (
-    (getPerson(personId)?.backgroundLoad ?? 0) +
+    (getPerson(personId, identity)?.backgroundLoad ?? 0) +
     tasks
       .filter(
         (t) =>

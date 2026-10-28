@@ -1,3 +1,5 @@
+import { useIdentity } from "@/components/identity"
+import { AccountManagement } from "@/features/accounts/AccountManagement"
 import { SkillRequests } from "@/features/skills/SkillRequests"
 import { SkillCatalogs } from "@/features/skill-catalog/SkillCatalogs"
 import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
@@ -29,6 +31,15 @@ export function WorkspaceRoutes({
   navigation: WorkspaceNavigation
   onCreate: () => void
 }) {
+  const identity = useIdentity()
+  const account = identity.accounts.find((a) => a.personId === actorId)
+  if (!account || account.status !== "ACTIVE")
+    return (
+      <EmptyState
+        title="Tài khoản đã bị khóa"
+        detail="Không thể sử dụng nghiệp vụ. Có thể chuyển danh tính bằng Điều khiển prototype để xem tiếp bản demo."
+      />
+    )
   const { projects, tasks, groups, events, work } = state
   if (
     state.profileState.profiles.find((p) => p.personId === actorId)?.employmentStatus !== "ACTIVE"
@@ -42,16 +53,35 @@ export function WorkspaceRoutes({
   return (
     <Routes>
       <Route
+        path="/accounts"
+        element={
+          <AccountManagement
+            key={actorId}
+            actorId={actorId}
+            accounts={state.accounts}
+            profiles={state.profileState}
+            organization={state.organization}
+            projects={projects}
+            tasks={tasks}
+            onCreate={actions.createAccount}
+            onChange={actions.changeAccount}
+          />
+        }
+      />
+      <Route
         path="/skill-requests"
         element={
           <SkillRequests
             key={actorId}
             actorId={actorId}
             state={state.employeeSkills}
-            employees={state.profileState.profiles.map(({ personId, employeeCode }) => ({
-              personId,
-              employeeCode,
-            }))}
+            employees={state.profileState.profiles.map(
+              ({ personId, employeeCode, employmentStatus }) => ({
+                personId,
+                employeeCode,
+                employmentStatus,
+              }),
+            )}
             onResolve={actions.resolveSkillChange}
           />
         }
