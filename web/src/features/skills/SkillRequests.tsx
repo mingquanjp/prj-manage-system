@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { EmptyState, SearchInput } from "@/components/shared"
@@ -27,14 +28,18 @@ export function SkillRequests({
   state: EmployeeSkillsState
   onResolve: (decision: SkillDecision) => void
 }) {
+  const [params] = useSearchParams()
+  const initialRequest = state.requests.find((r) => r.id === params.get("request"))
   const identity = useIdentity()
 
   const { getPerson } = usePeople()
   const { skillName } = useSkillCatalog()
-  const [filter, setFilter] = useState("PENDING")
+  const [filter, setFilter] = useState(initialRequest ? "all" : "PENDING")
   const [query, setQuery] = useState("")
   // Giữ bản đã đọc để không tự duyệt nội dung vừa được người khác bổ sung.
-  const [selected, setSelected] = useState<SkillRequest>()
+  const [selected, setSelected] = useState<SkillRequest | undefined>(() =>
+    initialRequest ? structuredClone(initialRequest) : undefined,
+  )
   if (!isDirector(actorId, identity))
     return (
       <EmptyState

@@ -1,9 +1,10 @@
+import type { PmChangeCommand, TaskDeadlineCommand, TaskComment } from "@/models/task-collaboration"
 import { useIdentity } from "@/components/identity"
 import { ProjectTaskTable } from "./ProjectTaskTable"
 import { ProjectTaskToolbar } from "./ProjectTaskToolbar"
 import { ProjectTaskSidebar } from "./ProjectTaskSidebar"
 import { useRef, useState } from "react"
-import { Link, useParams } from "react-router"
+import { Link, useParams, useSearchParams } from "react-router"
 import {
   ArrowLeftIcon,
   ChevronDownIcon,
@@ -55,6 +56,10 @@ export function ProjectWorkspace({
   onWorkChange,
   onLifecycle,
   onReassign,
+  onReplacePm,
+  onExtendDeadline,
+  comments,
+  onPostComment,
 }: {
   actorId: string
   projects: Project[]
@@ -69,25 +74,32 @@ export function ProjectWorkspace({
   work: WorkState
   onWorkChange: (work: WorkState) => void
   onLifecycle: (command: LifecycleCommand) => void
+  onReplacePm: (command: PmChangeCommand) => void
+  onExtendDeadline: (command: TaskDeadlineCommand) => void
+  comments: TaskComment[]
+  onPostComment: (taskId: string, content: string) => void
   onReassign: (command: ReassignmentCommand) => void
   onReview: (submissionId: string, result: ReviewResult, comment: string) => void
 }) {
   const identity = useIdentity()
 
   const { projectId } = useParams()
+  const [params] = useSearchParams()
   const project = projects.find((p) => p.id === projectId)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [group, setGroup] = useState("all")
   const [view, setView] = useState<"list" | "groups" | "kanban">("list")
   const [tab, setTab] = useState<"tasks" | "structure" | "reviews" | "corrections">("tasks")
-  const [detailTab, setDetailTab] = useState<"details" | "results">("details")
+  const [detailTab, setDetailTab] = useState<"details" | "results" | "discussion">(
+    params.get("panel") === "results" ? "results" : "details",
+  )
   const [editor, setEditor] = useState<{
     task?: Task
     groupId?: string
   } | null>(null)
   const [info, setInfo] = useState(false)
-  const [detail, setDetail] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(params.get("task"))
   const [selected, setSelected] = useState<string[]>([])
   const [draft, setDraft] = useState<Draft>({})
   const [discardTab, setDiscardTab] = useState<
@@ -214,6 +226,7 @@ export function ProjectWorkspace({
         </div>
       </div>
       <ProjectResponsibilities
+        onReplacePm={onReplacePm}
         project={project}
         actorId={actorId}
         tasks={tasks}
@@ -461,6 +474,9 @@ export function ProjectWorkspace({
             </section>
             {(info || currentTask) && (
               <ProjectTaskSidebar
+                onExtendDeadline={onExtendDeadline}
+                comments={comments}
+                onPostComment={onPostComment}
                 currentTask={currentTask}
                 project={project}
                 actorId={actorId}

@@ -1,3 +1,6 @@
+import type { WorkspaceNotification } from "../models/notification.ts"
+import { collectNotifications } from "./notifications.ts"
+import type { TaskComment } from "../models/task-collaboration.ts"
 import type { AccountsState } from "../models/accounts.ts"
 import { createAccountsState } from "./accounts.ts"
 import { createEmployeeCvsState } from "./employee-cvs.ts"
@@ -31,10 +34,15 @@ export type DemoWorkspaceState = {
   employeeSkills: EmployeeSkillsState
   skillCatalog: SkillCatalogState
   accounts: AccountsState
+  notifications: WorkspaceNotification[]
+  comments: TaskComment[]
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "notificationsRead"; notifications: WorkspaceNotification[]; work: WorkState }
+  | { type: "taskCommentsChanged"; comments: TaskComment[] }
+  | { type: "taskDeadlineChanged"; task: Task }
   | { type: "accountCreated"; accounts: AccountsState; profileState: ProfileState; notice: string }
   | { type: "accountChanged"; accounts: AccountsState; notice: string }
   | { type: "employeeCvsChanged"; employeeCvs: EmployeeCvsState; notice: string }
@@ -67,6 +75,8 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     tasks: structuredClone(initialTasks),
     groups: structuredClone(initialGroups),
     events: [],
+    comments: [],
+    notifications: [],
     work: rememberContributions(emptyWorkState(), initialTasks),
     profileState: createProfileState(),
     organization: createOrganizationState(),
@@ -79,11 +89,21 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
 }
 
 // Chỉ áp dụng dữ liệu đã chuẩn bị; không tự lấy giờ, sinh ID hoặc chạy thao tác UI.
-export function demoWorkspaceReducer(
+function reduceWorkspaceState(
   state: DemoWorkspaceState,
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "notificationsRead":
+      return { ...state, notifications: action.notifications, work: action.work }
+    case "taskCommentsChanged":
+      return { ...state, comments: action.comments, notice: "Đã gửi trao đổi." }
+    case "taskDeadlineChanged":
+      return {
+        ...state,
+        tasks: state.tasks.map((task) => (task.id === action.task.id ? action.task : task)),
+        notice: "Đã cập nhật hạn công việc; giữ nguyên ước tính.",
+      }
     case "accountCreated":
       return {
         ...state,
@@ -157,4 +177,15 @@ export function demoWorkspaceReducer(
         notice: "Đã khôi phục dữ liệu mẫu.",
       }
   }
+}
+
+// Thông báo đi cùng thay đổi miền trong một lần cập nhật state demo, không phải transaction server.
+export function demoWorkspaceReducer(
+  state: DemoWorkspaceState,
+  action: DemoWorkspaceAction,
+): DemoWorkspaceState {
+  const next = reduceWorkspaceState(state, action)
+  if (action.type === "reset" || action.type === "notificationsRead") return next
+  const added = collectNotifications(state, next)
+  return added.length ? { ...next, notifications: [...next.notifications, ...added] } : next
 }

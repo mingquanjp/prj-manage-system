@@ -1,3 +1,6 @@
+import { markNotificationRead } from "./notifications.ts"
+import { replaceProjectPm, extendTaskDeadline, addTaskComment } from "./task-collaboration.ts"
+import type { PmChangeCommand, TaskDeadlineCommand } from "../models/task-collaboration.ts"
 import { createAccountWithProfile, changeAccount } from "./accounts.ts"
 import type { AccountCreateInput, AccountCommand } from "../models/accounts.ts"
 import { addEmployeeCv, selectCurrentCv, simulateCvProcessing } from "./employee-cvs.ts"
@@ -61,6 +64,59 @@ export function createDemoWorkspaceActions(
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    readNotification(id: string) {
+      const next = markNotificationRead(state, actorId, id, new Date().toISOString(), identity)
+      dispatch({ type: "notificationsRead", ...next })
+    },
+    replacePm(command: PmChangeCommand) {
+      const current = state.projects.find((p) => p.id === command.projectId)
+      if (!current) throw new Error("Không tìm thấy dự án.")
+      const project = replaceProjectPm(current, actorId, command, identity)
+      dispatch({
+        type: "projectChanged",
+        project,
+        event: {
+          projectId: project.id,
+          actorId,
+          at: new Date().toISOString(),
+          action: "Thay PM",
+          after: structuredClone(project),
+        },
+        notice: "Đã thay PM; giữ nguyên PTCM và phân công công việc.",
+      })
+    },
+    extendDeadline(command: TaskDeadlineCommand) {
+      const task = state.tasks.find((t) => t.id === command.taskId)
+      const project = state.projects.find((p) => p.id === task?.projectId)
+      if (!task || !project) throw new Error("Không tìm thấy công việc.")
+      dispatch({
+        type: "taskDeadlineChanged",
+        task: extendTaskDeadline(
+          project,
+          task,
+          actorId,
+          command,
+          new Date().toISOString(),
+          identity,
+        ),
+      })
+    },
+    postTaskComment(taskId: string, content: string) {
+      const task = state.tasks.find((t) => t.id === taskId)
+      const project = state.projects.find((p) => p.id === task?.projectId)
+      if (!task || !project) throw new Error("Không tìm thấy công việc.")
+      const comments = addTaskComment(
+        state.comments,
+        project,
+        task,
+        actorId,
+        content,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+        identity,
+      )
+      dispatch({ type: "taskCommentsChanged", comments })
+    },
     createAccount(input: AccountCreateInput) {
       const next = createAccountWithProfile(
         state.accounts,

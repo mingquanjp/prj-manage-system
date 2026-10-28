@@ -55,6 +55,8 @@ PTCM cần được xem kết quả và căn cứ của công việc được đ
 Membership lịch sử không tự cấp quyền toàn dự án. Người kết thúc lượt phân công chỉ còn quyền lịch sử theo tư cách người thực hiện; nếu đồng thời có trách nhiệm dự án hợp lệ khác, quyền đó được xét riêng. Notification/download/run/comment phải kiểm tra quyền; biết ID không chứng minh được phép.
 Tổng tải không phải lịch trống; chỉ số lịch sử chưa phải KPI khách quan. Raw snapshot nội bộ không mặc định trả cho ADMIN, Giám đốc hoặc PM.
 
+**Tiếp nối 28/10:** PTCM gia hạn task theo trạng thái/lý do/mốc gốc đã chốt; người hiện được giao và PTCM hiện hành đọc/trao đổi trên task, không suy quyền này từ PM-only/HR/Admin/Giám đốc. Task/project kết thúc chỉ đọc trong phạm vi còn quyền; người đã mất phân công không được đọc trao đổi hiện hành nhờ lịch sử. Xem [quyết định tiếp nối](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--thay-pm-hạn-task-và-trao-đổi).
+
 ## 2. Kiểm tra quyền hiện hành
 
 Phạm vi phân công theo [bổ sung 2026-10-13](../../docs/business-baseline-2026-10-13.md): PTCM được chọn trực tiếp nhân viên hợp lệ trong toàn công ty cho dự án phụ trách, không cần membership trước hoặc PM phê duyệt từng lần. Không phát sinh quyền điều hành dự án khác. Số dự án đang có việc/tải xuyên dự án chỉ là tổng hợp được phép; không vì chỉ số này mà trả tên dự án, task/log hoặc tài liệu ngoài quyền đọc.

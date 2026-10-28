@@ -1,3 +1,6 @@
+import { isDirector } from "@/demo/identity"
+import type { PmChangeCommand } from "@/models/task-collaboration"
+import { ChangePmDialog } from "./ChangePmDialog"
 import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
@@ -21,6 +24,7 @@ export function ProjectResponsibilities({
   work,
   onLifecycle,
   hasDraft,
+  onReplacePm,
 }: {
   project: Project
   actorId: string
@@ -31,10 +35,12 @@ export function ProjectResponsibilities({
   work: WorkState
   onLifecycle: (command: LifecycleCommand) => void
   hasDraft: boolean
+  onReplacePm: (command: PmChangeCommand) => void
 }) {
   const identity = useIdentity()
 
   const { people, getPerson } = usePeople()
+  const [changingPm, setChangingPm] = useState(false)
   const [editing, setEditing] = useState(false)
   const [candidate, setCandidate] = useState(project.ptcmId ?? "")
   const [error, setError] = useState("")
@@ -43,6 +49,8 @@ export function ProjectResponsibilities({
   const pm = project.pmId === actorId
   const editable = ["PLANNING", "IN_PROGRESS"].includes(project.status)
   const manageable = editable || project.status === "COMPLETED"
+  const director = isDirector(actorId, identity)
+  const canManage = (pm || director) && manageable
   const block = candidate
     ? ptcmBlockReason(project, candidate, tasks, conflicts, people)
     : undefined
@@ -66,7 +74,7 @@ export function ProjectResponsibilities({
             </span>
           </p>
         </div>
-        {((pm && manageable) || history.length > 0) && (
+        {(canManage || history.length > 0) && (
           <Button
             size="sm"
             variant="ghost"
@@ -75,7 +83,7 @@ export function ProjectResponsibilities({
             onClick={() => setManaging(!managing)}
           >
             <GearIcon />
-            {pm && manageable ? "Quản lý dự án" : "Lịch sử thay đổi"}
+            {canManage ? "Quản lý dự án" : "Lịch sử thay đổi"}
             <ChevronDownIcon className={managing ? "rotate-180" : ""} />
           </Button>
         )}
@@ -104,6 +112,16 @@ export function ProjectResponsibilities({
       )}
       {managing && (
         <div id="project-management" className="mt-3 rounded-lg border border-border bg-white px-4">
+          {director && manageable && (
+            <ProjectManagementRow
+              title="Người quản lý dự án"
+              description={getPerson(project.pmId)?.name ?? "Chưa có thông tin PM"}
+            >
+              <Button variant="outline" size="sm" onClick={() => setChangingPm(true)}>
+                Thay PM
+              </Button>
+            </ProjectManagementRow>
+          )}
           {pm && editable && (
             <ProjectManagementRow
               title="Phụ trách chuyên môn"
@@ -174,6 +192,8 @@ export function ProjectResponsibilities({
                         Lý do: {e.reason}
                       </p>
                     )}
+                    {e.action === "Thay PM" &&
+                      ` · ${getPerson(e.before?.pmId)?.name ?? "Chưa có thông tin"} → ${getPerson(e.after.pmId)?.name}`}
                     {e.action === "Chỉ định PTCM" &&
                       ` · ${getPerson(e.before?.ptcmId)?.name ?? "Chưa chỉ định"} → ${getPerson(e.after.ptcmId)?.name}`}
                   </li>
@@ -182,6 +202,13 @@ export function ProjectResponsibilities({
             </details>
           )}
         </div>
+      )}
+      {changingPm && (
+        <ChangePmDialog
+          project={project}
+          onSave={onReplacePm}
+          onClose={() => setChangingPm(false)}
+        />
       )}
       {editing && (
         <Dialog
