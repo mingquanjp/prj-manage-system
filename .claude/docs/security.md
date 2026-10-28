@@ -8,6 +8,8 @@
 Đọc trước auth, upload và mọi endpoint có ID. Quyền/session chi tiết ở roles_permissions.md.
 Đây là yêu cầu triển khai, không khẳng định code skeleton đã đáp ứng.
 
+Theo [chốt tài khoản 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản), e010 chỉ là tên đăng nhập demo tạm. Định danh đăng nhập, quy tắc cấp/chuẩn hóa username và kênh cấp tài khoản cần chốt trước auth backend; không suy chính sách từ tên fixture.
+
 ## 1. Bí mật và dữ liệu trả về
 
 Không commit/log mật khẩu, hash, token, DATABASE_URL, CV thô hay liên hệ cá nhân.
