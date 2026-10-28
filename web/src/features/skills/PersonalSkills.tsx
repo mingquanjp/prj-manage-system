@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { useState } from "react"
 import { PlusIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ export function PersonalSkills({
   tasks: Task[]
   actions: PersonalSkillActions
 }) {
+  const [params] = useSearchParams()
   const { skillName } = useSkillCatalog()
   const { getPerson } = usePeople()
   const [editor, setEditor] = useState<{ request?: SkillRequest }>()
@@ -121,7 +123,11 @@ export function PersonalSkills({
         </div>
         <div className="space-y-3">
           {requests.map((request) => (
-            <details key={request.id} className="rounded-lg border border-border bg-white p-4">
+            <details
+              open={params.get("request") === request.id ? true : undefined}
+              key={request.id}
+              className="rounded-lg border border-border bg-white p-4"
+            >
               <summary className="cursor-pointer text-sm leading-6">
                 <span className="mr-3 font-medium">
                   {skillName(request.skillId)} · {skillOperationLabels[request.operation]}

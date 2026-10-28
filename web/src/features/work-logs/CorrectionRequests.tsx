@@ -1,3 +1,4 @@
+import { Link } from "react-router"
 import { useIdentity } from "@/components/identity"
 import { usePeople } from "@/components/people-directory"
 import { useState } from "react"
@@ -45,11 +46,13 @@ export function CorrectionRequests({
   assignmentId,
   projectId,
   onChange,
+  requestId,
 }: {
   projects: Project[]
   tasks: Task[]
   work: WorkState
   actorId: string
+  requestId?: string
   assignmentId?: string
   projectId?: string
   onChange: (work: WorkState) => void
@@ -69,6 +72,7 @@ export function CorrectionRequests({
     .filter((r) => {
       const contribution = contributionFor(work, tasks, r.assignmentId)
       return (
+        (!requestId || r.id === requestId) &&
         canReadRequest(projects, tasks, work, r, actorId, identity) &&
         (projectId
           ? contribution?.projectId === projectId &&
@@ -80,23 +84,6 @@ export function CorrectionRequests({
     .slice()
     .reverse()
   const visibleRows = rows.filter((request) => filter === "all" || request.status === filter)
-  const readableRequestIds = new Set(rows.map((request) => request.id))
-  const notifications = work.notifications.filter(
-    (notification) =>
-      notification.recipientId === actorId &&
-      !notification.readAt &&
-      readableRequestIds.has(notification.requestId),
-  )
-  const markNotificationsRead = () => {
-    const ids = new Set(notifications.map((notification) => notification.id))
-    const readAt = new Date().toISOString()
-    onChange({
-      ...work,
-      notifications: work.notifications.map((notification) =>
-        ids.has(notification.id) ? { ...notification, readAt } : notification,
-      ),
-    })
-  }
   const open = (request: LogChangeRequest, action: "APPROVED" | "REJECTED" | "WITHDRAWN") => {
     setDecision({ request: structuredClone(request), action })
     setReason("")
@@ -121,19 +108,13 @@ export function CorrectionRequests({
           </label>
         )}
       </div>
-      {notifications.length > 0 && (
-        <div className="mt-3 rounded-md bg-accent p-3 text-sm" role="status">
-          <p>{notifications.length} thông báo hiệu chỉnh chưa đọc trong phiên.</p>
-          <ul className="mt-2 space-y-1 text-xs">
-            {notifications.slice(0, 3).map((n) => (
-              <li key={n.id}>{n.message}</li>
-            ))}
-          </ul>
-          <Button size="sm" variant="ghost" className="mt-2" onClick={markNotificationsRead}>
-            Đánh dấu đã đọc
-          </Button>
-        </div>
-      )}
+      <p className="mt-3 text-xs text-muted-foreground">
+        Thông báo hiệu chỉnh nằm trong{" "}
+        <Link to="/notifications" className="underline">
+          Thông báo
+        </Link>{" "}
+        dùng chung.
+      </p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
         Yêu cầu chờ duyệt không thay đổi tổng giờ. Hiệu chỉnh không mở lại công việc hoặc sửa
         snapshot lần nộp.

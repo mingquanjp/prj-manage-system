@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { EmployeeCvs, type CvActions } from "@/features/cvs/EmployeeCvs"
 import type { EmployeeCvsState } from "@/models/employee-cvs"
 import { PersonalSkills, type PersonalSkillActions } from "@/features/skills/PersonalSkills"
@@ -40,8 +41,9 @@ export function PersonalProfile({
   organization: OrganizationState
   onRequest: (before: ProfileValues, proposed: ProfileValues, explanation: string) => void
 }) {
+  const [params] = useSearchParams()
   const { getPerson } = usePeople()
-  const [tab, setTab] = useState("information")
+  const [tab, setTab] = useState(params.get("tab") === "skills" ? "skills" : "information")
   const [editing, setEditing] = useState(false)
   const profile = state.profiles.find((entry) => entry.personId === actorId)
   const person = getPerson(actorId)
@@ -168,6 +170,7 @@ export function PersonalProfile({
                 {requests.map((request) => (
                   <details
                     key={request.id}
+                    open={params.get("request") === request.id ? true : undefined}
                     className="rounded-lg border border-border bg-white p-4"
                   >
                     <summary className="cursor-pointer text-sm leading-6">

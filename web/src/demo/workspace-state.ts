@@ -1,3 +1,5 @@
+import type { WorkspaceNotification } from "../models/notification.ts"
+import { collectNotifications } from "./notifications.ts"
 import type { TaskComment } from "../models/task-collaboration.ts"
 import type { AccountsState } from "../models/accounts.ts"
 import { createAccountsState } from "./accounts.ts"
@@ -32,11 +34,13 @@ export type DemoWorkspaceState = {
   employeeSkills: EmployeeSkillsState
   skillCatalog: SkillCatalogState
   accounts: AccountsState
+  notifications: WorkspaceNotification[]
   comments: TaskComment[]
   notice: string
 }
 
 export type DemoWorkspaceAction =
+  | { type: "notificationsRead"; notifications: WorkspaceNotification[]; work: WorkState }
   | { type: "taskCommentsChanged"; comments: TaskComment[] }
   | { type: "taskDeadlineChanged"; task: Task }
   | { type: "accountCreated"; accounts: AccountsState; profileState: ProfileState; notice: string }
@@ -72,6 +76,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     groups: structuredClone(initialGroups),
     events: [],
     comments: [],
+    notifications: [],
     work: rememberContributions(emptyWorkState(), initialTasks),
     profileState: createProfileState(),
     organization: createOrganizationState(),
@@ -84,11 +89,13 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
 }
 
 // Chỉ áp dụng dữ liệu đã chuẩn bị; không tự lấy giờ, sinh ID hoặc chạy thao tác UI.
-export function demoWorkspaceReducer(
+function reduceWorkspaceState(
   state: DemoWorkspaceState,
   action: DemoWorkspaceAction,
 ): DemoWorkspaceState {
   switch (action.type) {
+    case "notificationsRead":
+      return { ...state, notifications: action.notifications, work: action.work }
     case "taskCommentsChanged":
       return { ...state, comments: action.comments, notice: "Đã gửi trao đổi." }
     case "taskDeadlineChanged":
@@ -170,4 +177,15 @@ export function demoWorkspaceReducer(
         notice: "Đã khôi phục dữ liệu mẫu.",
       }
   }
+}
+
+// Thông báo đi cùng thay đổi miền trong một lần cập nhật state demo, không phải transaction server.
+export function demoWorkspaceReducer(
+  state: DemoWorkspaceState,
+  action: DemoWorkspaceAction,
+): DemoWorkspaceState {
+  const next = reduceWorkspaceState(state, action)
+  if (action.type === "reset" || action.type === "notificationsRead") return next
+  const added = collectNotifications(state, next)
+  return added.length ? { ...next, notifications: [...next.notifications, ...added] } : next
 }

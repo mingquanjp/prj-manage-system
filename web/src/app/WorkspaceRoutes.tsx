@@ -1,10 +1,12 @@
+import { useLocation } from "react-router"
+import { NotificationCorrection } from "@/features/notifications/Notifications"
 import { useIdentity } from "@/components/identity"
 import { AccountManagement } from "@/features/accounts/AccountManagement"
 import { SkillRequests } from "@/features/skills/SkillRequests"
 import { SkillCatalogs } from "@/features/skill-catalog/SkillCatalogs"
 import { EmployeeProfiles } from "@/features/profiles/EmployeeProfiles"
 import { EmptyState } from "@/components/shared"
-import { Link, Route, Routes } from "react-router"
+import { Link, Navigate, Route, Routes } from "react-router"
 import { Button } from "@/components/ui/button"
 import { initialOutputConflicts } from "@/demo/fixtures"
 import type { DemoWorkspaceActions } from "@/demo/workspace-actions"
@@ -31,6 +33,7 @@ export function WorkspaceRoutes({
   navigation: WorkspaceNavigation
   onCreate: () => void
 }) {
+  const location = useLocation()
   const identity = useIdentity()
   const account = identity.accounts.find((a) => a.personId === actorId)
   if (!account || account.status !== "ACTIVE")
@@ -52,6 +55,18 @@ export function WorkspaceRoutes({
     )
   return (
     <Routes>
+      <Route path="/notifications" element={<Navigate to="/?notifications=open" replace />} />
+      <Route
+        path="/notifications/corrections"
+        element={
+          <NotificationCorrection
+            key={`${actorId}-${location.search}`}
+            actorId={actorId}
+            state={state}
+            onChange={actions.changeWork}
+          />
+        }
+      />
       <Route
         path="/accounts"
         element={
@@ -72,7 +87,7 @@ export function WorkspaceRoutes({
         path="/skill-requests"
         element={
           <SkillRequests
-            key={actorId}
+            key={`${actorId}-${location.search}`}
             actorId={actorId}
             state={state.employeeSkills}
             employees={state.profileState.profiles.map(
@@ -132,7 +147,7 @@ export function WorkspaceRoutes({
         path="/my-profile"
         element={
           <PersonalProfile
-            key={actorId}
+            key={`${actorId}-${location.search}`}
             actorId={actorId}
             state={state.profileState}
             organization={state.organization}
@@ -150,7 +165,7 @@ export function WorkspaceRoutes({
         path="/profile-requests"
         element={
           <ProfileRequests
-            key={actorId}
+            key={`${actorId}-${location.search}`}
             actorId={actorId}
             state={state.profileState}
             onResolve={actions.resolveProfileRequest}
@@ -169,7 +184,7 @@ export function WorkspaceRoutes({
           <PersonalWork
             comments={state.comments}
             onPostComment={actions.postTaskComment}
-            key={actorId}
+            key={`${actorId}-${location.search}`}
             projects={projects}
             tasks={tasks}
             actorId={actorId}
@@ -200,7 +215,7 @@ export function WorkspaceRoutes({
             onPostComment={actions.postTaskComment}
             onExtendDeadline={actions.extendDeadline}
             onReplacePm={actions.replacePm}
-            key={`${navigation.currentProject?.id}-${actorId}`}
+            key={`${navigation.currentProject?.id}-${actorId}-${location.search}`}
             actorId={actorId}
             projects={projects}
             conflicts={initialOutputConflicts}

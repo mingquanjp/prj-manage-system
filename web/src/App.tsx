@@ -1,3 +1,4 @@
+import { NotificationMenu } from "@/features/notifications/Notifications"
 import { IdentityProvider } from "@/components/identity"
 import { SkillCatalogProvider } from "@/components/skill-catalog"
 import { useState } from "react"
@@ -41,25 +42,27 @@ export default function App() {
     actions.setNotice("")
     setCreating(false)
     navigate(
-      navigation.accountsView
-        ? "/accounts"
-        : navigation.skillReviewView
-          ? "/skill-requests"
-          : navigation.skillCatalogView
-            ? "/skill-catalog"
-            : navigation.profileView
-              ? "/my-profile"
-              : navigation.profileReviewView
-                ? "/profile-requests"
-                : navigation.employeeProfilesView
-                  ? "/employee-profiles"
-                  : navigation.organizationView
-                    ? "/organization"
-                    : navigation.personalView
-                      ? "/my-work"
-                      : navigation.personnelView
-                        ? "/personnel"
-                        : "/",
+      location.pathname.startsWith("/notifications")
+        ? "/notifications"
+        : navigation.accountsView
+          ? "/accounts"
+          : navigation.skillReviewView
+            ? "/skill-requests"
+            : navigation.skillCatalogView
+              ? "/skill-catalog"
+              : navigation.profileView
+                ? "/my-profile"
+                : navigation.profileReviewView
+                  ? "/profile-requests"
+                  : navigation.employeeProfilesView
+                    ? "/employee-profiles"
+                    : navigation.organizationView
+                      ? "/organization"
+                      : navigation.personalView
+                        ? "/my-work"
+                        : navigation.personnelView
+                          ? "/personnel"
+                          : "/",
     )
   }
   return (
@@ -68,6 +71,16 @@ export default function App() {
         <PeopleDirectory people={directory}>
           <AppShell
             actorId={actorId}
+            notificationControl={
+              active ? (
+                <NotificationMenu
+                  key={actorId}
+                  state={state}
+                  actorId={actorId}
+                  onRead={actions.readNotification}
+                />
+              ) : null
+            }
             projects={state.projects}
             navigation={navigation}
             notice={state.notice}

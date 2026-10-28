@@ -1,3 +1,4 @@
+import { markNotificationRead } from "./notifications.ts"
 import { replaceProjectPm, extendTaskDeadline, addTaskComment } from "./task-collaboration.ts"
 import type { PmChangeCommand, TaskDeadlineCommand } from "../models/task-collaboration.ts"
 import { createAccountWithProfile, changeAccount } from "./accounts.ts"
@@ -63,6 +64,10 @@ export function createDemoWorkspaceActions(
       throw new Error("Nhân viên không còn hoạt động. Kiểm tra lại lựa chọn trước khi lưu.")
   }
   return {
+    readNotification(id: string) {
+      const next = markNotificationRead(state, actorId, id, new Date().toISOString(), identity)
+      dispatch({ type: "notificationsRead", ...next })
+    },
     replacePm(command: PmChangeCommand) {
       const current = state.projects.find((p) => p.id === command.projectId)
       if (!current) throw new Error("Không tìm thấy dự án.")

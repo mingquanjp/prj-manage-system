@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { TaskDiscussion } from "@/features/task-collaboration/TaskDiscussion"
 import { TaskDeadline } from "@/features/task-collaboration/TaskDeadline"
 import type { TaskComment } from "@/models/task-collaboration"
@@ -51,6 +52,7 @@ export function PersonalWork({
     reason?: string,
   ) => void
 }) {
+  const [params] = useSearchParams()
   const identity = useIdentity()
 
   const { getPerson } = usePeople()
@@ -58,9 +60,9 @@ export function PersonalWork({
   const [projectId, setProjectId] = useState("all")
   const [status, setStatus] = useState("all")
   const [view, setView] = useState<"list" | "kanban">("list")
-  const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(params.get("task"))
   const [detailTab, setDetailTab] = useState<"details" | "logs" | "results" | "discussion">(
-    "details",
+    params.get("panel") === "results" ? "results" : "details",
   )
   const [pausing, setPausing] = useState(false)
   const [reason, setReason] = useState("")

@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { useIdentity } from "@/components/identity"
 import { useState } from "react"
 import { EmptyState, SearchInput } from "@/components/shared"
@@ -18,12 +19,14 @@ export function ProfileRequests({
   state: ProfileState
   onResolve: (requestId: string, decision: "APPROVED" | "REJECTED", reason: string) => void
 }) {
+  const [params] = useSearchParams()
+  const initialRequest = state.requests.find((r) => r.id === params.get("request"))
   const identity = useIdentity()
 
   const { getPerson } = usePeople()
-  const [filter, setFilter] = useState("PENDING")
+  const [filter, setFilter] = useState(initialRequest ? "all" : "PENDING")
   const [query, setQuery] = useState("")
-  const [selectedId, setSelectedId] = useState<string>()
+  const [selectedId, setSelectedId] = useState<string | undefined>(initialRequest?.id)
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | null>(null)
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")

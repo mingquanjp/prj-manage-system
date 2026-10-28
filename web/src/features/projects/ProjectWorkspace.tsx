@@ -4,7 +4,7 @@ import { ProjectTaskTable } from "./ProjectTaskTable"
 import { ProjectTaskToolbar } from "./ProjectTaskToolbar"
 import { ProjectTaskSidebar } from "./ProjectTaskSidebar"
 import { useRef, useState } from "react"
-import { Link, useParams } from "react-router"
+import { Link, useParams, useSearchParams } from "react-router"
 import {
   ArrowLeftIcon,
   ChevronDownIcon,
@@ -84,19 +84,22 @@ export function ProjectWorkspace({
   const identity = useIdentity()
 
   const { projectId } = useParams()
+  const [params] = useSearchParams()
   const project = projects.find((p) => p.id === projectId)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [group, setGroup] = useState("all")
   const [view, setView] = useState<"list" | "groups" | "kanban">("list")
   const [tab, setTab] = useState<"tasks" | "structure" | "reviews" | "corrections">("tasks")
-  const [detailTab, setDetailTab] = useState<"details" | "results" | "discussion">("details")
+  const [detailTab, setDetailTab] = useState<"details" | "results" | "discussion">(
+    params.get("panel") === "results" ? "results" : "details",
+  )
   const [editor, setEditor] = useState<{
     task?: Task
     groupId?: string
   } | null>(null)
   const [info, setInfo] = useState(false)
-  const [detail, setDetail] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(params.get("task"))
   const [selected, setSelected] = useState<string[]>([])
   const [draft, setDraft] = useState<Draft>({})
   const [discardTab, setDiscardTab] = useState<

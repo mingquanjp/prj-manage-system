@@ -30,6 +30,7 @@ export function AppShell({
   onDismissNotice,
   children,
   dialogs,
+  notificationControl,
 }: {
   actorId: string
   projects: Project[]
@@ -40,6 +41,7 @@ export function AppShell({
   onDismissNotice: () => void
   children: ReactNode
   dialogs: ReactNode
+  notificationControl: ReactNode
 }) {
   const identity = useIdentity()
 
@@ -356,9 +358,12 @@ export function AppShell({
               </>
             )}
           </nav>
-          <span className="shrink-0 rounded border border-border px-2 py-1 text-xs text-muted-foreground">
-            Dữ liệu mô phỏng
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            {notificationControl}
+            <span className="hidden rounded border border-border px-2 py-1 text-xs text-muted-foreground sm:inline">
+              Dữ liệu mô phỏng
+            </span>
+          </div>
         </header>
         <div className="flex items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-3 lg:hidden">
           <Link to="/" className="font-semibold">
