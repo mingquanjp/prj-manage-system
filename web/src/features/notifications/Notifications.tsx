@@ -1,3 +1,4 @@
+import { useNavigationGuard } from "@/app/NavigationGuard"
 import { useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useNavigate, useSearchParams, Link } from "react-router"
@@ -25,6 +26,7 @@ export function NotificationMenu({
   actorId: string
   onRead: (id: string) => void
 }) {
+  const { requestLeave } = useNavigationGuard()
   const [params, setParams] = useSearchParams()
   const [isOpen, setIsOpen] = useState(false)
   const openFromLink = params.get("notifications") === "open"
@@ -44,15 +46,17 @@ export function NotificationMenu({
   const unread = all.filter((n) => !n.readAt).length
   const entries = all.filter((n) => filter === "all" || !n.readAt)
   const open = (id: string) => {
-    try {
-      const destination = notificationDestination(state, actorId, id, identity)
-      onRead(id)
-      setError("")
-      setIsOpen(false)
-      navigate(destination)
-    } catch (err) {
-      setError((err as Error).message)
-    }
+    requestLeave(() => {
+      try {
+        const destination = notificationDestination(state, actorId, id, identity)
+        onRead(id)
+        setError("")
+        setIsOpen(false)
+        navigate(destination)
+      } catch (err) {
+        setError((err as Error).message)
+      }
+    })
   }
   return (
     <DialogPrimitive.Root modal={false} open={isOpen || openFromLink} onOpenChange={changeOpen}>

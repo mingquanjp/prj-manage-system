@@ -302,11 +302,15 @@ export const initialTasks: Task[] = taskFixtures.map((task) => ({
   groupId: `${task.projectId}-${task.group.toLowerCase()}`,
   priority: "Trung bình",
   firstAssignedAt: task.status !== "PENDING_ASSIGNMENT" ? "2026-10-16T09:00:00+07:00" : undefined,
+  acceptedAt: task.status === "DONE" ? "2026-10-18T10:00:00+07:00" : undefined,
   currentAssignment: task.assigneeId
     ? {
         id: `assignment-${task.id}-initial`,
         employeeId: task.assigneeId,
         assignedAt: "2026-10-16T09:00:00+07:00",
+        ...(task.status === "DONE"
+          ? { endedAt: "2026-10-18T10:00:00+07:00", endedBy: "khoa", endReason: "DONE" }
+          : {}),
       }
     : undefined,
 }))

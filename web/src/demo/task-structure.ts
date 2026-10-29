@@ -50,14 +50,14 @@ export function validateTaskInput(
       errors.dates = "Ngày công việc phải đúng thứ tự và nằm trong kế hoạch dự án."
   }
   const previous = tasks.find((t) => t.id === editingId && t.projectId === project.id)
-  // Gia hạn có lý do/lịch sử là luồng riêng chưa dựng; không ghi đè cặp ngày đã lưu.
+  // Gia hạn có lý do/lịch sử dùng thao tác riêng; không ghi đè cặp ngày đã lưu.
   if (
     previous?.start &&
     previous.end &&
     (input.start !== previous.start || input.end !== previous.end)
   ) {
     errors.dates =
-      "Giữ nguyên kế hoạch đã lưu. Luồng điều chỉnh ngày có lý do/lịch sử chưa dựng trong đợt này."
+      "Giữ nguyên kế hoạch đã lưu trong biểu mẫu đặc tả. Dùng thao tác Gia hạn tại chi tiết công việc."
   }
   if (!input.requirements.length) errors.requirements = "Thêm ít nhất một yêu cầu kỹ năng."
   input.requirements.forEach((r, i) => {

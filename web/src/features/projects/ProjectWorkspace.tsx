@@ -1,3 +1,5 @@
+import { toggleTaskSelection } from "./task-selection"
+import { useAssignmentDraftGuard } from "@/app/NavigationGuard"
 import type { PmChangeCommand, TaskDeadlineCommand, TaskComment } from "@/models/task-collaboration"
 import { useIdentity } from "@/components/identity"
 import { ProjectTaskTable } from "./ProjectTaskTable"
@@ -106,6 +108,7 @@ export function ProjectWorkspace({
     "tasks" | "structure" | "reviews" | "corrections" | null
   >(null)
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(null)
+  useAssignmentDraftGuard(Boolean(assignMode && Object.keys(draft).length))
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   if (!project || !canViewProject(project, actorId, identity))
     return (
@@ -121,7 +124,6 @@ export function ProjectWorkspace({
         : filter === "all" || t.status === filter) &&
       (group === "all" || t.group === group),
   )
-  const eligible = filtered.filter((t) => t.status === "PENDING_ASSIGNMENT")
   const currentTask = related.find((t) => t.id === detail)
   const allowed = canAssign(project, actorId)
   const canSelectAssignments = allowed && tab === "tasks"
@@ -153,13 +155,7 @@ export function ProjectWorkspace({
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
     )
-  const hasAll = eligible.length > 0 && eligible.every((t) => selected.includes(t.id))
-  const toggleAll = () =>
-    setSelected((prev) =>
-      hasAll
-        ? prev.filter((id) => !eligible.some((t) => t.id === id))
-        : [...new Set([...prev, ...eligible.map((t) => t.id)])],
-    )
+  const toggleAll = (rows: Task[]) => setSelected((prev) => toggleTaskSelection(rows, prev))
   const openTableTask = (task: Task, trigger: HTMLButtonElement) => {
     detailTrigger.current = trigger
     setDetail(task.id)
@@ -431,8 +427,6 @@ export function ProjectWorkspace({
                     <ProjectTaskTable
                       rows={filtered}
                       canSelectAssignments={canSelectAssignments}
-                      hasAll={hasAll}
-                      hasEligible={eligible.length > 0}
                       selected={selected}
                       detail={detail}
                       onToggleAll={toggleAll}
@@ -454,8 +448,7 @@ export function ProjectWorkspace({
                           <ProjectTaskTable
                             rows={filtered.filter((t) => t.group === g)}
                             canSelectAssignments={canSelectAssignments}
-                            hasAll={hasAll}
-                            hasEligible={eligible.length > 0}
+                            selectionLabel={`Chọn tất cả công việc đủ điều kiện trong nhóm ${g}`}
                             selected={selected}
                             detail={detail}
                             onToggleAll={toggleAll}

@@ -25,15 +25,13 @@ export function TaskDeadline({
   const [end, setEnd] = useState("")
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
+  const [discard, setDiscard] = useState(false)
   const allowed = onExtend && canExtendTask(project, task, actorId, identity)
   const date = (value?: string) => (value ? value.split("-").reverse().join("/") : "Chưa đặt")
   const close = () => {
-    if (
-      (reason || start !== (snapshot?.start ?? "") || end !== (snapshot?.end ?? "")) &&
-      !window.confirm("Bỏ thay đổi hạn công việc chưa lưu?")
-    )
-      return
-    setSnapshot(null)
+    if (reason || start !== (snapshot?.start ?? "") || end !== (snapshot?.end ?? ""))
+      setDiscard(true)
+    else setSnapshot(null)
   }
   return (
     <section className="mt-4 border-t border-border pt-4 text-sm" aria-label="Kế hoạch công việc">
@@ -166,6 +164,26 @@ export function TaskDeadline({
           </form>
         </Dialog>
       )}
+      <Dialog
+        open={discard}
+        onOpenChange={setDiscard}
+        title="Bỏ thay đổi thời hạn?"
+        description="Thời hạn đã lưu và lịch sử điều chỉnh được giữ nguyên."
+      >
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setDiscard(false)}>
+            Tiếp tục chỉnh sửa
+          </Button>
+          <Button
+            onClick={() => {
+              setDiscard(false)
+              setSnapshot(null)
+            }}
+          >
+            Bỏ thay đổi
+          </Button>
+        </div>
+      </Dialog>
     </section>
   )
 }

@@ -1,8 +1,17 @@
+import { Login } from "@/features/session/Login"
+import {
+  startDemoSession,
+  sessionIssue,
+  sessionIssueMessages,
+  safeReturnPath,
+  type DemoSession,
+} from "@/demo/session"
+import { NavigationGuard, useNavigationGuard } from "@/app/NavigationGuard"
 import { NotificationMenu } from "@/features/notifications/Notifications"
 import { IdentityProvider } from "@/components/identity"
 import { SkillCatalogProvider } from "@/components/skill-catalog"
 import { useState } from "react"
-import { useLocation, useNavigate } from "react-router"
+import { Navigate, useLocation, useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { isDirector } from "@/demo/identity"
@@ -15,7 +24,18 @@ import { PeopleDirectory } from "@/components/people-directory"
 import { professionalPeople } from "@/demo/profiles"
 
 export default function App() {
-  const [actorId, setActorId] = useState("khoa")
+  return (
+    <NavigationGuard>
+      <SessionWorkspace />
+    </NavigationGuard>
+  )
+}
+
+function SessionWorkspace() {
+  const [session, setSession] = useState<DemoSession | null>(null)
+  const [sessionEnd, setSessionEnd] = useState<"logout" | "expired" | "reset" | null>(null)
+  const actorId = session?.personId ?? "khoa"
+  const { requestLeave } = useNavigationGuard()
   const [creating, setCreating] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
   const { state, actions } = useDemoWorkspace(actorId)
@@ -38,7 +58,7 @@ export default function App() {
     identity,
   )
   const switchIdentity = (id: string) => {
-    setActorId(id)
+    setSession(startDemoSession(id, state.accounts.accounts, state.profileState.profiles))
     actions.setNotice("")
     setCreating(false)
     navigate(
@@ -65,6 +85,63 @@ export default function App() {
                           : "/",
     )
   }
+  const issue = session
+    ? sessionIssue(session, state.accounts.accounts, state.profileState.profiles)
+    : null
+  if (!session || issue) {
+    if (location.pathname !== "/login") {
+      const target = safeReturnPath(location.pathname + location.search)
+      return (
+        <Navigate
+          to={
+            sessionEnd === "logout" || sessionEnd === "reset"
+              ? "/login"
+              : `/login?returnTo=${encodeURIComponent(target)}`
+          }
+          replace
+        />
+      )
+    }
+    return (
+      <Login
+        state={state}
+        identity={identity}
+        message={
+          issue
+            ? sessionIssueMessages[issue]
+            : sessionEnd === "expired"
+              ? sessionIssueMessages.expired
+              : sessionEnd === "logout"
+                ? "Bạn đã đăng xuất."
+                : sessionEnd === "reset"
+                  ? "Dữ liệu mẫu đã được khôi phục. Hãy chọn danh tính để tiếp tục."
+                  : ""
+        }
+        onLogin={(personId) => {
+          setSession(
+            startDemoSession(personId, state.accounts.accounts, state.profileState.profiles),
+          )
+          setSessionEnd(null)
+          actions.setNotice("")
+          navigate(safeReturnPath(new URLSearchParams(location.search).get("returnTo")), {
+            replace: true,
+          })
+        }}
+      />
+    )
+  }
+  if (location.pathname === "/login")
+    return (
+      <Navigate to={safeReturnPath(new URLSearchParams(location.search).get("returnTo"))} replace />
+    )
+  const endSession = (expired: boolean) =>
+    requestLeave(() => {
+      setSession(null)
+      setCreating(false)
+      setResetOpen(false)
+      actions.setNotice("")
+      setSessionEnd(expired ? "expired" : "logout")
+    })
   return (
     <IdentityProvider value={identity}>
       <SkillCatalogProvider catalog={state.skillCatalog}>
@@ -84,7 +161,17 @@ export default function App() {
             projects={state.projects}
             navigation={navigation}
             notice={state.notice}
-            onSwitchIdentity={switchIdentity}
+            onSwitchIdentity={(id) =>
+              requestLeave(() => {
+                try {
+                  switchIdentity(id)
+                } catch (err) {
+                  actions.setNotice((err as Error).message)
+                }
+              })
+            }
+            onLogout={() => endSession(false)}
+            onExpireSession={() => endSession(true)}
             onRequestReset={() => setResetOpen(true)}
             onDismissNotice={() => actions.setNotice("")}
             dialogs={
@@ -114,8 +201,8 @@ export default function App() {
                     <Button
                       onClick={() => {
                         actions.reset()
-                        setActorId("khoa")
-                        navigate("/")
+                        setSession(null)
+                        setSessionEnd("reset")
                         setResetOpen(false)
                       }}
                     >

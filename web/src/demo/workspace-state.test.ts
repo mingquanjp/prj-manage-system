@@ -26,7 +26,7 @@ test("khởi tạo độc lập với fixture; khôi phục cùng lúc toàn b�
   assert.deepEqual(reset.tasks, initialTasks)
   assert.deepEqual(reset.groups, initialGroups)
   assert.deepEqual(reset.events, [])
-  assert.ok(Object.values(reset.work).every((items) => items.length === 0))
+  assert.deepEqual(reset.work, second.work)
   assert.equal(reset.notice, "Đã khôi phục dữ liệu mẫu.")
 })
 
@@ -118,20 +118,30 @@ test("điều phối phân công, log, nộp, trả sửa và nghiệm thu giữ
   )
   assert.equal(state.work.logs.length, 1)
   actions("dung").submitResult("t6", "Đã có đầu ra", "")
-  const submission = state.work.submissions[0]
+  const submission = state.work.submissions.filter((s) => s.taskId === "t6").at(-1)!
   assert.equal(state.tasks.find((t) => t.id === "t6")?.status, "PENDING_REVIEW")
   assert.equal(submission.logSnapshot.logs[0].minutes, 30)
   actions("khoa").reviewResult(submission.id, "REJECTED", "Chỉnh lại đầu ra")
   assert.equal(state.tasks.find((t) => t.id === "t6")?.status, "IN_PROGRESS")
   actions("dung").submitResult("t6", "Đã chỉnh đầu ra", "")
-  actions("khoa").reviewResult(state.work.submissions[1].id, "ACCEPTED", "")
+  actions("khoa").reviewResult(
+    state.work.submissions.filter((s) => s.taskId === "t6").at(-1)!.id,
+    "ACCEPTED",
+    "",
+  )
   assert.equal(state.tasks.find((t) => t.id === "t6")?.status, "DONE")
   assert.ok(
     state.work.contributions.find((c) => c.assignment.id === submission.assignmentId)?.assignment
       .endedAt,
   )
-  assert.equal(state.work.submissions[0].review?.result, "REJECTED")
-  assert.equal(state.work.submissions[1].review?.result, "ACCEPTED")
+  assert.equal(
+    state.work.submissions.find((s) => s.id === submission.id)?.review?.result,
+    "REJECTED",
+  )
+  assert.equal(
+    state.work.submissions.filter((s) => s.taskId === "t6").at(-1)?.review?.result,
+    "ACCEPTED",
+  )
   assert.equal(state.projects[0].status, "IN_PROGRESS")
 })
 
@@ -158,7 +168,7 @@ test("lỗi thao tác trả về caller trước dispatch; reducer lặp cùng p
   const once = demoWorkspaceReducer(started, action)
   const repeated = demoWorkspaceReducer(started, action)
   assert.deepEqual(once, repeated)
-  assert.equal(once.work.submissions.length, 1)
-  assert.equal(once.work.submissions[0].id, state.work.submissions[0].id)
-  assert.equal(started.work.submissions.length, 0)
+  assert.equal(once.work.submissions.length, started.work.submissions.length + 1)
+  assert.equal(once.work.submissions.at(-1)!.id, state.work.submissions.at(-1)!.id)
+  assert.equal(started.work.submissions.filter((s) => s.taskId === "t6").length, 0)
 })

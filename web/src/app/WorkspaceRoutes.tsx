@@ -53,6 +53,27 @@ export function WorkspaceRoutes({
         detail="Bạn không thể thực hiện nghiệp vụ. Có thể đổi danh tính bằng Điều khiển prototype để tiếp tục xem bản demo."
       />
     )
+  const routePermissions: Record<string, boolean> = {
+    "/accounts": navigation.canManageAccounts,
+    "/skill-requests": navigation.canManageSkills,
+    "/skill-catalog": navigation.canManageSkills,
+    "/employee-profiles": navigation.canReviewProfile,
+    "/profile-requests": navigation.canReviewProfile,
+    "/organization": navigation.canManageOrganization,
+    "/personnel": navigation.canLookup,
+  }
+  if (routePermissions[location.pathname] === false)
+    return (
+      <div>
+        <EmptyState
+          title="Bạn không có quyền truy cập trang này"
+          detail="Quyền được xác định theo tài khoản và trách nhiệm dự án hiện hành."
+        />
+        <Button asChild variant="outline">
+          <Link to="/my-work">Về công việc của tôi</Link>
+        </Button>
+      </div>
+    )
   return (
     <Routes>
       <Route path="/notifications" element={<Navigate to="/?notifications=open" replace />} />

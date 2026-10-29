@@ -27,6 +27,8 @@ export function AppShell({
   notice,
   onSwitchIdentity,
   onRequestReset,
+  onLogout,
+  onExpireSession,
   onDismissNotice,
   children,
   dialogs,
@@ -37,6 +39,8 @@ export function AppShell({
   navigation: WorkspaceNavigation
   notice: string
   onSwitchIdentity: (id: string) => void
+  onLogout: () => void
+  onExpireSession: () => void
   onRequestReset: () => void
   onDismissNotice: () => void
   children: ReactNode
@@ -281,6 +285,9 @@ export function AppShell({
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Chỉ kiểm thử giao diện, không phải tính năng tự cấp quyền.
             </p>
+            <Button size="sm" variant="ghost" className="mt-2 w-full" onClick={onExpireSession}>
+              Mô phỏng hết phiên
+            </Button>
             <Button size="sm" variant="ghost" className="mt-2 w-full" onClick={onRequestReset}>
               <ResetIcon />
               Khôi phục dữ liệu mẫu
@@ -360,6 +367,9 @@ export function AppShell({
           </nav>
           <div className="flex shrink-0 items-center gap-2">
             {notificationControl}
+            <Button size="sm" variant="ghost" onClick={onLogout}>
+              Đăng xuất
+            </Button>
             <span className="hidden rounded border border-border px-2 py-1 text-xs text-muted-foreground sm:inline">
               Dữ liệu mô phỏng
             </span>
@@ -381,6 +391,11 @@ export function AppShell({
               {identityOptions}
             </select>
           </label>
+        </div>
+        <div className="px-4 pb-2 lg:hidden">
+          <Button size="sm" variant="ghost" onClick={onExpireSession}>
+            Prototype: mô phỏng hết phiên
+          </Button>
         </div>
         <nav
           aria-label="Điều hướng trên màn hình nhỏ"
