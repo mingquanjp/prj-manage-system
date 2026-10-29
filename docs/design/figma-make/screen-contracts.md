@@ -85,3 +85,12 @@ Chỉ đưa trường/chỉ số đã có nguồn vào mock. Công thức/miền
 - Bấm mở đối chiếu quyền hiện hành: task đúng phạm vi dự án/cá nhân, yêu cầu đúng chính chủ/người có quyền xử lý, hiệu chỉnh theo quyền đóng góp/PTCM. Mất quyền hoặc mất tài nguyên báo không thể mở; vẫn đánh dấu thông báo của mình đã đọc được. Không công bố giải trình, thông tin liên hệ, nội dung CV hoặc phản hồi riêng tư trong message. Ngữ cảnh chi tiết chỉ hiện khi còn quyền tài nguyên.
 - Bản demo chỉ phát thông báo từ các thao tác thành công trong phiên; không dựng thông báo lịch sử từ fixture. Reset/reload khôi phục mẫu; không email/push/realtime. Không có thông báo CV/AI/auth chưa xây, mention hoặc thông báo bình luận mới trong đợt này.
 - Nguồn: domain_rules mục 5, dictionary 5B mục 21, roles_permissions và security. Không thay cấu trúc database; đây là phạm vi UI/read model demo, chưa là giao dịch hay kiểm soát quyền server.
+
+
+## Đăng nhập và phiên UI mô phỏng — chốt triển khai 29/10/2026
+
+- Điểm vào `/login`: chọn danh tính và “Đăng nhập mô phỏng”, nhãn prototype rõ ràng. Chưa nhập/lưu/phát mật khẩu, cookie/token hoặc thông tin xác thực; chưa chốt định danh đăng nhập, thời lượng phiên hoặc kênh cấp tài khoản. Không có đăng ký công khai, quên mật khẩu hoặc tự cấp quyền.
+- Chưa mở phiên thì không render workspace; link nội bộ được giữ để quay lại sau đăng nhập, vẫn kiểm tra quyền hiện hành. Đích ngoài app hoặc quay vòng `/login` bị loại. Trang quản trị trái quyền hiện thông báo và lối về Công việc của tôi; dự án không được xem giữ thông báo không tìm thấy, không lộ nội dung.
+- Đăng xuất trở về đăng nhập; hết phiên giữ link đang mở để vào lại. Nút “Mô phỏng hết phiên” nằm trong Điều khiển prototype, không phải thời lượng tự động đã chốt. Tài khoản khóa/hồ sơ inactive không vào phiên; đổi quyền hệ thống làm phiên demo cũ mất hiệu lực, cần vào lại với quyền hiện hành.
+- Phiên và dữ liệu nghiệp vụ cùng ở bộ nhớ nhưng tách trách nhiệm: đăng xuất/hết phiên không reset nghiệp vụ. Reload mất phiên và khôi phục fixture; khôi phục mẫu cũng kết thúc phiên demo. Kiểm tra client không thay xác thực/phân quyền server theo security/roles_permissions.
+- Khi có nháp phân công chưa xác nhận: mở tài nguyên thông báo, đăng xuất, đổi danh tính hoặc chủ động mô phỏng hết phiên phải hỏi trước. “Ở lại chỉnh sửa”/đóng/Escape giữ nháp; hủy mở thông báo không đánh dấu đã đọc. Chỉ sau xác nhận bỏ mới điều hướng/đọc thông báo. Chưa bảo vệ sidebar, browser back/reload hay mọi form khác; không lưu nháp bền vững.

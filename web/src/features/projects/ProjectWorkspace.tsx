@@ -1,3 +1,4 @@
+import { useAssignmentDraftGuard } from "@/app/NavigationGuard"
 import type { PmChangeCommand, TaskDeadlineCommand, TaskComment } from "@/models/task-collaboration"
 import { useIdentity } from "@/components/identity"
 import { ProjectTaskTable } from "./ProjectTaskTable"
@@ -106,6 +107,7 @@ export function ProjectWorkspace({
     "tasks" | "structure" | "reviews" | "corrections" | null
   >(null)
   const [assignMode, setAssignMode] = useState<"manual" | "recommended" | null>(null)
+  useAssignmentDraftGuard(Boolean(assignMode && Object.keys(draft).length))
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   if (!project || !canViewProject(project, actorId, identity))
     return (
