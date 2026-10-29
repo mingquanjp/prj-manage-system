@@ -98,7 +98,17 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 
 ## Sổ công việc
 
-### Đăng nhập và phiên mô phỏng — 29/10/2026 — đã triển khai, chờ duyệt
+### Sửa các điểm sau review FE — 29/10/2026 — hoàn tất phạm vi
+
+- Mục tiêu/nguồn: theo review được người dùng duyệt, sửa phạm vi chọn tất cả theo nhóm (UC003/UI-12), đồng bộ fixture task/lần nộp/nghiệm thu (UC004), bỏ câu hướng dẫn cũ về gỡ kỹ năng và gia hạn; dùng Dialog chung khi bỏ thay đổi PM/thời hạn. Nguồn: project_task_assignment_workflow UC003/004, skill_approval_workflow chốt 27/10; giữ các guard hiện hành.
+- Ngoài phạm vi: không mở rộng màn chi tiết, thêm thư viện/E2E, thay nghiệp vụ/schema/DB/Go/API hoặc đụng export Make. Dữ liệu mới chỉ là fixture có nhãn demo; không sinh thông báo lịch sử hoặc tự công nhận kết quả thực.
+- Tiêu chí: bảng theo nhóm chỉ chọn việc chờ phân công trong nhóm đó, không bỏ lựa chọn nhóm khác; bảng thường vẫn theo tập lọc. Task mẫu chờ nghiệm thu có lần nộp khớp lượt giao; DONE có kết luận/mốc kết thúc; reset khôi phục cùng fixture; PTCM có thể trả sửa hoặc nghiệm thu mẫu qua guard cũ.
+- Đã sửa: helper chọn task đặt gần feature và nhận đúng tập dòng của bảng; checkbox có trạng thái chọn một phần và nhãn nhóm. Fixture KHO-T005 có lần nộp/kết luận, acceptedAt và kết thúc lượt giao; KHO-T007 có lần nộp chờ đúng người/lượt giao. Khởi tạo/reset cùng bộ mẫu, không dựng thông báo lịch sử; phần kết quả ghi rõ Dữ liệu mẫu. Test luồng lấy submission theo task thay vị trí mảng để không phụ thuộc số bản ghi mẫu. Bỏ copy sửa/gỡ và “gia hạn chưa dựng”; hai form PM/thời hạn dùng Dialog hiện có thay window.confirm.
+- Kiểm tra: pnpm check đạt 130 test model/helper, 7 test harness/182 nguồn, lint/format/typecheck/build; diff check đạt. Thêm hai test phạm vi chọn và hai test tính nhất quán/khép vòng fixture. Browser: chọn Frontend chỉ t3, bỏ Frontend giữ t1/t2 Backend; mở t7 có lần nộp, nghiệm thu chuyển DONE và có lịch sử; hủy chỉnh hạn/PM mở Dialog chung, ở lại giữ PM mới đang chọn, bỏ không ghi thay đổi. Console không warn/error trong phiên kiểm tra. Lượt chạy đầu phát hiện import không dùng và đã bỏ trước khi chạy lại toàn bộ cổng.
+- Giới hạn/review: vẫn là dữ liệu trong bộ nhớ, chưa React/E2E tự động hoặc xác thực/API thật. Không sửa layout rộng chi tiết task trong đợt này; cảnh báo bundle >500 kB còn (~716 kB). Không thay kiểm tra quyền/nghiệp vụ, không nới guard để nghiệm thu dữ liệu thiếu. Ảnh `/tmp/fe-fixed-group-selection.png`, `/tmp/fe-fixed-fixture-review.png`.
+- Git: người dùng yêu cầu các commit tiếng Anh cùng nhánh feature/demo-login-session. Đăng nhập lưu riêng ecb7e6f; các sửa sau review được đóng gói commit fix riêng sau kiểm kê --staged, không push. Mục đăng nhập bên dưới là bằng chứng đợt trước; trạng thái chưa Git của báo cáo review đã được xử lý khi bàn giao lần này.
+
+### Đăng nhập và phiên mô phỏng — 29/10/2026 — đã duyệt, lưu commit ecb7e6f
 
 - Mục tiêu: bảo vệ nháp phân công khi mở thông báo; dựng điểm vào đăng nhập, đăng xuất, hết phiên và trạng thái tài khoản/quyền. Nguồn: người dùng duyệt thứ tự sửa nháp → phiên demo; roles_permissions mục 4, security mục 2/4, screen-contracts phần phiên mô phỏng.
 - Phạm vi: shell/App, guard điều hướng nháp, feature đăng nhập và helper/test phiên trong bộ nhớ. Không nhập/lưu mật khẩu, không xác thực server/cookie/token, không chọn thời lượng phiên hoặc chính sách username; không schema/backend/dependency. Không bảo vệ mọi form hoặc browser back/reload.

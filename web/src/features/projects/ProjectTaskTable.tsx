@@ -1,3 +1,4 @@
+import { taskSelection } from "./task-selection"
 import { usePeople } from "@/components/people-directory"
 import { FileTextIcon } from "@radix-ui/react-icons"
 import { Avatar, StatusBadge } from "@/components/shared"
@@ -7,8 +8,7 @@ import { cn } from "@/lib/utils"
 export function ProjectTaskTable({
   rows,
   canSelectAssignments,
-  hasAll,
-  hasEligible,
+  selectionLabel = "Chọn tất cả công việc đủ điều kiện theo bộ lọc",
   selected,
   detail,
   onToggleAll,
@@ -17,15 +17,15 @@ export function ProjectTaskTable({
 }: {
   rows: Task[]
   canSelectAssignments: boolean
-  hasAll: boolean
-  hasEligible: boolean
+  selectionLabel?: string
   selected: string[]
   detail: string | null
-  onToggleAll: () => void
+  onToggleAll: (rows: Task[]) => void
   onToggle: (id: string) => void
   onOpenTask: (task: Task, trigger: HTMLButtonElement) => void
 }) {
   const { getPerson } = usePeople()
+  const { eligibleIds, hasAll, isPartial } = taskSelection(rows, selected)
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[650px] text-left text-sm">
@@ -35,10 +35,14 @@ export function ProjectTaskTable({
               {canSelectAssignments && (
                 <input
                   type="checkbox"
-                  aria-label="Chọn tất cả công việc đủ điều kiện theo bộ lọc"
+                  aria-label={selectionLabel}
+                  aria-checked={isPartial ? "mixed" : hasAll}
+                  ref={(input) => {
+                    if (input) input.indeterminate = isPartial
+                  }}
                   checked={hasAll}
-                  disabled={!hasEligible}
-                  onChange={onToggleAll}
+                  disabled={!eligibleIds.length}
+                  onChange={() => onToggleAll(rows)}
                 />
               )}
             </th>

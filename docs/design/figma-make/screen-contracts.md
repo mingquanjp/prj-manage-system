@@ -94,3 +94,10 @@ Chỉ đưa trường/chỉ số đã có nguồn vào mock. Công thức/miền
 - Đăng xuất trở về đăng nhập; hết phiên giữ link đang mở để vào lại. Nút “Mô phỏng hết phiên” nằm trong Điều khiển prototype, không phải thời lượng tự động đã chốt. Tài khoản khóa/hồ sơ inactive không vào phiên; đổi quyền hệ thống làm phiên demo cũ mất hiệu lực, cần vào lại với quyền hiện hành.
 - Phiên và dữ liệu nghiệp vụ cùng ở bộ nhớ nhưng tách trách nhiệm: đăng xuất/hết phiên không reset nghiệp vụ. Reload mất phiên và khôi phục fixture; khôi phục mẫu cũng kết thúc phiên demo. Kiểm tra client không thay xác thực/phân quyền server theo security/roles_permissions.
 - Khi có nháp phân công chưa xác nhận: mở tài nguyên thông báo, đăng xuất, đổi danh tính hoặc chủ động mô phỏng hết phiên phải hỏi trước. “Ở lại chỉnh sửa”/đóng/Escape giữ nháp; hủy mở thông báo không đánh dấu đã đọc. Chỉ sau xác nhận bỏ mới điều hướng/đọc thông báo. Chưa bảo vệ sidebar, browser back/reload hay mọi form khác; không lưu nháp bền vững.
+
+
+## Khép các điểm review FE — 29/10/2026
+
+- UI-12: checkbox đầu bảng chọn tất cả công việc chờ phân công thuộc đúng tập dòng đang trình bày. Trong chế độ theo nhóm, mỗi checkbox chỉ chọn/bỏ nhóm đó, giữ lựa chọn nhóm khác; bảng thường theo tập lọc. Có trạng thái chọn một phần, nhãn truy cập nêu nhóm; không tự giao việc khi chọn.
+- Prototype: task mẫu chờ nghiệm thu đi kèm lần nộp đúng người/lượt giao; task mẫu DONE có kết luận/mốc kết thúc tương ứng. Nêu rõ lịch sử minh họa trong nội dung mẫu. Reset khôi phục cùng dữ liệu như mở app, không tạo thông báo quá khứ từ fixture và không chạy seed DB.
+- Thay PM/gia hạn dùng Dialog chung khi bỏ nội dung chưa lưu; ở lại giữ nội dung, bỏ không thay dữ liệu nghiệp vụ. Luồng nhân viên đề nghị kỹ năng vẫn chỉ bổ sung/điều chỉnh theo chốt 27/10.

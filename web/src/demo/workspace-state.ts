@@ -1,3 +1,4 @@
+import { createDemoWorkState } from "./workspace-fixtures.ts"
 import type { WorkspaceNotification } from "../models/notification.ts"
 import { collectNotifications } from "./notifications.ts"
 import type { TaskComment } from "../models/task-collaboration.ts"
@@ -15,12 +16,7 @@ import { createProfileState } from "./profiles.ts"
 import type { ProfileState } from "../models/profile.ts"
 import type { OrganizationState } from "../models/organization.ts"
 import { createOrganizationState } from "./organization.ts"
-import {
-  emptyWorkState,
-  recordAssignmentChanges,
-  rememberContributions,
-  type WorkState,
-} from "./effort.ts"
+import { recordAssignmentChanges, type WorkState } from "./effort.ts"
 
 export type DemoWorkspaceState = {
   projects: Project[]
@@ -77,7 +73,7 @@ export function createDemoWorkspaceState(): DemoWorkspaceState {
     events: [],
     comments: [],
     notifications: [],
-    work: rememberContributions(emptyWorkState(), initialTasks),
+    work: createDemoWorkState(),
     profileState: createProfileState(),
     organization: createOrganizationState(),
     skillCatalog: createSkillCatalogState(),
@@ -170,10 +166,9 @@ function reduceWorkspaceState(
     case "noticeChanged":
       return { ...state, notice: action.notice }
     case "reset":
-      // Giữ hành vi khôi phục trước refactor: dữ liệu effort trong phiên được xóa sạch.
+      // Khôi phục đúng cùng fixture như lần mở app, gồm lịch sử mẫu và lượt giao.
       return {
         ...createDemoWorkspaceState(),
-        work: emptyWorkState(),
         notice: "Đã khôi phục dữ liệu mẫu.",
       }
   }

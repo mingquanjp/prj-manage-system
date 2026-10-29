@@ -17,7 +17,7 @@ export function SkillEvidenceEditor({
           className="field mt-2 min-h-28 w-full"
           value={value.explanation}
           aria-required="true"
-          placeholder="Việc bạn đã làm, phần đóng góp, mức độ tự chủ và kết quả; hoặc lý do cần sửa/gỡ."
+          placeholder="Việc bạn đã làm, phần đóng góp, mức độ tự chủ và kết quả; hoặc thông tin cần điều chỉnh và lý do."
           onChange={(e) => onChange({ ...value, explanation: e.target.value })}
         />
       </label>

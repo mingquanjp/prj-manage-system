@@ -101,14 +101,20 @@ test("nộp có log rồi hủy dự án: một dispatch giữ snapshot/log, k�
   assert.equal(state.projects.find((p) => p.id === project.id)?.status, "CANCELLED")
   assert.deepEqual(state.work.logs, before.work.logs)
   assert.deepEqual(state.work.submissions, before.work.submissions)
-  assert.equal(state.work.submissions[0].review, undefined)
+  assert.equal(state.work.submissions.find((s) => s.taskId === "t6")!.review, undefined)
   assert.ok(state.work.contributions.find((entry) => entry.taskId === "t6")?.assignment.endedAt)
   assert.deepEqual(
     state.tasks.filter((t) => t.projectId !== project.id),
     before.tasks.filter((t) => t.projectId !== project.id),
   )
   assert.equal(state.events.at(-1)?.reason, "Dừng dự án")
-  assert.throws(() => actions("khoa").reviewResult(state.work.submissions[0].id, "ACCEPTED", ""))
+  assert.throws(() =>
+    actions("khoa").reviewResult(
+      state.work.submissions.find((s) => s.taskId === "t6")!.id,
+      "ACCEPTED",
+      "",
+    ),
+  )
   assert.throws(() => actions("dung").submitResult("t6", "Nộp lại", ""))
   assert.throws(() =>
     actions(project.pmId).transitionLifecycle({
