@@ -6,8 +6,8 @@
 # Binary
 /bin/
 /tmp/
-ai-staffing
-server
+/ai-staffing
+/server
 
 # Go
 *.test
