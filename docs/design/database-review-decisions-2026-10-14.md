@@ -1,5 +1,10 @@
 # Ghi nhận quyết định rà soát database theo từng nhóm
 
+## Chốt tiếp nối 06/11/2026 — mật khẩu tạm (ưu tiên hiện hành)
+
+Theo [baseline, chốt cuối cùng 06/11](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), thêm users.must_change_password BOOLEAN NOT NULL DEFAULT false. Đây là thay đổi đã xác nhận đối với chốt cũ bỏ cờ: tài khoản cũ giữ false, cấp mới bằng mật khẩu tạm qua email đặt true, server chặn nghiệp vụ trước đổi, đổi thành công thay hash và đặt false atomically. Phiên bản hiện tại không hạn mật khẩu tạm, không thêm cột hạn hoặc users.version; hạn phiên vẫn riêng. Dictionary 5B/DBML đồng bộ thiết kế; migration đơn lẻ không nâng cấp toàn thiết kế 33 bảng hay hiện thực gửi thư/API auth. Các đoạn bên dưới bỏ must_change_password là quyết định lịch sử bị thay đúng phần này.
+
+
 **Tiếp nối 28/10/2026 — tài khoản:** xem [baseline 20/10, chốt tiếp nối 28/10](../business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản). Mã nhân viên được tự cấp; tên đăng nhập theo mã chỉ tạm cho demo, quy tắc đăng nhập backend chưa chốt. Nhãn UI “Quyền hệ thống”/“Quản lý nhân sự” không đổi mã ADMIN/HR/DIRECTOR hoặc ma trận quyền. Không đổi cấu trúc DB hoặc thêm bảng; dictionary/ghi chú DBML đã phản ánh giới hạn này.
 
 

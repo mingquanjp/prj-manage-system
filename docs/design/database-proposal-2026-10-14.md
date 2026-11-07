@@ -1,5 +1,7 @@
 # Thiết kế database hợp nhất — bản đề xuất trình bày
 
+**Chốt tiếp nối 06/11/2026:** thêm `users.must_change_password BOOLEAN NOT NULL DEFAULT false`, bắt buộc đổi mật khẩu tạm trước nghiệp vụ. Bản hiện tại không hết hạn mật khẩu tạm, không thêm cột hạn; hạn phiên vẫn riêng. Tài khoản cũ giữ nguyên. Cột/ý nghĩa tại dictionary 5B và DBML; contract API còn cần hoàn thiện, chưa đồng nghĩa đã cập nhật Neon.
+
 **Tiếp nối 27/10/2026:** đề nghị kỹ năng nhân viên chỉ tạo ADD/UPDATE; REMOVE giữ tương thích thiết kế/lịch sử, không thêm quyền gỡ. Không đổi bảng/cột/ràng buộc. Xem [chốt hiện hành](database-review-decisions-2026-10-14.md) và [workflow kỹ năng](../../.claude/docs/skill_approval_workflow.md); không suy việc giữ giá trị operation thành quyền tạo đề nghị gỡ.
 
 Cập nhật 26/10/2026 · Bước 5C · **33 bảng đề xuất; chưa phải DDL đã chốt hoặc DB đã triển khai.**

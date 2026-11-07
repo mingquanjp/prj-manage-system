@@ -25,7 +25,11 @@ export function localTarget(base, source, target) {
 }
 
 export async function requiredFiles(base = root) {
-  const required = new Set([...entries, ".gitignore", "scripts/check-harness.mjs", "scripts/check-harness.test.mjs",
+  const required = new Set([...entries, ".gitignore", "scripts/check-harness.mjs", "scripts/check-harness.test.mjs", "scripts/check-auth-contract.test.mjs",
+    "scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
+    "docs/ai/workflow.md", "docs/ai/task-template.md", ".github/pull_request_template.md",
+    "go.mod", "go.sum", "Makefile", "cmd/server/main.go", "cmd/migrate/main.go", "cmd/seed/main.go",
+    "migrations/embed.go", "db/seed/embed.go",
     "web/package.json", "web/pnpm-lock.yaml", "web/index.html", "web/tsconfig.json", "web/vite.config.ts", "web/components.json",
     "web/eslint.config.mjs", "web/.prettierrc.json", "web/.prettierignore"])
   for (const source of entries) {
@@ -33,15 +37,20 @@ export async function requiredFiles(base = root) {
       required.add(localTarget(base, source, target))
     }
   }
-  async function collect(directory) {
+  async function collect(directory, include = () => true) {
     for (const item of await readdir(resolve(base, directory), { withFileTypes: true })) {
       const path = `${directory}/${item.name}`
-      if (item.isDirectory()) await collect(path)
-      else if (item.isFile()) required.add(path)
-      else throw new Error(`Không hỗ trợ symlink/file đặc biệt trong nguồn frontend: ${path}`)
+      if (item.isDirectory()) await collect(path, include)
+      else if (item.isFile()) {
+        if (include(path)) required.add(path)
+      } else throw new Error(`Không hỗ trợ symlink/file đặc biệt trong nguồn: ${path}`)
     }
   }
   await collect("web/src")
+  // Chỉ kiểm kê mã Go/SQL, không đọc cấu hình bí mật hoặc chạy công cụ DB.
+  for (const directory of ["cmd", "internal", "migrations", "db/seed"]) {
+    await collect(directory, (path) => /\.(go|sql)$/.test(path))
+  }
   return [...required].sort()
 }
 
@@ -59,7 +68,7 @@ export function checkGitIndex(files, base = root) {
 
 export async function checkHarness({ staged = false } = {}) {
   const errors = []
-  // Chỉ đi một cấp từ điểm vào và kiểm kê web/src; không nạp toàn bộ research/lịch sử.
+  // Chỉ đi một cấp từ điểm vào và kiểm kê nguồn FE/BE; không nạp toàn bộ research/lịch sử.
   const required = await requiredFiles()
   for (const path of required) {
     try {

@@ -4,11 +4,68 @@ Cập nhật 15/10/2026 theo [quyết định hiện hành](database-review-deci
 
 **Tiếp nối 26/10/2026:** đích có 33 bảng, thêm job_levels và employees.job_level_id nullable thay seniority_level. Kiểm kê giá trị cấp bậc cũ (kể cả text ở phiên FE), đối chiếu/chuẩn hóa tên với HR rồi tạo danh mục và map ID; trống giữ NULL, giá trị chưa xác minh phải phân loại, không đoán cấp bậc từ tên vị trí. Giữ snapshot/audit cũ. Đây là hướng chuyển đổi tài liệu, không đã backfill/chạy migration; giữ nguyên 000001.
 
+## 0. Kiểm kê Neon thực tế 06/11/2026 — trước cập nhật
+
+**Đã kết nối và chỉ đọc** project `ai-staffing` (`tiny-boat-30803147`), branch duy nhất/default `production` (`br-patient-meadow-azczu1hg`), database `neondb`. Tên branch không chứng minh đây là môi trường demo hay dữ liệu có thể xóa. Chưa tạo branch/snapshot, chạy DDL, backfill, seed/reset hoặc sửa `schema_migrations`.
+
+Nguồn kiểm chứng: danh sách project/branch/database/bảng bằng Neon connector; SELECT metadata `information_schema`/`pg_catalog`, SELECT version/dirty, COUNT tổng và kiểm tra chất lượng dạng số tổng hợp. Không lấy giá trị password/hash, email, tên hoặc nội dung CV/hồ sơ. [SQL kiểm kê cấu trúc](../../scripts/neon-schema-inventory.sql) tái sử dụng với giao dịch READ ONLY; yêu cầu xác nhận bảng `schema_migrations` tồn tại trước chạy. Script chỉ ghi nhận có default, không xuất literal default. Chưa chạy chính file script qua psql; truy vấn SELECT kiểm kê bên trong đã chạy qua connector.
+
+### Kết quả đã xác nhận
+
+- PostgreSQL `18.6 (ac70818)`; migration version `1`, `dirty=false`.
+- `public`: **22 bảng nghiệp vụ + schema_migrations**, 181 cột tính cả bảng migration, 65 index, 228 constraint gồm NOT NULL của PostgreSQL 18 và 13 trigger người dùng. Các số này là kiểm kê cấu trúc, không chứng minh logic nghiệp vụ đã đúng.
+- Có dữ liệu: users 20, employees 20, departments 5, positions 10, skill_categories 8, skills 51, employee_skills 96. Các bảng nghiệp vụ còn lại trong public đều 0 dòng tại lúc SELECT count; không tự kết luận dữ liệu này là seed có thể xóa.
+- Role legacy: ADMIN 1, PM 2, EMPLOYEE 17; chưa có `user_roles`, chưa có mapping xác nhận cho HR/DIRECTOR. Không tự cấp HR/DIRECTOR hoặc chuyển PM thành quyền toàn hệ thống.
+- users không có employee: 0; nhóm email trùng sau lower/trim: 0. Đây là kiểm tra tại thời điểm đọc, không tự chốt chuẩn hóa email hoặc ràng buộc mới.
+- 96 employee_skills không thiếu người/thời điểm duyệt; vẫn phải JOIN `approved_by_employee_id → employees.user_id` khi chuyển actor, không copy số ID.
+- Cấp bậc có 3 giá trị không rỗng phân biệt và 1 hồ sơ chưa cập nhật. Chưa tự tạo danh mục/map khi chưa đối chiếu giá trị.
+- Skill INACTIVE: 0; chưa dùng kết quả này làm quyền tự drop cột/status hoặc enum.
+
+### Sai khác cần xử lý trước migration
+
+**Schema Neon không trùng hoàn toàn migration 000001 trong repo:** `tasks.parent_task_id` và `tasks.task_type` có trong migration nhưng không còn ở Neon. Đối chiếu tự động tập bảng/cột tìm thấy hai sai khác này; chưa khẳng định default/index/function/check còn lại khớp từng biểu thức. Không có migration đánh dấu tiếp theo trong `schema_migrations`; chưa xác định ai/thời điểm đã sửa. Upgrade phải có preflight xử lý được cả DB tạo từ 000001 và Neon hiện tại, không sửa lịch sử 000001 hay giả version 2 đã chạy.
+
+So với DBML đích: thiếu 12 bảng liệt kê ở mục 2; còn `project_members` ngoài thiết kế đích. `employees.address/job_level_id`, trách nhiệm PTCM, tiêu chí/ngày gốc task, duration_minutes/lượt giao nhật ký và các contract review/snapshot chưa được nâng cấp. Tập bảng cùng tên không có nghĩa cùng cột/ràng buộc. Bảng mục 1 tiếp tục là mapping thiết kế, không kết quả đã thực thi.
+
+**Chốt cuối cùng 06/11:** thêm users.must_change_password BOOLEAN NOT NULL DEFAULT false; tài khoản cũ giữ false, cấp mật khẩu tạm ghi true, đổi thành công thay hash và đặt false cùng giao dịch. Mật khẩu tạm chưa có hạn, không thêm temporary_password_expires_at. Phương án hai cột trước đó bị thay thế; không thêm bảng. API/phiên hạn chế/gửi thư vẫn chưa triển khai. Migration 000002 chỉ thêm cờ, không dùng làm bằng chứng đã đồng bộ 33 bảng.
+
+### Đường cập nhật cần hoàn thiện
+
+1. Cấu trúc một cờ đã chốt, đồng bộ dictionary 5B/DBML và migration đơn lẻ 000002; review/diễn tập trước áp. Với phần còn lại, Xác nhận mapping role/cấp bậc và phạm vi dữ liệu giữ lại; không giả giá trị người duyệt/thời gian hoặc quyền mới.
+2. Viết migration tiến thêm trong repo với preflight kiểm tra version, schema drift và dữ liệu. Tách thêm cấu trúc/backfill/siết ràng buộc/gỡ legacy; không export DBML nguyên xi. Các contract còn mở (ví dụ kiểu/miền weight) phải được xử lý rõ, không mặc định số minh họa thành quyết định.
+3. Xác nhận phương án snapshot/phục hồi, diễn tập trên bản sao thử nghiệm của Neon và DB test tạo từ 000001; bảo toàn các ID và dữ liệu đang có. Không dùng DB chính làm TEST_DATABASE_URL.
+4. Review diff/test và kết quả diễn tập trước áp vào branch đích; nếu dùng công cụ hoàn tất migration của Neon, phải hỏi người dùng trước theo yêu cầu công cụ. Chưa có migration được chuẩn bị/thực thi để duyệt ở thời điểm kiểm kê này.
+5. Sau áp dụng: kiểm kê lại bảng/cột/constraint/version, đối chiếu số dòng và mapping, cập nhật trạng thái tài liệu. Chỉ lúc đó mới báo Neon đã đồng bộ; chỉ đủ số bảng không đủ nghiệm thu.
+
+### Diễn tập migration 000002 — chưa áp branch đích
+
+Migration repo: [up](../../migrations/000002_users_must_change_password.up.sql), [down](../../migrations/000002_users_must_change_password.down.sql). Up chỉ thêm cờ BOOLEAN NOT NULL DEFAULT false; không có IF NOT EXISTS để che schema sai. Down chỉ là phương án rollback sau ngừng consumer, mất trạng thái cờ nếu chạy, chưa diễn tập down hoặc cho phép chạy DB chính.
+
+Đã diễn tập bằng Neon prepare_database_migration trên bản sao tạm `br-autumn-rain-az7u9ss5`, parent `br-patient-meadow-azczu1hg`, database `neondb`, migration ID `e7e02698-3a85-4e87-8c08-cba0f2866d57`. Bản sao đạt version 2/dirty=false; cột BOOLEAN, NOT NULL, default false; 20 tài khoản cũ đều false, không NULL, không cột hạn mật khẩu tạm. Đối chiếu count và checksum JSON có thứ tự trên cả 22 bảng (users bỏ đúng cột mới khi so) với parent cùng lúc: khớp toàn bộ. Không xuất bản băm mật khẩu hoặc nội dung hàng; checksum chỉ dùng đối chiếu nội bộ, không lưu như dữ liệu demo.
+
+Công cụ Neon thực thi SQL trực tiếp thay runner Go, nên payload có preflight version=1/dirty=false, khóa bảng schema_migrations, kiểm tra lại version dưới khóa và cập nhật version 2 cùng giao dịch DDL. DDL tương ứng file up; version 2 không có nghĩa đã nâng cấp đủ 33 bảng. Payload chính xác phải dùng lại khi hoàn tất:
+
+```sql
+SELECT 1 / CASE WHEN count(*) = 1 AND bool_and(version = 1 AND NOT dirty) THEN 1 ELSE 0 END AS preflight FROM public.schema_migrations;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
+LOCK TABLE public.schema_migrations IN ACCESS EXCLUSIVE MODE;
+SELECT 1 / CASE WHEN count(*) = 1 AND bool_and(version = 1 AND NOT dirty) THEN 1 ELSE 0 END AS locked_preflight FROM public.schema_migrations;
+ALTER TABLE public.users ADD COLUMN must_change_password boolean NOT NULL DEFAULT false;
+UPDATE public.schema_migrations SET version = 2, dirty = false WHERE version = 1 AND dirty = false;
+```
+
+Hai lần prepare trước không thành công do bộ tách SQL của connector không hỗ trợ block DO và dấu chấm phẩy trong comment; đã kiểm tra sau các lỗi chỉ còn parent, không branch tạm thất bại tồn đọng. Payload cuối không có các cấu trúc đó và đã chạy thành công. Branch tạm thành công đang giữ để người dùng duyệt; công cụ complete_database_migration yêu cầu hỏi trước apply hoặc discard. Không tự xóa branch tạm trước khi xử lý lựa chọn.
+
+**Kiểm tra local sau sửa:** go vet, go test ./... -count=1, go build đều đạt với GOTOOLCHAIN=local và cache tạm (cache mặc định bị sandbox chặn). Harness 9/9, kiểm kê 206 nguồn, diff --check và parser Mermaid 4/4 đạt. DBML vẫn 33 bảng, có đúng một cờ Boolean NOT NULL default false, không cột hạn mật khẩu tạm. Đây không phải kiểm thử gửi thư/auth runtime hoặc xác nhận toàn bộ schema đích.
+
+**Kiểm tra parent sau diễn tập:** vẫn version 1/dirty=false, chưa có must_change_password. Chưa áp migration lên `production`, chưa thực thi gửi thư/đổi mật khẩu/chặn API. Chưa kiểm thử từ DB rỗng + 000001 hoặc API auth; phạm vi diễn tập hiện chỉ là nâng cấu trúc trên bản sao Neon đã kiểm kê.
+
 ## 1. Kiểm kê 22 bảng hiện có
 
 | Bảng hiện trạng | Đích | Kiểm tra/chuyển đổi cần thiết trước ràng buộc mới |
 |---|---|---|
-| users | Giữ sáu cột, không version/force-change; role sang user_roles | ADMIN có thể ánh xạ theo dữ liệu; PM lấy từ project, HR/DIRECTOR cần xác nhận; không suy từ chức danh |
+| users | Nền sáu cột và role sang user_roles; thêm must_change_password theo chốt cuối 06/11; không thêm hạn mật khẩu tạm hoặc version | ADMIN có thể ánh xạ theo dữ liệu; PM lấy từ project, HR/DIRECTOR cần xác nhận; không suy từ chức danh |
 | departments | Giữ | Kiểm tra tên/unique và tham chiếu, không mở CRUD ngoài quyền đã chốt |
 | positions | Giữ | Như danh mục; không biến chức danh thành quyền |
 | employees | Giữ, không profile version; email công ty; bổ sung address TEXT NULL theo chốt 20/10; job_level_id theo chốt 26/10 | Kiểm tra user 1–1, email/position/status; địa chỉ chưa có giữ NULL, không backfill giả hoặc siết NOT NULL; không giả quyền sửa allowlist |

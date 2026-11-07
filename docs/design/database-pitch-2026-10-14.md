@@ -1,5 +1,7 @@
 # Trình bày database với cô — bản chuẩn bị 14/10/2026
 
+**Tiếp nối 06/11:** users thêm must_change_password BOOLEAN NOT NULL DEFAULT false để buộc đổi mật khẩu tạm trước nghiệp vụ; không hạn mật khẩu tạm, không thêm bảng. Cấp mới đặt true, đổi thành công đặt false cùng thay hash; tài khoản cũ giữ nguyên. Dictionary 5B/DBML đã đồng bộ; việc thêm cột không tự hiện thực API/gửi thư. Tiến độ Neon xem mục 0 mapping 5C.
+
 Bản đọc chính: [thiết kế hợp nhất 5C](database-proposal-2026-10-14.md). Phụ lục phản biện: [mapping cũ → mới](database-step5c-migration-map-2026-10-14.md). Đã có bản đồ quan hệ đủ 33 bảng; không nhầm với ERD vật lý đầy đủ mọi cột/FK hoặc schema đã chạy.
 
 Dictionary đề xuất: [5A — 11 bảng lõi](database-step5a-core-dictionary-2026-10-14.md) và [5B — 22 bảng còn lại](database-step5b-supporting-dictionary-2026-10-14.md). Tổng 33 sau chốt cấp bậc 26/10; 11+22 theo vị trí dictionary. Chưa có DDL/migration, ERD hợp nhất và một số chính sách vẫn cần hoàn thiện.

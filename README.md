@@ -107,6 +107,37 @@ PM chỉ theo dõi và PTCM có hành động khác nhau; người không có tr
 
 ## Backend và database
 
+### Proposal auth — cập nhật 06/11/2026
+
+**Tiếp nối 07/11/2026:** người dùng đã chạy import và check trên Jira DATN/board 2; log được đối chiếu xác nhận Epic DATN-1, 20 Task DATN-2–DATN-21, 47 Blocks và Rank khớp. Các câu chưa giao Jira bên dưới ghi nhận giai đoạn trước bàn giao; chưa có auth runtime. Liên kết Development với GitHub còn cần xác minh sau push/PR có mã ticket.
+
+- [Feature đầu: đăng nhập và phiên truy cập](docs/proposals/backend-auth-session.md), D01 phối hợp D02: năm route login/me/csrf/logout/đổi mật khẩu lần đầu; chưa gồm tạo tài khoản, gửi thư, reset hoặc API dự án.
+- Người dùng đã duyệt A01–A09: email công ty được trim/so không phân biệt hoa thường; phiên 8 giờ tuyệt đối; cookie/CSRF; mật khẩu mới ≥15 ký tự Unicode, ≤72 byte UTF-8; phiên hạn chế và thu hồi mọi phiên khi đổi lần đầu. Xem [baseline](docs/business-baseline-2026-10-20.md), security và proposal để biết giới hạn/phần hoãn.
+- Hướng test là PostgreSQL local riêng (Docker, major 18), dữ liệu giả; hướng DB là migration tiến thêm, giữ 000001. Chưa dựng môi trường hoặc duyệt mapping/SQL auth cụ thể. Riêng 000002 thêm cờ đã diễn tập nhánh Neon tạm, chưa áp production theo mapping 5C.
+- Proposal theo 10 mục template; WBS 9 nhóm/33 đơn vị công việc (gom thành [20 ticket theo đầu ra](docs/proposals/backend-auth-session-tickets.md)), 105 giờ cơ sở và 21 giờ dự phòng đề xuất; không phải thời gian còn lại hoặc cam kết ngày lịch. Đã soạn [OpenAPI auth](docs/api/auth.openapi.json) và ports tại proposal mục 5.3; chưa giao task Go/Jira hoặc có code/test auth runtime. Các sơ đồ/kiểm tra tài liệu không chứng minh runtime đã hoạt động.
+
+### Phân miền backend — 05/11/2026
+
+- [Bản đồ miền](docs/product/business-domains.md): đề xuất 6 miền nghiệp vụ và 1 phần hỗ trợ thông báo trong cùng backend/DB; ánh xạ đủ 62 FR, trách nhiệm 33 bảng thiết kế, phụ thuộc và các luồng cần phối hợp. Nguồn là FR/workflow, kiến trúc và quyết định DB hiện hành; không sao chép lại AC hay đổi schema.
+- Review các ranh giới: D06 đề xuất/D04 chốt giao việc; D04 nghiệm thu/D05 hiệu chỉnh; D02 hành chính/D03 công nhận kỹ năng; D01 quyền hệ thống/D04 trách nhiệm dự án. Phân miền không thành microservice hoặc cho phép commit rời khi nghiệp vụ cần nguyên tử. Các điểm mở O01–O09 giữ tại FR.
+- Đã kiểm tra mỗi FR có một nơi chủ trì, mỗi bảng DBML có một đầu mối, số lượng từng nhóm và liên kết; 9 test harness, kiểm kê 202 nguồn và `git diff --check` đạt. Chỉ kiểm kê/review tài liệu, chưa kiểm chứng code/DB/concurrency. Chưa chốt package/API/feature đầu/WBS/Jira hoặc sửa Go/SQL/FE; giữ thay đổi có sẵn, chưa stage/commit/push. Sau duyệt bản đồ mới chọn feature và viết proposal.
+
+### Chuẩn bị yêu cầu backend — 05/11/2026
+
+- [Bản FR/AC dự thảo](docs/product/functional-requirements.md): sau review có 62 FR đang dùng, 1 quy tắc BR và 2 yêu cầu dùng chung CR. Ba ID cũ chuyển loại, ba ID mới tách hành vi khác mục đích; có bảng ánh xạ, không tăng phạm vi nghiệp vụ. Đối chiếu UC dạng văn bản, phân biệt đích với FE mô phỏng/backend skeleton, ghi riêng điểm mở. Các nhóm đọc chưa phải miền/package Go đã chốt.
+- Phạm vi đợt tài liệu: lập yêu cầu trước; không sửa Go/SQL/DBML, chọn dependency, chạy DB hoặc tạo Jira. Tiếp theo phân miền → chọn feature → proposal/API/WBS/estimate → chốt phần tự viết Go → triển khai từng task. Chưa bắt đầu bài thực hành config.
+- Review nội dung: phân biệt đổi mật khẩu/reset, tra cứu tài khoản/cấp quyền và effort/tải; chuyển địa chỉ thành BR và lịch sử/chống lặp thành CR có phạm vi áp dụng. Bớt chi tiết lưu trữ/API/bố cục trong FR, giữ dẫn chiếu contract đã chốt; cập nhật bảng bao phủ UC và điểm mở theo ID mới. Chênh lệch phạm vi chọn tất cả giữa workflow/contract FE vẫn ghi mở, không tự sửa nguồn.
+- Kiểm tra sau chuẩn hóa: 9 test harness và kiểm kê 201 nguồn đạt; kiểm tra cấu trúc/nguồn/AC của 62 FR + 1 BR + 2 CR, đủ ánh xạ UC/ID cũ–mới và đường dẫn nội bộ; `git diff --check` đạt. Các kiểm tra cấu trúc không thay review ngữ nghĩa. Không chạy lại UI/Go/DB vì không sửa code; giữ thay đổi Git/harness có sẵn, chưa stage/commit/push.
+
+### Chuẩn bị Git/harness backend — 05/11/2026
+
+- Mục tiêu đợt đầu: sửa phạm vi ignore binary và kiểm kê nguồn backend để entrypoint server không bị bỏ sót khi bàn giao Git.
+- Nguồn: [chỉ dẫn agent](AGENTS.md), [kiến trúc](.claude/docs/architecture.md), [kiểm thử](.claude/docs/testing_verification.md); giữ nguyên nghiệp vụ hiện hành.
+- Ngoài phạm vi: sửa config/URL DB/log khởi động, API nghiệp vụ, schema, dependency, chạy server/migration/seed hoặc kết nối DB. Config là phần người thực hiện tự viết với agent hướng dẫn và review, chưa hoàn thành trong đợt Git/harness.
+- Tiêu chí đạt: binary ở gốc vẫn bị ignore; `cmd/server/main.go` không bị ignore; harness kiểm kê nguồn Go/SQL cùng module/Makefile và từ chối nguồn chưa có trong index khi dùng `--staged`; test hồi quy harness đạt.
+- Bài thực hành **dự kiến, chưa bắt đầu**: validation config và table-driven test không đọc `.env`. Phạm vi kỹ thuật/tiêu chí sẽ chốt trong proposal/WBS và phân công task trước khi người dùng tự viết; không coi nội dung gợi ý trước đây là lệnh triển khai ngay. Cách nạp `.env`, xử lý hostname và che lỗi khởi động là các mục nền còn cần thiết kế riêng.
+- Kết quả Git/harness: 9 test harness đạt; kiểm kê 200 file nguồn đạt; `git diff --check` đạt. Entry point server hiện được nhận diện là untracked, cần đưa vào commit khi người dùng yêu cầu. Đây chưa là xác nhận nguồn đã được commit/clone đầy đủ; không thay kiểm tra Go hoặc DB. Không sửa mã Go trong lượt này.
+
 ### Phân biệt hiện trạng và thiết kế đích
 
 [Migration 000001](migrations/000001_init.up.sql) và dữ liệu seed hiện tại thuộc schema legacy. Tài khoản/role, quy trình kỹ năng và cấu trúc dữ liệu trong đó **không đại diện đầy đủ cho nghiệp vụ mới**.
@@ -229,6 +260,7 @@ README là bản giới thiệu và hướng dẫn vào dự án, **không thay 
 
 ## Quy trình phát triển và nhánh Git
 
+- Theo [workflow solo Jira–GitHub](docs/ai/workflow.md) và [mẫu giao việc](docs/ai/task-template.md); PR dùng [template chung](.github/pull_request_template.md). Ví dụ nhánh `feature/DATN-2-auth-contract`, commit/PR `docs(auth): finalize authentication contract [DATN-2]`; mã `AUTH-T01` là mã nội bộ, không thay mã Jira.
 - `main`: bản tích hợp hiện hành; xem nhánh này khi đánh giá trạng thái mới nhất.
 - Mỗi đợt feature/fix có phạm vi riêng, đối chiếu nguồn → triển khai → kiểm tra phù hợp → review → bàn giao; không tự mở rộng nghiệp vụ/schema/công thức.
 - Chỉ dẫn cho agent tại [AGENTS.md](AGENTS.md); chuẩn UI và sổ từng đợt frontend tại [web/README.md](web/README.md).
@@ -255,3 +287,5 @@ Các mốc đã nằm trong lịch sử `main`, không phải feature còn chờ
 Các tag cho phép truy vết hoặc khôi phục commit cũ, không có nghĩa toàn bộ nội dung đó đã được merge hoặc còn phù hợp nghiệp vụ.
 
 </details>
+
+**Tiếp nối auth 06/11/2026:** đã chốt cấp tài khoản mới bằng mật khẩu tạm qua email, buộc đổi trước nghiệp vụ. Xem quyết định tiếp nối trong `docs/business-baseline-2026-10-20.md` và mục 4.1 proposal auth; DBML/dictionary đã chốt thêm users.must_change_password; mật khẩu tạm chưa có hạn. Proposal đã bổ sung năm route và WBS 33 task/105 giờ cơ sở; dự phòng 21 giờ còn đề xuất. A02–A09 đã duyệt; OpenAPI/ports đã có bản soạn để review; SQL/mapping legacy và fixture cụ thể còn phải hoàn thiện. Migration riêng chỉ thêm cờ, chưa cập nhật đủ 33 bảng hoặc triển khai gửi thư.

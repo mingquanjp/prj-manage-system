@@ -1,5 +1,7 @@
 # Bước 5A — Từ điển dữ liệu lõi để review và trình bày
 
+**Chốt tiếp nối 06/11/2026:** thêm `users.must_change_password BOOLEAN NOT NULL DEFAULT false`, bắt buộc đổi mật khẩu tạm trước nghiệp vụ. Bản hiện tại không hết hạn mật khẩu tạm, không thêm cột hạn; hạn phiên vẫn riêng. Tài khoản cũ giữ nguyên. Cột/ý nghĩa tại dictionary 5B và DBML; contract API còn cần hoàn thiện, chưa đồng nghĩa đã cập nhật Neon.
+
 **Đồng bộ 15/10/2026:** ưu tiên [quyết định hiện hành và Bàn giao](database-review-decisions-2026-10-14.md), gồm xác nhận result_log_id. Chỉ thiết kế tài liệu, chưa DDL/migration. Các bước 1–4 là lịch sử.
 
 

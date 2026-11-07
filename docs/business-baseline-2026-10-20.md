@@ -13,7 +13,7 @@ Tiếp nối [baseline 12/10](business-baseline-2026-10-12.md), [nguồn nhân l
 - Admin được nhập thông tin hành chính cần cho tạo ban đầu. Quyền tạo không cấp quyền sửa hồ sơ hành chính thường xuyên, duyệt thông tin cá nhân/kỹ năng hoặc quản lý danh mục thuộc HR/Giám đốc.
 - HR tiếp tục cập nhật hồ sơ trực tiếp, duyệt đề nghị fullname/phone/address và quản lý email công ty/cơ cấu theo quyền hiện hành.
 - User_roles chỉ ADMIN/HR/DIRECTOR; PM/PTCM vẫn theo dự án. Không tự gán trách nhiệm dự án khi tạo tài khoản.
-- Riêng quyết định tạo ban đầu không thêm bảng, cột, trạng thái hoặc phê duyệt. Trường địa chỉ bổ sung theo quyết định tiếp nối bên dưới. Chính sách cấp/reset mật khẩu vẫn cần đặc tả; không khôi phục must_change_password.
+- Riêng quyết định tạo ban đầu không thêm bảng, cột, trạng thái hoặc phê duyệt. Trường địa chỉ bổ sung theo quyết định tiếp nối bên dưới. Chính sách cấp/reset mật khẩu vẫn cần đặc tả; quyết định chưa cần trạng thái buộc đổi tại thời điểm này được thay ở chốt 06/11 bên dưới; cấu trúc cụ thể đã chốt tại phần tiếp nối 06/11 bên dưới.
 
 ## Quyết định tiếp nối — địa chỉ khi hoàn thiện hồ sơ
 
@@ -65,3 +65,44 @@ Người dùng duyệt triển khai ba phần sau rà soát đợt 3; không tha
 - Làm rõ đặc tả sau phân công chưa chốt cách thể hiện, không mở lại biểu mẫu sửa scope. CV làm căn cứ MANUAL cần thiết nhưng hoãn cùng lưu/đọc tệp CV có phân quyền; trích xuất bằng model tiếp tục hoãn. Thông báo dùng chung là đợt riêng.
 
 Frontend chỉ mô phỏng trong phiên; các điều kiện phải kiểm tra lại tại server khi triển khai backend.
+
+## Quyết định tiếp nối 05/11/2026 — định danh đăng nhập backend
+
+- Người dùng đã chọn **email công ty** làm định danh đăng nhập cho phiên bản backend đầu tiên. Email kết hợp mật khẩu; không dùng e001/mã nhân viên hoặc danh tính demo để xác thực thật.
+- `username` vẫn là dữ liệu riêng theo thiết kế, không đổi tên tài khoản cũ hoặc xóa/đổi cấu trúc cột. Quy tắc cấp username cho tài khoản mới, kênh cấp/reset và chính sách mật khẩu chưa được chốt qua lựa chọn email.
+- Quy tắc chuẩn hóa email/va chạm, thời hạn phiên và môi trường dữ liệu thử nghiệm còn cần duyệt trong [proposal auth](proposals/backend-auth-session.md). Không coi các con số/phương án đề xuất trong proposal là quyết định đã xác nhận; chưa chạy migration hoặc triển khai auth.
+- Chốt này thay phần “chưa chốt định danh đăng nhập backend” của 28/10, không thay quyền HR quản lý email công ty hoặc đồng nhất email với username.
+
+## Quyết định tiếp nối 06/11/2026 — cấp mật khẩu tạm qua email
+
+- Người dùng xác nhận: khi Admin tạo tài khoản kèm hồ sơ, hệ thống sinh mật khẩu tạm ngẫu nhiên và gửi thông tin tài khoản tới email đã đăng ký. Demo dùng hộp thư `@sis.hust.edu.vn` thật của người dùng; không giới hạn sản phẩm vào tên miền này và không sử dụng mật khẩu hộp thư làm mật khẩu ứng dụng.
+- Nhân viên đăng nhập bằng email và mật khẩu tạm, bắt buộc đổi mật khẩu trước khi truy cập chức năng nghiệp vụ. Đổi thành công làm mật khẩu tạm mất hiệu lực; sau đó đăng nhập bằng mật khẩu mới.
+- Chốt cuối cùng cùng ngày: **mật khẩu tạm chưa có thời hạn trong phiên bản hiện tại**; thay đề xuất trước đó về hết hạn/cấp lại do hết hạn. DB chỉ lưu bản băm, không ghi mật khẩu vào log hoặc trả trong giao diện quản trị. Nội dung thư yêu cầu đổi ngay lần đầu; server vẫn bắt buộc đổi, không chỉ nhắc bằng email. Chính sách mật khẩu mới, gửi lỗi/gửi lại còn cần thiết kế/chốt; chưa quyết định Admin reset dùng cùng luồng. Thời hạn phiên đăng nhập vẫn độc lập, không bị bỏ.
+- Cấu trúc đã được người dùng xác nhận: thêm `users.must_change_password BOOLEAN NOT NULL DEFAULT false`. Tài khoản cũ giữ false, không reset/buộc đổi hàng loạt; luồng tạo tài khoản cấp mật khẩu tạm phải chủ động ghi true cùng bản băm. Đổi thành công thay bản băm và đặt false trong cùng giao dịch. **Không thêm `temporary_password_expires_at`**, không thêm bảng hoặc khôi phục `users.version`. Chốt này thay đúng phần loại bỏ must_change_password trong sổ quyết định cũ; không quyết định đầy đủ contract phiên/đổi mật khẩu.
+- Đây là yêu cầu đích mới, chưa triển khai gửi thư/xác thực. Proposal auth và WBS cần bổ sung thiết kế cổng đổi mật khẩu; không gọi phiên mật khẩu tạm là phiên có đủ quyền nghiệp vụ. Không tự triển khai SMTP, mời qua link hoặc quên mật khẩu.
+
+
+## Quyết định tiếp nối 06/11/2026 — chốt lựa chọn auth A02–A09
+
+Người dùng đã xác nhận bộ phương án A02–A09 dưới đây, tiếp nối quyết định email và mật khẩu tạm cùng ngày. Thay đúng các ghi nhận “chưa chốt” tương ứng ở trên; không chốt reset của Admin, kênh gửi lỗi/gửi lại hoặc username. Thiết kế chưa là chức năng đã triển khai.
+
+- **A02 — Email:** bỏ khoảng trắng đầu/cuối khi nhận email đăng nhập, so không phân biệt hoa/thường; không tự viết lại email đã lưu. Nhiều tài khoản khớp sau chuẩn hóa thì dừng với lỗi hệ thống chung, không chọn ngẫu nhiên. Kiểm kê/mapping/ràng buộc dữ liệu vẫn cần review, không tự thêm index hoặc sửa dữ liệu.
+- **A03 — Phiên:** hạn tuyệt đối 8 giờ từ lúc đăng nhập, không tự gia hạn, không idle timeout hoặc “ghi nhớ đăng nhập”. Hết hạn phải đăng nhập lại. Hạn này áp dụng cả phiên hạn chế, độc lập với mật khẩu tạm chưa có hạn.
+- **A04 — Dọn phiên:** đợt auth này chưa xóa vật lý session hết hạn/thu hồi; chúng vẫn bị server từ chối. Retention và lịch dọn chốt trước vận hành lâu dài, chưa thêm job/cột.
+- **A05 — Test:** PostgreSQL local riêng, đề xuất triển khai bằng Docker, cùng phiên bản lớn với Neon (kiểm kê hiện tại là 18); chỉ dữ liệu giả, không dùng DB phát triển làm DB test. Kiểm tra Docker/dựng môi trường và fixture là task riêng, chưa diễn ra qua việc duyệt này.
+- **A06 — Migration:** tiến thêm trên lịch sử hiện có, giữ nguyên 000001, không reset hoặc tạo lại baseline. Chỉ nâng phần cần cho feature đã duyệt; DDL, mapping quyền/dữ liệu legacy, tương thích và kế hoạch áp DB phải review riêng. Không đồng nghĩa cho phép áp migration lên Neon.
+- **A07 — Cookie/CSRF:** `staffing_session`, secret ngẫu nhiên và session phía server theo security; kiểm Origin và CSRF gắn phiên, FE local dùng proxy `/api`. Cơ chế HMAC-SHA256 đã mô tả trong proposal được duyệt. Login cấp secret mới; phiên cookie cũ hợp lệ của cùng user bị thu hồi trong transaction. Không thu hồi xuyên user hoặc mọi thiết bị như tác dụng phụ của login.
+- **A08 — Buộc đổi:** cùng bảng/cookie session; cờ true chỉ cho me/csrf/logout/đổi mật khẩu lần đầu, server chặn mọi API nghiệp vụ. Đổi thành công thay hash, đặt cờ false và thu hồi tất cả phiên của user trong cùng transaction; sau đó xóa cookie và yêu cầu login lại. Không thêm scope/type/version vào session.
+- **A09 — Mật khẩu mới:** tối thiểu 15 ký tự Unicode (đếm code point), tối đa 72 byte UTF-8 do bcrypt hiện hành; không cắt mật khẩu. Cho phép khoảng trắng/chữ có dấu/paste, không ép đủ nhóm hoa/thường/số/ký hiệu, không trim hoặc tự chuẩn hóa mật khẩu. Phải xác minh mật khẩu hiện tại và mật khẩu mới khác mật khẩu hiện tại; nhập lại ở FE để đối chiếu, không thêm trường API. Áp chính sách này cho đặt mật khẩu mới trong đợt đổi lần đầu, không áp ngược lên login tài khoản cũ.
+- **Limiter đổi mật khẩu:** tham số thử nghiệm đã duyệt là 5 lần xác minh mật khẩu hiện tại sai/15 phút/user và 30 request/5 phút/IP trước bcrypt; trả 429/Retry-After, không khóa tài khoản vĩnh viễn. Bộ đếm có hạn và dọn bộ nhớ, không ghi password làm key; đây không phải job dọn session DB. Login giữ tham số thử nghiệm riêng theo security.
+
+Chấp thuận A02–A09 không đồng nghĩa đã hoàn tất P01/P04, đã duyệt mọi chi tiết OpenAPI/body limit, estimate/dự phòng, cấp quyền dữ liệu legacy hoặc cho phép chạy DB thật. Các phần đó theo proposal và task cụ thể.
+
+
+## Quyết định tiếp nối 06/11/2026 — giới hạn body JSON auth
+
+Người dùng đã xác nhận giới hạn body JSON của `POST /api/auth/login` và `POST /api/auth/change-password` là **8 KiB = 8192 byte**. Body lớn hơn giới hạn trả **413 / PAYLOAD_TOO_LARGE**, không xác thực bằng bcrypt hoặc ghi dữ liệu từ body vượt giới hạn. Áp cho toàn bộ body request, không chỉ trường mật khẩu; không dựa riêng Content-Length để bỏ qua request không khai báo độ dài.
+
+Giới hạn body không thay chính sách mật khẩu mới ≥15 code point Unicode và ≤72 byte UTF-8, không áp giới hạn 8 KiB cho upload CV hoặc mọi endpoint khác. Mốc 8192 byte không vượt giới hạn body nhưng request vẫn phải đạt JSON/allowlist/validation/Origin/CSRF/limiter tương ứng. Khi có HTTP runtime phải kiểm biên 8192/8193 byte, body thiếu/sai Content-Length và không có tác dụng phụ khi bị chặn; hiện chỉ cập nhật thiết kế/contract, chưa có handler.
+
+Chốt này thay đúng các ghi nhận body limit còn đề xuất trong proposal/OpenAPI; không duyệt estimate, mapping legacy hoặc áp DB thật.
