@@ -43,6 +43,7 @@ WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phâ
 
 [Bản nháp ticket auth](proposals/backend-auth-session-tickets.md): 1 Epic đề xuất và 20 Task theo đầu ra, mapping đủ 33 đơn vị WBS; review nằm trong Done, description có bước thực hiện và bảng tình huống/kết quả; có thứ tự nhận việc đợt đầu và cổng trước khi tạo Jira. Đây là nội dung để review, chưa upload, không là nguồn nghiệp vụ thứ hai.
 
+Công cụ bàn giao Jira: [hướng dẫn plan/apply/check](../scripts/jira/README.md), đọc nội dung trực tiếp từ bộ ticket; offline sinh manifest/kiểm thử bằng Jira giả, online do người dùng tự nhập token ẩn trên terminal. Ngày 07/11 người dùng đã chạy apply/check, log được đối chiếu: Epic DATN-1 và 20 Task DATN-2–DATN-21, 47 Blocks, Rank/nội dung/parent/assignee/labels khớp. Các câu chưa tạo Jira trong ghi nhận trước đó là trạng thái trước import, không phải hiện trạng; không chứng minh auth runtime. Không tự stage/commit/push hoặc thay DB.
 
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 

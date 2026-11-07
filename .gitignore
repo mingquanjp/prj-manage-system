@@ -73,3 +73,8 @@ web/dist/
 
 # Bản trình bày DB hiện hành, đồng bộ quyết định cấp bậc 26/10
 !/docs/design/database-pitch-2026-10-14.md
+
+# Nhật ký nhập Jira local — mapping/snapshot, không phải nguồn nghiệp vụ
+/.local/jira-auth/
+__pycache__/
+*.pyc
