@@ -720,6 +720,32 @@ Review bàn giao DATN-4 ngày 08/11: đối chiếu AC và bổ sung kiểm th�
 
 Đầu ra sẵn sàng review/commit/PR; chưa tự chuyển Jira Done hoặc nhận đã merge. Không chạy lại import Jira để cập nhật fingerprint tài liệu.
 
+#### 6.3.3. URL PostgreSQL và lỗi startup — DATN-5 / AUTH-T04, 08/11/2026
+
+Brief đã được người dùng duyệt trước code: loại bỏ tìm/thay marker trên toàn DSN, parse URL/hostname và không chuyển tiếp driver error có thể chứa credential. Không đổi provider/TLS/pool size/protocol hay mở API/migration/schema. Mục này tiếp nối giới hạn URL/chẩn đoán còn lại của DATN-4.
+
+`ParseDatabaseURL` trong `internal/config/database_url.go` là hàm thuần: không file/OS env/DNS/DB. Loader server/CLI parse một lần sau kiểm bắt buộc/kiểu dữ liệu; Config.Database chứa DatabaseEndpoint (`RuntimeURL`, `DirectURL`, `Pooled`). URL sai không trả endpoint một phần. Các trường chứa bí mật, không log Config/DatabaseEndpoint; chỉ truyền tới adapter tương ứng.
+
+| Định dạng/ca | Hành vi đã chốt/triển khai |
+|---|---|
+| postgres:// hoặc postgresql://, một hostname/IPv4/IPv6, port 1..65535 nếu có | Hỗ trợ cú pháp; IPv6 trong [], không zone. Host DNS ASCII/punycode, không username/password/database bắt buộc mới. Không chứng minh host tồn tại/kết nối thành công. |
+| Keyword DSN, nhiều host, Unix socket, host thiếu/sai, fragment, port sai | Từ chối an toàn bằng DB_URL_INVALID, không đoán endpoint. |
+| Query host/hostaddr/port/user/password/dbname/database/service/servicefile | Từ chối để không ghi đè authority hoặc chuyển sang service/socket/multi-host; xét khóa sau URL-decode, không thay TLS/application_name/query không liên quan. |
+| Neon AWS ep-…-pooler.region.aws.neon.tech | Pooled=true; runtime giữ URL gốc. DirectURL chỉ thay span hostname đã parse, bỏ -pooler ở nhãn endpoint; giữ từng byte credential/port/path/query. |
+| Marker trong password/path/query, host ngoài mẫu, miền giả/suffix thêm | Không nhận pooled nhầm hoặc thay marker. Host ngoài mẫu giữ nguyên; cung cấp direct rõ ràng cho migration nếu cần. Không cam kết tự chuyển GCP/custom domain. |
+
+Mẫu endpoint tham khảo [Neon connection details](https://github.com/neondatabase/website/blob/main/content/faqs/find-connection-details-neon-console.md); đây là phạm vi hỗ trợ của ứng dụng, không phải cam kết mọi dạng hostname Neon đều được chuyển.
+
+`internal/repository/postgres.NewPool` nhận RuntimeURL đã qua loader, vẫn để pgx parse cấu hình driver. Ba bước parse/create/ping trả sentinel an toàn DB_URL_INVALID/DB_POOL_INIT_FAILED/DB_CONNECT_FAILED, không wrap/giữ nguyên nhân thô. Giữ max/min conn, timeout, lifetime và simple protocol cũ; pool đóng nếu ping thất bại, thành công để caller sở hữu. Test truyền poolDependencies để kiểm thứ tự/cleanup bằng lỗi giả, không khởi tạo socket/đọc file pgx thật.
+
+`cmd/server.openStartupPool` chỉ trả sentinel đã biết (không trả wrapper dù errors.Is nhận nhóm đó), lỗi lạ quy về DB_CONNECT_FAILED; logStartupError ghi lỗi an toàn cùng ngữ cảnh. Unit tests kiểm log thực của logger startup với marker DSN/password/cookie giả. Migrate dùng DirectURL và che lỗi sql.Open/driver init; seed dùng RuntimeURL. Giữ nguyên RequireDev/thứ tự guard. Không refactor toàn bộ lỗi SQL của migration/seed hoặc nhận đã giải quyết mọi lỗi runtime từ task này.
+
+Đầu vào AUTH-T17: gọi LoadServer rồi dùng Config.Database.RuntimeURL/Pooled cho NewPool; không dựng cấu hình auth bằng Load CLI hoặc log endpoint. Chưa nối API hoặc có bằng chứng DB/browser/transaction thật. Checkpoint Quân tự viết API giữ nguyên.
+
+Bằng chứng ngày 08/11: parent đã chạy go vet ./..., go test ./... -count=1, go build ./...; race tests config/postgres/server và 23 test contract/harness đạt, kiểm kê 222 nguồn và diff/gofmt đạt. Test lỗi parse/create/ping, timeout/cleanup, protocol true/false, marker trong error chain/định dạng log; không mở socket DB hoặc chạy parser pgx thật từ pool tests. Loader/startup fixtures đã chuyển từ chuỗi giả không đúng URL sang URL giả đúng cú pháp, không đổi guard để làm test xanh.
+
+Sub-agent GPT-6.1 Sol medium được bàn giao bối cảnh/quyết định/nguồn/phạm vi và chỉ đọc review diff (gồm untracked tests), đối chiếu pgx parser cục bộ; không tìm thấy finding cần sửa. Agent chạy offline go test config/postgres/server/migrate/seed và diff check đạt, không sửa file hoặc dùng DB/.env/network. Agent nêu thiếu ca protocol=false (đã bổ sung); hai cổng lỗi migration sql.Open/driver init chưa có test riêng, không coi là bằng chứng migration thật. Parent xác minh kết luận, rà diff và giữ giới hạn này để kiểm ở đợt DB test được cấp. Không tự chuyển Jira Done, commit/push hoặc chạy lại công cụ import. Một lượt agent review không thay kiểm thử runtime/tác giả hiểu code.
+
 ### 6.4. Chiến lược kiểm thử — chưa chạy feature
 
 | Nhóm | Ca bắt buộc | Truy vết |
