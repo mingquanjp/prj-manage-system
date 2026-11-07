@@ -19,19 +19,19 @@ func TestLoadSources(t *testing.T) {
 		wantRead  bool
 		check     func(*testing.T, *Config)
 	}{
-		{name: "dev defaults", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "fake", "APP_ORIGIN": "http://localhost:5173"}, server: true, wantRead: true, check: func(t *testing.T, c *Config) {
+		{name: "dev defaults", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "postgres://example.test/demo", "APP_ORIGIN": "http://localhost:5173"}, server: true, wantRead: true, check: func(t *testing.T, c *Config) {
 			if c.HTTPPort != 8080 || c.SessionTTL != 8*time.Hour {
 				t.Fatalf("defaults: %+v", c)
 			}
 		}},
-		{name: "prod skips malformed file", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "fake", "APP_ORIGIN": "https://example.test"}, file: "INVALID SECRET_MARKER", server: true},
-		{name: "env wins", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "env-db", "HTTP_PORT": "9000", "APP_ORIGIN": "http://127.0.0.1:5173", "SESSION_TTL": "480m"}, file: "APP_ENV=prod\nDATABASE_URL=file-db\nHTTP_PORT=8081\nAPP_ORIGIN=https://file.test\nSESSION_TTL=1h", server: true, wantRead: true, check: func(t *testing.T, c *Config) {
-			if c.AppEnv != "dev" || c.DatabaseURL != "env-db" || c.HTTPPort != 9000 || c.AppOrigin != "http://127.0.0.1:5173" || c.SessionTTL != 8*time.Hour {
+		{name: "prod skips malformed file", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "postgres://example.test/demo", "APP_ORIGIN": "https://example.test"}, file: "INVALID SECRET_MARKER", server: true},
+		{name: "env wins", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "postgres://env.test/demo", "HTTP_PORT": "9000", "APP_ORIGIN": "http://127.0.0.1:5173", "SESSION_TTL": "480m"}, file: "APP_ENV=prod\nDATABASE_URL=postgres://file.test/demo\nHTTP_PORT=8081\nAPP_ORIGIN=https://file.test\nSESSION_TTL=1h", server: true, wantRead: true, check: func(t *testing.T, c *Config) {
+			if c.AppEnv != "dev" || c.Database.RuntimeURL != "postgres://env.test/demo" || c.HTTPPort != 9000 || c.AppOrigin != "http://127.0.0.1:5173" || c.SessionTTL != 8*time.Hour {
 				t.Fatalf("precedence: %+v", c)
 			}
 		}},
-		{name: "file fallback", env: map[string]string{"APP_ENV": "dev"}, file: "# comment\nDATABASE_URL='fake'\nHTTP_PORT=8081\nAPP_ORIGIN=\"http://localhost:5173\"\nSESSION_TTL=8h\n", server: true, wantRead: true, check: func(t *testing.T, c *Config) {
-			if c.DatabaseURL != "fake" || c.HTTPPort != 8081 {
+		{name: "file fallback", env: map[string]string{"APP_ENV": "dev"}, file: "# comment\nDATABASE_URL='postgres://example.test/demo'\nHTTP_PORT=8081\nAPP_ORIGIN=\"http://localhost:5173\"\nSESSION_TTL=8h\n", server: true, wantRead: true, check: func(t *testing.T, c *Config) {
+			if c.Database.RuntimeURL != "postgres://example.test/demo" || c.HTTPPort != 8081 {
 				t.Fatal("không đọc giá trị file")
 			}
 		}},
@@ -39,23 +39,23 @@ func TestLoadSources(t *testing.T) {
 		{name: "empty env", env: map[string]string{"APP_ENV": ""}, server: true, wantField: "APP_ENV"},
 		{name: "invalid env", env: map[string]string{"APP_ENV": "test"}, server: true, wantField: "APP_ENV"},
 		{name: "missing prod database", env: map[string]string{"APP_ENV": "prod", "APP_ORIGIN": "https://example.test"}, server: true, wantField: "DATABASE_URL"},
-		{name: "empty database overrides file", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "", "APP_ORIGIN": "http://localhost"}, file: "DATABASE_URL=fake", server: true, wantRead: true, wantField: "DATABASE_URL"},
+		{name: "empty database overrides file", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "", "APP_ORIGIN": "http://localhost"}, file: "DATABASE_URL=postgres://example.test/demo", server: true, wantRead: true, wantField: "DATABASE_URL"},
 		{name: "blank database", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "  ", "APP_ORIGIN": "https://example.test"}, server: true, wantField: "DATABASE_URL"},
-		{name: "missing prod origin", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "fake"}, server: true, wantField: "APP_ORIGIN"},
-		{name: "empty origin overrides file", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "fake", "APP_ORIGIN": ""}, file: "APP_ORIGIN=http://localhost", server: true, wantRead: true, wantField: "APP_ORIGIN"},
-		{name: "invalid origin", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "fake", "APP_ORIGIN": "http://SECRET_MARKER.test"}, server: true, wantField: "APP_ORIGIN"},
+		{name: "missing prod origin", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "postgres://example.test/demo"}, server: true, wantField: "APP_ORIGIN"},
+		{name: "empty origin overrides file", env: map[string]string{"APP_ENV": "dev", "DATABASE_URL": "postgres://example.test/demo", "APP_ORIGIN": ""}, file: "APP_ORIGIN=http://localhost", server: true, wantRead: true, wantField: "APP_ORIGIN"},
+		{name: "invalid origin", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "postgres://example.test/demo", "APP_ORIGIN": "http://SECRET_MARKER.test"}, server: true, wantField: "APP_ORIGIN"},
 		{name: "empty port overrides file", env: map[string]string{"APP_ENV": "dev", "HTTP_PORT": ""}, file: "HTTP_PORT=8080", server: true, wantRead: true, wantField: "HTTP_PORT"},
 		{name: "invalid port", env: map[string]string{"APP_ENV": "prod", "HTTP_PORT": "SECRET_MARKER"}, server: true, wantField: "HTTP_PORT"},
 		{name: "out of range port", env: map[string]string{"APP_ENV": "prod", "HTTP_PORT": "65536", "APP_ORIGIN": "https://example.test"}, server: true, wantField: "HTTP_PORT"},
 		{name: "empty ttl overrides file", env: map[string]string{"APP_ENV": "dev", "SESSION_TTL": ""}, file: "SESSION_TTL=8h", server: true, wantRead: true, wantField: "SESSION_TTL"},
 		{name: "invalid ttl", env: map[string]string{"APP_ENV": "prod", "SESSION_TTL": "SECRET_MARKER"}, server: true, wantField: "SESSION_TTL"},
-		{name: "wrong ttl", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "fake", "APP_ORIGIN": "https://example.test", "SESSION_TTL": "1h"}, server: true, wantField: "SESSION_TTL"},
-		{name: "CLI ignores HTTP auth inputs", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "fake", "HTTP_PORT": "SECRET_MARKER", "APP_ORIGIN": "bad", "SESSION_TTL": "bad"}, check: func(t *testing.T, c *Config) {
+		{name: "wrong ttl", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "postgres://example.test/demo", "APP_ORIGIN": "https://example.test", "SESSION_TTL": "1h"}, server: true, wantField: "SESSION_TTL"},
+		{name: "CLI ignores HTTP auth inputs", env: map[string]string{"APP_ENV": "prod", "DATABASE_URL": "postgres://example.test/demo", "HTTP_PORT": "SECRET_MARKER", "APP_ORIGIN": "bad", "SESSION_TTL": "bad"}, check: func(t *testing.T, c *Config) {
 			if c.HTTPPort != 0 || c.AppOrigin != "" || c.SessionTTL != 0 {
 				t.Fatal("CLI không cần HTTP/auth")
 			}
 		}},
-		{name: "CLI dev file", env: map[string]string{"APP_ENV": "dev"}, file: "DATABASE_URL=fake", wantRead: true},
+		{name: "CLI dev file", env: map[string]string{"APP_ENV": "dev"}, file: "DATABASE_URL=postgres://example.test/demo", wantRead: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,7 +117,7 @@ func TestReadDotEnv(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := readDotEnv(func(string) ([]byte, error) { return []byte(tt.content), tt.readErr }, "fake")
+			_, err := readDotEnv(func(string) ([]byte, error) { return []byte(tt.content), tt.readErr }, "postgres://example.test/demo")
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("error: %v", err)
 			}
@@ -137,7 +137,7 @@ func TestLoadDoesNotChangeEnvironment(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(".env", []byte("APP_ENV=prod\nDATABASE_URL=fake\nAPP_ORIGIN=http://localhost:5173"), 0600); err != nil {
+	if err := os.WriteFile(".env", []byte("APP_ENV=prod\nDATABASE_URL=postgres://example.test/demo\nAPP_ORIGIN=http://localhost:5173"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	for _, loader := range []func() (*Config, error){LoadServer, Load} {
@@ -169,7 +169,7 @@ func TestLoadDoesNotChangeEnvironment(t *testing.T) {
 // Kiểm giá trị thực nhận, không chỉ kiểm parser trả nil.
 func TestDotEnvPreservesLiteralValues(t *testing.T) {
 	content := "DATABASE_URL=postgres://fake/db?x=y#literal\r\nLABEL='two words'\nREFERENCE=$NOT_EXPANDED\nEMPTY=\n"
-	values, err := readDotEnv(func(string) ([]byte, error) { return []byte(content), nil }, "fake")
+	values, err := readDotEnv(func(string) ([]byte, error) { return []byte(content), nil }, "postgres://example.test/demo")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -81,7 +81,7 @@ func run() error {
 
 	// Luôn dùng simple protocol: các file dữ liệu mẫu chứa nhiều câu lệnh trong
 	// một file, extended protocol không chạy được.
-	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL, true)
+	pool, err := postgres.NewPool(ctx, cfg.Database.RuntimeURL, true)
 	if err != nil {
 		return err
 	}

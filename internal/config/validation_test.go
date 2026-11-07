@@ -62,7 +62,7 @@ func TestValidateServer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cfg := Config{AppEnv: "dev", HTTPPort: 8080, AppOrigin: "http://localhost:5173", SessionTTL: 8 * time.Hour, DatabaseURL: "SECRET_MARKER"}
+			cfg := Config{AppEnv: "dev", HTTPPort: 8080, AppOrigin: "http://localhost:5173", SessionTTL: 8 * time.Hour}
 			if tt.change != nil {
 				tt.change(&cfg)
 			}

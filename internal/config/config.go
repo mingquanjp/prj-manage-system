@@ -11,11 +11,11 @@ import (
 )
 
 type Config struct {
-	AppEnv      string // dev | prod
-	HTTPPort    int
-	DatabaseURL string
-	AppOrigin   string
-	SessionTTL  time.Duration
+	AppEnv     string // dev | prod
+	HTTPPort   int
+	Database   DatabaseEndpoint
+	AppOrigin  string
+	SessionTTL time.Duration
 }
 
 // RequireDev yêu cầu chọn môi trường dev tường minh trước thao tác phá dữ liệu.
@@ -60,7 +60,7 @@ func load(lookup func(string) (string, bool), readFile func(string) ([]byte, err
 		}
 		return fallback
 	}
-	cfg := &Config{AppEnv: appEnv, DatabaseURL: value("DATABASE_URL", "")}
+	cfg := &Config{AppEnv: appEnv}
 	if server {
 		port, err := strconv.Atoi(value("HTTP_PORT", "8080"))
 		if err != nil {
@@ -77,29 +77,13 @@ func load(lookup func(string) (string, bool), readFile func(string) ([]byte, err
 			return nil, err
 		}
 	}
-	if strings.TrimSpace(cfg.DatabaseURL) == "" {
-		return nil, fmt.Errorf("thiếu DATABASE_URL")
+	endpoint, err := ParseDatabaseURL(value("DATABASE_URL", ""))
+	if err != nil {
+		return nil, err
 	}
+	cfg.Database = endpoint
 	return cfg, nil
 }
-
-// IsPooledEndpoint báo hiệu chuỗi kết nối đang trỏ tới endpoint PgBouncer của Neon.
-// pgx dùng prepared statement nên không tương thích hoàn toàn với transaction pooling.
-func (c *Config) IsPooledEndpoint() bool {
-	return strings.Contains(c.DatabaseURL, poolerMarker)
-}
-
-// DirectURL trả về chuỗi kết nối tới endpoint trực tiếp.
-//
-// Neon đặt tên endpoint pooled bằng cách chèn "-pooler" vào hostname của endpoint
-// trực tiếp, nên bỏ hậu tố này là ra chuỗi cần dùng. Migration bắt buộc đi đường
-// trực tiếp vì golang-migrate cần advisory lock, thứ mà PgBouncer ở chế độ
-// transaction pooling không giữ được giữa các câu lệnh.
-func (c *Config) DirectURL() string {
-	return strings.Replace(c.DatabaseURL, poolerMarker, ".", 1)
-}
-
-const poolerMarker = "-pooler."
 
 // readDotEnv hỗ trợ KEY=VALUE, giá trị bọc nháy đơn/đôi và comment cả dòng.
 // Không nội suy biến, escape, export, comment cuối dòng hoặc giá trị nhiều dòng.
