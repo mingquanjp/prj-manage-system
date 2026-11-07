@@ -101,3 +101,5 @@ Tham khảo script `docs/planning/jira/rank-sprint.py` của CoLearnia (chỉ đ
 - [Create issue link](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-links/)
 - [Rank issues — gồm phản hồi 207 một phần](https://developer.atlassian.com/cloud/jira/software/rest/api-group-issue/)
 - [Search and reconcile — độ trễ search index](https://developer.atlassian.com/cloud/jira/platform/search-and-reconcile/)
+
+**Tiếp nối DATN-2 / AUTH-T01 (07/11):** proposal/OpenAPI được tiếp tục chỉnh theo task, vì vậy fingerprint nguồn hiện tại khác bản import đã apply. Đây không phải lỗi cần xóa journal hoặc import lại. Giữ journal/mapping hiện có; bộ import phục vụ bàn giao ban đầu, không đồng bộ tiến độ sau đó. Khi được giao, ghi link diff/PR và bằng chứng review vào ticket DATN-2; không đổi description hàng loạt hoặc tạo lại issue để vượt kiểm tra fingerprint.

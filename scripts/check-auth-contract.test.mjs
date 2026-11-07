@@ -137,3 +137,57 @@ test("body JSON login/đổi lần đầu có giới hạn 8192 byte và phản 
   // Giới hạn byte body không được thay giới hạn byte của trường mật khẩu.
   assert.equal(spec.components.schemas.ChangeInitialPasswordRequest.properties.new_password["x-max-utf8-bytes"], 72)
 })
+
+test("ma trận status/code đủ cho từng route, không trộn lỗi login với lỗi phiên", () => {
+  const common = { 500: ["INTERNAL_ERROR"], 503: ["SERVICE_UNAVAILABLE"] }
+  const protectedErrors = { ...common, 401: ["UNAUTHENTICATED"] }
+  const jsonErrors = { 413: ["PAYLOAD_TOO_LARGE"], 415: ["UNSUPPORTED_MEDIA_TYPE"] }
+  const expected = {
+    login: { ...common, ...jsonErrors, 400: ["VALIDATION_ERROR"], 401: ["INVALID_CREDENTIALS"], 403: ["FORBIDDEN"], 429: ["RATE_LIMITED"] },
+    me: protectedErrors,
+    csrf: protectedErrors,
+    logout: { ...protectedErrors, 400: ["VALIDATION_ERROR"], 403: ["FORBIDDEN"] },
+    "change-password": { ...protectedErrors, ...jsonErrors, 400: ["VALIDATION_ERROR", "INVALID_CURRENT_PASSWORD"], 403: ["FORBIDDEN", "PASSWORD_CHANGE_NOT_REQUIRED"], 429: ["RATE_LIMITED"] },
+  }
+  for (const [path, errors] of Object.entries(expected)) {
+    const actual = Object.fromEntries(Object.entries(op(path).responses)
+      .filter(([status]) => +status >= 400)
+      .map(([status, response]) => [status, response.content["application/json"].schema.properties.code.enum]))
+    assert.deepEqual(actual, errors, path)
+    const success = Object.keys(op(path).responses).filter((status) => +status < 400)
+    assert.deepEqual(success, [path === "logout" || path === "change-password" ? "204" : "200"])
+  }
+})
+
+test("ví dụ login/me thống nhất DTO, cờ mới phân biệt quyền rỗng với phiên hạn chế", () => {
+  const examples = op("login").responses["200"].content["application/json"].examples
+  assert.deepEqual(op("me").responses["200"].content["application/json"].examples, examples)
+  assert.equal(examples.employee.value.must_change_password, false)
+  assert.equal(examples.limited.value.must_change_password, true)
+  for (const { value } of Object.values(examples)) {
+    const name = value.must_change_password ? "LimitedPrincipal" : "BusinessPrincipal"
+    assert.deepEqual(Object.keys(value).sort(), [...spec.components.schemas[name].required].sort())
+    assert.deepEqual(value.system_roles, [])
+    assert.ok(Number.isInteger(value.user_id) && value.user_id > 0)
+    assert.ok(Number.isInteger(value.employee_id) && value.employee_id > 0)
+    assert.notEqual(value.user_id, value.employee_id)
+  }
+  const error = op("login").responses["401"].content["application/json"]
+  assert.ok(error.schema.properties.code.enum.includes(error.example.code))
+  assert.deepEqual(Object.keys(error.example).sort(), [...error.schema.required].sort())
+})
+
+test("JSON chỉ bắt buộc ở login/đổi lần đầu; logout không có requestBody", () => {
+  for (const path of ["login", "change-password"]) {
+    const body = op(path).requestBody
+    assert.equal(body.required, true)
+    assert.deepEqual(Object.keys(body.content), ["application/json"])
+  }
+  for (const path of ["me", "csrf", "logout"]) assert.equal(op(path).requestBody, undefined)
+  // Không biến yêu cầu Content-Type của JSON thành điều kiện logout.
+  assert.equal(op("logout").responses["415"], undefined)
+  const csrf = spec.components.schemas.CsrfResponse
+  assert.equal(csrf.additionalProperties, false)
+  assert.deepEqual(csrf.required, ["csrf_token"])
+  assert.deepEqual(Object.keys(csrf.properties), ["csrf_token"])
+})
