@@ -1,6 +1,6 @@
 # Proposal — Đăng nhập và phiên truy cập backend
 
-Ngày lập: **05/11/2026** · Cập nhật thiết kế: **06/11/2026** · Review WBS: **07/11/2026** · Trạng thái: **A01–A09 đã duyệt; chi tiết triển khai đang chuẩn bị, chưa có code auth** · Nhánh hiện tại: `feature/backend-password-policy`.
+Ngày lập: **05/11/2026** · Cập nhật contract: **07/11/2026 (DATN-2 / AUTH-T01)** · Review WBS: **07/11/2026** · Trạng thái: **A01–A09 đã duyệt; chi tiết triển khai đang chuẩn bị, chưa có code auth** · Nhánh contract: `feature/DATN-2-auth-contract`.
 
 Feature đầu tiên thuộc D01, phối hợp D02: đăng nhập bằng email công ty, đăng xuất, xác định người dùng/quyền hệ thống hiện hành và bảo vệ API bằng phiên phía server; bổ sung cổng đổi mật khẩu tạm lần đầu theo chốt 06/11. Không triển khai toàn bộ miền tài khoản. A01–A09 đã được người dùng duyệt theo chốt tiếp nối 06/11; các đề xuất khác còn ghi rõ bên dưới không tự trở thành quyết định.
 
@@ -74,7 +74,7 @@ Mục tiêu đợt cập nhật tài liệu này là đồng bộ thiết kế/�
 
 1. FE gửi email/password qua HTTPS (localhost dev là ngoại lệ cấu hình); server giới hạn body/attempts và kiểm tra nguồn login.
 2. Tìm tài khoản qua email theo A02; kiểm tra mật khẩu bằng bcrypt. Sai email/mật khẩu, user không active hoặc employee không active đều trả lỗi chung; tài khoản không tồn tại vẫn dùng phép kiểm tra hash giả để giảm khác biệt thời gian, không cam kết chống mọi timing attack.
-3. Tạo secret ngẫu nhiên, kiểm tra lại hash/status nền trước khi ghi session; chỉ sau commit thành công mới đặt cookie. Login mới không mặc định logout mọi thiết bị. Nếu request đã mang phiên hợp lệ, đề xuất thu hồi phiên đó cùng giao dịch để thay bằng secret mới, không tái sử dụng secret do client đưa.
+3. Tạo secret ngẫu nhiên, kiểm tra lại hash/status nền trước khi ghi session; chỉ sau commit thành công mới đặt cookie. Login mới không mặc định logout mọi thiết bị. Nếu request đã mang phiên hợp lệ của cùng user đang login, thu hồi đúng phiên đó cùng giao dịch để thay bằng secret mới, không tái sử dụng secret do client đưa.
 4. Login/me trả cờ `must_change_password` hiện hành. Khi true, chỉ cho me/csrf/logout và đổi mật khẩu lần đầu; mọi API nghiệp vụ bị chặn ở server dù user có role đặc biệt. Khi đổi thành công, thu hồi phiên theo phương án A08, xóa cookie và yêu cầu login mới; không tự nâng phiên hạn chế thành phiên nghiệp vụ.
 5. Mỗi request bảo vệ tra hash/session, expiry/revocation, user/employee hiện hành, cờ buộc đổi và role hiện hành. Trả principal tối thiểu, không lấy actor từ body. DB lỗi trả 503, không cho qua và không giả là sai mật khẩu.
 6. FE lấy CSRF token cho phiên hợp lệ; logout kiểm tra nguồn/CSRF, revoke phiên hiện tại rồi xóa cookie cùng thuộc tính/path. Nếu DB lỗi không báo logout thành công; cookie bị mất sau commit thì retry không phục hồi phiên đã revoke.
@@ -152,7 +152,7 @@ type Principal struct {
     EmployeeID int
     EmployeeCode string
     Fullname string
-    SystemRoles []string
+    SystemRoles []string // DTO luôn là array, kể cả [] khi không có quyền hiệu lực.
     MustChangePassword bool
 }
 
@@ -225,7 +225,7 @@ Chữ ký trên dùng `context`/`time` của thư viện chuẩn; tên cuối v�
 | ReadPasswordChangeBasis | Chỉ biên service/repo được nhận hash hiện tại; gắn đúng user/session từ cookie, không nhận actor từ body. Service kiểm active/expiry/cờ trước bcrypt. |
 | FinalizeLogin | Adapter mở/commit transaction ngắn, khóa user → employee → session cũ cùng user; kiểm lại hash/email/active, đọc cờ/role hiện hành; revoke cookie cũ hợp lệ cùng user rồi insert hash mới. NewTokenHash do server sinh, không client. Clock chung được truyền cho adapter, đọc lại sau chờ khóa để đánh giá phiên cũ/thời điểm cấp mới; TTL=8h. Chỉ trả snapshot sau commit. |
 | ChangeInitialPassword | Đối chiếu UserID nội bộ với chủ token, không tin actor từ request. Adapter khóa user → employee → session theo ID, đọc lại active/hash/cờ/expiry/revoke bằng clock sau chờ khóa. So hash đã verify với hash hiện hành. Thay hash + false + revoke mọi phiên cùng transaction; lỗi rollback. Hash/nền/phiên đổi trả lỗi mất xác thực, không ghi đè. |
-| RevokeCurrentSession | Tìm đúng user/session từ hash, khóa user rồi session, đọc lại hiệu lực dưới khóa và revoke có điều kiện; không revoke phiên khác, không trả thành công trước commit. |
+| RevokeCurrentSession | Tìm đúng user/session từ hash, khóa user → employee → session, đọc lại active/hiệu lực dưới khóa và revoke có điều kiện; không revoke phiên khác, không trả thành công trước commit. |
 | Service | Normalize email/kiểm policy, bcrypt verify/hash và random ở ngoài transaction; Authenticate không tự cấp quyền nghiệp vụ khi cờ true. Mutation auth đã recheck trong adapter; mutation nghiệp vụ sau phải tái kiểm tra quyền/trạng thái trong transaction riêng. |
 | Transport | Parse cookie/JSON/header, Origin/CSRF/limiter trước bcrypt, DTO allowlist và no-store; cookie chỉ sau commit. Middleware xác thực cho me/csrf/logout/change-password khác guard nghiệp vụ chặn cờ true. Route tương lai không được bỏ guard mặc định. |
 
@@ -233,7 +233,7 @@ Chữ ký trên dùng `context`/`time` của thư viện chuẩn; tên cuối v�
 
 Lỗi nội bộ dự kiến phân biệt: InvalidCredentials, Unauthenticated, PasswordChangeRequired, PasswordChangeNotRequired, InvalidCurrentPassword, Validation, RateLimited, Unavailable và Internal. Transport map sang mã tại mục 6.2/OpenAPI; driver error được phân loại/redaction trong adapter, không map mọi lỗi DB thành 401. Tên/type error cụ thể và cách ghi wrap an toàn chốt trong task Go; không log toàn command, LoginIdentity, PasswordChangeBasis hoặc LoginResult.
 
-Clock của service và adapter dùng cùng nguồn được inject, không dùng thời gian client. Kiểm expiry là `now >= expires_at` thì không còn hiệu lực; request chờ khóa vượt hạn phải bị từ chối. Nguồn random lỗi → không ghi/không cookie. Secret chỉ tồn tại ở biên service → transport để đặt cookie, repo chỉ thấy hash SHA-256. Authenticate chỉ trả principal, không hash hoặc secret.
+Clock của service và adapter dùng cùng nguồn được inject, không dùng thời gian client. Kiểm expiry là `now >= expires_at` thì không còn hiệu lực; request chờ khóa vượt hạn phải bị từ chối. Với mutation, adapter gọi `Clock.Now()` sau khi lấy đủ khóa cần thiết, rồi dùng thời điểm này để kiểm expiry và ghi timestamp liên quan: login truyền tường minh `created_at` cùng `expires_at = created_at + 8h`; logout/đổi lần đầu truyền `revoked_at` khi thu hồi phiên. Không dùng thời điểm chụp trước khi chờ khóa hoặc SQL `now()` để thay kiểm thời gian hiện hành sau khóa. Nguồn random lỗi → không ghi/không cookie. Secret chỉ tồn tại ở biên service → transport để đặt cookie, repo chỉ thấy hash SHA-256. Authenticate chỉ trả principal, không hash hoặc secret.
 
 ## 6. Thiết kế chi tiết — Detailed design
 
@@ -298,7 +298,7 @@ Không thêm index `lower(email)`/unique không phân biệt hoa thường ngay 
 | Hoàn tất login | Đọc lại user rồi employee dưới khóa; so hash/email/status với dữ liệu đã xác minh; đọc cờ hiện hành | Khóa theo thứ tự user → employee → session cũ nếu có; revoke phiên cookie cũ của đúng user; INSERT session mới | Hash/email/status đổi → không cấp phiên từ kết quả xác minh cũ; rollback toàn bộ khi lỗi |
 | Authenticate/me | JOIN session → user → employee, cờ buộc đổi và role cùng statement/snapshot nhất quán | Không ghi, không trượt expires_at; tách xác thực phiên khỏi quyền gọi nghiệp vụ | Hết hạn/revoke/inactive/thiếu hồ sơ → 401; cờ true chỉ có allowlist auth; DB lỗi → 503/500 |
 | Đổi mật khẩu lần đầu | Phiên hợp lệ, hash mật khẩu hiện tại, cờ true; bcrypt verify/hash ở ngoài transaction | User → employee → các session theo session_id tăng dần; kiểm lại hash/cờ/active/phiên dưới khóa; thay hash + false + revoke tất cả phiên cùng commit (A08) | Sai mật khẩu hiện tại/validation → không ghi; nền đổi/phiên revoked → không ghi; commit lỗi rollback |
-| Logout | Xác thực phiên, Origin/CSRF; xác định session từ cookie | Khóa user trước session; UPDATE revoked_at có điều kiện | Không còn hiệu lực → 401; lỗi DB không trả 204 |
+| Logout | Xác thực phiên, Origin/CSRF; xác định session từ cookie | Khóa user → employee → session; kiểm lại active/hiệu lực rồi UPDATE revoked_at có điều kiện | Không còn hiệu lực → 401; lỗi DB không trả 204 |
 
 Nếu login thành công sang user khác với cookie đang mang, proposal không thu hồi session của user cũ như một tác dụng phụ xuyên tài khoản; cookie mới thay cookie trong browser, session cũ còn hạn trên server theo A03/A04. Đây là hệ quả đã được duyệt ở A07, không âm thầm logout mọi thiết bị. Không giữ transaction mở khi chạy bcrypt, chờ người nhập hoặc gửi HTTP response.
 
@@ -376,6 +376,8 @@ CREATE TABLE public.auth_sessions (
 CREATE INDEX idx_auth_sessions_user ON public.auth_sessions (user_id);
 ```
 
+Giữ `DEFAULT now()` trong DDL theo thiết kế cấu trúc, nhưng adapter auth phải truyền tường minh các timestamp theo clock sau khóa ở mục 5.3, không dựa default để tính thời điểm cấp/hạn phiên. PostgreSQL `now()` là thời điểm bắt đầu transaction, không tiến theo thời gian chờ khóa; xem [tài liệu thời gian PostgreSQL](https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT). Kiểm DB có barrier phải chứng minh phiên hết hạn trong lúc chờ bị từ chối và session mới có cặp created_at/expires_at từ cùng thời điểm cấp; giữ nhiệm vụ kiểm thực tế ở AUTH-T08/T09/T17. Không sửa default/schema hoặc chạy SQL từ task này.
+
 Cả hai FK mặc định NO ACTION. Không thêm CHECK cứng `expires_at=created_at+8h`: service áp 8h theo A03, bảng giữ ràng buộc cấu trúc đã chốt. Không thêm scope/last_seen/version hoặc quyền PM/PTCM. Email index/ràng buộc chuẩn hóa chưa được duyệt riêng; lookup phải phát hiện nhiều kết quả, không LIMIT 1.
 
 **Tương thích:** tạm giữ users.system_role legacy NOT NULL, nhưng auth mới chỉ dùng user_roles. Seed/consumer cũ có thể chỉ ghi legacy role; không gọi seed chung để cấp quyền hoặc account auth mới. Task tạo tài khoản sau này phải xử lý cột legacy còn giữ hoặc có migration bỏ đã duyệt, không tự sinh hai nguồn quyền. Thêm bảng không tự yêu cầu chuyển enum/status/cấp bậc/email của employees sang toàn bộ thiết kế đích.
@@ -413,11 +415,11 @@ Các route đồng bộ theo API design hiện hành. Ví dụ dưới đây mô
 
 | Endpoint | Input | Thành công | Thất bại chính |
 |---|---|---|---|
-| `POST /api/auth/login` | JSON `{email, password}`; không nhận user_id/role | 200, DTO danh tính + cờ buộc đổi và Set-Cookie | 400 định dạng; 401 thông tin không hợp lệ; 403 nguồn sai; 429; 503/500 lỗi hệ thống |
+| `POST /api/auth/login` | JSON `{email, password}`; không nhận user_id/role | 200, DTO danh tính + cờ buộc đổi và Set-Cookie | 400 định dạng; 401 thông tin không hợp lệ; 403 nguồn sai; 413/415; 429; 503/500 lỗi hệ thống |
 | `GET /api/auth/me` | Cookie phiên, kể cả hạn chế | 200 DTO hiện hành + cờ buộc đổi | 401 thiếu/hết hạn/revoked/inactive; 503/500 |
 | `GET /api/auth/csrf` | Cookie phiên hợp lệ | 200 `{csrf_token}` | 401; 503/500 |
-| `POST /api/auth/logout` | Cookie + `X-CSRF-Token`, Origin hợp lệ | 204, revoke rồi xóa cookie | 401 phiên không hợp lệ; 403 nguồn/CSRF; 503/500 |
-| `POST /api/auth/change-password` | Cookie + Origin/CSRF + JSON `{current_password, new_password}`; chỉ cờ true | 204, thay hash/cờ + revoke theo A08, xóa cookie; phải login lại | 400 validation/mật khẩu hiện tại sai; 401 phiên/nền thay đổi; 403 không ở cổng đổi lần đầu hoặc nguồn sai; 429; 503/500 |
+| `POST /api/auth/logout` | Cookie + `X-CSRF-Token`, Origin hợp lệ | 204, revoke rồi xóa cookie | 400 body không rỗng; 401 phiên không hợp lệ; 403 nguồn/CSRF; 503/500 |
+| `POST /api/auth/change-password` | Cookie + Origin/CSRF + JSON `{current_password, new_password}`; chỉ cờ true | 204, thay hash/cờ + revoke theo A08, xóa cookie; phải login lại | 400 validation/mật khẩu hiện tại sai; 401 phiên/nền thay đổi; 403 không ở cổng đổi lần đầu hoặc nguồn/CSRF sai; 413/415; 429; 503/500 |
 
 #### 6.2.1. Request và response cụ thể
 
@@ -454,7 +456,7 @@ Khi cờ true, cùng DTO nhưng `must_change_password: true` và `system_roles: 
 {"csrf_token":"<token dẫn xuất từ phiên hợp lệ>"}
 ```
 
-FE chỉ giữ CSRF token trong bộ nhớ, lấy lại sau reload/login mới. `POST /api/auth/logout` không có body nghiệp vụ, gửi `Origin` và `X-CSRF-Token`, trả 204 không JSON. Xóa cookie dùng đúng tên/Path=/api/host-only, Max-Age=0 và Expires ở quá khứ; không xóa nhầm tất cả cookie của ứng dụng. Response auth đều no-store.
+FE chỉ giữ CSRF token trong bộ nhớ, lấy lại sau reload/login mới. `POST /api/auth/logout` không có body nghiệp vụ, gửi `Origin` và `X-CSRF-Token`, trả 204 không JSON. Xóa cookie dùng đúng tên/Path=/api/host-only, Max-Age=0 và Expires ở quá khứ; không xóa nhầm tất cả cookie của ứng dụng. Logout gửi body rỗng; không cần Content-Type application/json và không suy 415 chỉ vì thiếu header này. Body không rỗng trả 400 VALIDATION_ERROR theo OpenAPI. Response auth đều no-store.
 
 #### 6.2.2. Lỗi, thứ tự kiểm tra và giới hạn
 
@@ -468,7 +470,7 @@ FE chỉ giữ CSRF token trong bộ nhớ, lấy lại sau reload/login mới. 
 | 403 / PASSWORD_CHANGE_NOT_REQUIRED | Gọi đổi lần đầu khi cờ false | Không ghi; không mở luồng đổi tự nguyện ngoài scope |
 | 400 / INVALID_CURRENT_PASSWORD | Phiên hợp lệ nhưng mật khẩu hiện tại nhập sai ở màn đổi | Giữ phiên, báo lỗi tại form; tính vào limiter đổi mật khẩu |
 | 413 / PAYLOAD_TOO_LARGE | Body JSON login/đổi lần đầu >8192 byte | Không xử lý body vượt giới hạn bằng bcrypt hoặc ghi DB |
-| 415 / UNSUPPORTED_MEDIA_TYPE | POST auth có JSON sai Content-Type | Yêu cầu JSON hợp lệ |
+| 415 / UNSUPPORTED_MEDIA_TYPE | Login/đổi lần đầu không dùng Content-Type application/json | Yêu cầu JSON hợp lệ |
 | 429 / RATE_LIMITED | Chạm limiter | Retry-After, không khóa user |
 | 503 / SERVICE_UNAVAILABLE | DB tạm thời không dùng được | Cho retry có chủ ý, không giả user sai/không quyền |
 | 500 / INTERNAL_ERROR | Lỗi ngoài dự kiến, gồm dữ liệu định danh mâu thuẫn | Thông báo chung/request_id, không trả SQL/PII |
@@ -544,7 +546,7 @@ sequenceDiagram
   else Phiên/nguồn/token không hợp lệ
     H-->>B: 401/403, không revoke theo yêu cầu lỗi
   else Hợp lệ
-    H->>D: Transaction: khóa user rồi session<br/> revoke có điều kiện<br/> commit
+    H->>D: Transaction: khóa user → employee → session<br/> kiểm lại active/hiệu lực và revoke có điều kiện<br/> commit
     alt Commit thành công
       H-->>B: 204 + xóa cookie
     else DB lỗi
@@ -569,7 +571,7 @@ JSON snake_case; lỗi dạng `{code, message, request_id}` với message tiến
 
 #### 6.2.5. Đổi mật khẩu lần đầu và bootstrap phiên hạn chế — đã duyệt A08/A09
 
-Đề xuất dùng route `POST /api/auth/change-password` đã có trong định hướng API, giới hạn đợt này cho cờ true. Không thêm endpoint cấp mật khẩu hoặc reset. Request nhận đúng hai chuỗi `current_password`, `new_password`; không nhận email/user_id/role/cờ. Xác minh mật khẩu hiện tại theo security.md; không trim, không cắt/truncate mật khẩu. Client có ô nhập lại mật khẩu mới để đối chiếu cục bộ, không cần gửi trường thứ ba.
+Dùng route `POST /api/auth/change-password` đã có trong định hướng API, giới hạn đợt này cho cờ true. Không thêm endpoint cấp mật khẩu hoặc reset. Request nhận đúng hai chuỗi `current_password`, `new_password`; không nhận email/user_id/role/cờ. Xác minh mật khẩu hiện tại theo security.md; không trim, không cắt/truncate mật khẩu. Client có ô nhập lại mật khẩu mới để đối chiếu cục bộ, không cần gửi trường thứ ba.
 
 - Phiên phải còn hiệu lực và user/employee active; Origin/CSRF hợp lệ như logout. CSRF bootstrap dùng được cả phiên hạn chế để tránh bế tắc buộc đổi.
 - Mật khẩu mới phải khác mật khẩu hiện tại, có ít nhất 15 ký tự Unicode (code point) và không quá 72 byte UTF-8 theo A09. Sai chính sách hoặc giống mật khẩu hiện tại → 400 VALIDATION_ERROR. Không trim, tự chuẩn hóa hoặc cắt mật khẩu; cho phép khoảng trắng/chữ có dấu/paste, không ép nhóm ký tự. FE/server thống nhất cách đếm, báo rõ giới hạn byte khi vượt; không dùng độ dài UTF-16 của JavaScript để thay số code point. Thông báo không lặp lại giá trị đã nhập. Giới hạn 72 byte là đánh đổi giữ bcrypt, không tuyên bố đáp ứng toàn bộ khuyến nghị OWASP/NIST về mật khẩu Unicode dài.
@@ -615,6 +617,48 @@ Kiểm tĩnh hiện có kiểm ref nội bộ, allowlist, cấu trúc security, 
 
 **Chốt bổ sung trước nhận task HTTP/config:** body JSON login/đổi lần đầu ≤8192 byte, vượt trả 413, đã duyệt riêng cùng ngày; không thay giới hạn mật khẩu. Kiểm thử HTTP phải gồm 8192/8193 byte, body không khai báo độ dài/Content-Length không đáng tin và không có tác dụng phụ khi chặn. P04 còn review mapping/phạm vi SQL cụ thể và dựng DB test; estimate 105h/21h dự phòng không tự thành thời gian đã làm hoặc ngày hoàn thành.
 
+#### 6.2.7. Bàn giao contract DATN-2 / AUTH-T01 — 07/11/2026
+
+Đối chiếu theo FR-001/002, phần nền FR-003, phần lần đầu FR-004 và A01–A09/body 8 KiB; không bổ sung quyết định nghiệp vụ hoặc schema. OpenAPI là nguồn HTTP duy nhất, mục 5.3 là port nội bộ. Bản này sẵn sàng để người dùng review; không tự chuyển Jira Done hoặc tuyên bố đã có auth runtime.
+
+| Điểm đối chiếu | Kết luận / đầu vào cho task sau |
+|---|---|
+| Năm route | Giữ đúng method/path ở mục 6.2; không reset/refresh/cấp tài khoản. Bổ sung 413/415 vào bảng tóm tắt để khớp OpenAPI. |
+| Input và lỗi | Login/đổi lần đầu nhận JSON theo allowlist và body 8192 byte. Logout body rỗng, không bắt Content-Type; body không rỗng là 400, không tự áp lỗi 415 của hai route JSON. |
+| Danh tính và phiên hạn chế | Login/me dùng cùng Principal; system_roles luôn array (Go nil slice không được marshal thành null). Cờ true → [] kể cả ADMIN; cờ false + [] vẫn là nhân viên hợp lệ. Thêm ví dụ hai nhánh và lỗi chung trong OpenAPI cho FE/httptest đối chiếu. |
+| Cookie/CSRF | Cookie chỉ cấp sau commit login; me/csrf không gia hạn. Mutation cần cookie AND CSRF cùng Origin; login chỉ Origin. 204 logout/đổi lần đầu chỉ xóa cookie sau commit; lỗi không cấp/xóa cookie. |
+| Port và khóa | Giữ bốn use case và sáu repo ports mục 5.3. Làm rõ logout khóa user → employee → session để kiểm lại cả employee active, thống nhất với login/đổi lần đầu; không chạy bcrypt dưới khóa. |
+| Thời gian sau khóa | Adapter đọc clock sau khi lấy đủ khóa; kiểm hạn và truyền timestamp tường minh, không dựa DEFAULT now() của PostgreSQL. Giữ nguyên schema; ca DB cạnh tranh thuộc AUTH-T08/T09/T17. |
+| Config | Giữ tên APP_ORIGIN và SESSION_TTL; TTL phải phản ánh 8h đã duyệt. AUTH-T02/T03 hoàn thiện load/validation, không lấy default dev cũ làm chính sách production. |
+
+**Phân việc Go để triển khai đúng tầng:**
+
+| Tầng | Đầu vào / đầu ra và trách nhiệm |
+|---|---|
+| HTTP handler/middleware | Request → kiểm byte/JSON/header/cookie, Origin/CSRF/limiter → gọi use case → DTO hoặc mã lỗi. Không truy vấn pgx, không tự ghi/revoke session; không serialize LoginResult trực tiếp vì có secret. |
+| Auth service | Credential/secret nội bộ → kiểm policy, bcrypt ngoài transaction, tạo secret/hash, gọi atomic port. Authenticate trả Principal hiện hành, không cache role; DTO hạn chế không sửa role DB. |
+| Repository adapter | Projection và atomic ports → SQL tham số hóa, thứ tự khóa/đọc lại nền, commit/rollback. Không bcrypt/HTTP/cookie; dữ liệu lỗi trùng email khác found=false. Không trả thành công khi kết quả commit không rõ. |
+| Composition root | Ghép config, repo, service, clock/random và router. Cùng clock cho service/adapter; không tạo framework DI hoặc package rỗng trong AUTH-T01. |
+
+Lỗi ở service/adapter không mang HTTP status: InvalidCredentials → login 401; Unauthenticated → route bảo vệ 401; InvalidCurrentPassword/Validation → 400; PasswordChangeNotRequired → 403; Unavailable/Internal → 503/500. Transport sở hữu FORBIDDEN do Origin/CSRF, PAYLOAD_TOO_LARGE (413), UNSUPPORTED_MEDIA_TYPE (415) và RATE_LIMITED (429); PASSWORD_CHANGE_REQUIRED là cổng nghiệp vụ, không lỗi me/csrf của phiên hợp lệ. Mỗi lỗi có no-store và request_id; không trả lỗi driver/secret.
+
+**Ca nhận việc HTTP/FE bổ sung cho ma trận mục 6.4:**
+
+| Ca | Kỳ vọng / nơi kiểm khi có runtime |
+|---|---|
+| Không role đặc biệt, cờ false; ADMIN có cờ true | Login/me 200 với [] ở cả hai nhưng cờ khác; FE chỉ vào đổi lần đầu khi true. HTTP/service + FE, không suy từ role rỗng. |
+| Body đúng 8192 byte và 8193 byte, không khai độ dài | 8192 vẫn phải qua các validation khác; 8193 là 413 trước bcrypt/write. HTTP, không chỉ kiểm schema. |
+| Logout body rỗng, thiếu Content-Type nhưng có phiên/Origin/CSRF | Revoke commit rồi 204/xóa cookie; không bị 415. Body không rỗng là 400 và không revoke. |
+| Employee bị vô hiệu trong lúc logout chờ khóa | Adapter đọc lại dưới khóa, không trả 204 từ snapshot active cũ; DB concurrency test ở AUTH-T08/T17. |
+| Login/đổi lỗi hoặc commit không rõ | Không Set-Cookie thành công/xóa cookie; phân biệt 401/400/403/429 với DB 503/500. Không tự retry POST. |
+| Role/cờ hoặc actor giả trong request | 400 vì field ngoài allowlist; không cấp quyền, không thay cờ DB. |
+
+**Còn lại đúng task phụ thuộc:** AUTH-T02/T03 chốt hành vi loader/config và kiểm môi trường; AUTH-T05/T06 review mapping legacy/SQL/fixture và quyền DB test; AUTH-T12 chốt biểu diễn token/cookie trong helper và kiểm browser thực tế theo A07; AUTH-T13 hiện thực limiter có biên/đồng thời/dọn bộ nhớ; AUTH-T18 chốt màn đích auth thật tách mock. Các chi tiết biểu diễn/helper không được đổi entropy/TTL/thuật toán/allowlist đã chốt. Reset/gửi thư/retention vẫn ngoài feature. Không chạy lại import Jira chỉ vì nguồn proposal/OpenAPI được chỉnh: journal đã gắn fingerprint bản import cũ; tiến độ/bằng chứng đưa lên ticket thủ công khi được giao, không xóa journal hoặc tạo lại ticket.
+
+Bằng chứng kiểm ngày 07/11: `node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs` đạt **23/23** (11 contract, 12 harness); `node scripts/check-harness.mjs` đạt **215 file**; `git diff --check` đạt. Kiểm tương thích công cụ Jira bằng test offline đạt **29/29**, offline plan vẫn 1 Epic/20 Task/33 WBS/105h/47 links; không gọi Jira thật. Không đổi Go/FE nên không chạy lại cổng Go/FE trong task tài liệu này.
+
+Kiểm tĩnh nằm ở scripts/check-auth-contract.test.mjs; mở rộng ma trận status/code và ví dụ DTO, không gọi đó là validator OpenAPI đầy đủ. AUTH-S01–S10 vẫn cần bằng chứng runtime ở đúng task; chưa chạy HTTP/SQL/browser. Lệnh/kết quả kiểm tra thực tế bàn giao cùng diff, không đánh dấu trước các checklist runtime hoặc Jira Done.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.
@@ -622,7 +666,7 @@ Kiểm tĩnh hiện có kiểm ref nội bộ, allowlist, cấu trúc security, 
 3. Nối FE auth thật khi năm route và cổng phiên hạn chế đã qua contract tests; demo và auth thật là hai chế độ rõ ràng. Chưa có API nghiệp vụ thì không mở mock như bằng chứng quyền thật.
 4. Review cookie/CSRF/Origin, bí mật trong log, hạn phiên và cổng Go/FE trước demo. Chưa mở ra Internet hoặc dùng dữ liệu công ty từ proposal này.
 
-Cấu hình mới dự kiến: `APP_ORIGIN` (một origin đầy đủ được cho phép), `SESSION_TTL` (8h theo A03 đã duyệt, kiểm tra duration dương); tên cuối chốt trong P01. `APP_ENV` điều khiển ngoại lệ localhost Secure, không cho prod tự fallback về dev. Chưa tạo feature flag service: chọn chế độ demo/auth tại cấu hình build/dev tường minh, không cho người dùng đổi qua URL để vượt auth.
+Cấu hình mới dự kiến: `APP_ORIGIN` (một origin đầy đủ được cho phép), `SESSION_TTL` (hạn 8h theo A03 đã duyệt); tên giữ APP_ORIGIN/SESSION_TTL cho các task tiếp theo. SESSION_TTL biểu diễn hạn 8h đã duyệt, không chỉ kiểm dương rồi tự cho đổi thời hạn nghiệp vụ; cách load/default/validation cụ thể được kiểm ở AUTH-T02/AUTH-T03. `APP_ENV` điều khiển ngoại lệ localhost Secure, không cho prod tự fallback về dev. Chưa tạo feature flag service: chọn chế độ demo/auth tại cấu hình build/dev tường minh, không cho người dùng đổi qua URL để vượt auth.
 
 Quan sát tối thiểu dùng slog/request_id: kết quả nhóm login/logout và lỗi kết nối đã redaction; không body, email thô, mật khẩu, cookie, CSRF, hash hoặc DSN. Không gắn người dùng/token vào metric labels. Đề xuất đếm tổng login thành công/thất bại, 429 và lỗi DB khi đã có cơ chế thu thập phù hợp; chưa cài metrics stack, dashboard hoặc ngưỡng alert mới.
 

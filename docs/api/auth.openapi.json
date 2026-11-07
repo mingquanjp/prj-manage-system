@@ -2,8 +2,8 @@
   "openapi": "3.1.1",
   "info": {
     "title": "DATN — Auth và phiên truy cập",
-    "version": "0.1.0-draft",
-    "description": "Hợp đồng thiết kế theo baseline 06/11/2026 và proposal backend-auth-session; A01–A09 đã duyệt. Chưa có API auth chạy. Không bao gồm tạo tài khoản/reset/gửi thư/API dự án. Body JSON login/đổi lần đầu giới hạn 8 KiB (8192 byte) đã duyệt riêng 06/11, vượt trả 413; file này không tự duyệt dependency hoặc migration."
+    "version": "0.1.0",
+    "description": "Hợp đồng thiết kế theo baseline 06/11/2026 và proposal backend-auth-session; A01–A09 đã duyệt. Chưa có API auth chạy. Không bao gồm tạo tài khoản/reset/gửi thư/API dự án. Body JSON login/đổi lần đầu giới hạn 8 KiB (8192 byte) đã duyệt riêng 06/11, vượt trả 413; file này không tự duyệt dependency hoặc migration. Review contract DATN-2 / AUTH-T01 ngày 07/11/2026; phiên bản contract không phải phiên bản runtime đã triển khai."
   },
   "servers": [
     {
@@ -54,6 +54,30 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Principal"
+                },
+                "examples": {
+                  "employee": {
+                    "summary": "Nhân viên không có quyền hệ thống đặc biệt, phiên nghiệp vụ",
+                    "value": {
+                      "user_id": 12,
+                      "employee_id": 25,
+                      "employee_code": "E025",
+                      "fullname": "Nguyễn Văn An",
+                      "system_roles": [],
+                      "must_change_password": false
+                    }
+                  },
+                  "limited": {
+                    "summary": "Phiên buộc đổi, kể cả tài khoản có quyền đặc biệt trong DB",
+                    "value": {
+                      "user_id": 12,
+                      "employee_id": 25,
+                      "employee_code": "E025",
+                      "fullname": "Nguyễn Văn An",
+                      "system_roles": [],
+                      "must_change_password": true
+                    }
+                  }
                 }
               }
             }
@@ -389,6 +413,11 @@
                       "minLength": 1
                     }
                   }
+                },
+                "example": {
+                  "code": "INVALID_CREDENTIALS",
+                  "message": "Email hoặc mật khẩu không hợp lệ.",
+                  "request_id": "auth-example-001"
                 }
               }
             }
@@ -454,6 +483,30 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Principal"
+                },
+                "examples": {
+                  "employee": {
+                    "summary": "Nhân viên không có quyền hệ thống đặc biệt, phiên nghiệp vụ",
+                    "value": {
+                      "user_id": 12,
+                      "employee_id": 25,
+                      "employee_code": "E025",
+                      "fullname": "Nguyễn Văn An",
+                      "system_roles": [],
+                      "must_change_password": false
+                    }
+                  },
+                  "limited": {
+                    "summary": "Phiên buộc đổi, kể cả tài khoản có quyền đặc biệt trong DB",
+                    "value": {
+                      "user_id": 12,
+                      "employee_id": 25,
+                      "employee_code": "E025",
+                      "fullname": "Nguyễn Văn An",
+                      "system_roles": [],
+                      "must_change_password": true
+                    }
+                  }
                 }
               }
             }
@@ -750,7 +803,7 @@
           "Auth"
         ],
         "summary": "Đăng xuất phiên hiện tại",
-        "description": "Không body nghiệp vụ. Kiểm phiên/Origin/CSRF, khóa user rồi session, revoke có điều kiện và commit trước xóa cookie. Không revoke phiên khác; retry có thể 401. Lỗi DB không giả thành công.",
+        "description": "Request body rỗng; không yêu cầu Content-Type application/json. Body không rỗng trả 400 VALIDATION_ERROR trước revoke. Kiểm phiên/Origin/CSRF; adapter khóa user → employee → session và kiểm lại active/hiệu lực, revoke có điều kiện và commit trước xóa cookie. Không revoke phiên khác; retry có thể 401. Lỗi DB không giả thành công.",
         "security": [
           {
             "cookieAuth": [],
@@ -941,7 +994,7 @@
             }
           },
           "400": {
-            "description": "JSON/field/validation sai; không ghi dữ liệu.",
+            "description": "Body logout không rỗng; không revoke hoặc xóa cookie.",
             "headers": {
               "Cache-Control": {
                 "description": "Không cache phản hồi auth, kể cả lỗi.",
