@@ -43,6 +43,17 @@ web/dist/
 
 # Nguồn trực tiếp của harness — allowlist có chủ đích, không mở toàn bộ docs/thesis
 !/docs/README.md
+!/docs/product/
+/docs/product/*
+!/docs/product/functional-requirements.md
+!/docs/product/business-domains.md
+!/docs/proposals/
+/docs/proposals/*
+!/docs/proposals/backend-auth-session.md
+!/docs/proposals/backend-auth-session-tickets.md
+!/docs/api/
+/docs/api/*
+!/docs/api/auth.openapi.json
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md
 !/docs/design/database-review-decisions-2026-10-14.md

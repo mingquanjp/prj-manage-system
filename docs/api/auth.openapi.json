@@ -1,0 +1,1596 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "DATN — Auth và phiên truy cập",
+    "version": "0.1.0-draft",
+    "description": "Hợp đồng thiết kế theo baseline 06/11/2026 và proposal backend-auth-session; A01–A09 đã duyệt. Chưa có API auth chạy. Không bao gồm tạo tài khoản/reset/gửi thư/API dự án. Body JSON login/đổi lần đầu giới hạn 8 KiB (8192 byte) đã duyệt riêng 06/11, vượt trả 413; file này không tự duyệt dependency hoặc migration."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Cùng origin ứng dụng; localhost qua proxy /api, production HTTPS."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Phiên server và đổi mật khẩu lần đầu, không JWT/refresh."
+    }
+  ],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đăng nhập bằng email công ty",
+        "description": "Email/password hoặc trạng thái không hợp lệ cùng lỗi chung. Không có user vẫn kiểm hash giả. Bcrypt ngoài transaction; khóa user → employee → session cũ cùng user, so lại nền rồi cấp secret mới. Cờ true chỉ mở phiên hạn chế; không có expiry mật khẩu tạm, session vẫn 8 giờ. Secret/hash không trong JSON. Không gửi Idempotency-Key, không hứa exactly-once.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Login commit thành công; FE rẽ theo cờ buộc đổi.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Set-Cookie": {
+                "description": "Cookie staffing_session mới chỉ sau login commit. Host-only, HttpOnly, Secure, SameSite=Lax, Path=/api; hạn không vượt session 8 giờ. Chỉ dev localhost tắt Secure. Secret không có trong JSON.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Principal"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF thiếu hoặc không hợp lệ, không ghi.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "FORBIDDEN"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON/field/validation sai; không ghi dữ liệu.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON lớn hơn 8192 byte (8 KiB), trả PAYLOAD_TOO_LARGE; không bcrypt hoặc ghi dữ liệu từ body vượt giới hạn. Chính sách mật khẩu độc lập.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "PAYLOAD_TOO_LARGE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Request có JSON phải gửi Content-Type application/json.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNSUPPORTED_MEDIA_TYPE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Chạm limiter, không khóa tài khoản vĩnh viễn.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "description": "Số giây cần chờ trước lần thử tiếp theo. Không khóa tài khoản vĩnh viễn.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "RATE_LIMITED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Thông báo chung Email hoặc mật khẩu không hợp lệ, không tiết lộ email tồn tại/locked/inactive.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INVALID_CREDENTIALS"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "x-max-body-bytes": 8192,
+          "description": "Toàn body JSON tối đa 8192 byte, không chỉ mật khẩu. Server kiểm số byte thực đọc, không chỉ Content-Length; vượt trả 413 trước bcrypt/ghi dữ liệu. Extension này không tự thực thi giới hạn ở server."
+        },
+        "x-rate-limit": {
+          "ip": "30 request/5 phút",
+          "email": "5 thất bại/5 phút/email chuẩn hóa",
+          "parameters": "thử nghiệm, không tin forwarded IP chưa có proxy tin cậy"
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đọc danh tính và cổng truy cập hiện hành",
+        "description": "Đọc cùng snapshot session/expiry/revocation, user/employee active, cờ và role hiện hành. Cờ true vẫn trả 200 LimitedPrincipal; không gia hạn/Set-Cookie. FE không dùng selector hoặc DTO giả để cấp quyền.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh tính hiện hành, gồm trạng thái buộc đổi.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Principal"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAUTHENTICATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "operationId": "getCsrfToken",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Lấy CSRF token cho phiên hiện hành",
+        "description": "Cho phép cả phiên hạn chế để đổi mật khẩu/logout; không tạo phiên/gia hạn. HMAC-SHA256 gắn secret phiên, thông điệp csrf-v1. Không mở CORS.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token chỉ dùng cùng phiên hiện tại.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAUTHENTICATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đăng xuất phiên hiện tại",
+        "description": "Không body nghiệp vụ. Kiểm phiên/Origin/CSRF, khóa user rồi session, revoke có điều kiện và commit trước xóa cookie. Không revoke phiên khác; retry có thể 401. Lỗi DB không giả thành công.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoke commit thành công, không JSON.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Set-Cookie": {
+                "description": "Xóa staffing_session chỉ sau commit: cùng host-only/Path=/api, Max-Age=0 và Expires quá khứ, giữ thuộc tính bảo mật tương ứng. Không cấp phiên mới.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAUTHENTICATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF thiếu hoặc không hợp lệ, không ghi.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "FORBIDDEN"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON/field/validation sai; không ghi dữ liệu.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "operationId": "changeInitialPassword",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Đổi mật khẩu tạm lần đầu",
+        "description": "Chỉ cờ true; không triển khai đổi tự nguyện/reset. Xác minh current/hash new ngoài transaction. Khóa user → employee → session theo ID, đọc lại nền/cờ/active/hiệu lực sau chờ khóa. Thay hash + false + revoke mọi phiên cùng transaction, lỗi rollback. Đổi xong login lại, không tự nâng phiên/cấp cookie mới. Mất phản hồi không tự retry mù; phải xác minh bằng login mới.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Đổi commit thành công, không JSON; quay login.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Set-Cookie": {
+                "description": "Xóa staffing_session chỉ sau commit: cùng host-only/Path=/api, Max-Age=0 và Expires quá khứ, giữ thuộc tính bảo mật tương ứng. Không cấp phiên mới.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAUTHENTICATED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF sai, hoặc cờ false gọi đổi lần đầu; không mở đổi tự nguyện.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "FORBIDDEN",
+                        "PASSWORD_CHANGE_NOT_REQUIRED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation/new giống current hoặc xác minh current sai. Không đổi hash/cờ/phiên. Current sai tính vào limiter user, validation/CSRF/DB lỗi không tính.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR",
+                        "INVALID_CURRENT_PASSWORD"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON lớn hơn 8192 byte (8 KiB), trả PAYLOAD_TOO_LARGE; không bcrypt hoặc ghi dữ liệu từ body vượt giới hạn. Chính sách mật khẩu độc lập.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "PAYLOAD_TOO_LARGE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Request có JSON phải gửi Content-Type application/json.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNSUPPORTED_MEDIA_TYPE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Chạm limiter, không khóa tài khoản vĩnh viễn.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "description": "Số giây cần chờ trước lần thử tiếp theo. Không khóa tài khoản vĩnh viễn.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "message",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "RATE_LIMITED"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Thông báo tiếng Việt, không SQL/DSN/hash/secret hoặc lặp lại mật khẩu."
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeInitialPasswordRequest"
+              }
+            }
+          },
+          "x-max-body-bytes": 8192,
+          "description": "Toàn body JSON tối đa 8192 byte, không chỉ mật khẩu. Server kiểm số byte thực đọc, không chỉ Content-Length; vượt trả 413 trước bcrypt/ghi dữ liệu. Extension này không tự thực thi giới hạn ở server."
+        },
+        "x-rate-limit": {
+          "ip": "30 request/5 phút trước bcrypt",
+          "user": "5 lần xác minh current sai/15 phút",
+          "parameters": "thử nghiệm đã duyệt, không khóa vĩnh viễn; bucket có giới hạn/dọn bộ nhớ"
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "staffing_session",
+        "description": "Cookie secret HttpOnly, chỉ DB token_hash. OpenAPI không tự thực thi kiểm expiry/revoke/active/cờ/quyền."
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "Gắn phiên, so constant-time; cùng cookie trong một Security Requirement là bắt buộc cả hai."
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Trim đầu/cuối rồi validate không rỗng/định dạng và giới hạn cột 100 ký tự; so không phân biệt hoa/thường, không tự viết lại DB. Không nhận username."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "writeOnly": true,
+            "description": "Không trim/cắt/normalize; xác minh credential hiện có, không áp min 15 của mật khẩu mới lên login."
+          }
+        }
+      },
+      "ChangeInitialPasswordRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "minLength": 1,
+            "writeOnly": true,
+            "description": "Xác minh mật khẩu hiện tại; không trim/cắt."
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 15,
+            "writeOnly": true,
+            "x-max-utf8-bytes": 72,
+            "description": "Ít nhất 15 code point Unicode và tối đa 72 byte UTF-8; server phải kiểm byte, JSON Schema minLength không biểu diễn giới hạn byte. Khác mật khẩu hiện tại; không trim/cắt/normalize/ép nhóm ký tự, cho phép khoảng trắng/chữ có dấu/paste."
+          }
+        }
+      },
+      "Principal": {
+        "description": "DTO allowlist từ server, không entity DB. Cờ true chỉ trả roles hiệu lực rỗng, không xóa role lưu DB. PM/PTCM không là role toàn hệ thống.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LimitedPrincipal"
+          },
+          {
+            "$ref": "#/components/schemas/BusinessPrincipal"
+          }
+        ]
+      },
+      "LimitedPrincipal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user_id",
+          "employee_id",
+          "employee_code",
+          "fullname",
+          "system_roles",
+          "must_change_password"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Không giả employee_id bằng user_id."
+          },
+          "employee_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullname": {
+            "type": "string",
+            "minLength": 1
+          },
+          "system_roles": {
+            "type": "array",
+            "maxItems": 0,
+            "items": {
+              "type": "string"
+            }
+          },
+          "must_change_password": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "BusinessPrincipal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user_id",
+          "employee_id",
+          "employee_code",
+          "fullname",
+          "system_roles",
+          "must_change_password"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Không giả employee_id bằng user_id."
+          },
+          "employee_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullname": {
+            "type": "string",
+            "minLength": 1
+          },
+          "system_roles": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADMIN",
+                "HR",
+                "DIRECTOR"
+              ]
+            },
+            "maxItems": 3
+          },
+          "must_change_password": {
+            "type": "boolean",
+            "const": false
+          }
+        }
+      },
+      "CsrfResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csrf_token"
+        ],
+        "properties": {
+          "csrf_token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "HMAC-SHA256 từ secret phiên, phân miền csrf-v1. FE chỉ giữ trong bộ nhớ; không phải session secret, không thay cookie."
+          }
+        }
+      }
+    }
+  },
+  "x-business-guard": {
+    "required": true,
+    "limited_session_allowlist": [
+      "getCurrentUser",
+      "getCsrfToken",
+      "logout",
+      "changeInitialPassword"
+    ],
+    "denied_response": {
+      "status": 403,
+      "code": "PASSWORD_CHANGE_REQUIRED"
+    },
+    "description": "API nghiệp vụ tương lai cần guard cờ true sau xác thực phiên; không thêm route nghiệp vụ minh họa vào paths."
+  },
+  "externalDocs": {
+    "description": "Chuẩn OpenAPI 3.1.1 dùng để biểu diễn contract; không tự thực thi bảo mật.",
+    "url": "https://spec.openapis.org/oas/v3.1.1.html"
+  }
+}

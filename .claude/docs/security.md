@@ -8,7 +8,7 @@
 Đọc trước auth, upload và mọi endpoint có ID. Quyền/session chi tiết ở roles_permissions.md.
 Đây là yêu cầu triển khai, không khẳng định code skeleton đã đáp ứng.
 
-Theo [chốt tài khoản 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản), e010 chỉ là tên đăng nhập demo tạm. Định danh đăng nhập, quy tắc cấp/chuẩn hóa username và kênh cấp tài khoản cần chốt trước auth backend; không suy chính sách từ tên fixture.
+Theo [chốt tài khoản 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản), e010 chỉ là tên đăng nhập demo tạm. [Chốt 05/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-05112026--định-danh-đăng-nhập-backend) chọn email công ty để đăng nhập backend phiên bản đầu; username vẫn là dữ liệu riêng. Chuẩn hóa email đã chốt trim đầu/cuối và so không phân biệt hoa/thường (trùng thì dừng, không sửa dữ liệu tự động); quy tắc cấp username còn cần đặc tả; kênh cấp tài khoản mới bằng mật khẩu tạm qua email theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email). Không suy chính sách từ fixture.
 
 ## 1. Bí mật và dữ liệu trả về
 
@@ -26,9 +26,9 @@ React escape mặc định không thay thế toàn bộ phòng XSS; tránh HTML 
 Session phía server: cookie secret ngẫu nhiên, lưu hash SHA-256 duy nhất trong auth_sessions, không lưu secret rõ/ID tăng dần trong cookie. Mọi API kiểm tra phiên còn hạn/chưa revoked, status và quyền hiện hành. Không JWT/refresh endpoint.
 Khóa/đổi role/reset thu hồi tất cả phiên, logout phiên hiện tại. Cookie host-only, HttpOnly, Secure, SameSite=Lax, Path=/api; chỉ dev localhost mới được tắt Secure, production HTTPS.
 
-Mutation cần Origin chính xác và token CSRF gắn session trong header. GET /api/auth/csrf bootstrap cho phiên hợp lệ; login kiểm tra nguồn, logout cần CSRF. GET không ghi nghiệp vụ ngoài bootstrap cookie. Hết hạn phiên phải đăng nhập lại, không đường refresh. Giao thức CSRF/rotation secret khi login cần contract test trước M1.
+Mutation cần Origin chính xác và token CSRF gắn session trong header. GET /api/auth/csrf bootstrap cho phiên hợp lệ; login kiểm tra nguồn, logout cần CSRF. GET không ghi nghiệp vụ ngoài bootstrap cookie. Hết hạn phiên phải đăng nhập lại, không đường refresh. A07 đã duyệt HMAC-SHA256 gắn secret phiên, cookie staffing_session, FE dev proxy /api; login sinh secret mới và thu hồi phiên cookie cũ hợp lệ của cùng user trong transaction, không thu hồi xuyên user. Giao thức vẫn phải qua contract test trước triển khai.
 
-Chưa chốt thời lượng tuyệt đối/idle/cleanup. Sáu cột auth_sessions hỗ trợ expires_at tuyệt đối; không tuyên bố có idle timeout khi chưa có phương án lưu hoạt động. Không mặc định 7 ngày. Bỏ cờ buộc đổi mật khẩu, không khôi phục bằng mô tả API.
+Theo chốt auth A02–A09 ngày 06/11, phiên có hạn tuyệt đối 8 giờ từ login, gồm phiên hạn chế; không tự gia hạn/idle timeout/ghi nhớ. Sáu cột session đủ cho hạn tuyệt đối, không thêm last_seen_at. Chưa xóa vật lý session hết hạn/revoked trong đợt này; chúng vẫn bị từ chối. Retention/lịch dọn chốt trước vận hành lâu dài. Theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), tài khoản dùng mật khẩu tạm phải đổi trước khi truy cập nghiệp vụ. Chốt cuối cùng: users.must_change_password BOOLEAN NOT NULL DEFAULT false; không có hạn mật khẩu tạm. Server phải kiểm tra cờ hiện hành, không chỉ FE hoặc role trong phiên. A08/A09 đã duyệt: phiên hạn chế chỉ cho me/csrf/logout/đổi lần đầu, role không vượt cổng này; [proposal auth mục 6.2.5](../../docs/proposals/backend-auth-session.md#625-đổi-mật-khẩu-lần-đầu-và-bootstrap-phiên-hạn-chế--đã-duyệt-a08a09) chi tiết contract; sáu cột session không tự thực thi việc chặn nghiệp vụ.
 
 
 Nguồn nguyên tắc: [OWASP CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html),
@@ -51,13 +51,17 @@ Phối hợp khóa theo thứ tự thống nhất trên mọi đường đổi t
 
 ## 4. Mật khẩu và giới hạn
 
-Bcrypt DefaultCost; không lưu rõ. Có đổi mật khẩu (xác minh mật khẩu cũ), ADMIN reset theo chính sách sẽ đặc tả; chưa có luồng buộc đổi trước API nghiệp vụ khác.
-Chính sách độ dài/min-max, mật khẩu tạm hết hạn và kênh giao mật khẩu tạm còn phải đặc tả trước M1.
+Bcrypt DefaultCost; DB chỉ lưu bản băm. Có đổi mật khẩu chính chủ (xác minh mật khẩu cũ); ADMIN reset theo chính sách sẽ đặc tả.
+Theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), hệ thống sinh mật khẩu tạm ngẫu nhiên khi cấp tài khoản mới, gửi qua email đã đăng ký; không log hoặc hiển thị mật khẩu trong giao diện quản trị. Đăng nhập bằng mật khẩu tạm chỉ được đổi mật khẩu và thao tác phiên cần thiết, không truy cập API nghiệp vụ. Mật khẩu tạm chưa có thời hạn trong phiên bản hiện tại; thời hạn phiên vẫn riêng. Đổi thành công vô hiệu mật khẩu tạm, sau đó đăng nhập bằng mật khẩu mới.
+Cờ buộc đổi đã chốt; tạo tài khoản mới với mật khẩu tạm phải ghi true (không dựa default false), đổi thành công thay hash và đặt false atomically. A08 đã duyệt thay hash + false + revoke mọi phiên của user cùng transaction, sau đó xóa cookie và yêu cầu login mới; không tự nâng phiên cũ. A09 đã duyệt mật khẩu mới tối thiểu 15 code point Unicode, tối đa 72 byte UTF-8, khác mật khẩu hiện tại; không cắt/trim/tự chuẩn hóa hoặc ép nhóm ký tự, cho phép khoảng trắng/chữ có dấu/paste. Áp cho đặt mật khẩu mới lần đầu, không áp ngược lên login credential cũ. Gửi lỗi/gửi lại vẫn chưa chốt. Không tự mở rộng sang quên mật khẩu hay mặc định Admin reset cùng quy trình.
 Không giả định seed password là quy trình cấp tài khoản hoàn chỉnh.
 
-Rate limit in-memory cho một process: cấu hình thử nghiệm 30 lần/5 phút/IP, 5 lần thất bại/5 phút/username chuẩn hóa.
+Body JSON login/đổi mật khẩu lần đầu tối đa 8 KiB (8192 byte), đã duyệt riêng 06/11; lớn hơn trả 413/PAYLOAD_TOO_LARGE trước bcrypt/ghi dữ liệu. Kiểm byte thực đọc, không chỉ Content-Length; không áp sang upload hoặc thay min 15 code point/max 72 byte của mật khẩu. HTTP tests cần kiểm 8192/8193 byte và request không khai báo độ dài.
+
+Rate limit in-memory cho một process: cấu hình thử nghiệm 30 lần/5 phút/IP, 5 lần thất bại/5 phút/định danh đăng nhập chuẩn hóa (email công ty theo chốt 05/11, không username demo).
 429 + Retry-After, không tự khóa tài khoản vĩnh viễn. Chỉ tin forwarded IP từ proxy đã cấu hình.
-Login báo lỗi chung, không tiết lộ username tồn tại.
+Đổi lần đầu có limiter riêng đã duyệt: 5 lần xác minh mật khẩu hiện tại sai/15 phút/user và 30 request/5 phút/IP trước bcrypt; 429/Retry-After, không khóa vĩnh viễn, bucket có hạn/dọn bộ nhớ. Validation/CSRF/DB lỗi không tính là sai mật khẩu. Các ngưỡng là cấu hình thử nghiệm, chưa là kết quả đo.
+Login báo lỗi chung, không tiết lộ tài khoản tồn tại.
 
 ## 5. Upload và vận hành
 

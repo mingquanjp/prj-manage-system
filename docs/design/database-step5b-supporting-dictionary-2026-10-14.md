@@ -26,12 +26,13 @@ Một tài khoản đăng nhập; không lưu lại PM/PTCM như quyền toàn h
 | Cột | Kiểu / NULL / default | Nguồn và nghĩa |
 |---|---|---|
 | user_id | PK | Identity |
-| username | VARCHAR(50) NN | Định danh đăng nhập UQ; cách cấp/định danh đăng nhập backend chưa chốt. E001 → e001 chỉ là quy ước demo tạm theo chốt 28/10 tại baseline 20/10; không đổi dữ liệu cũ |
+| username | VARCHAR(50) NN | Định danh riêng UQ; cách cấp còn mở, backend đăng nhập bằng email công ty theo chốt 05/11. E001 → e001 chỉ là quy ước demo tạm theo chốt 28/10 tại baseline 20/10; không đổi dữ liệu cũ |
 | password_hash | VARCHAR(255) NN | Server bcrypt; không DTO/audit |
+| must_change_password | BOOLEAN NN / false | Chốt 06/11: tài khoản cũ giữ false; tạo mới với mật khẩu tạm ghi true; sau đổi thành công ghi false cùng thay bản băm. Server chặn nghiệp vụ khi true |
 | status | user_status NN / ACTIVE | Admin khóa/mở theo quyền |
 | timestamps | Như quy ước | Server |
 
-Role nằm ở user_roles. Reset/đổi role/khóa thu hồi session cùng transaction. Chính sách mật khẩu tạm hết hạn/kênh cấp còn mở D13; không còn cờ buộc đổi mật khẩu; chưa đủ hợp đồng để triển khai toàn bộ auth. Chuẩn hóa username phải thống nhất với seed/login trước migration, không tự đổi uniqueness hoa/thường của dữ liệu cũ.
+Role nằm ở user_roles. Reset/đổi role/khóa thu hồi session cùng transaction. Chốt cuối 06/11: mật khẩu tạm gửi qua email đăng ký, chưa có thời hạn, có cờ buộc đổi trước nghiệp vụ. Không thêm temporary_password_expires_at. Hạn phiên vẫn riêng: 8 giờ tuyệt đối theo A03. Chính sách mật khẩu mới/phiên hạn chế đã duyệt A08/A09, xem security/proposal auth; gửi lỗi/reset và hợp đồng triển khai toàn auth vẫn chưa hoàn tất. Chuẩn hóa username phải thống nhất với seed/login trước migration, không tự đổi uniqueness hoa/thường của dữ liệu cũ.
 
 ## 2. user_roles
 
@@ -193,7 +194,7 @@ session_id PK; user_id INT NN FK users; token_hash BYTEA NN UQ (SHA-256, 32 byte
 
 Cookie chứa secret ngẫu nhiên đủ entropy, DB chỉ lưu hash; session_id là ID nội bộ, không dùng làm cookie. Mỗi user nhiều phiên. CHECK expires_at > created_at, revoked_at >= created_at nếu có, octet_length(token_hash)=32; index(user_id). Kiểm tra phiên chưa thu hồi/còn hạn và quyền/status hiện hành mỗi request. Logout thu hồi phiên; khóa/reset/đổi role thu hồi các phiên trong cùng giao dịch.
 
-Không JWT/refresh endpoint hoặc refresh_tokens. Timeout tuyệt đối cấu hình khi triển khai, chưa chốt số ngày; idle timeout chưa cam kết vì chưa có last_seen_at. Không âm thầm thêm cột/đẩy expires_at liên tục để giả có cả idle và hạn tuyệt đối. Cookie/CSRF theo security. Chưa chọn/cài thư viện session.
+Không JWT/refresh endpoint hoặc refresh_tokens. A03 chốt hạn tuyệt đối 8 giờ từ login, không tự gia hạn/idle timeout/ghi nhớ; áp cả phiên hạn chế. A04 chưa xóa vật lý phiên hết hạn/revoked trong feature, retention/lịch dọn còn mở trước vận hành lâu dài. A08 đổi lần đầu revoke mọi phiên cùng thay hash/cờ trong transaction, sau đó login lại. Không âm thầm thêm cột/đẩy expires_at liên tục để giả có cả idle và hạn tuyệt đối. Cookie/CSRF theo security. Chưa chọn/cài thư viện session.
 
 ## 19. idempotency_records
 

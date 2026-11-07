@@ -1,5 +1,7 @@
 # Thiết kế dữ liệu — hiện trạng và đích hiện hành
 
+**Chốt tiếp nối 06/11/2026:** thêm `users.must_change_password BOOLEAN NOT NULL DEFAULT false`, bắt buộc đổi mật khẩu tạm trước nghiệp vụ. Bản hiện tại không hết hạn mật khẩu tạm, không thêm cột hạn; hạn phiên vẫn riêng. Tài khoản cũ giữ nguyên. Cột/ý nghĩa tại dictionary 5B và DBML; A02–A09 đã duyệt ngày 06/11: phiên 8 giờ tuyệt đối, đổi lần đầu revoke mọi phiên cùng thay hash/cờ; xem security/proposal auth. OpenAPI/SQL cụ thể còn cần hoàn thiện, chưa đồng nghĩa đã cập nhật Neon.
+
 **Bổ sung 20/10/2026:** [quyết định địa chỉ](../../docs/business-baseline-2026-10-20.md): `employees.address TEXT NULL` hỗ trợ hồ sơ chưa bổ sung lúc tạo; cần có khi hoàn thiện hồ sơ. Allowlist yêu cầu fullname/phone/address; HR duyệt hoặc cập nhật trực tiếp, không xóa trắng địa chỉ đã có. Không DTO tra cứu/gợi ý, không thêm bảng/trạng thái, không chặn làm việc vì thiếu địa chỉ. Dictionary 5B/DBML là thiết kế đã đồng bộ; chưa migration.
 
 Đồng bộ 15/10/2026 theo [quyết định hiện hành/Bàn giao](../../docs/design/database-review-decisions-2026-10-14.md). [Bản hợp nhất](../../docs/design/database-proposal-2026-10-14.md) là điểm đọc chính; [5A — 11 bảng](../../docs/design/database-step5a-core-dictionary-2026-10-14.md), [5B — 22 bảng](../../docs/design/database-step5b-supporting-dictionary-2026-10-14.md), [DBML 33 bảng (cấp bậc theo chốt 26/10/2026)](../../docs/design/database-proposal-2026-10-14.dbml), [mapping chuyển đổi](../../docs/design/database-step5c-migration-map-2026-10-14.md).

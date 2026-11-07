@@ -27,13 +27,30 @@
 
 Các checklist đặc tả không phải kết quả test đã chạy. Một số file còn phần lịch sử được đánh dấu bên trong; không áp dụng phần đã bị thay thế.
 
+### Chuẩn bị backend từ yêu cầu
+
+Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/functional-requirements.md) kiểm kê yêu cầu từ UC/workflow để chuẩn bị phân miền và proposal; phân biệt chức năng FR, quy tắc BR và yêu cầu dùng chung CR, có bảng truy vết ID sau review. Đây không phải nguồn thay quyết định nghiệp vụ, bản thiết kế API hoặc xác nhận chức năng đã chạy; điểm chưa chốt được ghi riêng trong tài liệu.
+
+[Bản đồ miền nghiệp vụ](product/business-domains.md) nối FR với trách nhiệm, dữ liệu thiết kế và phụ thuộc; đề xuất 6 miền và phần hỗ trợ thông báo trong cùng backend. Đọc sau FR, trước chọn feature/proposal; không phải sơ đồ package hoặc kế hoạch tách service.
+
+[Proposal feature đầu — đăng nhập và phiên truy cập](proposals/backend-auth-session.md): theo khung template đã tham khảo, có mục tiêu/phạm vi, high-level design, detailed design (ER/cột/ràng buộc/index, API/DTO/lỗi/sequence, rollout và test), tác động, đánh giá, WBS và estimate cho D01 phối hợp D02. Người dùng đã duyệt A01–A09 (email/phiên/mật khẩu/CSRF, hướng test/migration); OpenAPI/ports đã có bản soạn để review; SQL chi tiết còn phải hoàn thiện. Chưa code auth; riêng migration cờ buộc đổi đã diễn tập nhánh tạm theo mapping 5C, chưa áp production.
+
+[OpenAPI auth](api/auth.openapi.json) là bản contract năm route, chưa có runtime; chữ ký service/repository và ma trận bằng chứng bảo mật AUTH-S01–S10 ở proposal mục 5.3/6.4.1. Kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs` để phát hiện ref thiếu, mất allowlist, nhầm cookie/CSRF AND thành OR, DTO lộ trường hoặc mất no-store. Đây không phải validator OpenAPI đầy đủ hoặc test bảo mật API thực tế; byte/transaction/Origin/CSRF vẫn phải kiểm ở server.
+
+Kế hoạch SQL/DB test tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; chưa chạy SQL/container hoặc áp Neon. Review contract ở mục 6.2.6, đề xuất Jira solo ở mục 9.4.
+
+WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phân biệt bản soạn đã có với phần còn lại (mục 9.2.1), tách kế hoạch fixture khỏi thực thi sau migration, giao rõ limiter login/đổi lần đầu và ranh giới FE auth/mock. Mục 9.2.2 nối AUTH-S01–S10 với task chịu trách nhiệm; mục 9.4 có checklist Done cho ticket theo board DATN đã tạo. Chưa tạo issue hoặc đánh dấu runtime hoàn tất; estimate gốc không phải giờ còn lại.
+
+[Bản nháp ticket auth](proposals/backend-auth-session-tickets.md): 1 Epic đề xuất và 20 Task theo đầu ra, mapping đủ 33 đơn vị WBS; review nằm trong Done, description có bước thực hiện và bảng tình huống/kết quả; có thứ tự nhận việc đợt đầu và cổng trước khi tạo Jira. Đây là nội dung để review, chưa upload, không là nguồn nghiệp vụ thứ hai.
+
+
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 
 - Điểm vào: [bản hợp nhất 33 bảng](design/database-proposal-2026-10-14.md).
 - Cột/ràng buộc: [dictionary 5A](design/database-step5a-core-dictionary-2026-10-14.md), [dictionary 5B](design/database-step5b-supporting-dictionary-2026-10-14.md).
 - Trực quan: [DBML](design/database-proposal-2026-10-14.dbml).
 - Giải thích khi trình bày: [bản trình bày DB](design/database-pitch-2026-10-14.md); không phải bằng chứng đã triển khai DB.
-- Khi chuẩn bị chuyển đổi, không phải khi sửa UI: [mapping 5C](design/database-step5c-migration-map-2026-10-14.md).
+- Khi chuẩn bị chuyển đổi, không phải khi sửa UI: [mapping 5C](design/database-step5c-migration-map-2026-10-14.md); mục 0 ghi kiểm kê Neon thực tế 06/11, schema drift và cổng trước migration. Có [SQL kiểm kê chỉ đọc](../scripts/neon-schema-inventory.sql). Neon vẫn version 1/22 bảng nghiệp vụ, chưa đồng bộ đích.
 - Sổ quyết định ở mục 1 ưu tiên phần đã thay thế. Không sửa cấu trúc/chạy DB từ tác vụ harness.
 
 ## 4. Tài liệu tham khảo, không nạp mặc định
@@ -55,5 +72,7 @@ Không chuyển hàng loạt file đang được dẫn chiếu sang thư mục k
 
 - Thay quyết định đã chốt: hỏi người dùng; sửa nguồn đúng miền và phần UI/DB có liên quan, không thêm một bản sao “final-vN”.
 - Mỗi đợt frontend cập nhật sổ công việc trong web/README; không tạo thêm báo cáo Markdown cho từng nút/icon.
-- `node --test scripts/check-harness.test.mjs` chạy test harness không framework mới. `node scripts/check-harness.mjs` kiểm tra điểm vào, nguồn trực tiếp và mã nguồn/config frontend tồn tại, không bị ignore. Thêm `--staged` để phát hiện file còn thiếu hoặc nội dung chưa được stage khi chuẩn bị bàn giao. Không tự stage/commit, không kiểm toán ngữ nghĩa mọi tài liệu lịch sử.
+- `node --test scripts/check-harness.test.mjs` chạy test harness không framework mới. `node scripts/check-harness.mjs` kiểm tra điểm vào, nguồn trực tiếp, mã nguồn/config frontend và nguồn Go/SQL trong cmd/internal/migrations/db/seed cùng go.mod/go.sum/Makefile tồn tại, không bị ignore. Không đọc `.env`, chạy server hoặc gọi DB. Thêm `--staged` để phát hiện file còn thiếu hoặc nội dung chưa được stage khi chuẩn bị bàn giao. Không tự stage/commit, không kiểm toán ngữ nghĩa mọi tài liệu lịch sử.
 - Nguồn không bị ignore vẫn cần được review và commit khi người dùng yêu cầu; không cam kết clone có đủ chỉ vì tệp đang ở máy local.
+
+**Tiếp nối auth 06/11/2026:** đã chốt cấp tài khoản mới bằng mật khẩu tạm qua email, buộc đổi trước nghiệp vụ. Xem quyết định tiếp nối trong `docs/business-baseline-2026-10-20.md` và mục 4.1 proposal auth; DBML/dictionary đã chốt thêm users.must_change_password; mật khẩu tạm chưa có hạn. Proposal mục 6 đã bổ sung API/phiên hạn chế/đổi lần đầu; mục 9–10 đề xuất 33 task, 105 giờ cơ sở (81 nền + 24 bổ sung), dự phòng 21 giờ cần duyệt. Các lựa chọn kỹ thuật A02–A09 đã được duyệt, còn phần triển khai cụ thể và điểm hoãn ở proposal; không coi thiết kế hoặc estimate là code đã chạy. Migration riêng chỉ thêm cờ, chưa cập nhật đủ 33 bảng hoặc triển khai gửi thư.

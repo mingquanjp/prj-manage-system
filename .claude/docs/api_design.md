@@ -52,7 +52,11 @@ POST /api/skill-change-requests/{id}/reject
 POST /api/skill-change-requests/{id}/withdraw
 ```
 
-Auth session phía server/cookie secret: tra token_hash, kiểm tra status/quyền/expiry/revocation; không access JWT hoặc refresh route. Cookie/CSRF/Origin theo security.md. Reset không ngầm khôi phục must_change_password. Timeout/reset chi tiết chờ đặc tả.
+Body JSON của POST login/đổi mật khẩu lần đầu tối đa 8192 byte (8 KiB), vượt trả 413/PAYLOAD_TOO_LARGE; kiểm số byte thực đọc. Đã chốt riêng 06/11, không áp cho toàn bộ API hoặc thay giới hạn mật khẩu.
+
+Auth session phía server/cookie secret: tra token_hash, kiểm tra status/quyền/expiry/revocation; không access JWT hoặc refresh route. Cookie/CSRF/Origin theo security.md. Reset không ngầm khôi phục must_change_password. Phiên 8 giờ tuyệt đối, không tự gia hạn/idle/ghi nhớ theo A03; reset chi tiết vẫn chờ đặc tả.
+
+[Chốt 05/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-05112026--định-danh-đăng-nhập-backend): login backend phiên bản đầu nhận email công ty và mật khẩu, không username/mã nhân viên. [Proposal auth](../../docs/proposals/backend-auth-session.md) mô tả năm route (gồm đổi mật khẩu lần đầu) với A02–A09 đã duyệt ngày 06/11; [OpenAPI auth](../../docs/api/auth.openapi.json) và ports tại proposal mục 5.3 đã có bản soạn để review; SQL chi tiết chưa hoàn thiện, chưa là API đã triển khai. Username vẫn riêng, không tự đổi theo email.
 
 Theo chốt 26/10, HR cập nhật job_level_id nullable bằng ID từ job_levels; NULL là chưa cập nhật/không gán cấp bậc. Không nhận seniority_level tự do, không tạo danh mục ngầm từ tên nhập trên form hồ sơ. DTO chủ hồ sơ/HR có ID và tên cấp bậc; projection nghề nghiệp chỉ cần tên hiện hành, không cấp thêm quyền. Các route trên là thiết kế, chưa triển khai backend.
 
@@ -139,3 +143,5 @@ Tra cứu PM/PTCM chỉ bốn nhóm nghề nghiệp được phép: nhận diệ
 ## 6. OpenAPI và kiểm chứng
 
 OpenAPI 3.1 viết tay/Swagger nhúng chỉ APP_ENV=dev, không CDN; cookieAuth mô tả session cookie, CSRF header/Origin riêng. Bootstrap Swagger phải gửi header đúng, không coi HttpOnly đủ chống CSRF. Contract test schema/error/security và chi.Walk method/path khi code có route; không đưa endpoint kế hoạch thành tính năng đã hoạt động.
+
+**Tiếp nối 06/11/2026:** theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), cấp tài khoản mới qua email với mật khẩu tạm và bắt buộc đổi trước API nghiệp vụ. Không cấp quyền nghiệp vụ chỉ vì mật khẩu tạm đúng. Đã chốt users.must_change_password BOOLEAN NOT NULL DEFAULT false; mật khẩu tạm chưa có hạn, không cột expires_at cho mật khẩu. Tạo cấp mật khẩu tạm phải đặt true; server chặn nghiệp vụ cho tới khi đổi. Contract phiên hạn chế/đổi lần đầu và chính sách mật khẩu A08/A09 đã được duyệt, chi tiết tại proposal mục 6.2.5/security.md; chưa triển khai API. Đổi lần đầu thay hash + false + revoke mọi phiên cùng transaction, trả 204/xóa cookie và yêu cầu login lại; chưa chốt Admin reset. Hạn phiên vẫn riêng. Reset của Admin chưa được chốt cùng cơ chế.

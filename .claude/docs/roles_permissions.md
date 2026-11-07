@@ -90,10 +90,14 @@ Người đã bị thay chỉ gửi yêu cầu sửa cho đóng góp của mình
 
 ## 4. Xác thực — session phía server
 
+**Chốt 05/11/2026:** backend phiên bản đầu đăng nhập bằng email công ty và mật khẩu theo [quyết định tiếp nối](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-05112026--định-danh-đăng-nhập-backend). Username vẫn riêng, quy tắc cấp chưa chốt. Chuẩn hóa email, TTL, phiên hạn chế và hướng test/migration đã được duyệt A02–A09 ngày 06/11; xem [proposal auth](../../docs/proposals/backend-auth-session.md) và baseline. Không suy từ vị trí/cấp bậc hoặc selector demo.
+
 Cookie secret ngẫu nhiên → SHA-256 để tra auth_sessions.token_hash → kiểm tra expires_at/revoked_at/user hiện hành → quyền hệ thống và trách nhiệm dự án. session_id là ID nội bộ, không cookie. Không JWT access/refresh hoặc refresh endpoint; không localStorage cho thông tin xác thực.
 
-Cookie host-only/HttpOnly/Secure/SameSite=Lax, Path=/api; production HTTPS. Mutation kiểm tra Origin và token CSRF gắn phiên; login kiểm tra nguồn. Logout thu hồi phiên và xóa cookie đúng path; khóa/reset/đổi role thu hồi các phiên trong giao dịch. Timeout tuyệt đối/idle và cleanup chưa chốt; bộ sáu cột không cam kết idle timeout, không tự thêm last_seen_at.
+Cookie host-only/HttpOnly/Secure/SameSite=Lax, Path=/api; production HTTPS. Mutation kiểm tra Origin và token CSRF gắn phiên; login kiểm tra nguồn. Logout thu hồi phiên và xóa cookie đúng path; khóa/reset/đổi role thu hồi các phiên trong giao dịch. Phiên có hạn tuyệt đối 8 giờ, không tự gia hạn/idle timeout/ghi nhớ; chưa xóa vật lý session trong đợt auth, retention/lịch dọn trước vận hành lâu dài còn mở. Không tự thêm last_seen_at.
 
 HR quản trị departments/positions/job_levels; Giám đốc quản trị skill_categories/skills. Quyền danh mục không cấp thêm quyền khác. Username khác email công ty. Nhân viên có tư cách từ employees, PM/PTCM từ projects; user_roles chỉ ADMIN/HR/DIRECTOR. Không thêm bảng permission.
 
 Bcrypt và chính sách mật khẩu xem security.md; seed chỉ dev, không dùng mật khẩu mẫu triển khai thực.
+
+**Tiếp nối 06/11/2026:** theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), cấp tài khoản mới qua email với mật khẩu tạm và bắt buộc đổi trước API nghiệp vụ. Không cấp quyền nghiệp vụ chỉ vì mật khẩu tạm đúng. Đã chốt users.must_change_password BOOLEAN NOT NULL DEFAULT false; mật khẩu tạm chưa có hạn, không cột expires_at cho mật khẩu. Tạo cấp mật khẩu tạm phải đặt true; server chặn nghiệp vụ cho tới khi đổi. A08/A09 đã duyệt: cờ true chỉ cho me/csrf/logout/đổi lần đầu, kể cả ADMIN; đổi thành công thay hash + false + revoke mọi phiên cùng transaction, rồi login lại. Contract ở proposal, chưa có API chạy. Hạn phiên vẫn riêng. Reset của Admin chưa được chốt cùng cơ chế.
