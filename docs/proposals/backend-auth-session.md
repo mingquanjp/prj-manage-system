@@ -673,6 +673,21 @@ Quan sát tối thiểu dùng slog/request_id: kết quả nhóm login/logout v�
 Rollback ứng dụng/FE về chế độ demo chỉ trong môi trường demo, không tự cho người dùng thật bỏ qua auth. Giữ bảng/dữ liệu và 000001; không drop/reset để rollback. Tương thích bản app cũ với migration phải được đánh giá trong P04; A06 đã chốt hướng tiến thêm nhưng chưa thay cho kế hoạch SQL/mapping cụ thể được review an toàn.
 
 
+#### 6.3.1. Bàn giao validation cấu hình — DATN-3 / AUTH-T02, 07/11/2026
+
+Người dùng đã duyệt brief trước code: `ValidateServer(Config) error` trong `internal/config`, nhận input đã có kiểu dữ liệu và không đọc OS/file, gọi DNS/DB hoặc thay input. Hàm trả lỗi đầu tiên theo thứ tự env → port → Origin → TTL; lỗi chỉ nêu trường/quy tắc, không chứa giá trị cấu hình hoặc lỗi parse URL thô. Không thêm dependency.
+
+| Input đã parse | Contract của validator |
+|---|---|
+| AppEnv | Đúng `dev` hoặc `prod`, bắt buộc tường minh; không trim/fallback. |
+| HTTPPort | 1..65535; không tự thay số không hợp lệ. |
+| AppOrigin | HTTP/HTTPS + host và port hợp lệ nếu có; không userinfo/path (kể cả slash cuối)/query/fragment. HTTPS cho prod; ngoại lệ HTTP chỉ dev với localhost hoặc địa chỉ IP loopback, không phân giải DNS. |
+| SessionTTL | Đúng 8h theo A03; zero/âm/thời hạn khác bị từ chối, không tự áp default. |
+
+`Config` thêm AppOrigin và SessionTTL (`time.Duration`); Load chưa đọc hai trường này hoặc gọi validation, nên zero value từ loader cũ chưa được dùng để khởi tạo auth. Việc parse/default/load và tích hợp fail-fast trước kết nối DB thuộc AUTH-T03, không bật kiểm tra auth cho migrate/seed. Chưa thay hành vi server/health, RequireDev, URL PostgreSQL hoặc .env. DATN-3 không kiểm tra khả năng kết nối hay tính đúng của DatabaseURL; phần loader/kết nối có trách nhiệm riêng.
+
+Code và table-driven tests tại `internal/config/validation.go` / `validation_test.go`. Lượt kiểm ngày 07/11 đạt 46 ca validation, `go vet ./...`, `go test ./... -count=1`, `go build ./...`; contract/harness 23/23 và kiểm kê 217 file đạt, `git diff --check` đạt. Cổng Go toàn repo chạy lại ngoài sandbox hạn chế build cache; không chạy server hoặc DB. Kiểm thử phủ cấu hình hợp lệ, biên port/TTL, Origin sai cấu trúc/nguồn/IPv6, giữ input và redaction bằng marker giả; không gọi Load hoặc đọc bí mật. Bằng chứng cổng Go/harness bàn giao theo lượt chạy thực tế, không đồng nghĩa đã có auth runtime. Giữ checkpoint Quân tự viết API theo bộ ticket, không nhận test cấu hình thay kiểm thử HTTP/SQL sau này.
+
 ### 6.4. Chiến lược kiểm thử — chưa chạy feature
 
 | Nhóm | Ca bắt buộc | Truy vết |

@@ -35,6 +35,8 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 [Proposal feature đầu — đăng nhập và phiên truy cập](proposals/backend-auth-session.md): theo khung template đã tham khảo, có mục tiêu/phạm vi, high-level design, detailed design (ER/cột/ràng buộc/index, API/DTO/lỗi/sequence, rollout và test), tác động, đánh giá, WBS và estimate cho D01 phối hợp D02. Người dùng đã duyệt A01–A09 (email/phiên/mật khẩu/CSRF, hướng test/migration); OpenAPI/ports đã được rà trong DATN-2 / AUTH-T01 ngày 07/11, kết luận và đầu vào task sau tại proposal mục 6.2.7; SQL chi tiết còn phải hoàn thiện. Chưa code auth; riêng migration cờ buộc đổi đã diễn tập nhánh tạm theo mapping 5C, chưa áp production.
 
+Tiếp nối DATN-3 / AUTH-T02: đã thêm validation cấu hình thuần và table-driven tests trong `internal/config`; [contract và ranh giới bàn giao](proposals/backend-auth-session.md#631-bàn-giao-validation-cấu-hình--datn-3--auth-t02-07112026). Chưa nối loader hoặc thay hành vi khởi động; phần tích hợp thuộc AUTH-T03.
+
 [OpenAPI auth](api/auth.openapi.json) là bản contract năm route, chưa có runtime; chữ ký service/repository và ma trận bằng chứng bảo mật AUTH-S01–S10 ở proposal mục 5.3/6.4.1. Kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs` để phát hiện ref thiếu, mất allowlist, nhầm cookie/CSRF AND thành OR, DTO lộ trường hoặc mất no-store. Đây không phải validator OpenAPI đầy đủ hoặc test bảo mật API thực tế; byte/transaction/Origin/CSRF vẫn phải kiểm ở server.
 
 Kế hoạch SQL/DB test tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; chưa chạy SQL/container hoặc áp Neon. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.

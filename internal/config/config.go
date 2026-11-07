@@ -1,7 +1,5 @@
-// Package config đọc cấu hình từ biến môi trường.
-//
-// Toàn bộ hệ thống chỉ phụ thuộc vào DATABASE_URL, nhờ vậy chạy được với cả
-// Neon (serverless) lẫn PostgreSQL cài local mà không sửa dòng code nào.
+// Package config cung cấp cấu trúc, loader và validation cấu hình.
+// Kết nối PostgreSQL được cung cấp qua DATABASE_URL, không gắn với một nhà cung cấp.
 package config
 
 import (
@@ -9,12 +7,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
 	AppEnv      string // dev | prod
 	HTTPPort    int
 	DatabaseURL string
+	AppOrigin   string
+	SessionTTL  time.Duration
 }
 
 // RequireDev yêu cầu chọn môi trường dev tường minh trước thao tác phá dữ liệu.
