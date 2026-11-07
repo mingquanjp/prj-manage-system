@@ -12,7 +12,7 @@ import (
 const sessionTTL = 8 * time.Hour
 
 // ValidateServer kiểm tra cấu hình đã có kiểu dữ liệu, không đọc môi trường/file,
-// không kết nối mạng và không thay đổi input. Load chưa gọi hàm này ở DATN-3.
+// không kết nối mạng và không thay đổi input. LoadServer gọi sau khi parse.
 func ValidateServer(cfg Config) error {
 	if cfg.AppEnv != "dev" && cfg.AppEnv != "prod" {
 		return errors.New("APP_ENV phải là dev hoặc prod")

@@ -28,11 +28,20 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load()
+	return runWithStartup(startServer)
+}
+
+// runWithStartup giữ cổng cấu hình trước mọi thao tác kết nối; test thay bước chạy.
+func runWithStartup(start func(*config.Config) error) error {
+	cfg, err := config.LoadServer()
 	if err != nil {
 		return err
 	}
 
+	return start(cfg)
+}
+
+func startServer(cfg *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
