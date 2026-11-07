@@ -27,26 +27,59 @@ func RequireDev(operation string) error {
 	return nil
 }
 
-// Load đọc cấu hình, ưu tiên biến môi trường thật. Nếu chưa có thì thử nạp
-// từ file .env ở thư mục gốc (chỉ dùng khi phát triển).
+// Load nạp cấu hình cho migrate/seed, không yêu cầu cấu hình HTTP/auth.
 func Load() (*Config, error) {
-	loadDotEnv(".env")
+	return load(os.LookupEnv, os.ReadFile, ".env", false)
+}
 
-	cfg := &Config{
-		AppEnv:      envOr("APP_ENV", "dev"),
-		DatabaseURL: os.Getenv("DATABASE_URL"),
+// LoadServer kiểm tra toàn bộ cấu hình server trước khi mở kết nối DB.
+func LoadServer() (*Config, error) {
+	return load(os.LookupEnv, os.ReadFile, ".env", true)
+}
+
+// load nhận nguồn đọc để test bằng file tạm, không đọc .env thật hoặc sửa OS env.
+func load(lookup func(string) (string, bool), readFile func(string) ([]byte, error), path string, server bool) (*Config, error) {
+	appEnv, _ := lookup("APP_ENV")
+	if appEnv != "dev" && appEnv != "prod" {
+		return nil, fmt.Errorf("APP_ENV phải được đặt dev hoặc prod trong môi trường chạy")
 	}
-
-	port, err := strconv.Atoi(envOr("HTTP_PORT", "8080"))
-	if err != nil {
-		return nil, fmt.Errorf("HTTP_PORT không hợp lệ: %w", err)
+	fileValues := map[string]string{}
+	if appEnv == "dev" {
+		var err error
+		fileValues, err = readDotEnv(readFile, path)
+		if err != nil {
+			return nil, err
+		}
 	}
-	cfg.HTTPPort = port
-
-	if cfg.DatabaseURL == "" {
-		return nil, fmt.Errorf("thiếu DATABASE_URL — sao chép .env.example thành .env rồi điền chuỗi kết nối Neon")
+	value := func(key, fallback string) string {
+		if v, ok := lookup(key); ok {
+			return v
+		}
+		if v, ok := fileValues[key]; ok {
+			return v
+		}
+		return fallback
 	}
-
+	cfg := &Config{AppEnv: appEnv, DatabaseURL: value("DATABASE_URL", "")}
+	if server {
+		port, err := strconv.Atoi(value("HTTP_PORT", "8080"))
+		if err != nil {
+			return nil, fmt.Errorf("HTTP_PORT phải là số nguyên từ 1 đến 65535")
+		}
+		cfg.HTTPPort = port
+		cfg.AppOrigin = value("APP_ORIGIN", "")
+		ttl, err := time.ParseDuration(value("SESSION_TTL", "8h"))
+		if err != nil {
+			return nil, fmt.Errorf("SESSION_TTL phải là thời lượng hợp lệ bằng 8h")
+		}
+		cfg.SessionTTL = ttl
+		if err := ValidateServer(*cfg); err != nil {
+			return nil, err
+		}
+	}
+	if strings.TrimSpace(cfg.DatabaseURL) == "" {
+		return nil, fmt.Errorf("thiếu DATABASE_URL")
+	}
 	return cfg, nil
 }
 
@@ -68,37 +101,50 @@ func (c *Config) DirectURL() string {
 
 const poolerMarker = "-pooler."
 
-func envOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+// readDotEnv hỗ trợ KEY=VALUE, giá trị bọc nháy đơn/đôi và comment cả dòng.
+// Không nội suy biến, escape, export, comment cuối dòng hoặc giá trị nhiều dòng.
+func readDotEnv(readFile func(string) ([]byte, error), path string) (map[string]string, error) {
+	values := map[string]string{}
+	data, err := readFile(path)
+	if os.IsNotExist(err) {
+		return values, nil
 	}
-	return fallback
-}
-
-// loadDotEnv nạp các cặp KEY=VALUE từ file .env. Cố ý viết tay thay vì kéo thêm
-// thư viện: định dạng cần hỗ trợ rất đơn giản.
-func loadDotEnv(path string) {
-	data, err := os.ReadFile(path)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("không đọc được file dotenv")
 	}
-
-	for _, line := range strings.Split(string(data), "\n") {
+	for index, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-
 		key, value, found := strings.Cut(line, "=")
-		if !found {
-			continue
+		key, value = strings.TrimSpace(key), strings.TrimSpace(value)
+		invalid := !found || key == ""
+		for i, c := range key {
+			if !(c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || i > 0 && c >= '0' && c <= '9') {
+				invalid = true
+			}
 		}
-
-		key = strings.TrimSpace(key)
-		value = strings.Trim(strings.TrimSpace(value), `"'`)
-
-		if _, exists := os.LookupEnv(key); !exists {
-			_ = os.Setenv(key, value)
+		if strings.HasPrefix(value, "\"") || strings.HasPrefix(value, "'") {
+			if len(value) < 2 || value[len(value)-1] != value[0] {
+				invalid = true
+			} else {
+				quote := value[0]
+				value = value[1 : len(value)-1]
+				if strings.ContainsRune(value, rune(quote)) {
+					invalid = true
+				}
+			}
+		} else if strings.ContainsAny(value, " \t\"'") {
+			invalid = true
 		}
+		if invalid {
+			return nil, fmt.Errorf("file dotenv sai định dạng tại dòng %d", index+1)
+		}
+		if _, exists := values[key]; exists {
+			return nil, fmt.Errorf("file dotenv trùng khóa tại dòng %d", index+1)
+		}
+		values[key] = value
 	}
+	return values, nil
 }

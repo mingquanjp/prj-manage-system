@@ -153,8 +153,12 @@ Chỉ thực hiện khi đã xác nhận môi trường và đúng DB phát tri�
 3. Chạy từ thư mục gốc:
 
 ```bash
-make dev
+APP_ENV=dev make dev
 ```
+
+DATN-4: `APP_ENV` phải được đặt rõ trong môi trường chạy (`dev`/`prod`); prod không đọc `.env`. Biến môi trường ưu tiên file, kể cả giá trị rỗng. Server yêu cầu `DATABASE_URL` và `APP_ORIGIN`; port mặc định `8080`, thời hạn phiên mặc định `8h` chỉ khi chưa khai báo. Giá trị đã khai báo sai/rỗng không được tự thay. Origin dev HTTP chỉ localhost/IP loopback, prod yêu cầu HTTPS. File dev không có được bỏ qua nếu cấu hình môi trường đã đủ; file lỗi đọc/định dạng bị từ chối. Xem định dạng dotenv tại `.env.example`.
+
+`LoadServer()` kiểm tra trước kết nối DB; migrate/seed dùng `Load()` không yêu cầu Origin/TTL/port, vẫn bắt buộc `APP_ENV` và `DATABASE_URL`. Ví dụ lệnh đọc schema: `APP_ENV=dev make migrate-version` (chỉ chạy khi đã xác nhận DB đích). Các lệnh `make migrate-*` bên dưới cũng cần chọn môi trường tường minh.
 
 Mặc định API ở [http://localhost:8080](http://localhost:8080). Khi server đã chạy:
 

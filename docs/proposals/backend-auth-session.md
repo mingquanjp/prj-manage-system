@@ -688,6 +688,38 @@ Người dùng đã duyệt brief trước code: `ValidateServer(Config) error` 
 
 Code và table-driven tests tại `internal/config/validation.go` / `validation_test.go`. Lượt kiểm ngày 07/11 đạt 46 ca validation, `go vet ./...`, `go test ./... -count=1`, `go build ./...`; contract/harness 23/23 và kiểm kê 217 file đạt, `git diff --check` đạt. Cổng Go toàn repo chạy lại ngoài sandbox hạn chế build cache; không chạy server hoặc DB. Kiểm thử phủ cấu hình hợp lệ, biên port/TTL, Origin sai cấu trúc/nguồn/IPv6, giữ input và redaction bằng marker giả; không gọi Load hoặc đọc bí mật. Bằng chứng cổng Go/harness bàn giao theo lượt chạy thực tế, không đồng nghĩa đã có auth runtime. Giữ checkpoint Quân tự viết API theo bộ ticket, không nhận test cấu hình thay kiểm thử HTTP/SQL sau này.
 
+#### 6.3.2. Tích hợp loader/startup — DATN-4 / AUTH-T03, 08/11/2026
+
+Chốt tiếp nối được người dùng duyệt trước triển khai: `LoadServer()` đọc/parse cấu hình và gọi `ValidateServer()` trước kết nối DB; `Load()` dành migrate/seed không yêu cầu HTTP/auth. Hai đường dùng chung nguồn đọc, không thay OS env. Phần “chưa nối loader” ở bàn giao DATN-3 mô tả thời điểm trước đợt này, không là hiện trạng mới.
+
+| Nguồn/giá trị | Hành vi đã chốt |
+|---|---|
+| APP_ENV | Chỉ lấy môi trường tiến trình, đúng dev/prod, không default/trim; .env không chọn hoặc đổi môi trường. Áp dụng cả CLI. |
+| Dotenv | Chỉ đọc khi APP_ENV=dev tường minh; prod không đọc. File không tồn tại được bỏ qua; lỗi đọc/định dạng trả lỗi an toàn. |
+| Precedence | OS env > file > default; phân biệt không đặt với đặt rỗng. Không os.Setenv, không lấy file để cấp quyền guard. |
+| HTTP_PORT | Default 8080 khi không đặt; đã đặt rỗng/sai bị từ chối. Chỉ server dùng. |
+| APP_ORIGIN | Server bắt buộc, theo validator DATN-3; không tự đoán. |
+| SESSION_TTL | Default 8h khi không đặt; parse time.Duration rồi kiểm đúng 8h. Không mở khả năng đổi hạn nghiệp vụ. |
+| DATABASE_URL | Server/CLI đều bắt buộc, không rỗng/toàn khoảng trắng; không parse kết nối hoặc sửa pooler ở đợt này. |
+
+Dotenv hỗ trợ KEY=VALUE, khóa ASCII chữ/underscore đầu và chữ/số/underscore tiếp theo, comment cả dòng, dòng trống, CRLF, giá trị bọc nháy đơn/đôi. Không nội suy/escape/export/comment cuối dòng/nhiều dòng; khóa trùng và định dạng sai bị từ chối. `$VAR` trong giá trị không được nội suy; cấu hình có chứa dấu `#` trong giá trị giữ nguyên. Lỗi chỉ nêu dòng/quy tắc, không in giá trị hoặc lỗi OS/parse thô. Không thêm thư viện parser.
+
+`cmd/server` dùng cổng `runWithStartup`: tải hợp lệ mới gọi `startServer`, nơi mở pool/HTTP. Test thay riêng bước chạy bằng callback để kiểm cấu hình hợp lệ được bàn giao và lỗi dừng trước kết nối; không giả làm test DB/HTTP thật. RequireDev, validateCommand và thứ tự guard seed/rollback được giữ nguyên. Xử lý URL pooler/lỗi kết nối thuộc AUTH-T04; chưa coi toàn bộ lỗi DB legacy đã được redaction.
+
+Nguồn code: `internal/config/config.go`, `validation.go`, `loader_test.go`; cổng startup và test tại `cmd/server/main.go`, `main_test.go`. `.env.example`/README cập nhật cách khởi động rõ APP_ENV; không đọc/sửa .env thật. Kiểm tra ngày 08/11: `go vet ./...`, `go test ./... -count=1`, `go build ./...` và race tests config/server đạt; contract/harness 23/23, kiểm kê 219 nguồn và diff/gofmt đạt. Cổng Go chạy ngoài sandbox để dùng build cache; không mở DB/server thật hoặc đọc .env thật. Không nhận kiểm thử cấu hình thay test auth API/SQL.
+
+Review bàn giao DATN-4 ngày 08/11: đối chiếu AC và bổ sung kiểm thử startup với dotenv sai định dạng/lỗi đọc thật bằng đường dẫn thư mục tạm; dev phải dừng trước callback, prod bỏ qua cùng nguồn lỗi. Bổ sung kiểm giá trị parser giữ nguyên dấu `=`, `#`, khoảng trắng trong nháy, chuỗi `$VAR` và giá trị rỗng. Chạy lại toàn bộ cổng Go/race và 23 test contract/harness đều đạt; không phát hiện lỗi chặn bàn giao trong phạm vi này. Coverage nhánh chạy DB/HTTP (`startServer`) chưa có, không dùng coverage cổng cấu hình để nhận là server/DB đã chạy.
+
+Đầu vào cho task phụ thuộc:
+
+| Task nhận | Đầu vào/giới hạn bàn giao |
+|---|---|
+| AUTH-T04 / DATN-5 | LoadServer/Load đã chọn nguồn an toàn; DatabaseURL chỉ được kiểm bắt buộc, chưa parse/che lỗi kết nối. Tiếp tục sửa IsPooledEndpoint/DirectURL và lỗi adapter theo contract riêng; không suy URL hiện tại đã an toàn. |
+| AUTH-T12 / DATN-13 | Config.AppEnv, AppOrigin và SessionTTL đã parse/validate khi lấy từ LoadServer; không dùng Load của CLI để dựng auth. Helper cookie/Origin/CSRF còn phải thực thi và kiểm thử policy, cùng các phụ thuộc AUTH-T10/T11. |
+| AUTH-T13 / DATN-14 | Có cổng startup/default đã chốt; dùng ngưỡng limiter hiện hành trong contract, không tự thêm biến môi trường cho ngưỡng chưa được duyệt. |
+
+Đầu ra sẵn sàng review/commit/PR; chưa tự chuyển Jira Done hoặc nhận đã merge. Không chạy lại import Jira để cập nhật fingerprint tài liệu.
+
 ### 6.4. Chiến lược kiểm thử — chưa chạy feature
 
 | Nhóm | Ca bắt buộc | Truy vết |
