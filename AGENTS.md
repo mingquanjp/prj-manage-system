@@ -6,6 +6,7 @@
 - Code/migration cũ, Make/export, nghiên cứu và báo cáo gốc không ghi đè nghiệp vụ đã chốt. Xung đột chưa rõ: hỏi trước khi code.
 - Frontend: đọc [web/AGENTS.md](web/AGENTS.md), [quy trình và thiết kế đã duyệt](web/README.md), rồi contract/workflow liên quan.
 - Không tạo bản sao nghiệp vụ trong kế hoạch; dẫn đường dẫn và mục áp dụng.
+- Khi nhận task/chuẩn bị Git: theo [workflow Jira–GitHub](docs/ai/workflow.md); dùng mã Jira thật trong branch/commit/PR, giữ checkpoint Go người dùng tự viết.
 
 ## Phạm vi và an toàn
 - Chỉ làm đợt người dùng đã giao; trước sửa ghi ngắn mục tiêu, nguồn, ngoài phạm vi, tiêu chí đạt.

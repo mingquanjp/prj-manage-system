@@ -43,6 +43,10 @@ web/dist/
 
 # Nguồn trực tiếp của harness — allowlist có chủ đích, không mở toàn bộ docs/thesis
 !/docs/README.md
+!/docs/ai/
+/docs/ai/*
+!/docs/ai/workflow.md
+!/docs/ai/task-template.md
 !/docs/product/
 /docs/product/*
 !/docs/product/functional-requirements.md

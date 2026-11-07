@@ -260,6 +260,7 @@ README là bản giới thiệu và hướng dẫn vào dự án, **không thay 
 
 ## Quy trình phát triển và nhánh Git
 
+- Theo [workflow solo Jira–GitHub](docs/ai/workflow.md) và [mẫu giao việc](docs/ai/task-template.md); PR dùng [template chung](.github/pull_request_template.md). Ví dụ nhánh `feature/DATN-2-auth-contract`, commit/PR `docs(auth): finalize authentication contract [DATN-2]`; mã `AUTH-T01` là mã nội bộ, không thay mã Jira.
 - `main`: bản tích hợp hiện hành; xem nhánh này khi đánh giá trạng thái mới nhất.
 - Mỗi đợt feature/fix có phạm vi riêng, đối chiếu nguồn → triển khai → kiểm tra phù hợp → review → bàn giao; không tự mở rộng nghiệp vụ/schema/công thức.
 - Chỉ dẫn cho agent tại [AGENTS.md](AGENTS.md); chuẩn UI và sổ từng đợt frontend tại [web/README.md](web/README.md).
