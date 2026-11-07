@@ -1,52 +1,60 @@
-// Package postgres chứa toàn bộ phần truy cập dữ liệu. Tầng trên chỉ làm việc
-// với interface repository, không biết tới pgx.
+// Package postgres chứa toàn bộ phần truy cập dữ liệu. Tầng trên làm việc với interface repository.
 package postgres
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewPool tạo connection pool tới PostgreSQL.
-//
-// simpleProtocol tắt prepared statement. Cần bật trong hai trường hợp:
-//   - Chuỗi kết nối trỏ tới endpoint PgBouncer của Neon: transaction pooling tái sử
-//     dụng connection giữa các transaction nên prepared statement sinh lỗi rải rác
-//     "prepared statement already exists".
-//   - Cần chạy file SQL chứa nhiều câu lệnh trong một lần Exec, ví dụ khi nạp dữ
-//     liệu mẫu. Extended protocol chỉ cho phép một câu lệnh mỗi lần gọi.
-func NewPool(ctx context.Context, databaseURL string, simpleProtocol bool) (*pgxpool.Pool, error) {
-	cfg, err := pgxpool.ParseConfig(databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("chuỗi kết nối không hợp lệ: %w", err)
-	}
+var (
+	ErrDatabaseURLInvalid = errors.New("DB_URL_INVALID: không phân tích được cấu hình PostgreSQL")
+	ErrPoolInitFailed     = errors.New("DB_POOL_INIT_FAILED: không khởi tạo được pool PostgreSQL")
+	ErrConnectFailed      = errors.New("DB_CONNECT_FAILED: không kết nối được PostgreSQL")
+)
 
+// NewPool nhận URL đã được loader kiểm tra. Lỗi trả về không wrap lỗi driver chứa bí mật.
+// Giữ simple protocol cho endpoint pooled hoặc file seed nhiều câu lệnh.
+func NewPool(ctx context.Context, databaseURL string, simpleProtocol bool) (*pgxpool.Pool, error) {
+	return newPool(ctx, databaseURL, simpleProtocol, poolDependencies{
+		parse: pgxpool.ParseConfig, create: pgxpool.NewWithConfig,
+		ping:  func(ctx context.Context, p *pgxpool.Pool) error { return p.Ping(ctx) },
+		close: func(p *pgxpool.Pool) { p.Close() },
+	})
+}
+
+// Truyền các bước driver để test lỗi/cleanup không cần DB hoặc mở socket.
+type poolDependencies struct {
+	parse  func(string) (*pgxpool.Config, error)
+	create func(context.Context, *pgxpool.Config) (*pgxpool.Pool, error)
+	ping   func(context.Context, *pgxpool.Pool) error
+	close  func(*pgxpool.Pool)
+}
+
+func newPool(ctx context.Context, databaseURL string, simpleProtocol bool, deps poolDependencies) (*pgxpool.Pool, error) {
+	cfg, err := deps.parse(databaseURL)
+	if err != nil {
+		return nil, ErrDatabaseURLInvalid
+	}
 	if simpleProtocol {
 		cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	}
-
 	cfg.MaxConns = 10
 	cfg.MinConns = 1
-	// Neon tự ngủ khi không dùng; giữ connection quá lâu chỉ tổ nhận lỗi khi tỉnh lại.
 	cfg.MaxConnIdleTime = 2 * time.Minute
 	cfg.MaxConnLifetime = 30 * time.Minute
-
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	pool, err := deps.create(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("không tạo được pool: %w", err)
+		return nil, ErrPoolInitFailed
 	}
-
 	pingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-
-	if err := pool.Ping(pingCtx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("không kết nối được tới cơ sở dữ liệu: %w", err)
+	if err := deps.ping(pingCtx, pool); err != nil {
+		deps.close(pool)
+		return nil, ErrConnectFailed
 	}
-
 	return pool, nil
 }

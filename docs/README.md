@@ -37,6 +37,8 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 Tiếp nối DATN-3 / AUTH-T02: đã thêm validation cấu hình thuần và table-driven tests trong `internal/config`; [contract và ranh giới bàn giao](proposals/backend-auth-session.md#631-bàn-giao-validation-cấu-hình--datn-3--auth-t02-07112026). Ghi nhận DATN-3 này được tiếp nối bởi DATN-4 / AUTH-T03: đã nối `LoadServer()` vào startup, chỉ đọc dotenv khi dev tường minh, không đổi OS env; `Load()` của CLI không yêu cầu cấu hình auth. Contract/default và giới hạn ở proposal mục 6.3.2; chưa có auth runtime hoặc bằng chứng DB thật.
 
+Tiếp nối DATN-5 / AUTH-T04: parse URL PostgreSQL một host, chuyển đúng hostname Neon AWS pooled và nhóm lỗi kết nối an toàn; đầu vào AUTH-T17 tại proposal mục 6.3.3. Bằng chứng code/test được ghi theo lượt thực chạy trong mục đó; không là test DB thật, không thay thiết kế schema/API.
+
 [OpenAPI auth](api/auth.openapi.json) là bản contract năm route, chưa có runtime; chữ ký service/repository và ma trận bằng chứng bảo mật AUTH-S01–S10 ở proposal mục 5.3/6.4.1. Kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs` để phát hiện ref thiếu, mất allowlist, nhầm cookie/CSRF AND thành OR, DTO lộ trường hoặc mất no-store. Đây không phải validator OpenAPI đầy đủ hoặc test bảo mật API thực tế; byte/transaction/Origin/CSRF vẫn phải kiểm ở server.
 
 Kế hoạch SQL/DB test tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; chưa chạy SQL/container hoặc áp Neon. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.

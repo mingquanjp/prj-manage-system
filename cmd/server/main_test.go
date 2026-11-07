@@ -1,7 +1,13 @@
 package main
 
 import (
+	"ai-staffing/internal/repository/postgres"
+	"bytes"
+	"context"
 	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"log/slog"
 	"os"
 	"strings"
 	"testing"
@@ -17,7 +23,7 @@ func TestStartupConfigGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("APP_ENV", "prod")
-	t.Setenv("DATABASE_URL", "postgres://SECRET_MARKER.invalid/fake")
+	t.Setenv("DATABASE_URL", "postgres://SECRET_MARKER@fake.invalid/fake")
 	t.Setenv("HTTP_PORT", "8080")
 	t.Setenv("APP_ORIGIN", "https://example.test")
 	t.Setenv("SESSION_TTL", "8h")
@@ -53,7 +59,7 @@ func TestStartupConfigGate(t *testing.T) {
 func TestRunRejectsConfigBeforeDatabase(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("APP_ENV", "")
-	t.Setenv("DATABASE_URL", "postgres://SECRET_MARKER.invalid/fake")
+	t.Setenv("DATABASE_URL", "postgres://SECRET_MARKER@fake.invalid/fake")
 	if err := run(); err == nil || !strings.Contains(err.Error(), "APP_ENV") || strings.Contains(err.Error(), "SECRET_MARKER") {
 		t.Fatalf("run phải dừng tại cấu hình: %v", err)
 	}
@@ -64,7 +70,7 @@ func TestStartupDotEnvFailureGate(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			t.Chdir(t.TempDir())
 			t.Setenv("APP_ENV", "dev")
-			t.Setenv("DATABASE_URL", "fake")
+			t.Setenv("DATABASE_URL", "postgres://example.test/demo")
 			t.Setenv("HTTP_PORT", "8080")
 			t.Setenv("APP_ORIGIN", "http://localhost:5173")
 			t.Setenv("SESSION_TTL", "8h")
@@ -88,6 +94,37 @@ func TestStartupDotEnvFailureGate(t *testing.T) {
 			t.Setenv("APP_ORIGIN", "https://example.test")
 			if err := runWithStartup(start); err != nil || calls != 1 {
 				t.Fatalf("prod không được đọc dotenv: %v / %d", err, calls)
+			}
+		})
+	}
+}
+
+func TestStartupConnectionLogsAreSafe(t *testing.T) {
+	for _, cause := range []error{
+		errors.New("postgres://SECRET_MARKER:password@fake/db cookie=COOKIE_MARKER"),
+		fmt.Errorf("SECRET_MARKER: %w", postgres.ErrPoolInitFailed),
+		postgres.ErrDatabaseURLInvalid, postgres.ErrConnectFailed,
+	} {
+		t.Run(fmt.Sprintf("%T", cause), func(t *testing.T) {
+			var output bytes.Buffer
+			logger := slog.New(slog.NewTextHandler(&output, nil))
+			previous := slog.Default()
+			slog.SetDefault(logger)
+			t.Cleanup(func() { slog.SetDefault(previous) })
+			cfg := &config.Config{Database: config.DatabaseEndpoint{RuntimeURL: "postgres://SECRET_MARKER@fake/db", Pooled: true}}
+			_, err := openStartupPool(context.Background(), cfg, func(_ context.Context, raw string, pooled bool) (*pgxpool.Pool, error) {
+				if raw != cfg.Database.RuntimeURL || !pooled {
+					t.Fatal("sai endpoint runtime/protocol")
+				}
+				return nil, cause
+			})
+			if err == nil {
+				t.Fatal("không được bỏ lỗi kết nối")
+			}
+			logStartupError(logger, err)
+			message := output.String()
+			if strings.Contains(message, "SECRET_MARKER") || strings.Contains(message, "COOKIE_MARKER") || !strings.Contains(message, "DB_") || !strings.Contains(message, "server dừng do lỗi") {
+				t.Fatal("log lộ bí mật hoặc mất ngữ cảnh")
 			}
 		})
 	}

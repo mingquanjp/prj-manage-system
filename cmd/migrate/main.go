@@ -44,7 +44,7 @@ func run() error {
 
 	// PgBouncer ở chế độ transaction pooling không giữ được advisory lock mà
 	// golang-migrate dùng để chống chạy song song, nên luôn đi endpoint trực tiếp.
-	if cfg.IsPooledEndpoint() {
+	if cfg.Database.Pooled {
 		fmt.Println("DATABASE_URL trỏ tới endpoint -pooler; tự chuyển sang endpoint trực tiếp để chạy migration")
 	}
 
@@ -53,15 +53,15 @@ func run() error {
 		return fmt.Errorf("không đọc được thư mục migrations: %w", err)
 	}
 
-	db, err := sql.Open("pgx", cfg.DirectURL())
+	db, err := sql.Open("pgx", cfg.Database.DirectURL)
 	if err != nil {
-		return fmt.Errorf("không mở được kết nối: %w", err)
+		return errors.New("DB_POOL_INIT_FAILED: không mở được kết nối migration")
 	}
 	defer db.Close()
 
 	driver, err := pgxdriver.WithInstance(db, &pgxdriver.Config{})
 	if err != nil {
-		return fmt.Errorf("không khởi tạo được driver migrate: %w", err)
+		return errors.New("DB_CONNECT_FAILED: không khởi tạo được driver migration")
 	}
 
 	m, err := migrate.NewWithInstance("iofs", source, "postgres", driver)

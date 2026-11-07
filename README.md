@@ -178,7 +178,11 @@ Health kiểm tra kết nối DB, trả trạng thái tổng quát. Health thàn
 
 Seed và rollback yêu cầu `APP_ENV=dev` được đặt rõ trong môi trường tiến trình **trước khi đọc cấu hình DB**; không tự lấy giá trị mặc định hoặc nạp `.env` để cấp phép. Cờ dev không chứng minh DB đích an toàn. Reset dùng `down-all` để xử lý cả ENUM, không còn lệnh `drop`.
 
-Code hiện hỗ trợ endpoint Neon `-pooler`: runtime chọn simple protocol, migration chuyển sang endpoint trực tiếp. Đây là cơ chế hiện có, không bảo đảm mọi cấu hình pooler. Frontend demo không cần bất kỳ lệnh DB nào ở trên.
+DATN-5: loader parse `DATABASE_URL` thành `Config.Database` (`RuntimeURL`, `DirectURL`, `Pooled`) trước khi cấu hình được dùng. Chỉ hỗ trợ URL postgres/postgresql một host/IP và port hợp lệ nếu có; không keyword DSN, Unix socket, nhiều host, fragment hoặc query override endpoint/định danh/service. Không log cấu trúc này vì có credential.
+
+Chỉ hostname Neon AWS đúng mẫu `ep-…-pooler.region.aws.neon.tech` được nhận diện pooled: runtime giữ nguyên URL/simple protocol, migration đổi đúng phần hostname sang direct, giữ nguyên credential/port/path/query. Host khác giữ nguyên; nếu pooler ngoài mẫu thì phải cung cấp direct URL cho migration, không suy đã được tự chuyển.
+
+Lỗi parse/tạo pool/ping startup trả nhóm an toàn `DB_URL_INVALID` / `DB_POOL_INIT_FAILED` / `DB_CONNECT_FAILED`, không giữ raw driver error trong error chain hoặc log. Chưa có bằng chứng kết nối DB thật từ unit tests; xử lý lỗi SQL khi chạy migration/seed vẫn là legacy ngoài phạm vi đợt startup. Frontend demo không cần bất kỳ lệnh DB nào ở trên.
 
 ## Kiểm tra chất lượng
 

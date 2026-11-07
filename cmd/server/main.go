@@ -15,6 +15,8 @@ import (
 	"ai-staffing/internal/config"
 	"ai-staffing/internal/repository/postgres"
 	httptransport "ai-staffing/internal/transport/http"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -22,7 +24,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	if err := run(); err != nil {
-		logger.Error("server dừng do lỗi", "err", err)
+		logStartupError(logger, err)
 		os.Exit(1)
 	}
 }
@@ -45,9 +47,7 @@ func startServer(cfg *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	slog.Info("đang kết nối cơ sở dữ liệu", "pooled", cfg.IsPooledEndpoint())
-
-	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL, cfg.IsPooledEndpoint())
+	pool, err := openStartupPool(ctx, cfg, postgres.NewPool)
 	if err != nil {
 		return err
 	}
@@ -80,4 +80,24 @@ func startServer(cfg *config.Config) error {
 	defer cancel()
 
 	return srv.Shutdown(shutdownCtx)
+}
+
+// logStartupError chỉ nhận lỗi cấu hình/kết nối đã được các cổng startup làm an toàn.
+func logStartupError(logger *slog.Logger, err error) {
+	logger.Error("server dừng do lỗi", "err", err)
+}
+
+func openStartupPool(ctx context.Context, cfg *config.Config, open func(context.Context, string, bool) (*pgxpool.Pool, error)) (*pgxpool.Pool, error) {
+	slog.Info("đang kết nối cơ sở dữ liệu", "pooled", cfg.Database.Pooled)
+	pool, err := open(ctx, cfg.Database.RuntimeURL, cfg.Database.Pooled)
+	if err == nil {
+		return pool, nil
+	}
+	// Chỉ giữ nhóm lỗi công khai; không chuyển tiếp lỗi giả/driver thô vào log.
+	for _, safe := range []error{postgres.ErrDatabaseURLInvalid, postgres.ErrPoolInitFailed, postgres.ErrConnectFailed} {
+		if errors.Is(err, safe) {
+			return nil, safe
+		}
+	}
+	return nil, postgres.ErrConnectFailed
 }
