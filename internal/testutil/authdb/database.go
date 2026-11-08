@@ -80,6 +80,18 @@ type Case struct {
 	Conn *pgx.Conn
 }
 
+// Connect mở thêm connection vào đúng DB case đã tạo, dành cho test cạnh tranh.
+func (db *Case) Connect(t *testing.T) *pgx.Conn {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := pgx.ConnectConfig(ctx, db.cfg.Copy())
+	Require(t, "mở connection DB case", err)
+	t.Cleanup(func() { conn.Close(context.Background()) })
+	verifyCluster(t, conn, db.cfg.Database)
+	return conn
+}
+
 func NewCase(t *testing.T) *Case {
 	t.Helper()
 	cfg := rootConfig(t)

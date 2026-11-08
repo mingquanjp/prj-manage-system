@@ -7,10 +7,29 @@ import (
 )
 
 var (
-	ErrIdentityConflict = errors.New("danh tính đăng nhập mâu thuẫn")
-	ErrUnavailable      = errors.New("kho dữ liệu xác thực tạm thời không khả dụng")
-	ErrPersistence      = errors.New("lỗi đọc dữ liệu xác thực")
+	ErrIdentityConflict   = errors.New("danh tính đăng nhập mâu thuẫn")
+	ErrUnavailable        = errors.New("kho dữ liệu xác thực tạm thời không khả dụng")
+	ErrPersistence        = errors.New("lỗi lưu trữ dữ liệu xác thực")
+	ErrInvalidCredentials = errors.New("thông tin đăng nhập không còn hợp lệ")
+	ErrUnauthenticated    = errors.New("phiên xác thực không còn hợp lệ")
 )
+
+type Clock interface {
+	Now() time.Time
+}
+
+type FinalizeLoginCommand struct {
+	VerifiedIdentity  LoginIdentity
+	NewTokenHash      SessionHash
+	PreviousTokenHash *SessionHash
+	TTL               time.Duration
+}
+
+// SessionWriter hoàn tất từng thao tác nguyên vẹn trước khi trả thành công.
+type SessionWriter interface {
+	FinalizeLogin(context.Context, FinalizeLoginCommand) (SessionSnapshot, error)
+	RevokeCurrentSession(context.Context, SessionHash) error
+}
 
 type SessionHash [32]byte
 
