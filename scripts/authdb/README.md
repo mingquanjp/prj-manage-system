@@ -41,7 +41,7 @@ Nếu tên container/volume đã tồn tại mà thiếu state: runner từ ch�
 
 ```sh
 # Chỉ dùng khi task test/migration cụ thể đã được phép:
-python3 scripts/authdb/manage.py run -- go test ./internal/repository/postgres -count=1
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -count=1
 ```
 
 Runner kiểm đích trước, cấp `TEST_DATABASE_URL` từ state sở hữu và `AUTH_TEST_DB_SYSTEM_ID` từ metadata cluster đã đối chiếu vào subprocess, loại `DATABASE_URL`, `APP_ENV` và biến `PG*` từ shell. Nếu shell đã có `TEST_DATABASE_URL` khác state thì từ chối, không ghi đè âm thầm. Lệnh test phải yêu cầu biến test này, tự fail khi thiếu và không gọi loader dotenv. Không xuất URL/credential trong assertion, stdout hoặc lỗi driver.
@@ -74,6 +74,19 @@ Phạm vi thực kiểm:
 - PK/FK/unique/NOT NULL/CHECK, identity/default, sáu cột phiên/index user_id và NO ACTION. Ca FK dùng user riêng không có employee để không nhận lỗi từ FK legacy thay auth.
 
 Migration 000003 được nhúng vào binary migrate như các file SQL khác. **Không chạy `cmd/migrate up` lên Neon/DB phát triển chỉ vì file đã có**: mapping dữ liệu thật, preflight/drift/backup/consumer và quyền áp đích thật cần xác nhận riêng. Rollback auth làm mất dữ liệu hai bảng; không bảo đảm phục hồi quyền/phiên bằng up. Đợt này không diễn tập down 000002, không kiểm auth runtime/race; xem kết quả và giới hạn tại proposal mục 6.1.8.
+
+## Truy vấn auth integration — DATN-8 / AUTH-T07
+
+```sh
+python3 scripts/authdb/manage.py up
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres -count=1 -v -timeout=4m
+```
+
+`-p 1` chạy hai package tuần tự vì cả hai có ca xác minh cluster đã dọn hết database case. Dùng một lượt integration tại một thời điểm trên cluster.
+
+Trong test mới, `authdb.NewFixture(t)` tạo database case đã migrate 000003. `AddAccount` ghi user, employee và role trong cùng transaction. Có thể chủ động bỏ employee để kiểm ca thiếu liên kết. `AddSession` nạp phiên với hash và thời điểm do test chọn. `NewCase(t)` dành cho ca cần database rỗng, ví dụ kiểm lỗi truy vấn khi thiếu bảng. Dữ liệu fixture được dọn cùng database case.
+
+Bộ repository kiểm hợp đồng đọc trên PostgreSQL thật. Bằng chứng và ranh giới với service/HTTP ở [proposal mục 6.1.9](../../docs/proposals/backend-auth-session.md#619-truy-vấn-định-danh-và-quyền-hiện-hành--datn-8--auth-t07-08112026).
 
 ## Kiểm tra công cụ
 
