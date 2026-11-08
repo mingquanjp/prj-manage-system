@@ -179,7 +179,8 @@ def main():
         STATE.unlink()
         print('Đã xóa container/volume test sở hữu; không xóa image.')
     elif args.mode == 'run':
-        host_probe(state, probe(state))
+        metadata = probe(state)
+        host_probe(state, metadata)
         command = args.command
         if command[:1] == ['--']:
             command = command[1:]
@@ -189,6 +190,7 @@ def main():
         env = {k: v for k, v in os.environ.items()
                if k not in ('DATABASE_URL', 'APP_ENV') and not k.startswith('PG')}
         env['TEST_DATABASE_URL'] = state['url']
+        env['AUTH_TEST_DB_SYSTEM_ID'] = metadata['system_id']
         result = subprocess.run(command, cwd=ROOT, env=env)
         if result.returncode:
             raise Refused('Lệnh test không đạt; runner không tự migration/reset.')
