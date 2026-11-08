@@ -409,6 +409,81 @@ Không dùng `sleep` ngẫu nhiên để kết luận race đã được kiểm.
 
 **Bằng chứng để P04 hoàn tất:** metadata/fixture plan, mapping được xác nhận cho môi trường cụ thể, quyền sở hữu DB test và cách chạy/dọn, danh sách migration/transaction/rollback, cùng các điểm còn mở. Hiện mới có kế hoạch và DDL soạn; chưa có môi trường/fixture hoặc kết quả migration test. P05/P09 không được đánh dấu Done từ kế hoạch này.
 
+#### 6.1.7. Bàn giao môi trường và kế hoạch dữ liệu — DATN-6 / AUTH-T05, 08/11/2026
+
+Tiếp nối mục 6.1.3–6.1.6: người dùng đã duyệt dựng PostgreSQL 18 local riêng và mapping **dữ liệu giả** dưới đây. Không áp quyền/migration lên Neon. DATN-5 đã merge trên `origin/main` tại `62e0128`; branch DATN-6 tách từ mốc đó. Không sửa 000001/000002 hoặc nâng cả thiết kế 33 bảng.
+
+**Đầu ra vận hành:** [runbook và lệnh chạy/dọn](../../scripts/authdb/README.md), [runner guard](../../scripts/authdb/manage.py), [probe TCP host](../../scripts/authdb/probe.go), [unit tests guard](../../scripts/authdb/test_manage.py). Các nguồn này được harness kiểm kê; credential/owner state chỉ ở `.local/authdb/`, ignore và 0600. Guard từ chối thiếu state, URL khác, engine/container/image/volume/label/mount/port không đúng. Check SQL chỉ đọc metadata, không tạo bảng marker hoặc insert fixture. DB owner là bootstrap superuser của cluster test riêng, không mô hình tài khoản production.
+
+**SQL/mapping được xác nhận cho môi trường test này:** dùng DDL hai bảng đúng mục 6.1.5, cùng FK NO ACTION/check/index. Migration tiếp theo dự kiến `000003` (head hiện là 000002; DATN-7 kiểm lại trước tạo). Không dùng `IF NOT EXISTS`, force version, sửa migration cũ hoặc copy SQL sửa schema_migrations từ diễn tập connector. Auth mới chỉ đọc user_roles; legacy system_role còn giữ để consumer cũ hoạt động, không cấp quyền từ cả hai nguồn.
+
+| Nguồn legacy giả | Đích user_roles | Kiểm phải đạt |
+|---|---|---|
+| ADMIN | ADMIN đúng user_id | Một dòng mỗi user, không suy quyền HR/DIRECTOR |
+| PM, EMPLOYEE | Không thêm dòng quyền đặc biệt | Không biến PM/PTCM thành role toàn hệ thống |
+| HR/DIRECTOR/multiple-role fixture mới | Insert tường minh sau khi bảng auth tồn tại | Không suy từ tên/position/department; không nhét giá trị mới vào enum legacy |
+| Giá trị role ngoài enum/tập đã kiểm kê, liên kết mâu thuẫn | Preflight dừng | Không tự gán EMPLOYEE hoặc sửa dữ liệu để vượt lỗi |
+
+Backfill SQL cụ thể để DATN-7 đưa vào transaction migration sau review:
+
+```sql
+INSERT INTO public.user_roles (user_id, role_code)
+SELECT user_id, 'ADMIN'
+FROM public.users
+WHERE system_role = 'ADMIN';
+```
+
+Không có file mapping ID sản xuất trong repo. Mapping ADMIN trên dữ liệu thật vẫn cần kiểm kê/xác nhận đích riêng; các tài khoản HR/DIRECTOR thật chưa có mapping được duyệt. Không gán quyền mới để khớp UI demo. Auth_sessions là bảng mới, không tái tạo phiên lịch sử hoặc token từ seed.
+
+**Prerequisite/preflight cho DATN-7:**
+
+1. Guard sở hữu và probe PG18 phải đạt trước DDL. DB rỗng chưa có schema_migrations thì báo trạng thái chưa khởi tạo, không SELECT một bảng chưa tồn tại. DB có lịch sử phải có đúng một version, dirty=false; version ngoài đường dự kiến dừng.
+2. Đường legacy kiểm enum/kiểu/PK/unique/FK cần cho users/employees/positions; positions là FK NOT NULL của employee, departments nullable. Fixture tạo position trước employee, giữ user_id khác employee_id để bắt lỗi copy ID. Không nâng profile/address/job_levels hoặc các bảng nghiệp vụ khác trong auth.
+3. Kiểm users thiếu employee, employee thiếu user, user link trùng (kể cả schema sai đã gỡ unique), role ngoài tập, email chuẩn hóa trùng. Tất cả output là count/metadata, không xuất tên/email/hash. Bộ legacy sạch kỳ vọng counts mâu thuẫn bằng 0; bộ fixture bất thường chủ động dành cho lookup fail closed, tách DB/case, không dùng để chứng minh upgrade sạch.
+4. Kiểm cột must_change_password đúng bool/NN/default false sau 000002, dữ liệu cũ false; từ version 2 có cờ true thì phải bảo toàn qua migration auth. Không có temporary_password_expires_at. Kiểm pre-existing user_roles/auth_sessions hoặc drift liên quan thì dừng thay vì bỏ qua bằng IF NOT EXISTS.
+5. Kiểm số dòng/ID/user–employee link và so trong test username/hash/email/status/timestamp trước–sau; không in giá trị/hash-checksum từ dữ liệu nhạy cảm. Schema drift tasks của Neon đã ghi tại mapping 5C không nằm trong auth projection; không giả local rehearsal bằng chứng đã xử lý toàn drift Neon.
+
+**Các đường chạy được bàn giao; chưa thực thi ở DATN-6:**
+
+| Mã | Thiết lập / đường nâng | Kết quả để DATN-7 nghiệm thu |
+|---|---|---|
+| MIG-01 | DB test rỗng → runner thực áp 000001 nguyên trạng → 000002 → migration auth | Head/dirty đúng, hai bảng/PK/FK/unique/check/index đủ; không có fixture trước prerequisite |
+| MIG-02 | Áp 000001 → nạp legacy giả có ADMIN/PM/EMPLOYEE → 000002 → auth | Cột false, dữ liệu giữ nguyên; chỉ ADMIN sinh quyền ADMIN; user_id không bị nhầm employee_id |
+| MIG-03 | DB version 2 giả, tài khoản true/false → auth | Giữ đúng cờ/hash/ID và liên kết; không đặt lại tất cả false |
+| MIG-04 | Lỗi backfill/DDL cố ý ở bản sao test | Kiểm atomic DDL/backfill qua driver thực và trạng thái dirty; không nhận partial schema là thành công, không force version |
+| MIG-05 | Bản test hy sinh đã nâng auth → down auth → up auth | Kiểm đường rollback và giới hạn dữ liệu; bảng quyền/phiên mới bị mất khi down, không hứa giữ các role cấp sau backfill |
+| MIG-06 | Cần diễn tập down 000002: bản test hy sinh, consumer dừng | Mất cờ là có chủ đích; up lại chỉ default false, không phục hồi trạng thái true; không chạy trên DB có dữ liệu cần giữ |
+
+Đã đọc adapter pgx/v5 của golang-migrate v4.19.1 cài local: Run với MultiStatementEnabled=false đọc toàn file và gọi ExecContext một lần; SetVersion quản lý version/dirty bằng transaction riêng. Kế hoạch DATN-7 giữ MultiStatementEnabled=false, SQL auth gồm BEGIN; SET LOCAL lock_timeout/statement_timeout; DDL hai bảng/index; backfill ADMIN; COMMIT trong cùng file. Không đưa cập nhật schema_migrations vào SQL nghiệp vụ. DATN-7 phải kiểm atomic DDL/backfill và trạng thái dirty qua driver thật, gồm lỗi giữa file; kiểm source adapter không thay bằng chứng DB. Test rollback không dùng để biện minh chạy down production. Bản app cũ không đọc role mới hoặc buộc đổi mật khẩu; rollback app không bảo toàn chính sách auth mới. Đích thật ưu tiên sửa tiến thêm sau backup/đánh giá consumer, xin áp riêng.
+
+**Fixture plan sau prerequisite (không nạp trong DATN-6):**
+
+| Nhóm | Dữ liệu giả / nơi dùng |
+|---|---|
+| F01 — legacy sạch | Position bắt buộc, department NULL và non-NULL, ADMIN/PM/EMPLOYEE, ID user khác employee; DATN-7 kiểm bảo toàn |
+| F02 — cờ | Active false, active true, ADMIN+true; DATN-7 cấu trúc/bảo toàn, DATN-8 lookup, DATN-10 transaction đổi lần đầu |
+| F03 — quyền hiện hành | roles rỗng, ADMIN/HR/DIRECTOR, kết hợp; quyền chỉ ghi user_roles sau migration; không lấy position làm role |
+| F04 — trạng thái/liên kết | User LOCKED/DISABLED, employee INACTIVE/RESIGNED, user thiếu employee; không phá FK thật để tạo employee orphan |
+| F05 — email | Stored case/space và query chuẩn hóa; hai chuỗi khác raw nhưng cùng lower(btrim(email)); giữ unique email raw, không tự thêm expression index |
+| F06 — phiên | Hash 32 byte giả, created/expires/revoked hợp lệ; biên expires_at=now; hai phiên user A và một user B. Ca hash sai độ dài/expiry sai phải bị CHECK từ chối |
+| F07 — khóa/race | Hai connection riêng + barrier/clock chung; đổi cạnh tranh, login hash cũ chờ khóa, chờ vượt expiry; thực thi ở DATN-9/10/18, không sleep đoán race |
+| F08 — failure | Chèn lỗi từng write/commit theo hook của test; kiểm rollback hash/cờ/revoke và không báo success giả; không tự coi commit-unknown là rollback |
+
+Credential/hash fixture tạo lúc test bằng bcrypt hiện hành, không mailbox/SMTP thật. Timestamp rõ bằng clock test, không lấy now() transaction-start thay clock sau khóa (mục 5.3). Từng case DB fixture độc lập hoặc cleanup có guard; không seed chung, không dọn theo APP_ENV. DATN-7 triển khai fixture cấu trúc trước, DATN-8/9/10 mở rộng đúng ca dùng; không phải tất cả concurrency tests đều thuộc DATN-7.
+
+**Bằng chứng thực chạy DATN-6, 08/11/2026:**
+
+- Docker Desktop local qua Unix socket đã kiểm hoạt động; tạo mới bằng image chính thức postgres:18 (image ID ghi trong state local, không pin tag patch cho mọi máy). Container/volume/port/name/user theo runbook. Image/mount PG18 đối chiếu [nguồn chính thức](https://github.com/docker-library/docs/blob/master/postgres/README.md).
+- `manage.py up` và `check`: psql TCP/password trong container + pgx TCP từ host trả cùng cluster system ID; major=18, DB/user đúng, owner=true, public_tables=0. Không xuất credential/hash/email; chưa có schema_migrations/bảng auth.
+- `run -- python3 -c ...`: subprocess nhận URL test sở hữu và không có DATABASE_URL/APP_ENV. Đây là kiểm plumbing môi trường, không là migration test.
+- `stop → up`: giữ nguyên cluster và không reset. `destroy --confirm ai-staffing-auth-test → up`: chỉ xóa/tạo lại container/volume test, cluster ID mới, public_tables=0. Container mới được để chạy cho DATN-7; credential/state cũ không tái sử dụng. Chưa thử phục hồi sau crash ở giữa thao tác lifecycle.
+- Unit guard offline: 8/8 đạt (Docker giả), gồm thiếu state, URL khác, engine/container/image/volume/mount/port sai, secret redaction. Live runner cũng đã từ chối URL khác và destroy thiếu xác nhận; check sau đó DB vẫn trống. Chưa thay engine hoặc phá container thật để diễn tập các ca ownership sai.
+- `go vet ./...`, `go test ./... -count=1`, `go build ./...`: đạt; probe mới compile trong gói scripts/authdb, không có test Go riêng. Auth runtime chưa có.
+- Contract/harness cuối 24/24 đạt; kiểm kê 226 nguồn đạt; diff --check đạt. Test tĩnh không thay bằng chứng DB.
+- Sub-agent GPT-6.1 Sol medium review chỉ đọc theo context bàn giao, không truy cập Docker/DB/secret: không phát hiện lỗi chặn; đã sửa ghi nhận lịch sử trong mục lục và thêm cảnh báo không gọi probe ngoài guard. Tác giả đối chiếu diff và kết luận; không phải phê duyệt độc lập của người dùng.
+
+Không chạy migrations/seed/fixture/auth API/race hoặc truy cập Neon. Không đổi Jira Done, commit hoặc push. Đầu vào DATN-7: môi trường trống có guard, DDL/mapping test/transaction plan và ma trận MIG/F ở trên; trước viết migration vẫn kiểm head/source/đích một lần nữa.
+
 ### 6.2. API và bảo vệ phiên
 
 Các route đồng bộ theo API design hiện hành. Ví dụ dưới đây mô tả contract dự kiến, không phải thông tin đăng nhập dùng được hoặc dữ liệu thật. Bản máy đọc được: [OpenAPI auth 3.1.1](../api/auth.openapi.json). File theo chuẩn [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html), mô tả năm route và security/header/DTO/lỗi, không tự thực thi guard hoặc chứng minh runtime an toàn. Giới hạn toàn body JSON login/đổi lần đầu đã được duyệt riêng 06/11: 8 KiB (8192 byte), lớn hơn trả 413/PAYLOAD_TOO_LARGE. Đây không phải độ dài trường mật khẩu.

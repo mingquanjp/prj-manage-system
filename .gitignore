@@ -82,3 +82,6 @@ web/dist/
 /.local/jira-auth/
 __pycache__/
 *.pyc
+
+# Credential và định danh tài nguyên PostgreSQL test sở hữu riêng
+/.local/authdb/

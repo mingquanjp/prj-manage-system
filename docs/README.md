@@ -41,7 +41,9 @@ Tiếp nối DATN-5 / AUTH-T04: parse URL PostgreSQL một host, chuyển đúng
 
 [OpenAPI auth](api/auth.openapi.json) là bản contract năm route, chưa có runtime; chữ ký service/repository và ma trận bằng chứng bảo mật AUTH-S01–S10 ở proposal mục 5.3/6.4.1. Kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs` để phát hiện ref thiếu, mất allowlist, nhầm cookie/CSRF AND thành OR, DTO lộ trường hoặc mất no-store. Đây không phải validator OpenAPI đầy đủ hoặc test bảo mật API thực tế; byte/transaction/Origin/CSRF vẫn phải kiểm ở server.
 
-Kế hoạch SQL/DB test tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; chưa chạy SQL/container hoặc áp Neon. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.
+Tiếp nối DATN-6 / AUTH-T05: xem [runbook PostgreSQL test local](../scripts/authdb/README.md) và proposal mục 6.1.7 cho mapping test, prerequisite/rollback, fixture plan và bằng chứng thực chạy. Không dùng môi trường này hoặc kế hoạch để tuyên bố Neon/migration auth đã cập nhật.
+
+Ghi nhận lịch sử trước DATN-6 tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; khi đó chưa chạy SQL/container hoặc áp Neon. Môi trường local và SELECT metadata đã được DATN-6 tiếp nối ở mục 6.1.7; migration auth và Neon vẫn chưa áp. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.
 
 WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phân biệt bản soạn đã có với phần còn lại (mục 9.2.1), tách kế hoạch fixture khỏi thực thi sau migration, giao rõ limiter login/đổi lần đầu và ranh giới FE auth/mock. Mục 9.2.2 nối AUTH-S01–S10 với task chịu trách nhiệm; mục 9.4 có checklist Done cho ticket theo board DATN đã tạo. Chưa tạo issue hoặc đánh dấu runtime hoàn tất; estimate gốc không phải giờ còn lại.
 
