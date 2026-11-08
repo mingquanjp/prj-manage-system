@@ -484,6 +484,29 @@ Credential/hash fixture tạo lúc test bằng bcrypt hiện hành, không mailb
 
 Không chạy migrations/seed/fixture/auth API/race hoặc truy cập Neon. Không đổi Jira Done, commit hoặc push. Đầu vào DATN-7: môi trường trống có guard, DDL/mapping test/transaction plan và ma trận MIG/F ở trên; trước viết migration vẫn kiểm head/source/đích một lần nữa.
 
+#### 6.1.8. Migration auth và bảo toàn dữ liệu — DATN-7 / AUTH-T06, 08/11/2026
+
+Người dùng đã duyệt triển khai/thực thi trên cluster PostgreSQL test DATN-6, không Neon. Branch `feature/DATN-7-auth-migration` từ origin/main `9720b87` (DATN-6 đã merge), head kiểm trước sửa là 000002. Thêm [000003 up](../../migrations/000003_auth_roles_sessions.up.sql)/[down](../../migrations/000003_auth_roles_sessions.down.sql) đúng DDL/backfill tại 6.1.5/6.1.7; giữ nguyên 000001/000002, không thay schema ngoài hai bảng auth, không tạo HR/DIRECTOR từ dữ liệu legacy.
+
+**Cầu nối và cô lập:** [integration tests](../../migrations/auth_integration_test.go) dùng build tag integration, pgx + golang-migrate hiện hành; lệnh và guard ở [runbook](../../scripts/authdb/README.md#migration-auth-integration--datn-7--auth-t06). Runner truyền TEST_DATABASE_URL + AUTH_TEST_DB_SYSTEM_ID từ cluster đã kiểm. Go xác minh lại đích, tạo database case tên ngẫu nhiên trong đúng cluster, không nhận DB có sẵn; driver kiểm current_database trước DDL. Cleanup chỉ DROP DB vừa CREATE thành công sau khi đóng connection và kiểm cluster/owner; không force/prune hoặc dọn rộng. DB gốc giữ trống. Không chạy đồng thời hai lượt suite trên cùng cluster.
+
+**Đường dữ liệu đã hiện thực:** DB rỗng → 1 → 2 → 3; version 1 + legacy giả → 2 → 3; version 2 + cờ true/false → 3; auth down/up trên bản test; lỗi SQL test trong bộ nhớ sau DDL/backfill, kiểm rollback dữ liệu/bảng + version 3 dirty=true và từ chối retry. Không force version hoặc sửa file migration để làm test xanh. Down auth mất role/phiên bổ sung, up chỉ backfill lại ADMIN; không gọi đây là khôi phục đầy đủ. MIG-06 (down 000002) không chạy, không cần cho AC nền auth này.
+
+**Preflight và fixture:** kiểm type/enum/PK/unique/FK của projection legacy, số liên kết thiếu/trùng, email chuẩn hóa trùng, tập quyền cũ, auth table chưa có và cờ đúng version. Bộ âm gồm user thiếu employee, email case/space trùng, mất unique link, auth table có sẵn, type username sai và enum legacy khác; tất cả phải dừng trước nâng version. Fixture dùng position trước employee, department nullable/non-null, ID user khác employee, bcrypt sinh khi test, role/status khác nhau. Snapshot toàn bộ hàng users/employees/positions/departments so trong bộ nhớ; sau 000002 bỏ đúng cột mới khi so bản version 1, sau auth so toàn bộ gồm cờ. Không xuất dữ liệu/hash/email hoặc token.
+
+**Giới hạn áp dụng:** preflight/fixture là rehearsal local, không chứng nhận Neon hay thay công cụ preflight dữ liệu thật. File 000003 nay được embed vào cmd/migrate, nhưng chưa được phép áp DB đích thật; mapping/backup/drift/consumer và xác nhận áp đích vẫn là cổng riêng. SQL PK/FK/CHECK không thực thi auth runtime/thu hồi phiên/8h hoặc sửa chính sách phiên.
+
+**Bằng chứng thực chạy DATN-7, 08/11/2026:**
+
+- `python3 scripts/authdb/manage.py run -- go test -tags=integration ./migrations -count=1 -v -timeout=4m`: đạt trên PostgreSQL 18 local. Sáu nhóm test gồm đường rỗng, legacy (role/session/metadata), bảo toàn cờ + down/up, lỗi atomic/dirty, sáu ca drift preflight và kiểm DB gốc/cleanup. Không fake driver/DB ở bộ này.
+- MIG-01/02/03/04/05 có bằng chứng DB thật như mô tả trên; MIG-06 (down 000002), race/API/login/CSRF/đổi mật khẩu chưa chạy. Bộ constraint xác minh SQLSTATE PK/FK/unique/NN/check và metadata index/default/identity; FK runtime được cô lập khỏi FK employee cũ.
+- Regression từng gặp khi viết test: cfg.ConnString() giữ URL gốc sau khi đổi cfg.Database. Đã chuyển sang stdlib.OpenDB(*cfg), kiểm current_database trước DDL và thêm ca DB gốc trống/không còn auth_case; đã tạo lại đúng cluster test sở hữu để loại dữ liệu từ lượt thử sai đích. Không ảnh hưởng Neon/DB ứng dụng. Kết quả cuối: DB gốc 0 bảng và không còn DB case.
+- `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go vet -tags=integration ./migrations`: đạt. Unit tests mặc định không chạy DB integration; command riêng ở trên mới là bằng chứng DB.
+- Unit guard Python 8/8; contract/harness 24/24; kiểm kê 229 nguồn và diff --check đạt. Không gọi kiểm tĩnh là runtime auth pass.
+- Sol medium review chỉ đọc: góp ý thiếu preflight và FK assertion bị FK legacy che đã xử lý; lượt cuối không còn finding chặn. Metadata PK/FK legacy kiểm cấu trúc cần cho rehearsal từ repo, chưa đối chiếu mọi biểu thức/cột/action để làm validator drift production tổng quát. Tác giả đối chiếu kết luận và test DB, không giả review agent là người phê duyệt độc lập.
+
+**Bàn giao DATN-8 / AUTH-T07:** hai bảng auth/mapping có migration và bằng chứng local; dùng cùng runner/cluster và dựng fixture riêng cho repository tests, không tái dùng DB case đã dọn. Cột must_change_password có sẵn từ 000002; user_roles là nguồn quyền auth, không đọc system_role làm nguồn quyền thứ hai. Lookup email chuẩn hóa trùng vẫn phải fail closed ở DATN-8, không thêm unique expression index ngoài quyết định. Trước áp DB thật cần kiểm kê/mapping/backup/consumer và xác nhận riêng. Chưa commit/push hoặc đổi Jira tự động trong lượt triển khai này.
+
 ### 6.2. API và bảo vệ phiên
 
 Các route đồng bộ theo API design hiện hành. Ví dụ dưới đây mô tả contract dự kiến, không phải thông tin đăng nhập dùng được hoặc dữ liệu thật. Bản máy đọc được: [OpenAPI auth 3.1.1](../api/auth.openapi.json). File theo chuẩn [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html), mô tả năm route và security/header/DTO/lỗi, không tự thực thi guard hoặc chứng minh runtime an toàn. Giới hạn toàn body JSON login/đổi lần đầu đã được duyệt riêng 06/11: 8 KiB (8192 byte), lớn hơn trả 413/PAYLOAD_TOO_LARGE. Đây không phải độ dài trường mật khẩu.

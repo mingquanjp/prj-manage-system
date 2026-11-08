@@ -43,6 +43,8 @@ Tiếp nối DATN-5 / AUTH-T04: parse URL PostgreSQL một host, chuyển đúng
 
 Tiếp nối DATN-6 / AUTH-T05: xem [runbook PostgreSQL test local](../scripts/authdb/README.md) và proposal mục 6.1.7 cho mapping test, prerequisite/rollback, fixture plan và bằng chứng thực chạy. Không dùng môi trường này hoặc kế hoạch để tuyên bố Neon/migration auth đã cập nhật.
 
+Tiếp nối DATN-7 / AUTH-T06: migration 000003 và integration tests PostgreSQL thực ở proposal mục 6.1.8; chạy riêng qua [runner test](../scripts/authdb/README.md#migration-auth-integration--datn-7--auth-t06). Chỉ nâng DB case trong cluster local sở hữu; không áp Neon hoặc triển khai auth runtime.
+
 Ghi nhận lịch sử trước DATN-6 tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; khi đó chưa chạy SQL/container hoặc áp Neon. Môi trường local và SELECT metadata đã được DATN-6 tiếp nối ở mục 6.1.7; migration auth và Neon vẫn chưa áp. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.
 
 WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phân biệt bản soạn đã có với phần còn lại (mục 9.2.1), tách kế hoạch fixture khỏi thực thi sau migration, giao rõ limiter login/đổi lần đầu và ranh giới FE auth/mock. Mục 9.2.2 nối AUTH-S01–S10 với task chịu trách nhiệm; mục 9.4 có checklist Done cho ticket theo board DATN đã tạo. Chưa tạo issue hoặc đánh dấu runtime hoàn tất; estimate gốc không phải giờ còn lại.
