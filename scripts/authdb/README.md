@@ -88,6 +88,30 @@ Trong test mới, `authdb.NewFixture(t)` tạo database case đã migrate 000003
 
 Bộ repository kiểm hợp đồng đọc trên PostgreSQL thật. Bằng chứng và ranh giới với service/HTTP ở [proposal mục 6.1.9](../../docs/proposals/backend-auth-session.md#619-truy-vấn-định-danh-và-quyền-hiện-hành--datn-8--auth-t07-08112026).
 
+## Transaction auth integration — DATN-9 / AUTH-T08
+
+```sh
+python3 scripts/authdb/manage.py up
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./migrations ./internal/repository/postgres -count=1 -timeout=4m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+```
+
+Lệnh cuối chạy riêng sau toàn bộ suite để xác nhận DB gốc vẫn trống và không còn DB case, không phụ thuộc thứ tự đăng ký các test trong package. Giữ một lượt integration tại một thời điểm. `authdb.Case.Connect(t)` mở thêm connection từ bản sao config của DB case đã xác minh, kiểm lại cluster/name/owner và đăng ký cleanup. Không dùng `ConnString()` để chuyển DB đích.
+
+Sáu nhóm transaction mới kiểm login/phiên cũ, nền thay đổi, logout, rollback, 13 ca cạnh tranh và commit mất phản hồi. Barrier xác nhận blocker/waiter thực bằng `pg_blocking_pids`; ticker chỉ thăm dò quan hệ khóa có timeout, không dùng sleep để giả định request đã chờ khóa. Clock điều khiển an toàn giữa goroutine, gồm biên hết hạn trong khi chờ user/session. Test gây lỗi bằng trigger chỉ tạo trong database case. Mô phỏng mất phản hồi gọi commit PostgreSQL thật rồi trả lỗi I/O từ wrapper để kiểm adapter không báo thành công giả; chưa thử cắt mạng thực.
+
+Đã chạy các cổng Go cùng bộ integration ở trên trên PostgreSQL 18 test sở hữu, không đổi schema/migration. [Proposal mục 6.1.10](../../docs/proposals/backend-auth-session.md#6110-transaction-tạo-và-thu-hồi-phiên--datn-9--auth-t08-09112026) ghi bằng chứng và giới hạn cho DATN-10/DATN-18. Kiểm tĩnh harness/contract không thay bằng chứng transaction.
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go vet -tags=integration ./migrations ./internal/repository/postgres ./internal/testutil/authdb
+node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
 ## Kiểm tra công cụ
 
 ```sh
