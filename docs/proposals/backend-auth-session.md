@@ -294,7 +294,7 @@ Không thêm index `lower(email)`/unique không phân biệt hoa thường ngay 
 
 | Thao tác | Đọc | Ghi / khóa | Điều kiện thất bại |
 |---|---|---|---|
-| Tìm danh tính login | Employee theo email + user: ID, status, hash, email nền và cờ buộc đổi | Chưa ghi, bcrypt ở ngoài transaction | Không có/không active → lỗi login chung; nhiều email chuẩn hóa → lỗi hệ thống chung |
+| Tìm danh tính login | Employee theo email + user: ID, trạng thái hai nguồn, hash và email đã lưu để đối chiếu. Cờ buộc đổi được đọc khi hoàn tất login dưới khóa. | Chưa ghi, bcrypt ở ngoài transaction | Không có/không active → lỗi login chung; nhiều email chuẩn hóa → lỗi hệ thống chung |
 | Hoàn tất login | Đọc lại user rồi employee dưới khóa; so hash/email/status với dữ liệu đã xác minh; đọc cờ hiện hành | Khóa theo thứ tự user → employee → session cũ nếu có; revoke phiên cookie cũ của đúng user; INSERT session mới | Hash/email/status đổi → không cấp phiên từ kết quả xác minh cũ; rollback toàn bộ khi lỗi |
 | Authenticate/me | JOIN session → user → employee, cờ buộc đổi và role cùng statement/snapshot nhất quán | Không ghi, không trượt expires_at; tách xác thực phiên khỏi quyền gọi nghiệp vụ | Hết hạn/revoke/inactive/thiếu hồ sơ → 401; cờ true chỉ có allowlist auth; DB lỗi → 503/500 |
 | Đổi mật khẩu lần đầu | Phiên hợp lệ, hash mật khẩu hiện tại, cờ true; bcrypt verify/hash ở ngoài transaction | User → employee → các session theo session_id tăng dần; kiểm lại hash/cờ/active/phiên dưới khóa; thay hash + false + revoke tất cả phiên cùng commit (A08) | Sai mật khẩu hiện tại/validation → không ghi; nền đổi/phiên revoked → không ghi; commit lỗi rollback |
@@ -506,6 +506,18 @@ Người dùng đã duyệt triển khai/thực thi trên cluster PostgreSQL tes
 - Sol medium review chỉ đọc: góp ý thiếu preflight và FK assertion bị FK legacy che đã xử lý; lượt cuối không còn finding chặn. Metadata PK/FK legacy kiểm cấu trúc cần cho rehearsal từ repo, chưa đối chiếu mọi biểu thức/cột/action để làm validator drift production tổng quát. Tác giả đối chiếu kết luận và test DB, không giả review agent là người phê duyệt độc lập.
 
 **Bàn giao DATN-8 / AUTH-T07:** hai bảng auth/mapping có migration và bằng chứng local; dùng cùng runner/cluster và dựng fixture riêng cho repository tests, không tái dùng DB case đã dọn. Cột must_change_password có sẵn từ 000002; user_roles là nguồn quyền auth, không đọc system_role làm nguồn quyền thứ hai. Lookup email chuẩn hóa trùng vẫn phải fail closed ở DATN-8, không thêm unique expression index ngoài quyết định. Trước áp DB thật cần kiểm kê/mapping/backup/consumer và xác nhận riêng. Chưa commit/push hoặc đổi Jira tự động trong lượt triển khai này.
+
+#### 6.1.9. Truy vấn định danh và quyền hiện hành — DATN-8 / AUTH-T07, 08/11/2026
+
+[Adapter PostgreSQL](../../internal/repository/postgres/auth_identity.go) hiện thực hai phương thức của [IdentityReader](../../internal/service/auth/identity.go). `FindLoginIdentity` giữ email đã lưu để DATN-9 có thể đối chiếu sau khi khóa. Truy vấn kiểm tối đa hai dòng khớp `lower(btrim(email))` trước khi xét trạng thái. Hai dòng khớp trả `ErrIdentityConflict`, kể cả khi một tài khoản đang khóa. Cờ buộc đổi thuộc snapshot phiên và sẽ được đọc lại khi hoàn tất login dưới khóa.
+
+`ReadSession` đọc theo token hash bằng một statement. Kết quả gồm thông tin phiên, danh tính tối thiểu, trạng thái user/employee, cờ và role từ `user_roles`. Hết hạn, thu hồi, inactive và giới hạn quyền của phiên là quyết định ở service từ dữ kiện đã đọc. Khi không có hash khớp hoặc thiếu employee thì `found=false, err=nil`. Lỗi driver được chuyển sang loại lỗi nội bộ an toàn, tách khỏi không tìm thấy và dữ liệu mâu thuẫn.
+
+[Fixture dùng chung](../../internal/testutil/authdb/fixture.go) dựng DB case mới, nâng tới 000003, rồi thêm tài khoản, hồ sơ, role và phiên giả theo từng ca. Bộ migration DATN-7 và bộ truy vấn dùng cùng [guard DB case](../../internal/testutil/authdb/database.go). Xem [lệnh integration và cách dùng fixture](../../scripts/authdb/README.md#truy-vấn-auth-integration--datn-8--auth-t07).
+
+**Bằng chứng đã chạy:** PostgreSQL 18 test local đạt 4 nhóm integration cho repository và 6 nhóm migration hồi quy. Đã kiểm email hoa/thường và khoảng trắng, trùng với tài khoản khóa, trạng thái hai nguồn, hai ID khác nhau, role kết hợp/rỗng, đọc lại sau đổi role/cờ/trạng thái, phiên thu hồi, phiên thiếu employee, lỗi SQL thật và dọn DB case. `go vet ./...`, `go test ./... -count=1`, `go build ./...` và vet với tag integration đều đạt. Đây là phần persistence của AUTH-S01/AUTH-S05. Ánh xạ HTTP, hash giả khi thiếu tài khoản, hiệu lực phiên và kiểm cạnh tranh chờ các task tương ứng.
+
+**Bàn giao DATN-9 / AUTH-T08:** dùng `LoginIdentity` làm đầu vào đã xác minh và so lại email/hash/trạng thái sau khóa theo mục 5.3. Dùng `SessionSnapshot` để đọc trạng thái, fixture để dựng nhiều phiên cho cùng user và cho user khác. DATN-10 bổ sung `ReadPasswordChangeBasis` cùng giao dịch đổi mật khẩu lần đầu.
 
 ### 6.2. API và bảo vệ phiên
 
