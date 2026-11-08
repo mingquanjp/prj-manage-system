@@ -16,19 +16,22 @@ import (
 type authQueries interface {
 	Query(context.Context, string, ...any) (pgx.Rows, error)
 	QueryRow(context.Context, string, ...any) pgx.Row
+	Begin(context.Context) (pgx.Tx, error)
 }
 
 type AuthRepository struct {
-	db authQueries
+	db    authQueries
+	clock auth.Clock
 }
 
 var (
 	_ auth.IdentityReader = (*AuthRepository)(nil)
+	_ auth.SessionWriter  = (*AuthRepository)(nil)
 	_ authQueries         = (*pgxpool.Pool)(nil)
 )
 
-func NewAuthRepository(db authQueries) *AuthRepository {
-	return &AuthRepository{db: db}
+func NewAuthRepository(db authQueries, clock auth.Clock) *AuthRepository {
+	return &AuthRepository{db: db, clock: clock}
 }
 
 const findLoginIdentitySQL = `
@@ -42,24 +45,24 @@ LIMIT 2`
 func (r *AuthRepository) FindLoginIdentity(ctx context.Context, email string) (auth.LoginIdentity, bool, error) {
 	rows, err := r.db.Query(ctx, findLoginIdentitySQL, strings.TrimSpace(email))
 	if err != nil {
-		return auth.LoginIdentity{}, false, authReadError(err)
+		return auth.LoginIdentity{}, false, authPersistenceError(err)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return auth.LoginIdentity{}, false, authReadError(rows.Err())
+		return auth.LoginIdentity{}, false, authPersistenceError(rows.Err())
 	}
 	var identity auth.LoginIdentity
 	if err := rows.Scan(&identity.UserID, &identity.EmployeeID, &identity.Email, &identity.PasswordHash,
 		&identity.UserActive, &identity.EmployeeActive); err != nil {
-		return auth.LoginIdentity{}, false, authReadError(err)
+		return auth.LoginIdentity{}, false, authPersistenceError(err)
 	}
 	// Bản ghi thứ hai đủ để phát hiện xung đột, kể cả khi một tài khoản bị khóa.
 	if rows.Next() {
 		return auth.LoginIdentity{}, false, auth.ErrIdentityConflict
 	}
 	if err := rows.Err(); err != nil {
-		return auth.LoginIdentity{}, false, authReadError(err)
+		return auth.LoginIdentity{}, false, authPersistenceError(err)
 	}
 	return identity, true, nil
 }
@@ -87,13 +90,13 @@ func (r *AuthRepository) ReadSession(ctx context.Context, hash auth.SessionHash)
 		return auth.SessionSnapshot{}, false, nil
 	}
 	if err != nil {
-		return auth.SessionSnapshot{}, false, authReadError(err)
+		return auth.SessionSnapshot{}, false, authPersistenceError(err)
 	}
 	return snapshot, true, nil
 }
 
 // Trả lỗi ổn định để tầng trên phân loại mà không mang theo SQL hay dữ liệu kết nối.
-func authReadError(err error) error {
+func authPersistenceError(err error) error {
 	switch {
 	case err == nil:
 		return nil

@@ -18,7 +18,7 @@ import (
 
 func TestFindLoginIdentity(t *testing.T) {
 	f := authdb.NewFixture(t)
-	repo := postgres.NewAuthRepository(f.DB.Conn)
+	repo := postgres.NewAuthRepository(f.DB.Conn, clockFunc(time.Now))
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -70,7 +70,7 @@ func TestFindLoginIdentity(t *testing.T) {
 
 func TestReadSession(t *testing.T) {
 	f := authdb.NewFixture(t)
-	repo := postgres.NewAuthRepository(f.DB.Conn)
+	repo := postgres.NewAuthRepository(f.DB.Conn, clockFunc(time.Now))
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -150,7 +150,7 @@ func TestReadSession(t *testing.T) {
 func TestAuthReadDatabaseFailure(t *testing.T) {
 	// DB case chưa migrate tạo lỗi SQL thật mà không sửa schema dùng cho ca khác.
 	db := authdb.NewCase(t)
-	repo := postgres.NewAuthRepository(db.Conn)
+	repo := postgres.NewAuthRepository(db.Conn, clockFunc(time.Now))
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	login, found, err := repo.FindLoginIdentity(ctx, "fixture@example.invalid")

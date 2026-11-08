@@ -519,6 +519,22 @@ Người dùng đã duyệt triển khai/thực thi trên cluster PostgreSQL tes
 
 **Bàn giao DATN-9 / AUTH-T08:** dùng `LoginIdentity` làm đầu vào đã xác minh và so lại email/hash/trạng thái sau khóa theo mục 5.3. Dùng `SessionSnapshot` để đọc trạng thái, fixture để dựng nhiều phiên cho cùng user và cho user khác. DATN-10 bổ sung `ReadPasswordChangeBasis` cùng giao dịch đổi mật khẩu lần đầu.
 
+#### 6.1.10. Transaction tạo và thu hồi phiên — DATN-9 / AUTH-T08, 09/11/2026
+
+[SessionWriter](../../internal/service/auth/identity.go) cung cấp `FinalizeLogin` và `RevokeCurrentSession`. [Adapter PostgreSQL](../../internal/repository/postgres/auth_sessions.go) mở và kết thúc transaction cho từng port theo mục 5.3. Constructor `NewAuthRepository(db, clock)` nhận nguồn giờ tường minh, dùng được với pool hoặc connection; mọi caller hiện có đã truyền clock. Composition root về sau phải truyền cùng nguồn giờ cho service và adapter.
+
+`FinalizeLogin` khóa user, employee rồi phiên cũ khớp hash và cùng user. Adapter so lại ID liên kết, email đã lưu, password hash và trạng thái hoạt động, lấy cờ/role hiện hành dưới giao thức khóa đã chốt. Sau đủ khóa, một lần đọc clock quyết định hiệu lực phiên cũ và cặp thời điểm cấp/hạn phiên mới. TTL khác 8 giờ là đầu vào nội bộ sai, trả lỗi trước khi ghi. Phiên cũ cùng user còn hiệu lực được thu hồi cùng transaction tạo phiên mới. Phiên không tồn tại, thuộc user khác, hết hạn hoặc đã thu hồi được bỏ qua. Snapshot trả về dùng timestamp thực được PostgreSQL lưu qua `RETURNING` và chỉ được trả sau commit thành công.
+
+`RevokeCurrentSession` tìm chủ phiên từ hash rồi khóa user, employee và đúng session. Adapter đọc lại active/hạn/revoke dưới khóa, lấy giờ sau khi chờ đủ khóa và chỉ thu hồi phiên hợp lệ đang gọi. Phiên mất hiệu lực trả `ErrUnauthenticated`, nền login thay đổi trả `ErrInvalidCredentials`. Lỗi DB đi qua bộ phân loại an toàn đã dùng cho truy vấn DATN-8. Cleanup rollback có context hữu hạn riêng để vẫn thực hiện khi request bị hủy.
+
+Bộ kiểm tra bổ sung sáu nhóm transaction integration gồm cấp phiên, nền thay đổi, logout, rollback, cạnh tranh và kết quả commit không rõ. Trong đó 13 ca cạnh tranh dùng hai connection riêng, barrier `pg_blocking_pids` và clock điều khiển; chỉ dịch clock/nhả khóa sau khi PostgreSQL xác nhận đang bị chặn. Ca reset hash giả lập giữ khóa user rồi đổi hash/thu hồi phiên. Các ca giữ riêng khóa employee/session kiểm việc chờ tại từng tầng khóa, không chứng nhận giao thức của API quản trị chưa có. Ca thiếu employee kiểm trực tiếp bảng session để tránh JOIN che dữ liệu ngoài ý muốn.
+
+Ca unique hash gây lỗi insert sau khi thu hồi phiên cũ kiểm rollback cả hai write. Trigger gây lỗi update và constraint trigger trì hoãn tới commit chỉ tồn tại trong DB case; kiểm dữ liệu sau lỗi để xác nhận PostgreSQL rollback. Ca mất phản hồi commit dùng wrapper quanh transaction thật, gọi commit DB trước rồi trả lỗi I/O giả; adapter trả lỗi/snapshot rỗng trong khi dữ liệu đã commit vẫn quan sát được. Đây là mô phỏng biên driver, chưa phải thử cắt mạng thực. Vì vậy không khẳng định mọi lỗi commit đều rollback hoặc retry là an toàn.
+
+DATN-10 / AUTH-T09 và DATN-18 / AUTH-T17 tái sử dụng thứ tự khóa, clock, phân loại lỗi và [fixture/connection test đã xác minh](../../internal/testutil/authdb/database.go). DATN-10 bổ sung transaction đổi lần đầu theo mục 5.3, giữ bcrypt ngoài khóa và khóa các session theo ID. DATN-18 kiểm tích hợp các port với service/HTTP. Bằng chứng DATN-9 chỉ là phần adapter/PostgreSQL của AUTH-S02/AUTH-S07. Cookie, CSRF, limiter, phản hồi HTTP và API khóa/reset chưa được kiểm chứng ở đợt này. Schema và migration giữ nguyên.
+
+Lệnh tái hiện, kiểm cuối DB gốc/case và các cổng Go/harness nằm trong [runbook DATN-9](../../scripts/authdb/README.md#transaction-auth-integration--datn-9--auth-t08). Chỉ dùng PostgreSQL 18 test local sở hữu theo guard DATN-6, không Neon hoặc DB ứng dụng.
+
 ### 6.2. API và bảo vệ phiên
 
 Các route đồng bộ theo API design hiện hành. Ví dụ dưới đây mô tả contract dự kiến, không phải thông tin đăng nhập dùng được hoặc dữ liệu thật. Bản máy đọc được: [OpenAPI auth 3.1.1](../api/auth.openapi.json). File theo chuẩn [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html), mô tả năm route và security/header/DTO/lỗi, không tự thực thi guard hoặc chứng minh runtime an toàn. Giới hạn toàn body JSON login/đổi lần đầu đã được duyệt riêng 06/11: 8 KiB (8192 byte), lớn hơn trả 413/PAYLOAD_TOO_LARGE. Đây không phải độ dài trường mật khẩu.
