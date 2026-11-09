@@ -25,9 +25,17 @@ type FinalizeLoginCommand struct {
 	TTL               time.Duration
 }
 
+type ChangeInitialPasswordCommand struct {
+	TokenHash            SessionHash
+	UserID               int
+	VerifiedPasswordHash string
+	NewPasswordHash      string
+}
+
 // SessionWriter hoàn tất từng thao tác nguyên vẹn trước khi trả thành công.
 type SessionWriter interface {
 	FinalizeLogin(context.Context, FinalizeLoginCommand) (SessionSnapshot, error)
+	ChangeInitialPassword(context.Context, ChangeInitialPasswordCommand) error
 	RevokeCurrentSession(context.Context, SessionHash) error
 }
 
@@ -62,9 +70,16 @@ type SessionSnapshot struct {
 	EmployeeActive bool
 }
 
+// PasswordChangeBasis chỉ dùng ở biên service và repository.
+type PasswordChangeBasis struct {
+	Session      SessionSnapshot
+	PasswordHash string
+}
+
 // IdentityReader trả found=false, err=nil khi không tìm được danh tính đầy đủ.
 // Caller kiểm tra hiệu lực từ snapshot sau khi đọc.
 type IdentityReader interface {
 	FindLoginIdentity(ctx context.Context, email string) (LoginIdentity, bool, error)
 	ReadSession(ctx context.Context, hash SessionHash) (SessionSnapshot, bool, error)
+	ReadPasswordChangeBasis(ctx context.Context, hash SessionHash) (PasswordChangeBasis, bool, error)
 }
