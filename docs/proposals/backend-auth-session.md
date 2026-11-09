@@ -243,6 +243,14 @@ Principal hợp lệ giữ danh tính và cờ buộc đổi mật khẩu. Quy�
 
 Kiểm chứng trên Go 1.26.5: `go test ./internal/service/auth -run '^TestEvaluateSession' -count=1 -v` đạt 9 ca con, gồm biên hết hạn, thu hồi, từng trạng thái ngừng hoạt động, quyền rỗng/kiêm nhiệm và phiên hạn chế. `go vet ./...`, `go test ./... -count=1`, `go build ./...`, 24 ca kiểm contract/harness và kiểm kê nguồn đều đạt. Đây là bằng chứng tầng Go của AUTH-S02. Kiểm tra wiring service, PostgreSQL, HTTP, cookie và trình duyệt nằm ở các đợt tích hợp tương ứng.
 
+#### 5.3.2. Bàn giao service xác thực và đăng xuất — DATN-12 / AUTH-T11, 10/11/2026
+
+[`auth.NewService`](../../internal/service/auth/session_service.go) nhận repository có `ReadSession` và `RevokeCurrentSession` cùng `Clock`. `Authenticate` và `Logout` nhận `SessionSecret` gồm 32 byte đã giải mã. Cả hai chuyển SHA-256 của các byte này sang repository và truyền tiếp context. Phần giải mã cookie và ánh xạ lỗi HTTP thuộc transport.
+
+`Authenticate` đọc lại snapshot mỗi lần gọi, giữ lỗi từ repository và trả `ErrUnauthenticated` nếu không tìm thấy phiên. Sau khi đọc thành công, service lấy giờ và gọi policy DATN-11 để xác định danh tính và quyền hiệu lực. `Logout` gọi một lần `RevokeCurrentSession` theo hash và chuyển tiếp kết quả. Việc kiểm hiệu lực dưới khóa và commit thuộc adapter. AUTH-T12/AUTH-T15 có thể dùng hai method này cho luồng CSRF, me và logout. Khi ghép thật ở AUTH-T17, service và adapter dùng cùng nguồn giờ.
+
+Kiểm chứng trên Go 1.26.5: `go test ./internal/service/auth -run '^(TestAuthenticate|TestLogout)' -count=1 -v` đạt 4 nhóm test với fake repo/clock. Các ca kiểm hash và context truyền qua port, snapshot thay đổi giữa hai lần đọc, hết hạn trong lúc đọc, lỗi lưu trữ và thu hồi một phiên trong fake. `go vet ./...`, `go test ./... -count=1`, `go build ./...`, 24 ca contract/harness và kiểm kê nguồn đều đạt. Đây là bằng chứng service cho phần đọc quyền/trạng thái hiện hành của AUTH-S05. Việc từ chối field lạ từ client, tích hợp PostgreSQL và hành vi HTTP/cookie cần bằng chứng ở các ticket tương ứng.
+
 ## 6. Thiết kế chi tiết — Detailed design
 
 ### 6.1. Database và transaction
