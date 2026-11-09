@@ -67,25 +67,47 @@ func (r *AuthRepository) FindLoginIdentity(ctx context.Context, email string) (a
 	return identity, true, nil
 }
 
-const readSessionSQL = `
-SELECT u.user_id, e.employee_id, e.employee_code, e.fullname, u.must_change_password,
+const sessionSnapshotColumns = `
+u.user_id, e.employee_id, e.employee_code, e.fullname, u.must_change_password,
        ARRAY(SELECT ur.role_code FROM public.user_roles AS ur
              WHERE ur.user_id = u.user_id ORDER BY ur.role_code),
        s.created_at, s.expires_at, s.revoked_at,
-       u.status = 'ACTIVE', e.employment_status = 'ACTIVE'
+       u.status = 'ACTIVE', e.employment_status = 'ACTIVE'`
+
+const sessionSnapshotSource = `
 FROM public.auth_sessions AS s
 JOIN public.users AS u ON u.user_id = s.user_id
 JOIN public.employees AS e ON e.user_id = u.user_id
 WHERE s.token_hash = $1`
 
 func (r *AuthRepository) ReadSession(ctx context.Context, hash auth.SessionHash) (auth.SessionSnapshot, bool, error) {
+	row := r.db.QueryRow(ctx, "SELECT "+sessionSnapshotColumns+sessionSnapshotSource, hash[:])
+	return scanAuthSession(row, nil)
+}
+
+func (r *AuthRepository) ReadPasswordChangeBasis(ctx context.Context, hash auth.SessionHash) (auth.PasswordChangeBasis, bool, error) {
+	row := r.db.QueryRow(ctx, "SELECT "+sessionSnapshotColumns+", u.password_hash"+sessionSnapshotSource, hash[:])
+	var basis auth.PasswordChangeBasis
+	snapshot, found, err := scanAuthSession(row, &basis.PasswordHash)
+	if !found {
+		return auth.PasswordChangeBasis{}, false, err
+	}
+	basis.Session = snapshot
+	return basis, true, nil
+}
+
+func scanAuthSession(row pgx.Row, passwordHash *string) (auth.SessionSnapshot, bool, error) {
 	var snapshot auth.SessionSnapshot
 	p := &snapshot.Principal
-	err := r.db.QueryRow(ctx, readSessionSQL, hash[:]).Scan(
+	destinations := []any{
 		&p.UserID, &p.EmployeeID, &p.EmployeeCode, &p.Fullname, &p.MustChangePassword, &p.SystemRoles,
 		&snapshot.CreatedAt, &snapshot.ExpiresAt, &snapshot.RevokedAt,
 		&snapshot.UserActive, &snapshot.EmployeeActive,
-	)
+	}
+	if passwordHash != nil {
+		destinations = append(destinations, passwordHash)
+	}
+	err := row.Scan(destinations...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return auth.SessionSnapshot{}, false, nil
 	}

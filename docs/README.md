@@ -49,6 +49,8 @@ Tiếp nối DATN-8 / AUTH-T07, hai truy vấn đọc định danh và phiên hi
 
 Tiếp nối DATN-9 / AUTH-T08, transaction hoàn tất login và thu hồi đúng phiên đã có kiểm chứng PostgreSQL test, rollback và cạnh tranh dưới khóa. Ranh giới bằng chứng và đầu vào cho đổi mật khẩu lần đầu được bàn giao ở [proposal mục 6.1.10](proposals/backend-auth-session.md#6110-transaction-tạo-và-thu-hồi-phiên--datn-9--auth-t08-09112026).
 
+Tiếp nối DATN-10 / AUTH-T09, repository đọc nền đổi mật khẩu và ghi hash mới, tắt cờ buộc đổi, thu hồi phiên trong cùng transaction. Xem [proposal mục 6.1.11](proposals/backend-auth-session.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) để lấy đầu vào và ranh giới kiểm thử cho DATN-18.
+
 Ghi nhận lịch sử trước DATN-6 tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; khi đó chưa chạy SQL/container hoặc áp Neon. Môi trường local và SELECT metadata đã được DATN-6 tiếp nối ở mục 6.1.7; migration auth và Neon vẫn chưa áp. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.
 
 WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phân biệt bản soạn đã có với phần còn lại (mục 9.2.1), tách kế hoạch fixture khỏi thực thi sau migration, giao rõ limiter login/đổi lần đầu và ranh giới FE auth/mock. Mục 9.2.2 nối AUTH-S01–S10 với task chịu trách nhiệm; mục 9.4 có checklist Done cho ticket theo board DATN đã tạo. Chưa tạo issue hoặc đánh dấu runtime hoàn tất; estimate gốc không phải giờ còn lại.

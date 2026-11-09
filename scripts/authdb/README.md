@@ -112,6 +112,16 @@ node scripts/check-harness.mjs
 git diff --check
 ```
 
+## Đổi mật khẩu lần đầu integration — DATN-10 / AUTH-T09
+
+Dùng bộ lệnh PostgreSQL 18, kiểm cleanup và các cổng Go/harness ở mục DATN-9 ngay trên. Để chạy riêng nhóm DATN-10 trên cùng môi trường đã xác minh:
+
+```sh
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration ./internal/repository/postgres -run '^(TestReadPasswordChangeBasis|TestChangeInitialPassword.*)$' -count=1 -timeout=4m
+```
+
+Chỉ chạy một lượt integration tại một thời điểm. Các ca cạnh tranh dùng hai connection thực thi, với connection quan sát riêng khi cả hai worker đều bận. Clock điều khiển thời điểm test. `pg_blocking_pids` xác nhận PostgreSQL đang chờ khóa trước khi nhả transaction đầu hoặc dịch clock. Trigger gây lỗi nằm trong database case. [Proposal mục 6.1.11](../../docs/proposals/backend-auth-session.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) ghi phạm vi bàn giao và ranh giới với kiểm thử HTTP.
+
 ## Kiểm tra công cụ
 
 ```sh

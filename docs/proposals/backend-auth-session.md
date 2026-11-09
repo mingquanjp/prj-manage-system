@@ -535,6 +535,20 @@ DATN-10 / AUTH-T09 và DATN-18 / AUTH-T17 tái sử dụng thứ tự khóa, clo
 
 Lệnh tái hiện, kiểm cuối DB gốc/case và các cổng Go/harness nằm trong [runbook DATN-9](../../scripts/authdb/README.md#transaction-auth-integration--datn-9--auth-t08). Chỉ dùng PostgreSQL 18 test local sở hữu theo guard DATN-6, không Neon hoặc DB ứng dụng.
 
+#### 6.1.11. Transaction đổi mật khẩu lần đầu — DATN-10 / AUTH-T09, 09/11/2026
+
+[`ReadPasswordChangeBasis`](../../internal/repository/postgres/auth_identity.go) đọc theo hash token bằng một statement. Kết quả gồm snapshot phiên và hash mật khẩu hiện tại dành cho service. Truy vấn `ReadSession` thông thường chỉ đọc snapshot. Service sẽ kiểm hiệu lực, cờ buộc đổi và xác minh mật khẩu hiện tại, sau đó tạo hash mới trước khi gọi repository.
+
+[`ChangeInitialPassword`](../../internal/repository/postgres/auth_password_change.go) nhận ID user nội bộ, hash token, hash đã xác minh và hash mới. Transaction khóa user → employee → các phiên của user theo `session_id` tăng dần. Adapter kiểm trạng thái và nền dưới khóa, đối chiếu token với đúng user, rồi dùng clock sau khi lấy đủ khóa để kiểm phiên còn hiệu lực. Nền đã đổi, token sai chủ hoặc phiên hết hạn/đã thu hồi trả `ErrUnauthenticated`. Trường hợp cờ vốn đã false ở lần đọc đầu thuộc kiểm tra của service theo mục 5.3.
+
+Một commit lưu hash mới, đặt cờ false và thu hồi mọi phiên chưa thu hồi của user, kể cả phiên đã hết hạn. Timestamp của phiên đã thu hồi và dữ liệu của user khác được giữ. Đổi mật khẩu không cấp phiên mới. Khi lỗi SQL, adapter trả lỗi lưu trữ đã phân loại và dọn transaction. Nếu PostgreSQL đã commit nhưng driver mất phản hồi, adapter trả lỗi và không retry.
+
+Các ca PostgreSQL bao phủ snapshot theo token, dữ liệu giữ nguyên khi từ chối, rollback khi lỗi ghi user/phiên hoặc lỗi ở commit, và ba ca chờ khóa. Hai request đổi dùng hai phiên cùng user, chỉ request đầu commit. Login đã đọc hash cũ bị từ chối sau khi transaction đổi commit; login từ nền mới có thể cấp phiên với cờ false. Ca hết hạn giữ khóa ở phiên có ID lớn hơn phiên gọi và tiến clock đúng tới hạn sau khi PostgreSQL xác nhận request đang chờ. Ca mất phản hồi dùng wrapper trả lỗi I/O sau commit thật.
+
+Đã chạy suite migration và repository với `-race -tags=integration -p 1` qua runner PostgreSQL 18 test local. Cả hai package đạt. Ca kiểm chạy riêng sau suite xác nhận DB gốc vẫn trống và không còn DB case. `go vet ./...`, `go test ./... -count=1`, `go build ./...` và vet với tag integration đều đạt.
+
+Bàn giao DATN-18 / AUTH-T17 sử dụng hai port mới theo mục 5.3. Bằng chứng thuộc tầng PostgreSQL cho AUTH-S06 và phần lỗi transaction của AUTH-S07. Phần xác minh bcrypt của service, HTTP, CSRF/cookie, chính sách đăng nhập lại và thử mất mạng thực cần kiểm riêng. Lệnh tái hiện và kiểm cleanup nằm trong [runbook DATN-10](../../scripts/authdb/README.md#đổi-mật-khẩu-lần-đầu-integration--datn-10--auth-t09).
+
 ### 6.2. API và bảo vệ phiên
 
 Các route đồng bộ theo API design hiện hành. Ví dụ dưới đây mô tả contract dự kiến, không phải thông tin đăng nhập dùng được hoặc dữ liệu thật. Bản máy đọc được: [OpenAPI auth 3.1.1](../api/auth.openapi.json). File theo chuẩn [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html), mô tả năm route và security/header/DTO/lỗi, không tự thực thi guard hoặc chứng minh runtime an toàn. Giới hạn toàn body JSON login/đổi lần đầu đã được duyệt riêng 06/11: 8 KiB (8192 byte), lớn hơn trả 413/PAYLOAD_TOO_LARGE. Đây không phải độ dài trường mật khẩu.
