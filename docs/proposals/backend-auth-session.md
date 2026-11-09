@@ -235,6 +235,14 @@ Lỗi nội bộ dự kiến phân biệt: InvalidCredentials, Unauthenticated, 
 
 Clock của service và adapter dùng cùng nguồn được inject, không dùng thời gian client. Kiểm expiry là `now >= expires_at` thì không còn hiệu lực; request chờ khóa vượt hạn phải bị từ chối. Với mutation, adapter gọi `Clock.Now()` sau khi lấy đủ khóa cần thiết, rồi dùng thời điểm này để kiểm expiry và ghi timestamp liên quan: login truyền tường minh `created_at` cùng `expires_at = created_at + 8h`; logout/đổi lần đầu truyền `revoked_at` khi thu hồi phiên. Không dùng thời điểm chụp trước khi chờ khóa hoặc SQL `now()` để thay kiểm thời gian hiện hành sau khóa. Nguồn random lỗi → không ghi/không cookie. Secret chỉ tồn tại ở biên service → transport để đặt cookie, repo chỉ thấy hash SHA-256. Authenticate chỉ trả principal, không hash hoặc secret.
 
+#### 5.3.1. Bàn giao policy phiên — DATN-11 / AUTH-T10, 09/11/2026
+
+[`evaluateSession`](../../internal/service/auth/session_policy.go) nhận `SessionSnapshot` và thời điểm kiểm tra. Service AUTH-T11 sẽ đọc snapshot hiện hành, xử lý riêng lỗi đọc và trường hợp không tìm thấy phiên, rồi truyền `Clock.Now()` vào policy. Policy trả `ErrUnauthenticated` cùng principal rỗng khi phiên hết hạn (kể cả đúng `expires_at`), đã thu hồi, hoặc tài khoản/hồ sơ ngừng hoạt động. Hạn phiên lấy từ snapshot và giữ nguyên qua mỗi lần kiểm.
+
+Principal hợp lệ giữ danh tính và cờ buộc đổi mật khẩu. Quyền hiệu lực là bản sao quyền hệ thống hiện hành. Phiên hạn chế và nhân viên không có quyền đặc biệt nhận slice rỗng. AUTH-T16 sẽ dùng cờ buộc đổi để chặn API nghiệp vụ, kể cả nghiệp vụ chỉ cần tư cách nhân viên. Việc kiểm lại sau khi lấy khóa vẫn thuộc adapter cho từng transaction.
+
+Kiểm chứng trên Go 1.26.5: `go test ./internal/service/auth -run '^TestEvaluateSession' -count=1 -v` đạt 9 ca con, gồm biên hết hạn, thu hồi, từng trạng thái ngừng hoạt động, quyền rỗng/kiêm nhiệm và phiên hạn chế. `go vet ./...`, `go test ./... -count=1`, `go build ./...`, 24 ca kiểm contract/harness và kiểm kê nguồn đều đạt. Đây là bằng chứng tầng Go của AUTH-S02. Kiểm tra wiring service, PostgreSQL, HTTP, cookie và trình duyệt nằm ở các đợt tích hợp tương ứng.
+
 ## 6. Thiết kế chi tiết — Detailed design
 
 ### 6.1. Database và transaction
