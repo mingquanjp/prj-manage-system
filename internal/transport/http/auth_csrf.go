@@ -76,11 +76,13 @@ func writeAuthSessionError(w http.ResponseWriter, r *http.Request, err error) {
 	if status >= http.StatusInternalServerError {
 		slog.ErrorContext(r.Context(), "xác thực phiên thất bại", "code", code, "request_id", requestID)
 	}
-	writeAuthJSON(w, status, struct {
-		Code      string `json:"code"`
-		Message   string `json:"message"`
-		RequestID string `json:"request_id"`
-	}{Code: code, Message: message, RequestID: requestID})
+	writeAuthJSON(w, status, authErrorResponse{Code: code, Message: message, RequestID: requestID})
+}
+
+type authErrorResponse struct {
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+	RequestID string `json:"request_id"`
 }
 
 func writeAuthJSON(w http.ResponseWriter, status int, body any) {
