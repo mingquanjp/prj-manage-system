@@ -29,38 +29,84 @@ func ValidateServer(cfg Config) error {
 	return nil
 }
 
-func validateOrigin(origin, appEnv string) error {
-	u, err := url.Parse(origin)
-	if err != nil || u.Scheme != "http" && u.Scheme != "https" || u.Hostname() == "" ||
+func validateOrigin(raw, appEnv string) error {
+	origin, err := ParseOrigin(raw)
+	if err != nil {
+		return err
+	}
+	if origin.Scheme == "http" && (appEnv != "dev" || !origin.IsLoopback()) {
+		return errors.New("APP_ORIGIN phải dùng HTTPS, trừ HTTP loopback trong dev")
+	}
+	return nil
+}
+
+// Origin chứa bộ giá trị được so sánh khi kiểm nguồn request.
+type Origin struct {
+	Scheme string
+	Host   string
+	Port   int
+}
+
+func (o Origin) IsLoopback() bool {
+	addr, _ := netip.ParseAddr(o.Host)
+	return o.Host == "localhost" || addr.IsLoopback()
+}
+
+// ParseOrigin dùng chung cho cấu hình server và header Origin. Với tên miền
+// quốc tế, cấu hình cần dùng dạng ASCII mà trình duyệt gửi (punycode).
+func ParseOrigin(raw string) (Origin, error) {
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" ||
 		u.Opaque != "" || u.User != nil || u.Path != "" || u.RawPath != "" ||
-		strings.ContainsAny(origin, "?#") {
-		// Lỗi từ net/url có thể chứa toàn bộ URL, nên không trả hoặc wrap lỗi đó.
-		return errors.New("APP_ORIGIN phải gồm http/https và host, không có userinfo, path, query hoặc fragment")
+		strings.ContainsAny(raw, " \t\r\n,?#%\\") {
+		// Lỗi từ net/url có thể chứa toàn bộ URL.
+		return Origin{}, errors.New("APP_ORIGIN phải gồm http/https và host, không có userinfo, path, query hoặc fragment")
 	}
 
 	host := u.Hostname()
 	addr, ipErr := netip.ParseAddr(host)
 	if strings.HasPrefix(u.Host, "[") {
 		if ipErr != nil || !addr.Is6() || addr.Zone() != "" {
-			return errors.New("APP_ORIGIN có địa chỉ IPv6 không hợp lệ")
+			return Origin{}, errors.New("APP_ORIGIN có địa chỉ IPv6 không hợp lệ")
 		}
-	} else if strings.Contains(host, ":") {
-		return errors.New("APP_ORIGIN phải đặt địa chỉ IPv6 trong dấu ngoặc vuông")
+	} else if strings.ContainsAny(host, "[]:") {
+		return Origin{}, errors.New("APP_ORIGIN phải đặt địa chỉ IPv6 trong dấu ngoặc vuông")
+	}
+	if ipErr == nil {
+		host = addr.String()
+	} else if !isOriginDomain(host) {
+		return Origin{}, errors.New("APP_ORIGIN cần tên miền ASCII (punycode nếu cần) hoặc địa chỉ IP đầy đủ")
 	}
 
-	if port := u.Port(); port != "" {
-		number, err := strconv.Atoi(port)
-		if err != nil || number < 1 || number > 65535 {
-			return errors.New("APP_ORIGIN có port ngoài khoảng 1 đến 65535")
+	port := 443
+	if u.Scheme == "http" {
+		port = 80
+	}
+	if value := u.Port(); value != "" {
+		port, err = strconv.Atoi(value)
+		if err != nil || port < 1 || port > 65535 {
+			return Origin{}, errors.New("APP_ORIGIN có port ngoài khoảng 1 đến 65535")
 		}
 	} else if strings.HasSuffix(u.Host, ":") {
-		return errors.New("APP_ORIGIN có port rỗng")
+		return Origin{}, errors.New("APP_ORIGIN có port rỗng")
 	}
+	return Origin{Scheme: u.Scheme, Host: strings.ToLower(host), Port: port}, nil
+}
 
-	// Chỉ nhận loopback theo giá trị địa chỉ; không phân giải DNS để cấp ngoại lệ.
-	loopback := strings.EqualFold(host, "localhost") || (ipErr == nil && addr.IsLoopback())
-	if u.Scheme == "http" && (appEnv != "dev" || !loopback) {
-		return errors.New("APP_ORIGIN phải dùng HTTPS, trừ HTTP loopback trong dev")
+func isOriginDomain(host string) bool {
+	const digits = "0123456789"
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	domain := strings.TrimSuffix(host, ".")
+	if domain == "" || strings.HasPrefix(domain, ".") || strings.HasSuffix(domain, ".") ||
+		strings.Contains(domain, "..") || strings.Trim(domain, letters+digits+"-._") != "" {
+		return false
 	}
-	return nil
+	// Trình duyệt diễn giải nhãn cuối toàn số hoặc dạng 0x… như IPv4.
+	// IPv4 hợp lệ đã được netip.ParseAddr chấp nhận ở trên.
+	lastLabel := strings.ToLower(domain[strings.LastIndexByte(domain, '.')+1:])
+	if strings.Trim(lastLabel, digits) == "" {
+		return false
+	}
+	hex, isHex := strings.CutPrefix(lastLabel, "0x")
+	return !isHex || strings.Trim(hex, digits+"abcdef") != ""
 }

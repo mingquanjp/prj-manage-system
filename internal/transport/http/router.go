@@ -19,6 +19,10 @@ type healthChecker interface {
 }
 
 func NewRouter(pool healthChecker) http.Handler {
+	return newRouter(pool, nil)
+}
+
+func newRouter(pool healthChecker, authenticator csrfAuthenticator) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -28,6 +32,9 @@ func NewRouter(pool healthChecker) http.Handler {
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/healthz", healthHandler(pool))
+		if authenticator != nil {
+			api.With(serverAuthRequestID, recoverAuth).Get("/auth/csrf", csrfHandler(authenticator))
+		}
 	})
 
 	return r

@@ -815,6 +815,16 @@ Bằng chứng kiểm ngày 07/11: `node --test scripts/check-auth-contract.test
 
 Kiểm tĩnh nằm ở scripts/check-auth-contract.test.mjs; mở rộng ma trận status/code và ví dụ DTO, không gọi đó là validator OpenAPI đầy đủ. AUTH-S01–S10 vẫn cần bằng chứng runtime ở đúng task; chưa chạy HTTP/SQL/browser. Lệnh/kết quả kiểm tra thực tế bàn giao cùng diff, không đánh dấu trước các checklist runtime hoặc Jira Done.
 
+#### 6.2.8. Bàn giao cookie, Origin và CSRF — DATN-13 / AUTH-T12, 10/11/2026
+
+[Route CSRF](../../internal/transport/http/auth_csrf.go) giải mã một cookie phiên, gọi `Authenticate` và trả `csrf_token` cho cả phiên thường lẫn phiên hạn chế hợp lệ. Token là HMAC theo A07, biểu diễn bằng base64url không padding như cookie. GET chỉ đọc phiên và không gửi `Set-Cookie`. JSON lỗi có `request_id` do server cấp để đối chiếu log. Route che lỗi lưu trữ và nội dung panic, giữ `no-store` và không mở CORS.
+
+- [Bộ helper HTTP](../../internal/transport/http/auth_protection.go): DATN-16 dùng `allowsOrigin` trước xác thực login, đặt cookie sau commit với mốc `expires_at`. `setSessionCookie` trả false nếu mốc cookie đã qua. DATN-15/DATN-17 dùng `allowsMutation` với secret của phiên đã xác thực, rồi xóa cookie sau khi thao tác lưu trữ đã commit.
+- [Parser Origin dùng chung](../../internal/config/validation.go): startup và HTTP so scheme, host và port hiệu lực từ cùng cách đọc. Cấu hình dùng hostname ASCII theo dạng browser gửi, ví dụ punycode cho tên miền quốc tế, hoặc địa chỉ IP đầy đủ. Host Unicode và IPv4 rút gọn/hex bị chặn tại startup để tránh so sai origin hoặc đợi đến mutation mới phát hiện cấu hình lỗi. Parser kiểm cấu trúc và tập ký tự, không xác minh DNS hoặc tính hợp lệ của mọi nhãn punycode.
+- [Router Chi](../../internal/transport/http/router.go): đăng ký `GET /api/auth/csrf` khi có dependency xác thực. DATN-18 chịu trách nhiệm ghép config, adapter PostgreSQL, service và router ở `cmd/server` theo P09.1/P09.4. Hành vi cookie trên trình duyệt HTTPS và Vite proxy cần kiểm theo P09.2.
+
+Bằng chứng trên Go 1.26.5: `go test ./internal/transport/http -count=1 -v` kiểm route Chi với service thật và repository giả, gồm mã 200/401/503/500, phiên hạn chế, HMAC vector độc lập, biên hết hạn, cookie trùng, Origin sai, token cũ và che marker nhạy cảm. `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/config ./internal/transport/http -count=1` và 24 ca contract/harness đều đạt. Bằng chứng này thuộc tầng Go/HTTP của AUTH-S02, S04, S09 và S10. PostgreSQL tích hợp, trình duyệt và các mutation dùng helper được nghiệm thu ở các ticket tương ứng.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.
