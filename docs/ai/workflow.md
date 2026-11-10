@@ -32,9 +32,11 @@ PR description tiếng Việt: giữ What, Why, Environment Variables, Developer
 
 ## Liên kết Jira–GitHub
 
-Đích của DATN: repo `mingquanjp/ai-staffing`, site `faker1652005.atlassian.net`, project **DATN**, board **2**. Không dùng project SCRUM/board 1 của CoLearnia. Board DATN đã có ticket auth; import/check là công cụ bàn giao ban đầu tại [hướng dẫn Jira](../../scripts/jira/README.md), không dùng để cập nhật tiến độ thường ngày hoặc ghi đè ticket sau khi làm.
+DATN dùng repo `mingquanjp/ai-staffing` và project **DATN**, board **1** trên site Jira Free riêng. Khi gặp liên kết DATN trên site cũ, mở cùng mã ở site mới, ví dụ [DATN-12](https://datn-mingquanjp.atlassian.net/browse/DATN-12). Mọi thao tác DATN dùng [board DATN](https://datn-mingquanjp.atlassian.net/jira/software/projects/DATN/boards/1).
 
-Người dùng đã báo kết nối GitHub; chưa có bằng chứng Development của DATN đã nhận branch/commit/PR. Sau lần push/mở PR có mã thật, mở ticket → **Development** để đối chiếu link trỏ đúng repo và PR. Nếu chưa hiện, kiểm integration có bao gồm repo, quyền hiện có và mã ticket, chờ đồng bộ; không tự tạo token/nới quyền. Git remote đúng không đủ chứng minh integration đã hoạt động. Không cần tạo commit giả hoặc push chỉ để thử kết nối.
+Người dùng đã đối chiếu đủ 1 Epic và 20 ticket ở site mới. Trước khi chạy script ghi, xác minh base URL, đọc thử DATN-12 và lấy các ID cần thiết từ metadata của site mới. Dùng chế độ `diagnose` cho bước đọc; import/check phục vụ bàn giao ban đầu. Xem [hướng dẫn Jira](../../scripts/jira/README.md).
+
+Tích hợp GitHub trên site mới chưa được xác minh. Sau lần push/mở PR có mã thật, mở ticket trên site mới → **Development** để đối chiếu link trỏ đúng repo và PR. Nếu chưa hiện, kiểm phạm vi repo được kết nối, quyền hiện có và mã ticket, rồi chờ đồng bộ.
 
 Tham chiếu: [hướng dẫn chính thức liên kết GitHub với Jira bằng mã ticket](https://support.atlassian.com/jira-cloud-administration/docs/use-the-github-for-jira-app/). Quy tắc liên kết không tự cấp quyền và không thay cấu hình automation chuyển trạng thái.
 
