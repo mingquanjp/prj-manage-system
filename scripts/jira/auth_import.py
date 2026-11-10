@@ -20,9 +20,10 @@ import warnings
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'docs/proposals/backend-auth-session-tickets.md'
 PROPOSAL = ROOT / 'docs/proposals/backend-auth-session.md'
-SITE = 'https://faker1652005.atlassian.net'
+SITE = 'https://datn-mingquanjp.atlassian.net'
 PROJECT = 'DATN'
-BOARD = 2
+BOARD = 1
+VERIFY_ISSUE = 'DATN-12'
 IMPORT_LABEL = 'datn-auth-v1'
 ORDER = [f'AUTH-T{i:02}' for i in [*range(1, 14), 15, 14, *range(16, 21)]]
 FIELDS = 'project,summary,description,issuetype,parent,assignee,labels,issuelinks,status,priority,duedate,timetracking'
@@ -201,7 +202,8 @@ class Jira:
         self.opener = urllib.request.build_opener(NoRedirect)
 
     def request(self, method, path, body=None):
-        allowed_get = (path.startswith('/rest/api/3/') or path.startswith(f'/rest/agile/1.0/board/{BOARD}'))
+        board_path = f'/rest/agile/1.0/board/{BOARD}'
+        allowed_get = path.startswith('/rest/api/3/') or path == board_path or path.startswith(board_path + '/')
         allowed_write = (method, path) in {('POST', '/rest/api/3/issue'), ('POST', '/rest/api/3/issueLink'),
                                          ('PUT', '/rest/agile/1.0/issue/rank')}
         require((method == 'GET' and allowed_get) or allowed_write, 'Endpoint ngoài phạm vi script.')
@@ -260,6 +262,16 @@ class Jira:
             tokens.add(token)
 
 
+def verify_target(jira):
+    server = jira.get('/rest/api/3/serverInfo')
+    base_url = server.get('baseUrl')
+    require(isinstance(base_url, str) and base_url.rstrip('/') == SITE,
+            'Jira trả baseUrl khác site DATN; kiểm lại cloud ID.')
+    issue = jira.get(f'/rest/api/3/issue/{VERIFY_ISSUE}', fields='project')
+    require(issue.get('key') == VERIFY_ISSUE and issue.get('fields', {}).get('project', {}).get('key') == PROJECT,
+            f'Không xác minh được {VERIFY_ISSUE} thuộc project {PROJECT}.')
+
+
 def board_diagnostics(jira):
     """Chỉ đọc metadata chọn lọc; không in response thô, tên người hoặc credential."""
     def identifier(value):
@@ -269,12 +281,14 @@ def board_diagnostics(jira):
                 return value
         return None
 
+    verify_target(jira)
     board = jira.get(f'/rest/agile/1.0/board/{BOARD}')
     config = jira.get(f'/rest/agile/1.0/board/{BOARD}/configuration')
     response = jira.get(f'/rest/agile/1.0/board/{BOARD}/features')
     features = response.get('features')
     report = {
-        'expected': {'project': PROJECT, 'board': BOARD},
+        'expected': {'site': SITE, 'project': PROJECT, 'board': BOARD},
+        'verifiedIssue': VERIFY_ISSUE,
         'board': {k: identifier(board.get(k)) for k in ('id', 'type')},
         'location': {k: identifier((board.get('location') or {}).get(k))
                      for k in ('projectId', 'projectKey')},
@@ -289,12 +303,12 @@ def board_diagnostics(jira):
                      for f in features[:100]] if isinstance(features, list) else [],
     }
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    print('DIAGNOSE: chỉ đọc board/configuration/features; không tạo ticket, link, Rank hoặc journal.')
+    print('DIAGNOSE: chỉ đọc site, ticket xác minh và metadata board.')
 
 
 def validate_board(jira, board, config):
-    require(str(board.get('id')) == str(BOARD), 'GET board trả ID khác board 2; dừng.')
-    require(str(config.get('id')) == str(BOARD), 'Configuration trả ID khác board 2; dừng.')
+    require(str(board.get('id')) == str(BOARD), f'GET board trả ID khác board {BOARD}; dừng.')
+    require(str(config.get('id')) == str(BOARD), f'Configuration trả ID khác board {BOARD}; dừng.')
     kind = board.get('type')
     require(kind in ('kanban', 'simple'), 'Loại board không hỗ trợ; chỉ nhận kanban hoặc simple không bật Sprint.')
     if kind == 'simple':
@@ -303,7 +317,7 @@ def validate_board(jira, board, config):
         require(isinstance(features, list), 'Không đọc được features của board team-managed.')
         require(all(isinstance(f, dict) for f in features), 'Features chứa mục sai định dạng; chạy --mode diagnose.')
         require(all(f.get('boardId') is None or str(f['boardId']) == str(BOARD) for f in features),
-                'Features trả board ID khác board 2.')
+                f'Features trả board ID khác board {BOARD}.')
         # API thực tế còn dùng feature=jsw.agility.sprints thay enum trong OpenAPI.
         # Chỉ nhận đúng định danh, không tìm chuỗi gần giống hoặc nhãn dịch.
         sprints = []
@@ -315,12 +329,13 @@ def validate_board(jira, board, config):
                 sprints.append(feature)
         require(len(sprints) == 1, 'Chưa xác minh được tính năng SPRINTS; chạy --mode diagnose để lấy metadata chọn lọc. Không suy thiếu SPRINTS là đã tắt.')
         require(sprints[0].get('state') == 'DISABLED', 'Board team-managed đang bật Sprint hoặc trạng thái chưa rõ; cần review trước.')
-        print('Board 2: team-managed (API type=simple), SPRINTS=DISABLED; tiếp tục kiểm filter DATN/Rank.')
+        print(f'Board {BOARD}: team-managed (API type=simple), SPRINTS=DISABLED; tiếp tục kiểm filter DATN/Rank.')
     else:
-        print('Board 2: API type=kanban; tiếp tục kiểm filter DATN/Rank.')
+        print(f'Board {BOARD}: API type=kanban; tiếp tục kiểm filter DATN/Rank.')
 
 
 def preflight(jira):
+    verify_target(jira)
     user = jira.get('/rest/api/3/myself')
     project = jira.get('/rest/api/3/project/DATN')
     require(project.get('key') == PROJECT, 'Sai project.')
@@ -507,7 +522,7 @@ def clear_pending(state, path):
 
 
 def report(manifest, mapping, edges):
-    print(f'DATN / board 2: {len(mapping)}/21 ticket đã đối soát; còn tạo {21-len(mapping)}.')
+    print(f'{PROJECT} / board {BOARD}: {len(mapping)}/21 ticket đã đối soát; còn tạo {21-len(mapping)}.')
     print('Epic: ' + manifest['records'][0]['summary'] + ' → ' + mapping.get('AUTH-EPIC', 'chưa tạo'))
     for pos, r in enumerate(manifest['records'][1:], 1):
         sid = r['source_id']
@@ -561,7 +576,7 @@ def run_online(jira, manifest, state_path, mode, source_base=None, retry_create=
         verify_rank(jira, manifest, meta, mapping)
         print('CHECK đạt nội dung/parent/assignee/labels/link/Rank; không chứng minh auth runtime.')
         return
-    require(input('Tạo phần còn thiếu và sắp Rank trên DATN board 2. Gõ YES: ') == 'YES', 'Đã hủy apply.')
+    require(input(f'Tạo phần còn thiếu và sắp Rank trên {PROJECT} board {BOARD}. Gõ YES: ') == 'YES', 'Đã hủy apply.')
     atomic_json(state_path, state)
     for record in manifest['records']:
         sid = record['source_id']
@@ -648,7 +663,7 @@ def main():
     require(not args.offline or args.mode == 'plan', '--offline chỉ dùng với plan.')
     if args.mode == 'diagnose':
         require(not (args.source_base or args.manifest_out or args.retry_create),
-                'diagnose chỉ đọc metadata board, không nhận source-base/manifest-out/retry-create.')
+                'diagnose chỉ đọc site, ticket xác minh và metadata board.')
         require(sys.stdin.isatty() and sys.stderr.isatty(), 'Chạy trong terminal tương tác để nhập token ẩn; không pipe token.')
         email = input('Email Atlassian: ').strip()
         with warnings.catch_warnings():

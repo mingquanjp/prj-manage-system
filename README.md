@@ -109,7 +109,7 @@ PM chỉ theo dõi và PTCM có hành động khác nhau; người không có tr
 
 ### Proposal auth — cập nhật 06/11/2026
 
-**Tiếp nối 07/11/2026:** người dùng đã chạy import và check trên Jira DATN/board 2; log được đối chiếu xác nhận Epic DATN-1, 20 Task DATN-2–DATN-21, 47 Blocks và Rank khớp. Các câu chưa giao Jira bên dưới ghi nhận giai đoạn trước bàn giao; chưa có auth runtime. Liên kết Development với GitHub còn cần xác minh sau push/PR có mã ticket.
+**Jira DATN hiện hành:** dùng [board 1 trên site Jira riêng](https://datn-mingquanjp.atlassian.net/jira/software/projects/DATN/boards/1). Người dùng đã đối chiếu đủ 1 Epic và 20 ticket. Tích hợp GitHub trên site mới cần xác minh trong mục Development. Lượt import ngày 07/11/2026 trên site cũ, board 2, là bằng chứng lịch sử về ticket, Blocks và Rank. Xem [workflow Jira–GitHub](docs/ai/workflow.md) trước khi thao tác.
 
 - [Feature đầu: đăng nhập và phiên truy cập](docs/proposals/backend-auth-session.md), D01 phối hợp D02: năm route login/me/csrf/logout/đổi mật khẩu lần đầu; chưa gồm tạo tài khoản, gửi thư, reset hoặc API dự án.
 - Người dùng đã duyệt A01–A09: email công ty được trim/so không phân biệt hoa thường; phiên 8 giờ tuyệt đối; cookie/CSRF; mật khẩu mới ≥15 ký tự Unicode, ≤72 byte UTF-8; phiên hạn chế và thu hồi mọi phiên khi đổi lần đầu. Xem [baseline](docs/business-baseline-2026-10-20.md), security và proposal để biết giới hạn/phần hoãn.

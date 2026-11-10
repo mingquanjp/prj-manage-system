@@ -258,14 +258,18 @@ class PreflightTests(unittest.TestCase):
     def metadata_jira(self, jql='project = DATN ORDER BY Rank ASC', missing_parent=False, allowed=True):
         jira = app.Jira('test@example.invalid', 'SECRET_MARKER')
         def get(path, **query):
+            if path.endswith('/serverInfo'):
+                return {'baseUrl': app.SITE}
+            if path.endswith('/issue/DATN-12'):
+                return {'key': 'DATN-12', 'fields': {'project': {'key': 'DATN'}}}
             if path.endswith('/myself'):
                 return {'accountId': 'test-user'}
             if path.endswith('/project/DATN'):
                 return {'id': '10001', 'key': 'DATN'}
-            if path.endswith('/board/2/configuration'):
-                return {'id': 2, 'ranking': {'rankCustomFieldId': 10019}, 'filter': {'id': '10'}}
-            if path.endswith('/board/2'):
-                return {'id': 2, 'type': 'kanban'}
+            if path.endswith('/board/1/configuration'):
+                return {'id': 1, 'ranking': {'rankCustomFieldId': 10019}, 'filter': {'id': '10'}}
+            if path.endswith('/board/1'):
+                return {'id': 1, 'type': 'kanban'}
             if path.endswith('/filter/10'):
                 return {'jql': jql}
             if path.endswith('/mypermissions'):
@@ -294,14 +298,27 @@ class PreflightTests(unittest.TestCase):
             with self.assertRaises(app.Stop):
                 app.preflight(self.metadata_jira(**kwargs))
 
+    def test_preflight_stops_before_metadata_if_site_or_issue_is_wrong(self):
+        jira = self.metadata_jira()
+        with patch.object(jira, 'get', return_value={'baseUrl': 'https://other.atlassian.net'}) as get:
+            with self.assertRaisesRegex(app.Stop, 'baseUrl'):
+                app.preflight(jira)
+            get.assert_called_once_with('/rest/api/3/serverInfo')
+
+        wrong_issue = {'key': 'DATN-12', 'fields': {'project': {'key': 'OTHER'}}}
+        with patch.object(jira, 'get', side_effect=[{'baseUrl': app.SITE}, wrong_issue]) as get:
+            with self.assertRaisesRegex(app.Stop, 'DATN-12'):
+                app.preflight(jira)
+            self.assertEqual(get.call_count, 2)
+
     def test_simple_board_without_sprints_accepted(self):
         jira = self.metadata_jira()
         original = jira.get
         def get(path, **query):
-            if path.endswith('/board/2'):
-                return {'id': 2, 'type': 'simple'}
-            if path.endswith('/board/2/features'):
-                return {'features': [{'boardFeature': 'SPRINTS', 'boardId': 2, 'state': 'DISABLED'}]}
+            if path.endswith('/board/1'):
+                return {'id': 1, 'type': 'simple'}
+            if path.endswith('/board/1/features'):
+                return {'features': [{'boardFeature': 'SPRINTS', 'boardId': 1, 'state': 'DISABLED'}]}
             return original(path, **query)
         jira.get = get
         with patch('sys.stdout', new=io.StringIO()):
@@ -309,29 +326,29 @@ class PreflightTests(unittest.TestCase):
 
     def test_simple_does_not_bypass_sprints_ids_or_missing_features(self):
         jira = self.metadata_jira()
-        board = {'id': 2, 'type': 'simple'}
-        config = {'id': 2}
+        board = {'id': 1, 'type': 'simple'}
+        config = {'id': 1}
         cases = [
-            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 2, 'state': 'ENABLED'}]},
+            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 1, 'state': 'ENABLED'}]},
             {'features': []},
             {'features': [{'featureId': 'sprints', 'state': 'DISABLED'}]},
             {'features': [None]},
             {'features': [{'feature': 'jsw.agility.sprints', 'state': 'ENABLED'}]},
             {'features': [{'feature': 'jsw.agility.sprints', 'state': 'COMING_SOON'}]},
-            {'features': [{'feature': 'jsw.agility.sprints', 'state': 'DISABLED', 'boardId': 1}]},
+            {'features': [{'feature': 'jsw.agility.sprints', 'state': 'DISABLED', 'boardId': 2}]},
             {'features': [{'feature': 'unknown.sprints', 'state': 'DISABLED'}]},
             {'features': [{'boardFeature': 'BACKLOG', 'feature': 'jsw.agility.sprints', 'state': 'DISABLED'}]},
             {'features': [{'boardFeature': 'SPRINTS', 'feature': 'jsw.agility.backlog', 'state': 'DISABLED'}]},
             {'features': [{'boardFeature': 'SPRINTS', 'state': 'DISABLED'},
                           {'feature': 'jsw.agility.sprints', 'state': 'DISABLED'}]},
-            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 1, 'state': 'DISABLED'}]},
-            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 2, 'state': 'COMING_SOON'}]},
+            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 2, 'state': 'DISABLED'}]},
+            {'features': [{'boardFeature': 'SPRINTS', 'boardId': 1, 'state': 'COMING_SOON'}]},
         ]
         for response in cases:
             with patch.object(jira, 'get', return_value=response):
                 with self.assertRaises(app.Stop):
                     app.validate_board(jira, board, config)
-        for b, c in [({'id': 1, 'type': 'kanban'}, config), (board, {'id': 1}), ({'id': 2, 'type': 'scrum'}, config)]:
+        for b, c in [({'id': 2, 'type': 'kanban'}, config), (board, {'id': 2}), ({'id': 1, 'type': 'scrum'}, config)]:
             with self.assertRaises(app.Stop):
                 app.validate_board(jira, b, c)
 
@@ -339,12 +356,12 @@ class PreflightTests(unittest.TestCase):
         jira = self.metadata_jira()
         original = jira.get
         def get(path, **query):
-            if path.endswith('/board/2'):
-                return {'id': 2, 'type': 'simple'}
-            if path.endswith('/board/2/features'):
+            if path.endswith('/board/1'):
+                return {'id': 1, 'type': 'simple'}
+            if path.endswith('/board/1/features'):
                 return {'features': [
-                    {'feature': 'jsw.agility.board', 'boardId': 2, 'state': 'ENABLED'},
-                    {'feature': 'jsw.agility.sprints', 'boardId': 2, 'state': 'DISABLED'},
+                    {'feature': 'jsw.agility.board', 'boardId': 1, 'state': 'ENABLED'},
+                    {'feature': 'jsw.agility.sprints', 'boardId': 1, 'state': 'DISABLED'},
                 ]}
             return original(path, **query)
         jira.get = get
@@ -354,9 +371,11 @@ class PreflightTests(unittest.TestCase):
     def test_board_diagnostics_selects_fields_without_writes_or_raw_response(self):
         jira = self.metadata_jira()
         responses = [
-            {'id': 2, 'type': 'simple', 'location': {'projectId': '10001', 'projectKey': 'DATN'},
+            {'baseUrl': app.SITE},
+            {'key': 'DATN-12', 'fields': {'project': {'key': 'DATN'}}},
+            {'id': 1, 'type': 'simple', 'location': {'projectId': '10001', 'projectKey': 'DATN'},
              'secret': 'SECRET_MARKER', 'name': 'PRIVATE_NAME'},
-            {'id': 2, 'type': 'simple', 'filter': {'id': '10002'},
+            {'id': 1, 'type': 'simple', 'filter': {'id': '10002'},
              'ranking': {'rankCustomFieldId': 10019}},
             {'features': [{'featureId': 'example.sprints', 'feature': 'jsw.agility.sprints', 'state': 'DISABLED',
                            'localisedDescription': 'SECRET_MARKER'}, None]},
@@ -366,8 +385,10 @@ class PreflightTests(unittest.TestCase):
              patch.object(jira, 'request') as request, patch('sys.stdout', new=output):
             app.board_diagnostics(jira)
         self.assertEqual([c.args[0] for c in get.call_args_list], [
-            '/rest/agile/1.0/board/2', '/rest/agile/1.0/board/2/configuration',
-            '/rest/agile/1.0/board/2/features'])
+            '/rest/api/3/serverInfo', '/rest/api/3/issue/DATN-12',
+            '/rest/agile/1.0/board/1', '/rest/agile/1.0/board/1/configuration',
+            '/rest/agile/1.0/board/1/features'])
+        self.assertIn('https://datn-mingquanjp.atlassian.net', output.getvalue())
         request.assert_not_called()
         self.assertIn('example.sprints', output.getvalue())
         self.assertIn('jsw.agility.sprints', output.getvalue())

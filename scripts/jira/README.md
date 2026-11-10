@@ -2,7 +2,7 @@
 
 Nguồn nội dung: [bộ ticket đã review](../../docs/proposals/backend-auth-session-tickets.md), đối chiếu [proposal/WBS](../../docs/proposals/backend-auth-session.md). Script không chứa bản sao description: mỗi lần chạy sinh manifest từ nguồn và kiểm mapping 33 WBS, 105 giờ cơ sở, 20 Task và hai chiều của 47 phụ thuộc.
 
-Đích cố định: `https://faker1652005.atlassian.net`, project `DATN`, board Kanban `2`. Không thao tác CoLearnia, sprint hoặc DB của đồ án. Dùng Python **3.9+**, thư viện chuẩn; không cài dependency, không đọc `.env`.
+Đích hiện hành là `https://datn-mingquanjp.atlassian.net`, project `DATN`, board `1`. Người dùng đã đối chiếu 21 work item trên site mới. Để xác nhận kết nối hoặc đọc metadata, chạy `--mode diagnose` ở mục 2. Các lệnh `plan`, `apply` và `check` phục vụ đối soát đợt import ban đầu. Giữ journal site cũ làm lịch sử và dừng nếu cần thao tác import lại trên project đã chuyển. Dùng Python **3.9+** và thư viện chuẩn.
 
 ## 1. Kiểm tra offline trước
 
@@ -27,11 +27,11 @@ python3 scripts/jira/auth_import.py --mode plan
 
 Nhập email Atlassian và token khi được hỏi; token nhập ẩn bằng `getpass`, chỉ ở bộ nhớ. Không gửi token vào chat, command argument, file, ảnh hoặc Git. Nếu terminal không ẩn được input, script từ chối tiếp tục. 401/403 không tự cấp thêm quyền: kiểm tài khoản/token/scope và quyền hiện có của DATN.
 
-Mặc định API gọi trực tiếp site bằng email/token. Nếu token có scope yêu cầu gateway `api.atlassian.com`, thêm `--cloud-id UUID_SITE_ĐÃ_XÁC_MINH` vào **mọi lệnh online**. Cloud ID không phải project key; không đoán hoặc lấy từ CoLearnia khác site. Không tự tạo token mới/nới scope. Hạn chế redirect để credential không chuyển sang host khác.
+Mặc định API gọi trực tiếp site mới bằng email/token. Có thể dùng lại token còn hạn nếu tài khoản có quyền trên site mới. Với token có scope, thêm `--cloud-id UUID_SITE_MỚI_ĐÃ_XÁC_MINH` vào **mọi lệnh online** để dùng gateway `https://api.atlassian.com/ex/jira/<cloudId>`. Script đối chiếu `baseUrl` từ `serverInfo` với site mới, sau đó đọc `DATN-12` và xác nhận project `DATN` trước khi tiếp tục. Script chặn redirect để credential không chuyển sang host khác.
 
 Plan kiểm project, board/filter Rank, create metadata Epic/Task/parent/trường bắt buộc, tài khoản hiện tại có assign được và quyền browse/create/assign/link/edit/rank; xác định Blocks theo nhãn outward/inward. Assignee là tài khoản đang xác thực, cần dùng tài khoản Quân đã chốt. In Epic/Task đã có/cần tạo, parent và phụ thuộc; không thay Jira, không ghi mapping mới. Token/API có thể chưa đủ quyền dù đọc được UI.
 
-Board team-managed có thể trả API `type=simple` thay vì `kanban`. Script nhận `simple` chỉ khi endpoint features xác nhận Sprint `DISABLED`, qua `boardFeature=SPRINTS` hoặc đúng khóa `feature=jsw.agility.sprints`; không suy Kanban chỉ từ tên board. Vẫn kiểm ID board/config bằng 2 và filter đúng project DATN. Không tự bật/tắt Sprint; thiếu quyền đọc features hoặc trạng thái chưa rõ thì dừng. Xem [ghi nhận chính thức của Atlassian](https://jira.atlassian.com/browse/JRACLOUD-85696).
+Board team-managed có thể trả API `type=simple` thay vì `kanban`. Script nhận `simple` chỉ khi endpoint features xác nhận Sprint `DISABLED`, qua `boardFeature=SPRINTS` hoặc đúng khóa `feature=jsw.agility.sprints`. Preflight kiểm ID board/config bằng `1`, filter đúng project DATN và lấy Rank field từ configuration của board. Thiếu quyền đọc features hoặc trạng thái chưa rõ thì dừng. Xem [ghi nhận chính thức của Atlassian](https://jira.atlassian.com/browse/JRACLOUD-85696).
 
 Nếu dừng vì thiếu mục `SPRINTS`, chưa đủ cơ sở để kết luận board là Scrum hay Kanban. Chạy một lượt chẩn đoán:
 
@@ -39,7 +39,7 @@ Nếu dừng vì thiếu mục `SPRINTS`, chưa đủ cơ sở để kết luậ
 python3 scripts/jira/auth_import.py --mode diagnose
 ```
 
-Lệnh chỉ GET board 2, configuration và features; in chọn lọc ID/type/project/filter ID/Rank field cùng `boardFeature`, `feature`, `featureId`, `boardId`, `state` và tên các trường trong từng mục. Không in response thô, token, email, tên người hoặc mô tả; không đọc bộ ticket, ghi journal hay thay Jira. Có thể gửi phần JSON đầu ra để review định dạng thực tế. Thiếu feature không được coi là `DISABLED`; chưa biết định dạng thì không bỏ chốt hoặc đoán từ `featureId`. Bộ đọc nhận hai định danh Sprint nêu trên, từ chối định danh mâu thuẫn, mục Sprint trùng hoặc trạng thái chưa rõ. Không dùng `featureId` hoặc nhãn dịch để suy Sprint. Unit test dùng response giả, không chứng minh site thật luôn trả một trong hai định dạng; chẩn đoán là bằng chứng cần bổ sung.
+Lệnh chỉ GET `serverInfo`, trường project của `DATN-12`, board `1`, configuration và features. Kết quả chọn lọc site/ticket đã xác minh, ID/type/project/filter ID/Rank field và metadata Sprint. Token, email, tên người, mô tả và response thô không xuất hiện trong kết quả. Lệnh này chạy độc lập với manifest và journal. Unit test dùng response giả. Cần chạy diagnose bằng tài khoản có quyền để xác minh site thật.
 
 Script hiện chỉ hỗ trợ filter dạng `project = DATN ORDER BY Rank ASC` (hoặc ID project/field Rank tương đương). Filter phức tạp hơn dừng để review; không tự sửa board/filter hoặc giả task xuất hiện trên board.
 
@@ -69,7 +69,7 @@ Sau khi có Jira key, tạo 47 link: **provider blocks consumer**. Trên provide
 
 Chỉ có ba endpoint ghi được phép: tạo issue, tạo issueLink, và Rank. Không sửa ticket đã có, không xóa, chuyển trạng thái, gửi email/comment, đổi priority/sprint/deadline/estimate. Jira có thể áp default của project cho field không gửi; script không tuyên bố các field đó trống. Rank chỉ gửi key của 20 Task; Epic không nằm trong thứ tự task. Thứ tự tương đối giữa các ticket khác không được script chủ động xếp lại, nhưng vị trí của chúng so với các Task được di chuyển có thể đổi.
 
-Mapping, fingerprint, pending mutation và thứ tự 20 task trước khi xếp lần đầu lưu tại `.local/jira-auth/state.json`, atomic, mode 0600, bị Git ignore. Không có token/email/header/description hoặc response API thô trong journal. Không xóa journal để làm lại. Một lock chống hai process cùng dùng journal; không chạy song song bằng state khác.
+Mapping, fingerprint, pending mutation và thứ tự 20 task trước khi xếp lần đầu lưu tại `.local/jira-auth/state.json`, atomic, mode 0600, bị Git ignore. Journal gắn với site và board của lượt import. Journal site cũ sẽ bị từ chối nếu dùng với site mới. Giữ file đó để truy vết. Một lock chống hai process cùng dùng journal.
 
 ## 5. Check và tiếp tục sau lỗi
 
@@ -92,7 +92,7 @@ Chạy `--state` khác chỉ khi có lý do và review mapping; giữ cùng stat
 
 Hiện có unit/integration orchestration bằng Jira giả: tạo/đọc lại, Rank, không ghi lần hai, mất phản hồi create/link, pending không rõ, duplicate/drift, link đảo chiều, credential redaction, redirect/endpoint allowlist và lock.
 
-Ngày 07/11/2026, người dùng đã chạy plan/apply/check trên site thật và gửi log để đối chiếu: board 2/project DATN, Sprint DISABLED, Epic DATN-1 cùng 20 Task DATN-2–DATN-21, đủ 47 Blocks; check đạt nội dung/parent/assignee/labels/link/Rank. Đây là bằng chứng từ lượt chạy của người dùng, không phải agent tự gọi API live. Chưa xác minh trực quan toàn bộ ADF trên Jira hoặc liên kết Development với GitHub; không chứng minh auth runtime. Nguồn ticket/proposal/contract/FR được giữ nguyên trong lượt bàn giao Git để không đổi fingerprint của journal đã apply.
+Ngày 07/11/2026, người dùng đã chạy plan/apply/check trên **site cũ**, board 2/project DATN, và gửi log để đối chiếu. Lượt đó xác nhận Epic DATN-1, 20 Task DATN-2–DATN-21, 47 Blocks, nội dung, parent, assignee, labels và Rank. Site mới có 21 work item theo đối chiếu của người dùng. Bằng chứng import và metadata từ site cũ chỉ áp dụng cho lượt chạy lịch sử. Mục **Development** trên site mới cần xác minh riêng.
 
 Tham khảo script `docs/planning/jira/rank-sprint.py` của CoLearnia (chỉ đọc, không copy sprint/80 task sang DATN) và tài liệu chính thức:
 
