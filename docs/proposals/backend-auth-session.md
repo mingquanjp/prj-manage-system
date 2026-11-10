@@ -825,6 +825,17 @@ Kiểm tĩnh nằm ở scripts/check-auth-contract.test.mjs; mở rộng ma tr�
 
 Bằng chứng trên Go 1.26.5: `go test ./internal/transport/http -count=1 -v` kiểm route Chi với service thật và repository giả, gồm mã 200/401/503/500, phiên hạn chế, HMAC vector độc lập, biên hết hạn, cookie trùng, Origin sai, token cũ và che marker nhạy cảm. `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/config ./internal/transport/http -count=1` và 24 ca contract/harness đều đạt. Bằng chứng này thuộc tầng Go/HTTP của AUTH-S02, S04, S09 và S10. PostgreSQL tích hợp, trình duyệt và các mutation dùng helper được nghiệm thu ở các ticket tương ứng.
 
+#### 6.2.9. Bàn giao limiter — DATN-14 / AUTH-T13, 10/11/2026
+
+[Limiter HTTP](../../internal/transport/http/auth_rate_limit.go) giữ bốn bộ đếm trong một tiến trình, theo các ngưỡng ở mục 6.2.4–6.2.5. Mỗi request đã nhận hoặc lần xác minh thất bại hết hiệu lực tại đúng mốc cửa sổ tính từ sự kiện đó. Mỗi bảng giữ tối đa 4.096 khóa, dọn khóa hết hạn khi có lưu lượng và không đẩy khóa còn hiệu lực ra để nhận khóa mới. Lượt chờ kết quả vẫn được giữ cho đến khi caller kết thúc. Khi bão hòa bộ nhớ, khóa mới nhận 429 với thời gian chờ thử lại theo nhịp dọn. Bộ đếm mất khi tiến trình khởi động lại.
+
+- Tạo `newAuthRateLimiter(clock)` một lần khi lắp handler. Dùng `authPeerIP` lấy IP từ `RemoteAddr`; nếu parse thất bại, trả lỗi nội bộ và dừng thay vì bỏ qua giới hạn. `allowLoginIP` và `allowPasswordChangeIP` trả thời gian chờ dương nếu bị chặn. Gọi cổng IP trước phần xác thực tốn chi phí. Backend sau proxy chỉ thấy IP của proxy khi chưa có cấu hình proxy tin cậy.
+- DATN-16 gọi `beginLoginAttempt` với email qua validation và dùng cùng quy tắc trim/chữ thường cho định danh login. Khóa trong bộ nhớ là SHA-256 của email đã chuẩn hóa. Ghi nhận thất bại nhất quán cho email không tồn tại, tài khoản không dùng được hoặc mật khẩu sai ở bước xác minh để 429 không tiết lộ sự tồn tại của tài khoản. Lỗi do nền thay đổi sau khi đã xác minh đúng cần tín hiệu nội bộ riêng, dù có thể cùng trả 401. Kiểm tính nhất quán giữa chuẩn hóa ở Go và lookup PostgreSQL khi nối luồng thật.
+- DATN-17 gọi `beginPasswordChangeAttempt` với principal lấy từ phiên hợp lệ đã qua kiểm tra Origin/CSRF và quyền đổi lần đầu. Khóa là `UserID`. Chỉ lần xác minh mật khẩu hiện tại sai mới được ghi vào bộ đếm định danh.
+- Nếu `begin…` trả callback, đặt `defer finish(false)` ngay để trả lượt trên mọi đường thoát, rồi gọi `finish(true)` khi xác minh thực sự thất bại. Chỉ lần gọi đầu có hiệu lực. Nếu bị chặn, gọi `writeAuthRateLimited` trong chuỗi auth cấp request ID nội bộ. Helper trả 429, `RATE_LIMITED`, `Cache-Control: no-store` và `Retry-After` làm tròn lên theo giây. Khi các lượt đang xác minh giữ hết chỗ, thời gian thử lại là một giây.
+
+Bằng chứng trên Go 1.26.5: `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/transport/http -count=1` và 30 lượt chạy [bộ test limiter](../../internal/transport/http/auth_rate_limit_test.go) đều đạt. Contract/harness đạt 24 ca. DATN-14 bàn giao tầng Go của AUTH-S08. Kiểm response qua hai handler thật, dữ liệu PostgreSQL và việc đi qua proxy thuộc các ticket nối route và tích hợp.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.
