@@ -67,7 +67,7 @@ func TestLogoutThroughRouter(t *testing.T) {
 			repo := &logoutTestRepo{err: tt.revokeError, sessions: map[auth.SessionHash]auth.SessionSnapshot{
 				sha256.Sum256(secret[:]): snapshot, sha256.Sum256(otherSecret[:]): snapshot,
 			}}
-			router := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{now}), protection)
+			router := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{now}), protection, nil)
 			request := httptest.NewRequest(http.MethodPost, "/api/auth/logout", strings.NewReader(tt.body))
 			request.ContentLength = -1
 			request.AddCookie(&http.Cookie{Name: sessionCookieName, Value: authEncoding.EncodeToString(secret[:])})
@@ -118,7 +118,7 @@ func TestLogoutThroughRouter(t *testing.T) {
 }
 
 func TestSessionRouteWiring(t *testing.T) {
-	router := newRouter(fakeHealth{}, auth.NewService(&logoutTestRepo{}, csrfTestClock{}), authProtection{})
+	router := newRouter(fakeHealth{}, auth.NewService(&logoutTestRepo{}, csrfTestClock{}), authProtection{}, nil)
 	want := map[string]int{
 		"GET /api/healthz": 200, "GET /api/auth/me": 401, "GET /api/auth/csrf": 401, "POST /api/auth/logout": 401,
 	}

@@ -1484,7 +1484,7 @@
             "type": "string",
             "minLength": 1,
             "writeOnly": true,
-            "description": "Không trim/cắt/normalize; xác minh credential hiện có, không áp min 15 của mật khẩu mới lên login."
+            "description": "Giữ nguyên mật khẩu khi xác minh credential hiện có. Login không áp mức tối thiểu 15 ký tự của mật khẩu mới. Mật khẩu vượt 72 byte UTF-8 nhận 401 INVALID_CREDENTIALS để tránh bcrypt chấp nhận theo tiền tố."
           }
         }
       },

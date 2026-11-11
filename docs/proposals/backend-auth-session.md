@@ -844,6 +844,16 @@ DATN-17 dùng tiếp middleware này cho bước xác thực trước khi đổi
 
 Các lệnh đã đạt trên Go 1.26.5 gồm `go vet ./...`, `go test ./... -count=1`, `go build ./...` và `go test -race ./internal/transport/http -count=1`. Contract và harness đạt 24 ca với `node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs`. Kiểm kê harness đạt với `node scripts/check-harness.mjs`.
 
+#### 6.2.11. Bàn giao đăng nhập bằng email — DATN-16 / AUTH-T14, 11/11/2026
+
+[Handler login](../../internal/transport/http/auth_login.go) kiểm Origin, giới hạn IP, Content-Type, giới hạn 8192 byte đọc thực tế và hai trường JSON trước khi giữ lượt xác minh theo email. Email dùng chung quy tắc chuẩn hóa với limiter và service. [Service login](../../internal/service/auth/login.go) xác minh bcrypt bên ngoài transaction. Thiếu định danh hoặc trạng thái không hoạt động dùng hash giả với cost mặc định của dự án. Mật khẩu giữ nguyên khoảng trắng và không áp min 15 của mật khẩu mới. Đầu vào vượt 72 byte bị từ chối như credential sai để tránh bcrypt chấp nhận theo tiền tố 72 byte. Phép so giả giảm chênh lệch thời gian, không bảo đảm thời gian giống nhau nếu hash cũ có cost khác.
+
+Service phân biệt xác minh thất bại với nền định danh đổi tại `FinalizeLogin`. Hai lỗi cùng trả 401/INVALID_CREDENTIALS, chỉ lỗi xác minh cộng vào bucket email. Service sinh secret 32 byte và gửi hash SHA-256 xuống adapter. Nếu request mang cookie cũ đọc được, chỉ chuyển hash cũ. Adapter hiện có quyết định thu hồi theo chủ phiên và hiệu lực dưới khóa. Handler dùng chung DTO với me và đặt cookie theo expires_at sau khi nhận kết quả thành công.
+
+Đạt `go vet ./...`, `go test ./... -count=1`, `go build ./...` và `go test -race ./internal/service/auth ./internal/transport/http -count=1`. Test service và Chi dùng bcrypt thật cùng repository giả. Bằng chứng gồm body 8192/8193 byte không Content-Length, cookie/DTO cho phiên thường và hạn chế, lỗi random, lỗi lưu trữ và limiter trước xác minh. Các test fake chỉ xác nhận lời gọi qua port và kết quả HTTP.
+
+DATN-18 ghép `NewLoginService`, service phiên và adapter PostgreSQL dùng cùng clock. Khởi tạo một limiter cho tiến trình và truyền TTL đã validate. Kiểm chuẩn hóa email qua SQL, giao dịch cùng HTTP và cookie/Origin qua browser hoặc proxy ở đợt tích hợp. `NewRouter` của server hiện giữ cách khởi tạo cũ.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.

@@ -6,7 +6,6 @@ import (
 	"net/netip"
 	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -63,7 +62,7 @@ func (l *authRateLimiter) allowPasswordChangeIP(ip netip.Addr) time.Duration {
 }
 
 func (l *authRateLimiter) beginLoginAttempt(email string) (finish func(failed bool), wait time.Duration) {
-	key := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
+	key := sha256.Sum256([]byte(auth.NormalizeLoginEmail(email)))
 	return l.loginFailures.begin(key)
 }
 

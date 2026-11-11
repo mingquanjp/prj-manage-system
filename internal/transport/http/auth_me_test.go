@@ -51,7 +51,7 @@ func TestMeThroughRouter(t *testing.T) {
 				tt.update(repo)
 			}
 			service := auth.NewService(repo, csrfTestClock{now})
-			handler := newRouter(fakeHealth{}, service, authProtection{})
+			handler := newRouter(fakeHealth{}, service, authProtection{}, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if tt.cookie {
@@ -79,11 +79,11 @@ func TestMeThroughRouter(t *testing.T) {
 				}
 				return
 			}
-			var body meResponse
+			var body authIdentityResponse
 			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}
-			want := meResponse{12, 37, "E037", "Nguyễn Văn An", tt.roles, repo.snapshot.Principal.MustChangePassword}
+			want := authIdentityResponse{12, 37, "E037", "Nguyễn Văn An", tt.roles, repo.snapshot.Principal.MustChangePassword}
 			if !reflect.DeepEqual(body, want) {
 				t.Errorf("response = %+v, muốn %+v", body, want)
 			}
