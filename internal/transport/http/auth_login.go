@@ -1,20 +1,15 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
-	"mime"
 	"net/http"
 	"net/mail"
 	"unicode/utf8"
 
 	"ai-staffing/internal/service/auth"
 )
-
-const authBodyLimit = 8192
 
 type loginUseCase interface {
 	Login(context.Context, string, string, *auth.SessionSecret) (auth.LoginResult, error)
@@ -41,8 +36,7 @@ func (login loginRoute) handler(protection authProtection) http.HandlerFunc {
 			writeAuthRateLimited(w, r, wait)
 			return
 		}
-		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if err != nil || mediaType != "application/json" || len(r.Header.Values("Content-Type")) != 1 {
+		if !hasAuthJSONContentType(r) {
 			writeAuthError(w, r, http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", "Yêu cầu đăng nhập phải dùng JSON.")
 			return
 		}
@@ -90,33 +84,8 @@ func (login loginRoute) handler(protection authProtection) http.HandlerFunc {
 }
 
 func decodeLoginBody(body []byte) (email, password string, valid bool) {
-	if !utf8.Valid(body) {
-		return "", "", false
-	}
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
-		return "", "", false
-	}
-	fields := make(map[string]string, 2)
-	for decoder.More() {
-		token, err := decoder.Token()
-		if err != nil || (token != "email" && token != "password") {
-			return "", "", false
-		}
-		key := token.(string)
-		if _, duplicate := fields[key]; duplicate {
-			return "", "", false
-		}
-		var value string
-		if err := decoder.Decode(&value); err != nil {
-			return "", "", false
-		}
-		fields[key] = value
-	}
-	if token, err := decoder.Token(); err != nil || token != json.Delim('}') {
-		return "", "", false
-	}
-	if _, err := decoder.Token(); err != io.EOF {
+	fields, ok := decodeAuthStringPair(body, "email", "password")
+	if !ok {
 		return "", "", false
 	}
 
