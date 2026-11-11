@@ -26,7 +26,7 @@ Hướng nghiệp vụ dành cho doanh nghiệp nhỏ–vừa: **năng lực đ�
 | Cấu trúc công việc | Tạo/sửa nhóm và đặc tả task trước lần giao đầu; yêu cầu kỹ năng | Chưa dựng đầy đủ thao tác sau giao và vòng đời dự án |
 | Phân công | Tra cứu thủ công, gợi ý mẫu, chọn vào nháp và xác nhận cập nhật state chung | Điểm/hạng minh họa, không phải engine thật; chưa transaction DB |
 | Các phân hệ khác | Đã có đặc tả nghiệp vụ/UI | Chưa dựng đầy đủ hồ sơ, CV, duyệt kỹ năng, nhật ký, nghiệm thu và quản trị trong frontend local |
-| Backend | Go HTTP skeleton, `GET /api/healthz`, cấu hình kết nối, công cụ migration/seed và test an toàn | Chưa triển khai các service nghiệp vụ hoặc API tích hợp frontend |
+| Backend — auth cập nhật 12/11/2026 | Health và năm API auth đã nối startup; kiểm HTTP + PostgreSQL test, transaction cạnh tranh và rollback | FE chưa nối API thật; API quản trị/dự án chưa triển khai; Neon chưa áp migration auth |
 | Database | Migration/seed legacy; dictionary và DBML thiết kế đích 33 bảng | Schema legacy khác thiết kế đích; chưa chuyển đổi DB |
 | Harness phát triển | Chỉ dẫn agent, mục lục nguồn, kiểm tra đường dẫn/nguồn, test và lệnh kiểm tra frontend | Không tự kiểm chứng ngữ nghĩa nghiệp vụ hoặc thay kiểm thử tích hợp/E2E |
 
@@ -144,12 +144,12 @@ PM chỉ theo dõi và PTCM có hành động khác nhau; người không có tr
 
 Thiết kế đích được mô tả bằng [bản hợp nhất 33 bảng](docs/design/database-proposal-2026-10-14.md), dictionary và DBML. Chưa có migration triển khai thiết kế này; không sửa migration đã áp dụng hoặc chạy reset để giả lập việc nâng cấp.
 
-### Chạy skeleton khi cần làm backend
+### Chạy backend khi đã xác nhận môi trường
 
 Chỉ thực hiện khi đã xác nhận môi trường và đúng DB phát triển:
 
 1. Tạo cấu hình local theo `.env.example`, không ghi đè `.env` đang có hoặc commit thông tin kết nối.
-2. Bảo đảm DB đã có schema legacy phù hợp. Nếu cần migration/seed, xử lý riêng theo bảng lệnh bên dưới.
+2. Backend auth cần schema qua migration 000003. Kiểm môi trường và migration riêng trước khi chạy; môi trường kiểm chứng hiện hành là PostgreSQL test local theo [runbook auth](scripts/authdb/README.md). Nếu DB phát triển/Neon chưa nâng, health thành công vẫn chưa đủ để gọi auth. Migration/seed xử lý riêng theo bảng lệnh bên dưới.
 3. Chạy từ thư mục gốc:
 
 ```bash
@@ -206,7 +206,7 @@ go test ./... -count=1
 go build ./...
 ```
 
-Các test backend hiện có dùng fake/biến môi trường cho guard, health và forwarded IP; không kết nối DB thật. Chưa có kiểm thử migration/seed hoặc tích hợp nghiệp vụ trên DB. Khi bổ sung integration test phải dùng DB test riêng được cho phép.
+Lệnh Go mặc định chạy các test không cần DB. Các integration tests có build tag `integration` kiểm migration, repository và năm API auth trên PostgreSQL 18 test local sở hữu. Dùng [runner và lệnh DATN-18](scripts/authdb/README.md#tích-hợp-http-và-postgresql--datn-18--auth-t17) để xác minh đích và cấp biến test. Bằng chứng backend không thay kiểm browser/FE hoặc xác nhận Neon đã nâng schema.
 
 ### Tài liệu và harness
 

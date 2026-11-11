@@ -14,6 +14,7 @@ import (
 
 	"ai-staffing/internal/config"
 	"ai-staffing/internal/repository/postgres"
+	"ai-staffing/internal/service/auth"
 	httptransport "ai-staffing/internal/transport/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,10 +53,14 @@ func startServer(cfg *config.Config) error {
 		return err
 	}
 	defer pool.Close()
+	handler, err := buildHandler(cfg, pool, systemClock{})
+	if err != nil {
+		return err
+	}
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler:           httptransport.NewRouter(pool),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
@@ -80,6 +85,21 @@ func startServer(cfg *config.Config) error {
 	defer cancel()
 
 	return srv.Shutdown(shutdownCtx)
+}
+
+type systemClock struct{}
+
+func (systemClock) Now() time.Time { return time.Now() }
+
+// buildHandler dùng chung cho startup và integration HTTP trên pool test thật.
+func buildHandler(cfg *config.Config, pool *pgxpool.Pool, clock auth.Clock) (http.Handler, error) {
+	repository := postgres.NewAuthRepository(pool, clock)
+	return httptransport.NewAuthRouter(pool, cfg.AppEnv, cfg.AppOrigin, httptransport.AuthServices{
+		Sessions:       auth.NewService(repository, clock),
+		Login:          auth.NewLoginService(repository, clock, cfg.SessionTTL),
+		PasswordChange: auth.NewPasswordChangeService(repository, clock),
+		Clock:          clock,
+	})
 }
 
 // logStartupError chỉ nhận lỗi cấu hình/kết nối đã được các cổng startup làm an toàn.
