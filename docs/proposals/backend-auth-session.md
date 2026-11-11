@@ -864,6 +864,35 @@ DATN-18 ghép `NewLoginService`, service phiên và adapter PostgreSQL dùng cù
 
 Kiểm tra đã chạy và đạt: `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/service/auth ./internal/transport/http -count=1`, `node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs`, `node scripts/check-harness.mjs` và `git diff --check`. Bằng chứng đợt này ở tầng Go/HTTP và contract tĩnh.
 
+#### 6.2.13. Tích hợp năm API với PostgreSQL — DATN-18 / AUTH-T17, 12/11/2026
+
+`cmd/server.startServer` gọi `buildHandler` sau khi config đã validate và pool đã mở. Composition root khởi tạo một `AuthRepository`, ba service dùng chung clock và TTL từ config. `NewAuthRouter` nhận đủ use case, dựng protection/limiter một lần cho router và đăng ký đủ năm route. Dependency thiếu trả lỗi trước khi server lắng nghe. Health giữ đường kiểm tra hiện có. Các ghi nhận chưa nối startup ở mục 6.2.8–6.2.12 được tiếp nối bởi đợt này.
+
+[HTTP integration startup](../../cmd/server/auth_integration_test.go) gọi cùng `buildHandler` như server, chạy request qua `httptest.Server`, pool pgx và PostgreSQL 18 test thật. [Pool test](../../internal/testutil/authdb/database.go) sao chép cấu hình DB case đã xác minh, kiểm cluster/name/owner và đóng trước cleanup case. Mỗi fixture nâng schema tới 000003 trong case riêng. Runner cấp biến test trực tiếp, không gọi loader dotenv hoặc dùng DATABASE_URL.
+
+Đã kiểm login/email chuẩn hóa, cookie khớp hash phiên đã commit, me/csrf không gia hạn, logout đúng phiên, rotation cùng user, nhiều phiên, đổi lần đầu và login mới. Role/cờ/status đọc lại từ DB, ID user khác employee vẫn trả đúng DTO. [Guard integration](../../internal/transport/http/auth_router_integration_test.go) chặn ADMIN hạn chế bằng repository thật; endpoint thăm dò chỉ được đăng ký trong test. [Route test](../../internal/transport/http/auth_router_test.go) đối chiếu method/path Chi với năm API trong OpenAPI và health, kiểm constructor thiếu dependency.
+
+[HTTP concurrency](../../cmd/server/auth_concurrency_integration_test.go) dùng hai request qua pool, connection điều khiển và barrier PostgreSQL. Advisory lock trong trigger fixture giữ transaction đầu ở sau khi lấy row lock, `pg_blocking_pids` xác nhận request sau thực sự chờ. Kiểm hai lần đổi và login đã xác minh hash cũ bị từ chối sau khi nền thay đổi. Ca logout hết hạn sau chờ khóa dùng blocker riêng và clock atomic, kiểm không có write. Timeout chặn treo test; không dùng sleep để suy request đã tới barrier.
+
+Trigger fixture kiểm rollback ở write và deferred constraint tại commit cho login/logout/đổi lần đầu; HTTP trả 500, không Set-Cookie, hash/cờ/phiên không có write nửa chừng. SQLSTATE 57P03 mô phỏng DB tạm lỗi kiểm 503. [Commit mất phản hồi](../../cmd/server/auth_commit_integration_test.go) thực hiện commit PostgreSQL rồi wrapper driver trả lỗi I/O: HTTP 503, không cookie và chỉ một lần commit; DB vẫn phản ánh mutation đã commit. Đây là mô phỏng mất phản hồi ở biên driver, chưa cắt mạng DB hoặc HTTP thật. Lỗi random tiếp tục được chứng minh bằng unit test service/HTTP đã có.
+
+| Bằng chứng | Truy vết backend và giới hạn |
+|---|---|
+| AUTH-S01 | Test login service/HTTP và projection PostgreSQL hiện có; integration kiểm chuẩn hóa, credential sai và email mâu thuẫn. Hash giả được kiểm ở service. |
+| AUTH-S02 | HTTP lifecycle kiểm cookie sau commit, thu hồi đúng phiên, hạn 8h và biên hết hạn; browser/HTTPS thật còn ở đợt FE/vận hành. |
+| AUTH-S03 | Guard PostgreSQL kiểm ADMIN còn cờ bị 403 trước handler, đổi cờ được đọc hiện hành. |
+| AUTH-S04 | HTTP lifecycle kiểm CSRF sai không revoke; unit Origin/HMAC/rotation hiện có. Browser proxy chưa kiểm trong đợt này. |
+| AUTH-S05 | Live principal kiểm role/cờ/status từ DB; projection/HTTP tests giữ ID và DTO allowlist, field lạ bị chặn. |
+| AUTH-S06 | HTTP hai lần đổi/login hash cũ cạnh tranh, mọi phiên cùng user bị thu hồi, user khác còn phiên; tái sử dụng suite transaction. |
+| AUTH-S07 | HTTP lỗi write/commit, DB tạm lỗi và commit mất phản hồi; random lỗi ở unit, không nhận là thử cắt mạng thật. |
+| AUTH-S08 | HTTP dùng chung limiter giữa nhiều request, bucket login/đổi độc lập, Retry-After; policy/Unicode/body và các biên limiter ở unit hiện có. |
+| AUTH-S09 | Test redaction input giả hiện có, HTTP integration kiểm lỗi SQL không lộ marker; không dùng secret hoặc dữ liệu nhân viên thật. |
+| AUTH-S10 | Chi Walk đối chiếu method/path OpenAPI, năm route đi qua real services/repository, no-store và cookie/CSRF theo các ca HTTP. Chưa phải validator response schema OpenAPI đầy đủ. |
+
+Kiểm tra đạt trên Go 1.26.5 và PostgreSQL 18 local test sở hữu: `go vet ./...`, `go test ./... -count=1`, `go build ./...`; vet với tag integration cho cmd/server, HTTP và testutil; 24 test contract/harness và kiểm kê nguồn. Bộ integration `-race -tags=integration -p 1` đạt cho migrations, repository/postgres, transport/http và cmd/server. Lượt gộp ban đầu phát hiện import thừa ở test commit; đã bỏ import và chạy lại cmd/server đạt. Lệnh tái hiện/kiểm cleanup ở [runbook DATN-18](../../scripts/authdb/README.md#tích-hợp-http-và-postgresql--datn-18--auth-t17).
+
+Bàn giao AUTH-T18/AUTH-T19: FE dùng email công ty/password cho login, khôi phục danh tính bằng me, lấy csrf_token để gửi X-CSRF-Token cùng cookie cho mutation. Cờ true có role hiệu lực rỗng, chỉ dùng me/csrf/logout/change-password. Đổi thành công trả 204 và xóa cookie, phải login mới. 401 yêu cầu xác thực lại; 403 PASSWORD_CHANGE_REQUIRED đưa tới đổi mật khẩu; 429 đọc Retry-After; lỗi 5xx/mất phản hồi không tự retry mutation. FE thật, cookie qua browser/proxy, SMTP và Swagger UI còn ở đợt tương ứng. Đợt này không áp migration Neon hoặc thay schema/contract.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.
@@ -951,7 +980,7 @@ Bằng chứng ngày 08/11: parent đã chạy go vet ./..., go test ./... -coun
 
 Sub-agent GPT-6.1 Sol medium được bàn giao bối cảnh/quyết định/nguồn/phạm vi và chỉ đọc review diff (gồm untracked tests), đối chiếu pgx parser cục bộ; không tìm thấy finding cần sửa. Agent chạy offline go test config/postgres/server/migrate/seed và diff check đạt, không sửa file hoặc dùng DB/.env/network. Agent nêu thiếu ca protocol=false (đã bổ sung); hai cổng lỗi migration sql.Open/driver init chưa có test riêng, không coi là bằng chứng migration thật. Parent xác minh kết luận, rà diff và giữ giới hạn này để kiểm ở đợt DB test được cấp. Không tự chuyển Jira Done, commit/push hoặc chạy lại công cụ import. Một lượt agent review không thay kiểm thử runtime/tác giả hiểu code.
 
-### 6.4. Chiến lược kiểm thử — chưa chạy feature
+### 6.4. Chiến lược kiểm thử — bằng chứng tiếp nối tại mục 6.2.13
 
 | Nhóm | Ca bắt buộc | Truy vết |
 |---|---|---|
@@ -984,7 +1013,7 @@ Unit/service/HTTP dùng fake repo/clock và httptest, không DB thật. Integrat
 | AUTH-S09 | Marker password/hash/cookie/CSRF/DSN giả không xuất hiện trong response/log | Test redaction với dữ liệu giả, không lấy secret thật |
 | AUTH-S10 | OpenAPI không bảo vệ thay server: route thực đúng schema/method/path, cookie và CSRF bắt buộc cùng nhau | Contract tests khi có handler, chi.Walk; kiểm tĩnh hiện tại chỉ là bước đầu |
 
-Trạng thái hiện tại của AUTH-S01–S10: **chưa chạy auth runtime**. Không gọi bộ harness hoặc kiểm JSON là pentest/kiểm chứng bảo mật hoàn chỉnh. Các biện pháp là một phần thiết kế đã chốt, còn cần bằng chứng thực thi trước nghiệm thu backend.
+Trạng thái tiếp nối DATN-18: đã kiểm runtime HTTP + PostgreSQL test cho phần backend theo mục 6.2.13. Ma trận trên giữ tiêu chí theo tầng; browser/proxy và HTTPS vận hành cần bằng chứng riêng. Harness/kiểm JSON không thay kiểm thử runtime hoặc pentest.
 
 Cổng khi có code: `go vet ./...`, `go test ./... -count=1`, `go build ./...`; FE theo [web/README](../../web/README.md) khi có thay FE; harness và diff check. Không chạy `make check` như lệnh chỉ đọc. Proposal hiện tại chỉ kiểm tra tài liệu/harness, không có kết quả auth/integration.
 

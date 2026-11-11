@@ -122,6 +122,19 @@ python3 scripts/authdb/manage.py run -- go test -race -tags=integration ./intern
 
 Chỉ chạy một lượt integration tại một thời điểm. Các ca cạnh tranh dùng hai connection thực thi, với connection quan sát riêng khi cả hai worker đều bận. Clock điều khiển thời điểm test. `pg_blocking_pids` xác nhận PostgreSQL đang chờ khóa trước khi nhả transaction đầu hoặc dịch clock. Trigger gây lỗi nằm trong database case. [Proposal mục 6.1.11](../../docs/proposals/backend-auth-session.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) ghi phạm vi bàn giao và ranh giới với kiểm thử HTTP.
 
+## Tích hợp HTTP và PostgreSQL — DATN-18 / AUTH-T17
+
+Năm API chạy qua cùng composition root `buildHandler` của startup. HTTP integration dùng pool thật trên từng DB case. Test guard dùng router/middleware và repository thật, endpoint thăm dò chỉ tồn tại trong test. Nguồn và ma trận bằng chứng ở [proposal mục 6.2.13](../../docs/proposals/backend-auth-session.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
+
+```sh
+python3 scripts/authdb/manage.py up
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+# Chạy sau suite để xác nhận DB test gốc/case đã dọn:
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+```
+
+Giữ một lượt DB integration tại một thời điểm. Hai request cạnh tranh dùng pool và barrier PostgreSQL, fake clock atomic; không sleep để đoán thứ tự. Test lỗi ghi dùng trigger riêng trong DB case. Test mất phản hồi commit thực hiện commit DB thật rồi wrapper driver trả lỗi I/O để đối chiếu HTTP 503 với trạng thái đã commit. Chưa cắt mạng thật hoặc kiểm cookie qua browser. Password/email/tài khoản fixture đều giả; không in URL, cookie, hash hoặc mật khẩu khi test thất bại.
+
 ## Kiểm tra công cụ
 
 ```sh

@@ -21,6 +21,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -78,6 +79,22 @@ func verifyCluster(t *testing.T, conn *pgx.Conn, name string) {
 type Case struct {
 	cfg  *pgx.ConnConfig
 	Conn *pgx.Conn
+}
+
+// Pool mở pool runtime vào đúng DB case đã xác minh, đóng trước khi dọn case.
+func (db *Case) Pool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	cfg, err := pgxpool.ParseConfig("postgresql://127.0.0.1/unused?sslmode=disable")
+	Require(t, "cấu hình pool test", err)
+	cfg.ConnConfig = db.cfg.Copy()
+	pool, err := pgxpool.NewWithConfig(t.Context(), cfg)
+	Require(t, "mở pool test", err)
+	t.Cleanup(pool.Close)
+	conn, err := pool.Acquire(t.Context())
+	Require(t, "lấy connection pool test", err)
+	defer conn.Release()
+	verifyCluster(t, conn.Conn(), db.cfg.Database)
+	return pool
 }
 
 // Connect mở thêm connection vào đúng DB case đã tạo, dành cho test cạnh tranh.
