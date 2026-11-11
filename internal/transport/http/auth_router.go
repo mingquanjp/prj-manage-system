@@ -25,7 +25,13 @@ func NewAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 		return nil, errors.New("origin auth không hợp lệ khi dựng router")
 	}
 	limiter := newAuthRateLimiter(services.Clock)
-	return newRouter(health, services.Sessions, protection,
+	router := newRouter(health, services.Sessions, protection,
 		&loginRoute{service: services.Login, limiter: limiter, clock: services.Clock},
-		&passwordChangeRoute{service: services.PasswordChange, limiter: limiter}), nil
+		&passwordChangeRoute{service: services.PasswordChange, limiter: limiter})
+	// Dev tường minh mới mở tài liệu; không nới allowlist của phiên hạn chế.
+	if appEnv == "dev" {
+		router.HandleFunc("/docs", swaggerHandler)
+		router.HandleFunc("/docs/*", swaggerHandler)
+	}
+	return router, nil
 }

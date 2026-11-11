@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TaskAssign — API auth</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/docs/assets/swagger-ui.css">
+    <link rel="stylesheet" href="/docs/assets/docs.css">
+    <script defer src="/docs/assets/swagger-ui-bundle.js"></script>
+    <script defer src="/docs/assets/init.js"></script>
+  </head>
+  <body>
+    <header class="docs-guide">
+      <h1>TaskAssign · API auth</h1>
+      <p>Tài liệu tương tác dành cho môi trường phát triển. Execute gọi API thật và có thể thay đổi dữ liệu. Chỉ dùng tài khoản test.</p>
+      <details>
+        <summary>Hướng dẫn thử đăng nhập, CSRF và đăng xuất</summary>
+        <ol>
+          <li>Mở trang trên đúng APP_ORIGIN của server, gồm scheme, hostname và port.</li>
+          <li>Execute <code>POST /api/auth/login</code> bằng email/mật khẩu test. Trình duyệt tự nhận cookie HttpOnly; không nhập cookie vào Authorize.</li>
+          <li>Execute <code>GET /api/auth/me</code> để xem danh tính và <code>GET /api/auth/csrf</code> để lấy <code>csrf_token</code>.</li>
+          <li>Bấm Authorize, nhập token vào mục <code>csrfHeader</code> (X-CSRF-Token), rồi thử logout hoặc change-password.</li>
+          <li>Sau logout hoặc đổi mật khẩu thành công, gọi me sẽ nhận 401. Đăng nhập lại và lấy token CSRF mới trước mutation tiếp theo.</li>
+        </ol>
+        <p>Phiên buộc đổi mật khẩu chỉ được dùng me/csrf/logout/change-password. Authorization không được lưu khi reload. Origin do trình duyệt gửi; không nhập hoặc giả lập header Cookie/Origin.</p>
+        <p>Swagger hiển thị kết quả từng request, không thay thế kiểm thử tự động. Không chia sẻ ảnh chứa mật khẩu hoặc token.</p>
+      </details>
+    </header>
+    <div id="swagger-ui"></div>
+  </body>
+</html>

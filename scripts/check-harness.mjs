@@ -27,6 +27,7 @@ export function localTarget(base, source, target) {
 export async function requiredFiles(base = root) {
   const required = new Set([...entries, ".gitignore", "scripts/check-harness.mjs", "scripts/check-harness.test.mjs", "scripts/check-auth-contract.test.mjs",
     "scripts/authdb/manage.py", "scripts/authdb/test_manage.py", "scripts/authdb/probe.go", "scripts/authdb/README.md",
+    "docs/api/embed.go", "scripts/check-swagger.test.mjs",
     "scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
     "docs/ai/workflow.md", "docs/ai/task-template.md", ".github/pull_request_template.md",
     "go.mod", "go.sum", "Makefile", "cmd/server/main.go", "cmd/migrate/main.go", "cmd/seed/main.go",
@@ -48,6 +49,7 @@ export async function requiredFiles(base = root) {
     }
   }
   await collect("web/src")
+  await collect("internal/transport/http/swagger")
   // Chỉ kiểm kê mã Go/SQL, không đọc cấu hình bí mật hoặc chạy công cụ DB.
   for (const directory of ["cmd", "internal", "migrations", "db/seed"]) {
     await collect(directory, (path) => /\.(go|sql)$/.test(path))

@@ -54,9 +54,12 @@ web/dist/
 !/docs/proposals/
 /docs/proposals/*
 !/docs/proposals/backend-auth-session.md
+!/docs/proposals/backend-auth-session-implementation.md
 !/docs/proposals/backend-auth-session-tickets.md
 !/docs/api/
 /docs/api/*
+!/docs/api/embed.go
+!/docs/api/README.md
 !/docs/api/auth.openapi.json
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md

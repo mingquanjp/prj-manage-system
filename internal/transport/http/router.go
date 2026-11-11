@@ -27,7 +27,7 @@ type authSessionService interface {
 	sessionLogout
 }
 
-func newRouter(pool healthChecker, sessions authSessionService, protection authProtection, login *loginRoute, change *passwordChangeRoute) http.Handler {
+func newRouter(pool healthChecker, sessions authSessionService, protection authProtection, login *loginRoute, change *passwordChangeRoute) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
