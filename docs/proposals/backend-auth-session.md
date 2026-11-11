@@ -854,6 +854,16 @@ Service phân biệt xác minh thất bại với nền định danh đổi tạ
 
 DATN-18 ghép `NewLoginService`, service phiên và adapter PostgreSQL dùng cùng clock. Khởi tạo một limiter cho tiến trình và truyền TTL đã validate. Kiểm chuẩn hóa email qua SQL, giao dịch cùng HTTP và cookie/Origin qua browser hoặc proxy ở đợt tích hợp. `NewRouter` của server hiện giữ cách khởi tạo cũ.
 
+#### 6.2.12. Bàn giao đổi mật khẩu lần đầu — DATN-17 / AUTH-T16
+
+[Service đổi lần đầu](../../internal/service/auth/password_change.go) đọc nền bằng hash phiên, kiểm hiệu lực/cờ, áp policy 15 code point và 72 byte UTF-8 cho mật khẩu mới, rồi so và băm bằng bcrypt ngoài transaction. Mật khẩu hiện tại vượt 72 byte được xử lý như xác minh sai khi các kiểm tra trước đó đạt, tránh chấp nhận theo tiền tố. Port nhận hash đã xác minh và hash mới để adapter ở mục 6.1.11 kiểm lại dưới khóa. Service không thử lại mutation.
+
+[Handler đổi lần đầu](../../internal/transport/http/auth_password_change.go) dùng Origin/CSRF, giới hạn theo IP, JSON 8 KiB và limiter theo UserID hiện hành. Parser JSON dùng chung với login trả 400 cho Unicode escape chứa surrogate đơn trước khi gọi service, đồng thời giữ cặp hợp lệ và ký tự U+FFFD được nhập hợp lệ. Chỉ lỗi xác minh sai mới tính vào bộ đếm sai của user. Sau khi service trả thành công, handler xóa cookie và trả 204 rỗng. [Router](../../internal/transport/http/router.go) khai báo tường minh bốn route được phép với phiên hạn chế. Route nghiệp vụ mới dùng `authenticateSession` để từ chối cờ true trước khi xét role. Route thử của guard chỉ có trong test.
+
+[Unit tests](../../internal/service/auth/password_change_test.go) chứng minh policy và command qua fake repository. [HTTP tests](../../internal/transport/http/auth_password_change_test.go) kiểm route, cookie, lỗi, limiter và guard bằng stub. DATN-18 chịu trách nhiệm nối router với PostgreSQL trong startup và kiểm lại luồng trên adapter thật.
+
+Kiểm tra đã chạy và đạt: `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/service/auth ./internal/transport/http -count=1`, `node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs`, `node scripts/check-harness.mjs` và `git diff --check`. Bằng chứng đợt này ở tầng Go/HTTP và contract tĩnh.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.

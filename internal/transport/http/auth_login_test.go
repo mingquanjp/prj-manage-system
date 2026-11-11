@@ -62,7 +62,7 @@ func makeLoginRouter(t *testing.T, repo *loginHTTPRepo) http.Handler {
 	}
 	return newRouter(fakeHealth{}, nil, protection, &loginRoute{
 		service: auth.NewLoginService(repo, clock, 8*time.Hour), limiter: newAuthRateLimiter(clock), clock: clock,
-	})
+	}, nil)
 }
 
 func loginRequest(router http.Handler, origin, mediaType, body string) *httptest.ResponseRecorder {
