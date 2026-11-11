@@ -1500,7 +1500,7 @@
             "type": "string",
             "minLength": 1,
             "writeOnly": true,
-            "description": "Xác minh mật khẩu hiện tại; không trim/cắt."
+            "description": "Xác minh mật khẩu hiện tại; không trim/cắt. Giá trị vượt 72 byte UTF-8 nhận 400 INVALID_CURRENT_PASSWORD khi các kiểm tra trước đó đạt."
           },
           "new_password": {
             "type": "string",

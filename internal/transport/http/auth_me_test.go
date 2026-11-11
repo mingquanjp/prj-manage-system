@@ -51,7 +51,7 @@ func TestMeThroughRouter(t *testing.T) {
 				tt.update(repo)
 			}
 			service := auth.NewService(repo, csrfTestClock{now})
-			handler := newRouter(fakeHealth{}, service, authProtection{}, nil)
+			handler := newRouter(fakeHealth{}, service, authProtection{}, nil, nil)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 			if tt.cookie {

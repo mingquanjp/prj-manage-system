@@ -62,7 +62,7 @@ func makeLoginRouter(t *testing.T, repo *loginHTTPRepo) http.Handler {
 	}
 	return newRouter(fakeHealth{}, nil, protection, &loginRoute{
 		service: auth.NewLoginService(repo, clock, 8*time.Hour), limiter: newAuthRateLimiter(clock), clock: clock,
-	})
+	}, nil)
 }
 
 func loginRequest(router http.Handler, origin, mediaType, body string) *httptest.ResponseRecorder {
@@ -95,6 +95,7 @@ func TestLoginThroughRouter(t *testing.T) {
 		{"Content-Type sai", loginTestOrigin, "text/plain", loginTestBody, 415, "UNSUPPORTED_MEDIA_TYPE", 0, 0, false, nil, nil},
 		{"8193 không Content-Length", loginTestOrigin, "application/json", padded + " ", 413, "PAYLOAD_TOO_LARGE", 0, 0, false, nil, nil},
 		{"JSON thừa", loginTestOrigin, "application/json", loginTestBody + "{}", 400, "VALIDATION_ERROR", 0, 0, false, nil, nil},
+		{"surrogate đơn", loginTestOrigin, "application/json", `{"email":"an@example.test","password":"\uD83D"}`, 400, "VALIDATION_ERROR", 0, 0, false, nil, nil},
 		{"trường lạ", loginTestOrigin, "application/json", `{"email":"an@example.test","password":" pass ","role":"ADMIN"}`, 400, "VALIDATION_ERROR", 0, 0, false, nil, nil},
 		{"trường trùng", loginTestOrigin, "application/json", `{"email":"an@example.test","password":" pass ","email":"an@example.test"}`, 400, "VALIDATION_ERROR", 0, 0, false, nil, nil},
 		{"sai mật khẩu", loginTestOrigin, "application/json", strings.Replace(loginTestBody, " pass ", "wrong", 1), 401, "INVALID_CREDENTIALS", 1, 0, false, nil, nil},

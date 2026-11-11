@@ -19,6 +19,15 @@ type requestSession struct {
 type sessionContextKey struct{}
 
 func authenticateSession(authenticator sessionAuthenticator) func(http.Handler) http.Handler {
+	return sessionMiddleware(authenticator, false)
+}
+
+// Chỉ dùng cho các route được phép khi tài khoản còn cờ buộc đổi.
+func authenticateLimitedSession(authenticator sessionAuthenticator) func(http.Handler) http.Handler {
+	return sessionMiddleware(authenticator, true)
+}
+
+func sessionMiddleware(authenticator sessionAuthenticator, allowLimited bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			secret, ok := readSessionSecret(r)
@@ -29,6 +38,10 @@ func authenticateSession(authenticator sessionAuthenticator) func(http.Handler) 
 			principal, err := authenticator.Authenticate(r.Context(), secret)
 			if err != nil {
 				writeAuthSessionError(w, r, err)
+				return
+			}
+			if principal.MustChangePassword && !allowLimited {
+				writeAuthError(w, r, http.StatusForbidden, "PASSWORD_CHANGE_REQUIRED", "Bạn cần đổi mật khẩu trước khi tiếp tục.")
 				return
 			}
 			session := requestSession{principal: principal, secret: secret}
