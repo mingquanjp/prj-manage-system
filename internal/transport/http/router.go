@@ -19,10 +19,15 @@ type healthChecker interface {
 }
 
 func NewRouter(pool healthChecker) http.Handler {
-	return newRouter(pool, nil)
+	return newRouter(pool, nil, authProtection{})
 }
 
-func newRouter(pool healthChecker, authenticator csrfAuthenticator) http.Handler {
+type authSessionService interface {
+	sessionAuthenticator
+	sessionLogout
+}
+
+func newRouter(pool healthChecker, sessions authSessionService, protection authProtection) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -32,8 +37,15 @@ func newRouter(pool healthChecker, authenticator csrfAuthenticator) http.Handler
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/healthz", healthHandler(pool))
-		if authenticator != nil {
-			api.With(serverAuthRequestID, recoverAuth).Get("/auth/csrf", csrfHandler(authenticator))
+		if sessions != nil {
+			api.Route("/auth", func(routes chi.Router) {
+				routes.Group(func(protected chi.Router) {
+					protected.Use(serverAuthRequestID, recoverAuth, authenticateSession(sessions))
+					protected.Get("/me", meHandler)
+					protected.Get("/csrf", csrfHandler)
+					protected.Post("/logout", logoutHandler(sessions, protection))
+				})
+			})
 		}
 	})
 
