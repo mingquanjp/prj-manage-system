@@ -110,7 +110,7 @@ func TestCSRFBootstrapThroughRouter(t *testing.T) {
 			if tt.change != nil {
 				tt.change(repo)
 			}
-			router := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{now}))
+			router := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{now}), authProtection{})
 			r := httptest.NewRequest(http.MethodGet, "/api/auth/csrf", nil)
 			r.Header.Set("Origin", "https://other.example")
 			if tt.status != http.StatusServiceUnavailable {
@@ -158,7 +158,7 @@ func TestCSRFBootstrapThroughRouter(t *testing.T) {
 
 func TestCSRFRouteMethodAndDependency(t *testing.T) {
 	repo := &csrfTestRepo{}
-	configured := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{}))
+	configured := newRouter(fakeHealth{}, auth.NewService(repo, csrfTestClock{}), authProtection{})
 	for _, tt := range []struct {
 		method string
 		router http.Handler

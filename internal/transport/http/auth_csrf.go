@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -12,26 +11,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-type csrfAuthenticator interface {
-	Authenticate(context.Context, auth.SessionSecret) (auth.Principal, error)
-}
-
-func csrfHandler(authenticator csrfAuthenticator) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		secret, ok := readSessionSecret(r)
-		if !ok {
-			writeAuthSessionError(w, r, auth.ErrUnauthenticated)
-			return
-		}
-		if _, err := authenticator.Authenticate(r.Context(), secret); err != nil {
-			writeAuthSessionError(w, r, err)
-			return
-		}
-		// Phiên hạn chế hợp lệ vẫn cần token để đổi mật khẩu hoặc đăng xuất.
-		writeAuthJSON(w, http.StatusOK, struct {
-			Token string `json:"csrf_token"`
-		}{Token: authEncoding.EncodeToString(csrfDigest(secret))})
+func csrfHandler(w http.ResponseWriter, r *http.Request) {
+	session, ok := sessionFromRequest(r)
+	if !ok {
+		writeAuthSessionError(w, r, auth.ErrUnauthenticated)
+		return
 	}
+	// Phiên hạn chế hợp lệ vẫn cần token để đổi mật khẩu hoặc đăng xuất.
+	writeAuthJSON(w, http.StatusOK, struct {
+		Token string `json:"csrf_token"`
+	}{Token: authEncoding.EncodeToString(csrfDigest(session.secret))})
 }
 
 // serverAuthRequestID dùng mã do server cấp để phản hồi và log không lặp header từ client.
@@ -76,7 +65,11 @@ func writeAuthSessionError(w http.ResponseWriter, r *http.Request, err error) {
 	if status >= http.StatusInternalServerError {
 		slog.ErrorContext(r.Context(), "xác thực phiên thất bại", "code", code, "request_id", requestID)
 	}
-	writeAuthJSON(w, status, authErrorResponse{Code: code, Message: message, RequestID: requestID})
+	writeAuthError(w, r, status, code, message)
+}
+
+func writeAuthError(w http.ResponseWriter, r *http.Request, status int, code, message string) {
+	writeAuthJSON(w, status, authErrorResponse{Code: code, Message: message, RequestID: middleware.GetReqID(r.Context())})
 }
 
 type authErrorResponse struct {

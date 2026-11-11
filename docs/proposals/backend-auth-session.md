@@ -836,6 +836,14 @@ Bằng chứng trên Go 1.26.5: `go test ./internal/transport/http -count=1 -v` 
 
 Bằng chứng trên Go 1.26.5: `go vet ./...`, `go test ./... -count=1`, `go build ./...`, `go test -race ./internal/transport/http -count=1` và 30 lượt chạy [bộ test limiter](../../internal/transport/http/auth_rate_limit_test.go) đều đạt. Contract/harness đạt 24 ca. DATN-14 bàn giao tầng Go của AUTH-S08. Kiểm response qua hai handler thật, dữ liệu PostgreSQL và việc đi qua proxy thuộc các ticket nối route và tích hợp.
 
+#### 6.2.10. Bàn giao danh tính và đăng xuất — DATN-15 / AUTH-T15, 11/11/2026
+
+[Middleware phiên](../../internal/transport/http/auth_session.go) xác thực cookie một lần và chuyển principal cùng secret qua context của request. [Router Chi](../../internal/transport/http/router.go) dùng middleware chung cho `me`, `csrf` và `logout`. [Handler me](../../internal/transport/http/auth_me.go) ánh xạ sáu trường từ principal hiệu lực sang DTO. [Handler logout](../../internal/transport/http/auth_logout.go) kiểm Origin, CSRF và body rỗng trước khi gọi service. Service thu hồi đúng phiên qua repository và handler chỉ xóa cookie sau khi lời gọi thành công.
+
+DATN-17 dùng tiếp middleware này cho bước xác thực trước khi đổi mật khẩu lần đầu và bổ sung cổng phiên hạn chế cho nhóm route nghiệp vụ. DATN-18 truyền service và cấu hình Origin/cookie thật vào router, rồi kiểm với PostgreSQL test. Bộ `httptest` ở DATN-15 chạy qua Chi và auth service với repository giả, gồm danh tính phiên thường/hạn chế, lỗi phiên/lưu trữ, route yêu cầu cookie, logout 204, cookie cũ bị từ chối và phiên thứ hai vẫn dùng được. Kiểm HTTPS và Vite proxy nằm ở đợt tích hợp.
+
+Các lệnh đã đạt trên Go 1.26.5 gồm `go vet ./...`, `go test ./... -count=1`, `go build ./...` và `go test -race ./internal/transport/http -count=1`. Contract và harness đạt 24 ca với `node --test scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs`. Kiểm kê harness đạt với `node scripts/check-harness.mjs`.
+
 ### 6.3. Rollout, cấu hình và quan sát
 
 1. A02–A09 đã duyệt; hoàn thiện P04 (mapping/DDL, môi trường/fixture và guard) trước migration/test DB. Xác minh schema và fixture được phép, không tự đọc DB thật để thay bằng giả định.
