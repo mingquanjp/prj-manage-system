@@ -1,6 +1,6 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
-Nguồn SQL/mapping/fixture và phạm vi: [proposal mục 6.1.7](../../docs/proposals/backend-auth-session.md#617-bàn-giao-môi-trường-và-kế-hoạch-dữ-liệu--datn-6--auth-t05-08112026). Đây là công cụ local dành riêng cho test, không phải server/runner migration production.
+Nguồn SQL/mapping/fixture và phạm vi: [proposal mục 6.1.7](../../docs/proposals/backend-auth-session-implementation.md#617-bàn-giao-môi-trường-và-kế-hoạch-dữ-liệu--datn-6--auth-t05-08112026). Đây là công cụ local dành riêng cho test, không phải server/runner migration production.
 
 ## Điều kiện và tài nguyên
 
@@ -86,7 +86,7 @@ python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrati
 
 Trong test mới, `authdb.NewFixture(t)` tạo database case đã migrate 000003. `AddAccount` ghi user, employee và role trong cùng transaction. Có thể chủ động bỏ employee để kiểm ca thiếu liên kết. `AddSession` nạp phiên với hash và thời điểm do test chọn. `NewCase(t)` dành cho ca cần database rỗng, ví dụ kiểm lỗi truy vấn khi thiếu bảng. Dữ liệu fixture được dọn cùng database case.
 
-Bộ repository kiểm hợp đồng đọc trên PostgreSQL thật. Bằng chứng và ranh giới với service/HTTP ở [proposal mục 6.1.9](../../docs/proposals/backend-auth-session.md#619-truy-vấn-định-danh-và-quyền-hiện-hành--datn-8--auth-t07-08112026).
+Bộ repository kiểm hợp đồng đọc trên PostgreSQL thật. Bằng chứng và ranh giới với service/HTTP ở [proposal mục 6.1.9](../../docs/proposals/backend-auth-session-implementation.md#619-truy-vấn-định-danh-và-quyền-hiện-hành--datn-8--auth-t07-08112026).
 
 ## Transaction auth integration — DATN-9 / AUTH-T08
 
@@ -100,7 +100,7 @@ Lệnh cuối chạy riêng sau toàn bộ suite để xác nhận DB gốc vẫ
 
 Sáu nhóm transaction mới kiểm login/phiên cũ, nền thay đổi, logout, rollback, 13 ca cạnh tranh và commit mất phản hồi. Barrier xác nhận blocker/waiter thực bằng `pg_blocking_pids`; ticker chỉ thăm dò quan hệ khóa có timeout, không dùng sleep để giả định request đã chờ khóa. Clock điều khiển an toàn giữa goroutine, gồm biên hết hạn trong khi chờ user/session. Test gây lỗi bằng trigger chỉ tạo trong database case. Mô phỏng mất phản hồi gọi commit PostgreSQL thật rồi trả lỗi I/O từ wrapper để kiểm adapter không báo thành công giả; chưa thử cắt mạng thực.
 
-Đã chạy các cổng Go cùng bộ integration ở trên trên PostgreSQL 18 test sở hữu, không đổi schema/migration. [Proposal mục 6.1.10](../../docs/proposals/backend-auth-session.md#6110-transaction-tạo-và-thu-hồi-phiên--datn-9--auth-t08-09112026) ghi bằng chứng và giới hạn cho DATN-10/DATN-18. Kiểm tĩnh harness/contract không thay bằng chứng transaction.
+Đã chạy các cổng Go cùng bộ integration ở trên trên PostgreSQL 18 test sở hữu, không đổi schema/migration. [Proposal mục 6.1.10](../../docs/proposals/backend-auth-session-implementation.md#6110-transaction-tạo-và-thu-hồi-phiên--datn-9--auth-t08-09112026) ghi bằng chứng và giới hạn cho DATN-10/DATN-18. Kiểm tĩnh harness/contract không thay bằng chứng transaction.
 
 ```sh
 go vet ./...
@@ -120,11 +120,11 @@ Dùng bộ lệnh PostgreSQL 18, kiểm cleanup và các cổng Go/harness ở m
 python3 scripts/authdb/manage.py run -- go test -race -tags=integration ./internal/repository/postgres -run '^(TestReadPasswordChangeBasis|TestChangeInitialPassword.*)$' -count=1 -timeout=4m
 ```
 
-Chỉ chạy một lượt integration tại một thời điểm. Các ca cạnh tranh dùng hai connection thực thi, với connection quan sát riêng khi cả hai worker đều bận. Clock điều khiển thời điểm test. `pg_blocking_pids` xác nhận PostgreSQL đang chờ khóa trước khi nhả transaction đầu hoặc dịch clock. Trigger gây lỗi nằm trong database case. [Proposal mục 6.1.11](../../docs/proposals/backend-auth-session.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) ghi phạm vi bàn giao và ranh giới với kiểm thử HTTP.
+Chỉ chạy một lượt integration tại một thời điểm. Các ca cạnh tranh dùng hai connection thực thi, với connection quan sát riêng khi cả hai worker đều bận. Clock điều khiển thời điểm test. `pg_blocking_pids` xác nhận PostgreSQL đang chờ khóa trước khi nhả transaction đầu hoặc dịch clock. Trigger gây lỗi nằm trong database case. [Proposal mục 6.1.11](../../docs/proposals/backend-auth-session-implementation.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) ghi phạm vi bàn giao và ranh giới với kiểm thử HTTP.
 
 ## Tích hợp HTTP và PostgreSQL — DATN-18 / AUTH-T17
 
-Năm API chạy qua cùng composition root `buildHandler` của startup. HTTP integration dùng pool thật trên từng DB case. Test guard dùng router/middleware và repository thật, endpoint thăm dò chỉ tồn tại trong test. Nguồn và ma trận bằng chứng ở [proposal mục 6.2.13](../../docs/proposals/backend-auth-session.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
+Năm API chạy qua cùng composition root `buildHandler` của startup. HTTP integration dùng pool thật trên từng DB case. Test guard dùng router/middleware và repository thật, endpoint thăm dò chỉ tồn tại trong test. Nguồn và ma trận bằng chứng ở [proposal mục 6.2.13](../../docs/proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
 
 ```sh
 python3 scripts/authdb/manage.py up
