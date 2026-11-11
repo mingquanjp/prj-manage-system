@@ -6,7 +6,7 @@ import (
 	"ai-staffing/internal/service/auth"
 )
 
-type meResponse struct {
+type authIdentityResponse struct {
 	UserID             int      `json:"user_id"`
 	EmployeeID         int      `json:"employee_id"`
 	EmployeeCode       string   `json:"employee_code"`
@@ -22,13 +22,16 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	principal := session.principal
-	writeAuthJSON(w, http.StatusOK, meResponse{
+	writeAuthJSON(w, http.StatusOK, newAuthIdentityResponse(session.principal))
+}
+
+func newAuthIdentityResponse(principal auth.Principal) authIdentityResponse {
+	return authIdentityResponse{
 		UserID:             principal.UserID,
 		EmployeeID:         principal.EmployeeID,
 		EmployeeCode:       principal.EmployeeCode,
 		Fullname:           principal.Fullname,
 		SystemRoles:        principal.SystemRoles,
 		MustChangePassword: principal.MustChangePassword,
-	})
+	}
 }
