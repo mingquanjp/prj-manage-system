@@ -33,33 +33,14 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 [Bản đồ miền nghiệp vụ](product/business-domains.md) nối FR với trách nhiệm, dữ liệu thiết kế và phụ thuộc; đề xuất 6 miền và phần hỗ trợ thông báo trong cùng backend. Đọc sau FR, trước chọn feature/proposal; không phải sơ đồ package hoặc kế hoạch tách service.
 
-[Proposal feature đầu — đăng nhập và phiên truy cập](proposals/backend-auth-session.md): theo khung template đã tham khảo, có mục tiêu/phạm vi, high-level design, detailed design (ER/cột/ràng buộc/index, API/DTO/lỗi/sequence, rollout và test), tác động, đánh giá, WBS và estimate cho D01 phối hợp D02. Người dùng đã duyệt A01–A09 (email/phiên/mật khẩu/CSRF, hướng test/migration); OpenAPI/ports đã được rà trong DATN-2 / AUTH-T01 ngày 07/11, kết luận và đầu vào task sau tại proposal mục 6.2.7; SQL chi tiết còn phải hoàn thiện. Chưa code auth; riêng migration cờ buộc đổi đã diễn tập nhánh tạm theo mapping 5C, chưa áp production.
+[Proposal auth — thiết kế hiện hành](proposals/backend-auth-session.md) trình bày mục tiêu/phạm vi, kiến trúc, DB, năm sequence API, bảo mật và WBS. Backend đã tích hợp đủ năm API với PostgreSQL test tại DATN-18; FE nối API/browser/proxy và bàn giao xuyên FE–backend còn ở ticket sau. Không đồng nghĩa đã áp migration Neon, có API quản trị hoặc gửi email.
 
-Tiếp nối DATN-3 / AUTH-T02: đã thêm validation cấu hình thuần và table-driven tests trong `internal/config`; [contract và ranh giới bàn giao](proposals/backend-auth-session.md#631-bàn-giao-validation-cấu-hình--datn-3--auth-t02-07112026). Ghi nhận DATN-3 này được tiếp nối bởi DATN-4 / AUTH-T03: đã nối `LoadServer()` vào startup, chỉ đọc dotenv khi dev tường minh, không đổi OS env; `Load()` của CLI không yêu cầu cấu hình auth. Contract/default và giới hạn ở proposal mục 6.3.2; chưa có auth runtime hoặc bằng chứng DB thật.
-
-Tiếp nối DATN-5 / AUTH-T04: parse URL PostgreSQL một host, chuyển đúng hostname Neon AWS pooled và nhóm lỗi kết nối an toàn; đầu vào AUTH-T17 tại proposal mục 6.3.3. Bằng chứng code/test được ghi theo lượt thực chạy trong mục đó; không là test DB thật, không thay thiết kế schema/API.
-
-[OpenAPI auth](api/auth.openapi.json) là contract năm route, đã có runtime HTTP + PostgreSQL test ở DATN-18 (proposal mục 6.2.13); chữ ký service/repository và ma trận bằng chứng bảo mật AUTH-S01–S10 ở proposal mục 5.3/6.4.1. Kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs` để phát hiện ref thiếu, mất allowlist, nhầm cookie/CSRF AND thành OR, DTO lộ trường hoặc mất no-store. Đây không phải validator OpenAPI đầy đủ hoặc test bảo mật API thực tế; byte/transaction/Origin/CSRF vẫn phải kiểm ở server.
-
-Tiếp nối DATN-6 / AUTH-T05: xem [runbook PostgreSQL test local](../scripts/authdb/README.md) và proposal mục 6.1.7 cho mapping test, prerequisite/rollback, fixture plan và bằng chứng thực chạy. Không dùng môi trường này hoặc kế hoạch để tuyên bố Neon/migration auth đã cập nhật.
-
-Tiếp nối DATN-7 / AUTH-T06: migration 000003 và integration tests PostgreSQL thực ở proposal mục 6.1.8; chạy riêng qua [runner test](../scripts/authdb/README.md#migration-auth-integration--datn-7--auth-t06). Chỉ nâng DB case trong cluster local sở hữu; không áp Neon hoặc triển khai auth runtime.
-
-Tiếp nối DATN-8 / AUTH-T07, hai truy vấn đọc định danh và phiên hiện hành đã qua integration PostgreSQL test. Fixture và đầu vào cho transaction auth được bàn giao ở [proposal mục 6.1.9](proposals/backend-auth-session.md#619-truy-vấn-định-danh-và-quyền-hiện-hành--datn-8--auth-t07-08112026).
-
-Tiếp nối DATN-9 / AUTH-T08, transaction hoàn tất login và thu hồi đúng phiên đã có kiểm chứng PostgreSQL test, rollback và cạnh tranh dưới khóa. Ranh giới bằng chứng và đầu vào cho đổi mật khẩu lần đầu được bàn giao ở [proposal mục 6.1.10](proposals/backend-auth-session.md#6110-transaction-tạo-và-thu-hồi-phiên--datn-9--auth-t08-09112026).
-
-Tiếp nối DATN-10 / AUTH-T09, repository đọc nền đổi mật khẩu và ghi hash mới, tắt cờ buộc đổi, thu hồi phiên trong cùng transaction. Xem [proposal mục 6.1.11](proposals/backend-auth-session.md#6111-transaction-đổi-mật-khẩu-lần-đầu--datn-10--auth-t09-09112026) để lấy đầu vào và ranh giới kiểm thử cho DATN-18.
-
-Ghi nhận lịch sử trước DATN-6 tại proposal mục 6.1.5–6.1.6: DDL auth soạn để review, migration tiến thêm, fixture giả và guard DB test; khi đó chưa chạy SQL/container hoặc áp Neon. Môi trường local và SELECT metadata đã được DATN-6 tiếp nối ở mục 6.1.7; migration auth và Neon vẫn chưa áp. Review contract ban đầu ở mục 6.2.6, bàn giao AUTH-T01 ở mục 6.2.7; đề xuất Jira solo ở mục 9.4.
-
-WBS trong proposal đã review 07/11: giữ 33 mã task/105 giờ cơ sở, phân biệt bản soạn đã có với phần còn lại (mục 9.2.1), tách kế hoạch fixture khỏi thực thi sau migration, giao rõ limiter login/đổi lần đầu và ranh giới FE auth/mock. Mục 9.2.2 nối AUTH-S01–S10 với task chịu trách nhiệm; mục 9.4 có checklist Done cho ticket theo board DATN đã tạo. Chưa tạo issue hoặc đánh dấu runtime hoàn tất; estimate gốc không phải giờ còn lại.
-
-[Bản nháp ticket auth](proposals/backend-auth-session-tickets.md): 1 Epic đề xuất và 20 Task theo đầu ra, mapping đủ 33 đơn vị WBS; review nằm trong Done, description có bước thực hiện và bảng tình huống/kết quả; có thứ tự nhận việc đợt đầu và cổng trước khi tạo Jira. Đây là nội dung để review, chưa upload, không là nguồn nghiệp vụ thứ hai.
-
-Công cụ bàn giao Jira: [hướng dẫn plan/apply/check](../scripts/jira/README.md), đọc nội dung trực tiếp từ bộ ticket; offline sinh manifest/kiểm thử bằng Jira giả, online do người dùng tự nhập token ẩn trên terminal. Ngày 07/11 người dùng đã chạy apply/check, log được đối chiếu: Epic DATN-1 và 20 Task DATN-2–DATN-21, 47 Blocks, Rank/nội dung/parent/assignee/labels khớp. Các câu chưa tạo Jira trong ghi nhận trước đó là trạng thái trước import, không phải hiện trạng; không chứng minh auth runtime. Không tự stage/commit/push hoặc thay DB.
-
-Tiếp nối DATN-18 / AUTH-T17: startup đã lắp đủ năm API bằng service và adapter PostgreSQL thật. Luồng thường/hạn chế, concurrency, rollback và commit mất phản hồi đã kiểm trong DB test sở hữu. Xem [bàn giao backend và ma trận AUTH-S01–S10](proposals/backend-auth-session.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026) và [runbook HTTP/DB](../scripts/authdb/README.md#tích-hợp-http-và-postgresql--datn-18--auth-t17). Các ghi nhận chưa có runtime phía trên là lịch sử của đợt tương ứng. FE nối API/browser/proxy còn ở các ticket sau.
+- [OpenAPI auth](api/auth.openapi.json): contract HTTP duy nhất cho năm route; kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs`, không thay kiểm thử runtime.
+- [Chi tiết triển khai và bằng chứng theo ticket](proposals/backend-auth-session-implementation.md): ports minh họa ban đầu, SQL/fixture/migration, config và bàn giao DATN-2–DATN-18. Đọc đúng mục cần tra; câu “chưa triển khai” trong ghi nhận cũ chỉ đúng tại thời điểm ghi. Bằng chứng HTTP/PostgreSQL và ma trận AUTH-S01–S10 ở mục 6.2.13.
+- [Runbook PostgreSQL test](../scripts/authdb/README.md): guard, môi trường sở hữu, cách chạy/dọn và integration; không dùng DATABASE_URL/Neon thay DB test.
+- [Swagger UI dev và hướng dẫn demo](api/README.md): dùng cùng OpenAPI, tài nguyên local; production không mở docs. Không nhận Swagger render được là bằng chứng browser/cookie/CSRF đã kiểm hết.
+- [Bộ ticket auth](proposals/backend-auth-session-tickets.md): 1 Epic và 20 Task, mapping 33 đơn vị WBS/105 giờ cơ sở; review nằm trong Done. Jira DATN hiện ở site riêng theo [workflow](ai/workflow.md); tiến độ thực xem Jira, không lấy estimate làm giờ còn lại.
+- [Công cụ Jira](../scripts/jira/README.md): diagnose/plan/apply/check khi được giao; token nhập ẩn. Không chạy import lại để cập nhật tiến độ.
 
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 

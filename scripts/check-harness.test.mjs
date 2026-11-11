@@ -38,6 +38,16 @@ test("kiểm kê giữ contract auth và lệnh kiểm tĩnh, không gọi API h
   }
 })
 
+test("kiểm kê giữ spec nhúng, Swagger local và nguồn vendor", async () => {
+  const files = await requiredFiles()
+  for (const path of ["docs/api/embed.go", "docs/api/README.md", "scripts/check-swagger.test.mjs",
+    "internal/transport/http/swagger/init.js", "internal/transport/http/swagger/index.html",
+    "internal/transport/http/swagger/swagger-ui-bundle.js", "internal/transport/http/swagger/swagger-ui.css",
+    "internal/transport/http/swagger/vendor.json", "internal/transport/http/swagger/LICENSE", "internal/transport/http/swagger/NOTICE"]) {
+    assert.ok(files.includes(path), `Thiếu nguồn Swagger: ${path}`)
+  }
+})
+
 test("kiểm kê giữ công cụ Jira và test offline, không chạy API thật", async () => {
   const files = await requiredFiles()
   for (const path of ["scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md"]) {

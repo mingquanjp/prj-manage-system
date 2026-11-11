@@ -73,6 +73,6 @@ Xử lý file/DB thất bại có cleanup và retry idempotent; không log text 
 Cloud cần chính sách backup/quyền private/cleanup phối hợp DB; provider chưa chọn. Minh chứng ngoài CV lưu metadata JSON trên request: server kiểm tra storage_key thuộc upload được phép, tên/type/size hợp lệ, chỉ bổ sung PENDING; không binary/base64 hoặc ID task/CV thay FK. Loại/số/dung lượng minh chứng và cleanup upload chưa gắn còn cần đặc tả.
 
 Giới hạn body/list; pagination default 20/max 100. Header CSP, nosniff, frame DENY, Referrer-Policy same-origin.
-CSP cụ thể chốt cùng frontend/Swagger, không mở CDN mặc định.
+CSP frontend còn chốt khi tích hợp. Swagger đã chốt riêng ngày 12/11/2026: chỉ APP_ENV=dev, spec/assets nhúng local, script/style/connect self; style-src-attr unsafe-inline cho Swagger/React, không inline script/eval/CDN. Không nhận spec/config ngoài qua query và tắt validator online. Cookie/Origin do browser quản lý, token CSRF nhập vào Authorize chỉ trong bộ nhớ trang; không lưu authorization qua reload. Chi tiết dependency ghim, CSP và giới hạn kiểm chứng tại [hướng dẫn Swagger](../../docs/api/README.md). CSP docs không thay CSP frontend hoặc bảo vệ API.
 Audit nghiệp vụ append-only; migration xem lại cascade để không mất lịch sử.
 govulncheck trước đóng gói; dependency mới cần duyệt. Không khai triển yêu cầu này thành kết quả scan chưa chạy.

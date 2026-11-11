@@ -168,6 +168,8 @@ curl http://localhost:8080/api/healthz
 
 Health kiểm tra kết nối DB, trả trạng thái tổng quát. Health thành công **không chứng minh** schema đã khớp thiết kế 33 bảng hoặc API nghiệp vụ đã có.
 
+Swagger UI tại `/docs/` chỉ khi `APP_ENV=dev`, đọc OpenAPI hiện hành và assets local đã ghim; production không mở docs/spec/assets. Mở trên đúng `APP_ORIGIN` của server. Xem [hướng dẫn Swagger và demo PostgreSQL test riêng](docs/api/README.md) cho cách đăng nhập, cookie/CSRF, đổi mật khẩu và lệnh chạy không dùng DB thật.
+
 | Lệnh vận hành | Tác động / điều kiện |
 |---|---|
 | `make migrate-version` | Kết nối DB và đọc version migration |

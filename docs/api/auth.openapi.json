@@ -3,7 +3,7 @@
   "info": {
     "title": "DATN — Auth và phiên truy cập",
     "version": "0.1.0",
-    "description": "Hợp đồng thiết kế theo baseline 06/11/2026 và proposal backend-auth-session; A01–A09 đã duyệt. Chưa có API auth chạy. Không bao gồm tạo tài khoản/reset/gửi thư/API dự án. Body JSON login/đổi lần đầu giới hạn 8 KiB (8192 byte) đã duyệt riêng 06/11, vượt trả 413; file này không tự duyệt dependency hoặc migration. Review contract DATN-2 / AUTH-T01 ngày 07/11/2026; phiên bản contract không phải phiên bản runtime đã triển khai."
+    "description": "Hợp đồng auth theo baseline 06/11/2026 và proposal backend-auth-session; A01–A09 đã duyệt. Năm API đã tích hợp với PostgreSQL test ở DATN-18. Không bao gồm tạo tài khoản/reset/gửi thư/API dự án. Body JSON login/đổi lần đầu tối đa 8192 byte, vượt trả 413. Swagger UI chỉ mở ở dev; tài liệu không thay thế kiểm thử runtime hoặc quyền chạy migration."
   },
   "servers": [
     {
@@ -30,21 +30,21 @@
           "Auth"
         ],
         "summary": "Đăng nhập bằng email công ty",
-        "description": "Email/password hoặc trạng thái không hợp lệ cùng lỗi chung. Không có user vẫn kiểm hash giả. Bcrypt ngoài transaction; khóa user → employee → session cũ cùng user, so lại nền rồi cấp secret mới. Cờ true chỉ mở phiên hạn chế; không có expiry mật khẩu tạm, session vẫn 8 giờ. Secret/hash không trong JSON. Không gửi Idempotency-Key, không hứa exactly-once.",
+        "description": "Đăng nhập bằng email công ty và mật khẩu để bắt đầu phiên làm việc. Khi thành công, trình duyệt nhận cookie phiên và API trả thông tin người dùng.\n\n- Phiên có thời hạn 8 giờ và không tự gia hạn khi sử dụng.\n- Nếu `must_change_password=true`, người dùng cần đổi mật khẩu trước khi truy cập nghiệp vụ. Phiên này chỉ được xem thông tin người dùng, lấy token CSRF, đổi mật khẩu hoặc đăng xuất.\n- Email hoặc mật khẩu không hợp lệ, tài khoản bị khóa hoặc hồ sơ nhân viên ngừng hoạt động đều nhận thông báo đăng nhập thất bại chung.",
         "security": [],
         "responses": {
           "200": {
-            "description": "Login commit thành công; FE rẽ theo cờ buộc đổi.",
+            "description": "Đăng nhập thành công. Trả thông tin người dùng, trạng thái yêu cầu đổi mật khẩu và thiết lập cookie phiên.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
                 }
               },
               "Set-Cookie": {
-                "description": "Cookie staffing_session mới chỉ sau login commit. Host-only, HttpOnly, Secure, SameSite=Lax, Path=/api; hạn không vượt session 8 giờ. Chỉ dev localhost tắt Secure. Secret không có trong JSON.",
+                "description": "Thiết lập cookie staffing_session cho phiên mới. Cookie chỉ thuộc host hiện tại, có HttpOnly, SameSite=Lax, Path=/api và thời hạn 8 giờ. Secure được bật, ngoại trừ môi trường dev HTTP loopback. Giá trị cookie không được trả trong JSON.",
                 "schema": {
                   "type": "string"
                 }
@@ -83,10 +83,10 @@
             }
           },
           "500": {
-            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "description": "Không thể xử lý yêu cầu do lỗi nội bộ. Phản hồi không chứa chi tiết kỹ thuật của lỗi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -124,10 +124,10 @@
             }
           },
           "503": {
-            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "description": "Dịch vụ tạm thời không sẵn sàng. Yêu cầu chưa được xác nhận thành công; không tự động gửi lại thao tác thay đổi dữ liệu.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -165,10 +165,10 @@
             }
           },
           "403": {
-            "description": "Origin/CSRF thiếu hoặc không hợp lệ, không ghi.",
+            "description": "Origin bị thiếu hoặc không khớp địa chỉ ứng dụng được cho phép.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -206,10 +206,10 @@
             }
           },
           "400": {
-            "description": "JSON/field/validation sai; không ghi dữ liệu.",
+            "description": "Dữ liệu đăng nhập không đúng định dạng, thiếu trường bắt buộc hoặc chứa trường không được hỗ trợ.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -247,10 +247,10 @@
             }
           },
           "413": {
-            "description": "Body JSON lớn hơn 8192 byte (8 KiB), trả PAYLOAD_TOO_LARGE; không bcrypt hoặc ghi dữ liệu từ body vượt giới hạn. Chính sách mật khẩu độc lập.",
+            "description": "Nội dung JSON vượt quá 8 KiB (8192 byte). Giảm kích thước request trước khi gửi lại.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -288,10 +288,10 @@
             }
           },
           "415": {
-            "description": "Request có JSON phải gửi Content-Type application/json.",
+            "description": "Cần gửi nội dung JSON với Content-Type: application/json.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -329,17 +329,17 @@
             }
           },
           "429": {
-            "description": "Chạm limiter, không khóa tài khoản vĩnh viễn.",
+            "description": "Vượt giới hạn số lần thử. Chờ số giây trong header Retry-After trước khi gửi yêu cầu tiếp theo.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
                 }
               },
               "Retry-After": {
-                "description": "Số giây cần chờ trước lần thử tiếp theo. Không khóa tài khoản vĩnh viễn.",
+                "description": "Số giây cần chờ trước khi thử lại.",
                 "schema": {
                   "type": "integer",
                   "minimum": 1
@@ -377,10 +377,10 @@
             }
           },
           "401": {
-            "description": "Thông báo chung Email hoặc mật khẩu không hợp lệ, không tiết lộ email tồn tại/locked/inactive.",
+            "description": "Email hoặc mật khẩu không hợp lệ, hoặc tài khoản không được phép đăng nhập.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -428,7 +428,7 @@
             "name": "Origin",
             "in": "header",
             "required": true,
-            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "description": "Địa chỉ ứng dụng gửi yêu cầu phải khớp APP_ORIGIN, gồm scheme, hostname và port. Trình duyệt tự gửi header này; khi dùng Swagger hãy mở tài liệu trên đúng origin đã cấu hình.",
             "schema": {
               "type": "string",
               "minLength": 1
@@ -445,7 +445,7 @@
             }
           },
           "x-max-body-bytes": 8192,
-          "description": "Toàn body JSON tối đa 8192 byte, không chỉ mật khẩu. Server kiểm số byte thực đọc, không chỉ Content-Length; vượt trả 413 trước bcrypt/ghi dữ liệu. Extension này không tự thực thi giới hạn ở server."
+          "description": "Gửi đúng các trường được khai báo. Toàn bộ nội dung JSON tối đa 8 KiB (8192 byte)."
         },
         "x-rate-limit": {
           "ip": "30 request/5 phút",
@@ -460,8 +460,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Đọc danh tính và cổng truy cập hiện hành",
-        "description": "Đọc cùng snapshot session/expiry/revocation, user/employee active, cờ và role hiện hành. Cờ true vẫn trả 200 LimitedPrincipal; không gia hạn/Set-Cookie. FE không dùng selector hoặc DTO giả để cấp quyền.",
+        "summary": "Lấy thông tin người dùng hiện tại",
+        "description": "Trả thông tin người dùng đang đăng nhập, các vai trò hệ thống có hiệu lực và trạng thái yêu cầu đổi mật khẩu. Trình duyệt cần gửi cookie của phiên hợp lệ.\n\n- Có thể gọi sau khi tải lại trang để khôi phục trạng thái đăng nhập.\n- Người dùng đang bị yêu cầu đổi mật khẩu vẫn nhận được thông tin, với `must_change_password=true` và `system_roles` rỗng.\n- API này không kéo dài thời hạn phiên.",
         "security": [
           {
             "cookieAuth": []
@@ -469,10 +469,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Danh tính hiện hành, gồm trạng thái buộc đổi.",
+            "description": "Thông tin người dùng và quyền hệ thống có hiệu lực của phiên hiện tại.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -512,10 +512,10 @@
             }
           },
           "500": {
-            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "description": "Không thể xử lý yêu cầu do lỗi nội bộ. Phản hồi không chứa chi tiết kỹ thuật của lỗi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -553,10 +553,10 @@
             }
           },
           "503": {
-            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "description": "Dịch vụ tạm thời không sẵn sàng. Yêu cầu chưa được xác nhận thành công; không tự động gửi lại thao tác thay đổi dữ liệu.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -594,10 +594,10 @@
             }
           },
           "401": {
-            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "description": "Chưa đăng nhập, phiên không còn hiệu lực hoặc tài khoản/hồ sơ nhân viên không còn hoạt động. Cần đăng nhập lại khi tài khoản được phép sử dụng.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -643,8 +643,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Lấy CSRF token cho phiên hiện hành",
-        "description": "Cho phép cả phiên hạn chế để đổi mật khẩu/logout; không tạo phiên/gia hạn. HMAC-SHA256 gắn secret phiên, thông điệp csrf-v1. Không mở CORS.",
+        "summary": "Lấy token CSRF cho phiên hiện tại",
+        "description": "Lấy token bảo vệ các thao tác thay đổi dữ liệu trong phiên đang đăng nhập. Gửi giá trị `csrf_token` nhận được qua header `X-CSRF-Token` khi gọi đăng xuất hoặc đổi mật khẩu.\n\n- Token phải được dùng cùng cookie của phiên đã lấy token đó. Sau khi đăng nhập lại, hãy lấy token mới.\n- Người dùng đang bị yêu cầu đổi mật khẩu vẫn gọi được API này.\n- Việc lấy token không tạo phiên mới hoặc kéo dài thời hạn phiên.",
         "security": [
           {
             "cookieAuth": []
@@ -652,10 +652,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Token chỉ dùng cùng phiên hiện tại.",
+            "description": "Token CSRF để sử dụng cùng phiên hiện tại.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -671,10 +671,10 @@
             }
           },
           "500": {
-            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "description": "Không thể xử lý yêu cầu do lỗi nội bộ. Phản hồi không chứa chi tiết kỹ thuật của lỗi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -712,10 +712,10 @@
             }
           },
           "503": {
-            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "description": "Dịch vụ tạm thời không sẵn sàng. Yêu cầu chưa được xác nhận thành công; không tự động gửi lại thao tác thay đổi dữ liệu.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -753,10 +753,10 @@
             }
           },
           "401": {
-            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "description": "Chưa đăng nhập, phiên không còn hiệu lực hoặc tài khoản/hồ sơ nhân viên không còn hoạt động. Cần đăng nhập lại khi tài khoản được phép sử dụng.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -803,7 +803,7 @@
           "Auth"
         ],
         "summary": "Đăng xuất phiên hiện tại",
-        "description": "Request body rỗng; không yêu cầu Content-Type application/json. Body không rỗng trả 400 VALIDATION_ERROR trước revoke. Kiểm phiên/Origin/CSRF; adapter khóa user → employee → session và kiểm lại active/hiệu lực, revoke có điều kiện và commit trước xóa cookie. Không revoke phiên khác; retry có thể 401. Lỗi DB không giả thành công.",
+        "description": "Kết thúc phiên đang đăng nhập và yêu cầu trình duyệt xóa cookie phiên. Các phiên đăng nhập khác của cùng người dùng vẫn được giữ nguyên.\n\n- Cần cookie phiên hợp lệ, Origin khớp cấu hình và header `X-CSRF-Token`.\n- Gửi request không có body; không cần header Content-Type.\n- Thành công trả `204` và không có nội dung phản hồi. Gọi lại bằng phiên đã đăng xuất sẽ nhận `401`.",
         "security": [
           {
             "cookieAuth": [],
@@ -812,17 +812,17 @@
         ],
         "responses": {
           "204": {
-            "description": "Revoke commit thành công, không JSON.",
+            "description": "Đăng xuất thành công. Cookie phiên được xóa; không có nội dung phản hồi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
                 }
               },
               "Set-Cookie": {
-                "description": "Xóa staffing_session chỉ sau commit: cùng host-only/Path=/api, Max-Age=0 và Expires quá khứ, giữ thuộc tính bảo mật tương ứng. Không cấp phiên mới.",
+                "description": "Yêu cầu trình duyệt xóa cookie staffing_session tại Path=/api bằng Max-Age=0 và Expires trong quá khứ. Không tạo phiên mới.",
                 "schema": {
                   "type": "string"
                 }
@@ -830,10 +830,10 @@
             }
           },
           "500": {
-            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "description": "Không thể xử lý yêu cầu do lỗi nội bộ. Phản hồi không chứa chi tiết kỹ thuật của lỗi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -871,10 +871,10 @@
             }
           },
           "503": {
-            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "description": "Dịch vụ tạm thời không sẵn sàng. Yêu cầu chưa được xác nhận thành công; không tự động gửi lại thao tác thay đổi dữ liệu.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -912,10 +912,10 @@
             }
           },
           "401": {
-            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "description": "Chưa đăng nhập, phiên không còn hiệu lực hoặc tài khoản/hồ sơ nhân viên không còn hoạt động. Cần đăng nhập lại khi tài khoản được phép sử dụng.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -953,10 +953,10 @@
             }
           },
           "403": {
-            "description": "Origin/CSRF thiếu hoặc không hợp lệ, không ghi.",
+            "description": "Origin hoặc token CSRF bị thiếu hoặc không hợp lệ.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -994,10 +994,10 @@
             }
           },
           "400": {
-            "description": "Body logout không rỗng; không revoke hoặc xóa cookie.",
+            "description": "Request phải có body rỗng. Phiên chưa bị thu hồi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1040,7 +1040,7 @@
             "name": "Origin",
             "in": "header",
             "required": true,
-            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "description": "Địa chỉ ứng dụng gửi yêu cầu phải khớp APP_ORIGIN, gồm scheme, hostname và port. Trình duyệt tự gửi header này; khi dùng Swagger hãy mở tài liệu trên đúng origin đã cấu hình.",
             "schema": {
               "type": "string",
               "minLength": 1
@@ -1055,8 +1055,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Đổi mật khẩu tạm lần đầu",
-        "description": "Chỉ cờ true; không triển khai đổi tự nguyện/reset. Xác minh current/hash new ngoài transaction. Khóa user → employee → session theo ID, đọc lại nền/cờ/active/hiệu lực sau chờ khóa. Thay hash + false + revoke mọi phiên cùng transaction, lỗi rollback. Đổi xong login lại, không tự nâng phiên/cấp cookie mới. Mất phản hồi không tự retry mù; phải xác minh bằng login mới.",
+        "summary": "Đổi mật khẩu lần đầu",
+        "description": "Đặt mật khẩu mới khi tài khoản đang được yêu cầu đổi mật khẩu (`must_change_password=true`). Gửi mật khẩu hiện tại và mật khẩu mới, kèm cookie phiên và header `X-CSRF-Token`.\n\n- Mật khẩu mới cần ít nhất 15 ký tự Unicode, tối đa 72 byte UTF-8 và khác mật khẩu hiện tại. Khoảng trắng và chữ có dấu được chấp nhận; hệ thống giữ nguyên nội dung nhập.\n- Khi thành công, tất cả phiên của tài khoản bị thu hồi, cookie hiện tại bị xóa và người dùng phải đăng nhập lại bằng mật khẩu mới. Phản hồi là `204`, không có nội dung.\n- API này chưa hỗ trợ đổi mật khẩu tự nguyện hoặc đặt lại mật khẩu khi quên.\n- Nếu mất kết nối và chưa rõ kết quả, không tự động gửi lại yêu cầu; hãy kiểm tra bằng cách đăng nhập với mật khẩu mới.",
         "security": [
           {
             "cookieAuth": [],
@@ -1065,17 +1065,17 @@
         ],
         "responses": {
           "204": {
-            "description": "Đổi commit thành công, không JSON; quay login.",
+            "description": "Đổi mật khẩu thành công. Mọi phiên của tài khoản bị thu hồi; cần đăng nhập lại bằng mật khẩu mới.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
                 }
               },
               "Set-Cookie": {
-                "description": "Xóa staffing_session chỉ sau commit: cùng host-only/Path=/api, Max-Age=0 và Expires quá khứ, giữ thuộc tính bảo mật tương ứng. Không cấp phiên mới.",
+                "description": "Yêu cầu trình duyệt xóa cookie staffing_session tại Path=/api bằng Max-Age=0 và Expires trong quá khứ. Không tạo phiên mới.",
                 "schema": {
                   "type": "string"
                 }
@@ -1083,10 +1083,10 @@
             }
           },
           "500": {
-            "description": "Lỗi ngoài dự kiến/dữ liệu định danh mâu thuẫn; không trả driver error.",
+            "description": "Không thể xử lý yêu cầu do lỗi nội bộ. Phản hồi không chứa chi tiết kỹ thuật của lỗi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1124,10 +1124,10 @@
             }
           },
           "503": {
-            "description": "DB tạm không dùng được; không báo login/đổi/logout thành công.",
+            "description": "Dịch vụ tạm thời không sẵn sàng. Yêu cầu chưa được xác nhận thành công; không tự động gửi lại thao tác thay đổi dữ liệu.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1165,10 +1165,10 @@
             }
           },
           "401": {
-            "description": "Phiên thiếu/sai/hết hạn/revoked, user/employee inactive hoặc nền đổi dưới khóa. Không giả lỗi DB thành 401.",
+            "description": "Chưa đăng nhập, phiên không còn hiệu lực hoặc tài khoản/hồ sơ nhân viên không còn hoạt động. Cần đăng nhập lại khi tài khoản được phép sử dụng.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1206,10 +1206,10 @@
             }
           },
           "403": {
-            "description": "Origin/CSRF sai, hoặc cờ false gọi đổi lần đầu; không mở đổi tự nguyện.",
+            "description": "Origin/token CSRF không hợp lệ (FORBIDDEN), hoặc tài khoản không được yêu cầu đổi mật khẩu lần đầu (PASSWORD_CHANGE_NOT_REQUIRED).",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1248,10 +1248,10 @@
             }
           },
           "400": {
-            "description": "Validation/new giống current hoặc xác minh current sai. Không đổi hash/cờ/phiên. Current sai tính vào limiter user, validation/CSRF/DB lỗi không tính.",
+            "description": "Mật khẩu hiện tại không đúng (INVALID_CURRENT_PASSWORD), hoặc dữ liệu/mật khẩu mới không đáp ứng yêu cầu (VALIDATION_ERROR). Mật khẩu chưa được thay đổi.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1290,10 +1290,10 @@
             }
           },
           "413": {
-            "description": "Body JSON lớn hơn 8192 byte (8 KiB), trả PAYLOAD_TOO_LARGE; không bcrypt hoặc ghi dữ liệu từ body vượt giới hạn. Chính sách mật khẩu độc lập.",
+            "description": "Nội dung JSON vượt quá 8 KiB (8192 byte). Giảm kích thước request trước khi gửi lại.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1331,10 +1331,10 @@
             }
           },
           "415": {
-            "description": "Request có JSON phải gửi Content-Type application/json.",
+            "description": "Cần gửi nội dung JSON với Content-Type: application/json.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
@@ -1372,17 +1372,17 @@
             }
           },
           "429": {
-            "description": "Chạm limiter, không khóa tài khoản vĩnh viễn.",
+            "description": "Vượt giới hạn số lần thử. Chờ số giây trong header Retry-After trước khi gửi yêu cầu tiếp theo.",
             "headers": {
               "Cache-Control": {
-                "description": "Không cache phản hồi auth, kể cả lỗi.",
+                "description": "Không lưu phản hồi vào bộ nhớ đệm, kể cả khi có lỗi.",
                 "schema": {
                   "type": "string",
                   "const": "no-store"
                 }
               },
               "Retry-After": {
-                "description": "Số giây cần chờ trước lần thử tiếp theo. Không khóa tài khoản vĩnh viễn.",
+                "description": "Số giây cần chờ trước khi thử lại.",
                 "schema": {
                   "type": "integer",
                   "minimum": 1
@@ -1425,7 +1425,7 @@
             "name": "Origin",
             "in": "header",
             "required": true,
-            "description": "Khớp chính xác APP_ORIGIN đã cấu hình (scheme/host/port); thiếu/sai bị chặn. Không tin Host/forwarded header để tự cấp origin.",
+            "description": "Địa chỉ ứng dụng gửi yêu cầu phải khớp APP_ORIGIN, gồm scheme, hostname và port. Trình duyệt tự gửi header này; khi dùng Swagger hãy mở tài liệu trên đúng origin đã cấu hình.",
             "schema": {
               "type": "string",
               "minLength": 1
@@ -1442,7 +1442,7 @@
             }
           },
           "x-max-body-bytes": 8192,
-          "description": "Toàn body JSON tối đa 8192 byte, không chỉ mật khẩu. Server kiểm số byte thực đọc, không chỉ Content-Length; vượt trả 413 trước bcrypt/ghi dữ liệu. Extension này không tự thực thi giới hạn ở server."
+          "description": "Gửi đúng các trường được khai báo. Toàn bộ nội dung JSON tối đa 8 KiB (8192 byte)."
         },
         "x-rate-limit": {
           "ip": "30 request/5 phút trước bcrypt",
@@ -1458,13 +1458,13 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "staffing_session",
-        "description": "Cookie secret HttpOnly, chỉ DB token_hash. OpenAPI không tự thực thi kiểm expiry/revoke/active/cờ/quyền."
+        "description": "Cookie phiên HttpOnly do trình duyệt tự nhận sau POST login và tự gửi cho /api cùng origin. Không nhập cookie vào Authorize; JavaScript không được tự đặt header Cookie. Server kiểm expiry/revoke/active/cờ/quyền hiện hành."
       },
       "csrfHeader": {
         "type": "apiKey",
         "in": "header",
         "name": "X-CSRF-Token",
-        "description": "Gắn phiên, so constant-time; cùng cookie trong một Security Requirement là bắt buộc cả hai."
+        "description": "Lấy csrf_token bằng GET /api/auth/csrf sau login, nhập token vào đây để gửi X-CSRF-Token. Lấy token mới sau mỗi login; không lưu authorization qua reload. Cùng cookie trong một Security Requirement là bắt buộc cả hai."
       }
     },
     "schemas": {
