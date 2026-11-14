@@ -1,5 +1,7 @@
 # Swagger UI cho API auth
 
+Cách chạy hằng ngày, kịch bản FE và ma trận kiểm chứng: [runbook auth FE–backend](auth-runbook.md). Các harness dưới đây chỉ phục vụ kiểm riêng, không thay `pnpm dev`.
+
 Swagger đọc [contract hiện hành](auth.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Không sinh bản spec thứ hai hoặc thêm annotation vào handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
 
 ## Mở tài liệu cùng ứng dụng local

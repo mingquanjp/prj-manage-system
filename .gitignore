@@ -60,6 +60,7 @@ web/dist/
 /docs/api/*
 !/docs/api/embed.go
 !/docs/api/README.md
+!/docs/api/auth-runbook.md
 !/docs/api/auth.openapi.json
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md

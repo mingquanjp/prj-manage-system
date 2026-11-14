@@ -33,7 +33,7 @@ Cổng local mặc định của DATN là **5174** cho cả demo và server; hos
 
 - `VITE_AUTH_MODE=demo` hoặc không khai báo: giữ prototype hiện có. `VITE_AUTH_MODE=server`: dùng principal máy chủ; giá trị khác báo lỗi cấu hình. Đây là cấu hình lúc Vite chạy/build, không nút hay query đổi quyền. Không tự fallback demo khi API lỗi.
 - `TASKASSIGN_API_TARGET` là địa chỉ backend **chỉ cho Vite dev proxy**, mặc định `http://127.0.0.1:8080`. Không chứa credential. `/api` giữ nguyên path/Origin; backend phải cấu hình `APP_ORIGIN` đúng scheme/host/port FE. Không mở CORS hoặc giả Origin. Production chưa triển khai proxy/Go embed; phải phục vụ API cùng origin trước vận hành.
-- Chế độ server không khởi tạo `useDemoWorkspace`, không tra principal vào employee fixture và không có bộ chọn danh tính. Người đăng nhập thường tới `/` với màn “Đã đăng nhập”; URL nghiệp vụ báo chưa nối. Phiên buộc đổi tới `/change-password` chỉ có hướng dẫn và logout, chưa có form/API đổi lần đầu ở FE.
+- Chế độ server không khởi tạo `useDemoWorkspace`, không tra principal vào employee fixture và không có bộ chọn danh tính. Người đăng nhập thường tới `/` với màn “Đã đăng nhập”; URL nghiệp vụ báo chưa nối. Phiên buộc đổi tới `/change-password` với form current/new/xác nhận; đổi thành công về login, không tự đăng nhập.
 
 Chạy ứng dụng local chỉ bằng một lệnh, từ `web/` (Docker Desktop đã mở, Go/Node/pnpm/Python3 sẵn):
 
@@ -138,6 +138,14 @@ Bàn giao: rủi ro còn lại; bước kế tiếp được giao/chờ duyệt:
 Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt lớn cần kế hoạch riêng thì dẫn tới một file duy nhất và đóng/lưu lịch sử sau khi xong.
 
 ## Sổ công việc
+
+### DATN-21 / AUTH-T20 — kiểm xuyên luồng và runbook (đang thực hiện)
+
+- Mục tiêu: kiểm FE–HTTP–PostgreSQL, tổng hợp AUTH-S01–S10 và cách chạy/dừng/dọn/demo tái hiện được.
+- Nguồn: proposal 6.4/9.2.2, OpenAPI, runbook DB; không thay schema, nối nghiệp vụ hoặc truy cập Neon.
+- Tiêu chí: cổng Go/FE/harness, DB integration/race/cleanup và browser bắt buộc; tách bằng chứng giả, lịch sử và ca chưa kiểm.
+- Bổ sung browser Chrome LOCAL-002 sau người dùng login mới: reload giữ danh tính Quản trị viên, /change-password chuyển về /; logout rồi Back vẫn login. Extension Chrome chặn bước reload cuối/console; chưa ghi pass. Form đổi ở màn nhỏ vẫn chưa kiểm.
+- Runbook và kết quả hiện hành: [auth-runbook](../docs/api/auth-runbook.md). Không tự commit/push/deploy hoặc chuyển Jira Done.
 
 ### DATN-20 / AUTH-T19 — đổi mật khẩu lần đầu (đã triển khai, chờ bàn giao Git)
 
