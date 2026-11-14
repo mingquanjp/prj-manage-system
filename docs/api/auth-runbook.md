@@ -73,7 +73,7 @@ Guard dùng TEST_DATABASE_URL từ state sở hữu, loại DATABASE_URL/PG*; kh
 
 ## 4. Bằng chứng DATN-21 — 14/11/2026
 
-Mốc đầu lượt: kế thừa commit `a194f74` (DATN-20), nhánh `feature/DATN-21-auth-e2e-runbook`. Dữ liệu browser đang dùng DB local của runner có sẵn, không reset mật khẩu người dùng đã đổi. Trạng thái dưới chỉ ghi kết quả thực chạy; browser còn chờ đối chiếu tài khoản sau đổi. Review read-only từ sub-agent đã đối chiếu lệnh/nguồn/giới hạn; phát hiện runbook bị ignore đã được sửa bằng allowlist riêng, harness 305 nguồn và diff check đạt.
+Mốc đầu lượt: kế thừa commit `a194f74` (DATN-20), nhánh `feature/DATN-21-auth-e2e-runbook`. Dữ liệu browser đang dùng DB local của runner có sẵn, không reset mật khẩu người dùng đã đổi. Trạng thái dưới chỉ ghi kết quả thực chạy; đã bổ sung kiểm Chrome LOCAL-002 sau khi người dùng tự login bằng mật khẩu mới. Review read-only từ sub-agent đã đối chiếu lệnh/nguồn/giới hạn; phát hiện runbook bị ignore đã được sửa bằng allowlist riêng, harness 305 nguồn và diff check đạt.
 
 | Cổng/ca | Kết quả lượt này | Giới hạn |
 |---|---|---|
@@ -87,7 +87,8 @@ Mốc đầu lượt: kế thừa commit `a194f74` (DATN-20), nhánh `feature/DA
 | B05 mật khẩu cũ | LOCAL-002 dùng mật khẩu cũ bị từ chối | Không chứng minh login mới; người dùng giữ mật khẩu mới riêng |
 | B03/B04 lịch sử DATN-20 | Browser hạn chế/reload/deep link; người dùng đổi rồi login mới, agent quan sát màn kết quả | Không tính là chạy lại DATN-21 |
 | B06 lịch sử DATN-20 và DB suite | Browser giữ phiên cũ đã về login sau đổi; DB test kiểm mọi phiên cùng user mất hiệu lực và user khác giữ phiên | Không nhận toàn bộ B06 là đã kiểm trên browser |
-| B05 login mới/reload; B07 | Chờ kiểm | Không gắn pass |
+| B05 Chrome LOCAL-002 sau đổi | Người dùng login mới; agent thấy LOCAL-002/Quản trị viên, reload giữ đúng danh tính; /change-password chuyển về /; logout về login, Back vẫn login | Reload cuối sau logout và console bị extension Chrome chặn; không ghi pass hai bước này |
+| B07 form đổi trên màn nhỏ | Chờ kiểm | Không gắn pass |
 
 ### Ma trận AUTH-S01–S10
 
@@ -126,9 +127,10 @@ Checklist đang mở của ticket:
 - [x] Cổng Go, FE, contract/harness; DB integration/race và cleanup.
 - [x] Browser luồng thường qua proxy, logout/Back/reload.
 - [x] Runbook, truy vết bằng chứng và review từ sub-agent.
-- [ ] Browser LOCAL-002 sau login bằng mật khẩu mới: reload, /change-password, logout/Back.
+- [x] Browser LOCAL-002 sau login bằng mật khẩu mới: reload, /change-password, logout/Back.
+- [ ] Reload cuối sau logout LOCAL-002: bước tự động bị UI extension Chrome chặn, chưa có kết quả quan sát.
 - [ ] Form đổi mật khẩu trên viewport nhỏ; nếu cần tạo lại fixture phải chốt dừng runner trước, không reset DB đang dùng.
-- [ ] Rà console browser trong lượt sau đổi và cập nhật kết quả; không coi rà mã nguồn/redaction tests là đã quan sát mọi log runtime.
+- [ ] Rà console browser trong lượt sau đổi: UI extension Chrome chặn trước khi đọc log; không coi rà mã nguồn/redaction tests là đã quan sát mọi log runtime.
 
 Chưa kiểm HTTPS thật, reverse proxy deploy, mất mạng HTTP/DB thật hoặc log hạ tầng. Cần cấu hình cùng-origin production, Secure cookie và CSP FE rồi kiểm riêng trước vận hành. Swagger chỉ dev, production 404 đã có test; không bật docs công khai để thay kiểm thử bảo mật.
 

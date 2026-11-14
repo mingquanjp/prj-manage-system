@@ -144,6 +144,7 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Mục tiêu: kiểm FE–HTTP–PostgreSQL, tổng hợp AUTH-S01–S10 và cách chạy/dừng/dọn/demo tái hiện được.
 - Nguồn: proposal 6.4/9.2.2, OpenAPI, runbook DB; không thay schema, nối nghiệp vụ hoặc truy cập Neon.
 - Tiêu chí: cổng Go/FE/harness, DB integration/race/cleanup và browser bắt buộc; tách bằng chứng giả, lịch sử và ca chưa kiểm.
+- Bổ sung browser Chrome LOCAL-002 sau người dùng login mới: reload giữ danh tính Quản trị viên, /change-password chuyển về /; logout rồi Back vẫn login. Extension Chrome chặn bước reload cuối/console; chưa ghi pass. Form đổi ở màn nhỏ vẫn chưa kiểm.
 - Runbook và kết quả hiện hành: [auth-runbook](../docs/api/auth-runbook.md). Không tự commit/push/deploy hoặc chuyển Jira Done.
 
 ### DATN-20 / AUTH-T19 — đổi mật khẩu lần đầu (đã triển khai, chờ bàn giao Git)
