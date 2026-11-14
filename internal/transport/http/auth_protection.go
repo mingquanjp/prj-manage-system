@@ -21,8 +21,9 @@ const (
 var authEncoding = base64.RawURLEncoding.Strict()
 
 type authProtection struct {
-	origin       config.Origin
-	secureCookie bool
+	origin          config.Origin
+	localDocsOrigin *config.Origin
+	secureCookie    bool
 }
 
 // newAuthProtection dùng APP_ENV và APP_ORIGIN đã qua validation của server.
@@ -41,7 +42,7 @@ func (p authProtection) allowsOrigin(r *http.Request) bool {
 		return false
 	}
 	origin, err := config.ParseOrigin(values[0])
-	return err == nil && origin == p.origin
+	return err == nil && (origin == p.origin || (p.localDocsOrigin != nil && origin == *p.localDocsOrigin))
 }
 
 func (p authProtection) allowsMutation(r *http.Request, secret auth.SessionSecret) bool {

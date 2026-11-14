@@ -33,7 +33,7 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 [Bản đồ miền nghiệp vụ](product/business-domains.md) nối FR với trách nhiệm, dữ liệu thiết kế và phụ thuộc; đề xuất 6 miền và phần hỗ trợ thông báo trong cùng backend. Đọc sau FR, trước chọn feature/proposal; không phải sơ đồ package hoặc kế hoạch tách service.
 
-[Proposal auth — thiết kế hiện hành](proposals/backend-auth-session.md) trình bày mục tiêu/phạm vi, kiến trúc, DB, năm sequence API, bảo mật và WBS. Backend đã tích hợp đủ năm API với PostgreSQL test tại DATN-18; FE nối API/browser/proxy và bàn giao xuyên FE–backend còn ở ticket sau. Không đồng nghĩa đã áp migration Neon, có API quản trị hoặc gửi email.
+[Proposal auth — thiết kế hiện hành](proposals/backend-auth-session.md) trình bày mục tiêu/phạm vi, kiến trúc, DB, năm sequence API, bảo mật và WBS. Backend đã tích hợp đủ năm API với PostgreSQL test tại DATN-18; DATN-19 đã nối FE bốn API nền với mode server/demo riêng và màn tiếp nối tạm; form đổi mật khẩu/bàn giao xuyên luồng còn DATN-20–21. Cách chạy và bằng chứng browser/proxy xem [web README](../web/README.md#chạy-fe-auth-thật--datn-19--auth-t18). Không đồng nghĩa đã áp migration Neon, có API quản trị hoặc gửi email.
 
 - [OpenAPI auth](api/auth.openapi.json): contract HTTP duy nhất cho năm route; kiểm tĩnh bằng `node --test scripts/check-auth-contract.test.mjs`, không thay kiểm thử runtime.
 - [Chi tiết triển khai và bằng chứng theo ticket](proposals/backend-auth-session-implementation.md): ports minh họa ban đầu, SQL/fixture/migration, config và bàn giao DATN-2–DATN-18. Đọc đúng mục cần tra; câu “chưa triển khai” trong ghi nhận cũ chỉ đúng tại thời điểm ghi. Bằng chứng HTTP/PostgreSQL và ma trận AUTH-S01–S10 ở mục 6.2.13.

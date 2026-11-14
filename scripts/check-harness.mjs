@@ -26,7 +26,7 @@ export function localTarget(base, source, target) {
 
 export async function requiredFiles(base = root) {
   const required = new Set([...entries, ".gitignore", "scripts/check-harness.mjs", "scripts/check-harness.test.mjs", "scripts/check-auth-contract.test.mjs",
-    "scripts/authdb/manage.py", "scripts/authdb/test_manage.py", "scripts/authdb/probe.go", "scripts/authdb/README.md",
+    "scripts/dev.py", "scripts/test_dev.py", "scripts/authdb/manage.py", "scripts/authdb/test_manage.py", "scripts/authdb/probe.go", "scripts/authdb/README.md",
     "docs/api/embed.go", "scripts/check-swagger.test.mjs",
     "scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
     "docs/ai/workflow.md", "docs/ai/task-template.md", ".github/pull_request_template.md",

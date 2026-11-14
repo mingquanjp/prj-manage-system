@@ -9,7 +9,7 @@
     "pnpm": "11.x"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev": "python3 ../scripts/dev.py",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
@@ -18,7 +18,8 @@
     "check:harness": "node --test ../scripts/check-harness.test.mjs && node ../scripts/check-harness.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "check": "pnpm check:harness && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm check:harness && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "dev:demo": "VITE_AUTH_MODE=demo vite --host 127.0.0.1 --port 5174 --strictPort"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
