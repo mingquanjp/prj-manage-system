@@ -127,3 +127,60 @@ test("mode chỉ do cấu hình build, mặc định demo tương thích; giá t
   for (const value of ["", "SERVER", "?demo=true", "invalid"])
     assert.equal(authMode(value), "invalid")
 })
+
+test("đổi mật khẩu chỉ gửi current/new nguyên vẹn với CSRF; 204 không đọc JSON", async () => {
+  const api = createAuthApi(
+    fetchWith((url, init) => {
+      assert.equal(url, "/api/auth/change-password")
+      assert.equal(init.method, "POST")
+      assert.equal(init.credentials, "same-origin")
+      assert.equal(init.cache, "no-store")
+      assert.equal(new Headers(init.headers).get("X-CSRF-Token"), "csrf-test")
+      assert.equal(new Headers(init.headers).get("Content-Type"), "application/json")
+      assert.deepEqual(JSON.parse(init.body as string), {
+        current_password: " 12345678 ",
+        new_password: " mật khẩu mới đủ dài 😀 ",
+      })
+      return new Response(null, { status: 204 })
+    }),
+  )
+  await api.changePassword(" 12345678 ", " mật khẩu mới đủ dài 😀 ", "csrf-test")
+  await assert.rejects(
+    createAuthApi(fetchWith(() => Response.json({}))).changePassword("old", "new", "token"),
+    AuthError,
+  )
+})
+
+test("đổi mật khẩu giữ mã lỗi contract/Retry-After, lỗi mạng không tự gửi lại", async () => {
+  for (const [status, code] of [
+    [400, "INVALID_CURRENT_PASSWORD"],
+    [400, "VALIDATION_ERROR"],
+    [401, "UNAUTHENTICATED"],
+    [403, "FORBIDDEN"],
+    [403, "PASSWORD_CHANGE_NOT_REQUIRED"],
+    [413, "PAYLOAD_TOO_LARGE"],
+    [415, "UNSUPPORTED_MEDIA_TYPE"],
+    [429, "RATE_LIMITED"],
+    [500, "INTERNAL_ERROR"],
+    [503, "SERVICE_UNAVAILABLE"],
+  ] as const) {
+    await assert.rejects(
+      createAuthApi(
+        fetchWith(() => Response.json({ code }, { status, headers: { "Retry-After": "8" } })),
+      ).changePassword("old", "new", "token"),
+      (error: unknown) =>
+        error instanceof AuthError && error.status === status && error.code === code,
+    )
+  }
+  let calls = 0
+  await assert.rejects(
+    createAuthApi(
+      fetchWith(() => {
+        calls++
+        throw new Error("mất phản hồi")
+      }),
+    ).changePassword("old", "new", "token"),
+    AuthError,
+  )
+  assert.equal(calls, 1)
+})

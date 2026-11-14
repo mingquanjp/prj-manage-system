@@ -17,6 +17,7 @@ function fake(overrides: Partial<AuthApi> = {}): AuthApi {
     login: async () => person,
     csrf: async () => "token",
     logout: async () => {},
+    changePassword: async () => {},
     ...overrides,
   }
 }
@@ -254,4 +255,172 @@ test("mất phản hồi logout sau khi server đã revoke: chỉ GET đối so�
   await session.check()
   assert.equal(session.getSnapshot().phase, "signed-out")
   assert.equal(writes, 1)
+})
+
+const limited: Principal = { ...person, system_roles: [], must_change_password: true }
+test("đổi thành công: CSRF trước POST, khóa double submit, bỏ phiên và đòi login mới", async () => {
+  const pending = deferred<void>()
+  const calls: string[] = []
+  let meCalls = 0
+  const session = createAuthSession(
+    fake({
+      me: async () => {
+        meCalls++
+        return limited
+      },
+      csrf: async () => {
+        calls.push("csrf")
+        return "token"
+      },
+      changePassword: async (current, next, token) => {
+        calls.push(`${current}/${next}/${token}`)
+        return pending.promise
+      },
+    }),
+  )
+  await session.check()
+  const changing = session.changePassword("old", "new")
+  await session.changePassword("old", "new")
+  await session.logout()
+  await session.check()
+  pending.resolve()
+  await changing
+  assert.deepEqual(calls, ["csrf", "old/new/token"])
+  assert.equal(session.getSnapshot().phase, "signed-out")
+  assert.equal(session.getSnapshot().principal, null)
+  assert.match(session.getSnapshot().message, /Đổi mật khẩu thành công/)
+  await session.check()
+  assert.equal(meCalls, 1)
+  await session.login("email", "new")
+  assert.equal(session.getSnapshot().phase, "authenticated")
+})
+
+test("chỉ phiên hạn chế được gửi đổi; lỗi CSRF trước POST không bị nhận là đã gửi", async () => {
+  for (const restricted of [false, true]) {
+    let posted = 0
+    const session = createAuthSession(
+      fake({
+        me: async () => (restricted ? limited : person),
+        csrf: async () => {
+          throw new AuthError(503, "SERVICE_UNAVAILABLE")
+        },
+        changePassword: async () => {
+          posted++
+        },
+      }),
+    )
+    await session.check()
+    await session.changePassword("old", "new")
+    assert.equal(posted, 0)
+    assert.equal(session.getSnapshot().phase, restricted ? "unavailable" : "authenticated")
+  }
+})
+
+test("sai current, policy, 401, 403 và 429 không báo thành công; cooldown qua focus", async () => {
+  for (const [status, code] of [
+    [400, "INVALID_CURRENT_PASSWORD"],
+    [400, "VALIDATION_ERROR"],
+    [401, "UNAUTHENTICATED"],
+    [403, "FORBIDDEN"],
+    [429, "RATE_LIMITED"],
+  ] as const) {
+    let calls = 0
+    let clock = 1000
+    const session = createAuthSession(
+      fake({
+        me: async () => limited,
+        changePassword: async () => {
+          calls++
+          throw new AuthError(status, code, 10)
+        },
+      }),
+      () => clock,
+    )
+    await session.check()
+    await session.changePassword("old", "new")
+    assert.equal(session.getSnapshot().phase, status === 401 ? "signed-out" : "authenticated")
+    assert.doesNotMatch(session.getSnapshot().message, /thành công/)
+    if (status === 400) assert.equal(session.getSnapshot().issueCode, code)
+    if (status === 429) {
+      await session.check()
+      await session.changePassword("old", "new")
+      assert.equal(calls, 1)
+      clock = 11000
+      await session.changePassword("old", "new")
+      assert.equal(calls, 2)
+    }
+  }
+})
+
+test("cờ không còn yêu cầu đổi: đọc me thay vì tự nâng principal", async () => {
+  let reads = 0
+  const session = createAuthSession(
+    fake({
+      me: async () => (++reads === 1 ? limited : person),
+      changePassword: async () => {
+        throw new AuthError(403, "PASSWORD_CHANGE_NOT_REQUIRED")
+      },
+    }),
+  )
+  await session.check()
+  await session.changePassword("old", "new")
+  assert.equal(reads, 2)
+  assert.deepEqual(session.getSnapshot().principal, person)
+})
+
+test("mất phản hồi sau POST/500/503: giữ trạng thái chưa rõ qua focus, chỉ login thủ công", async () => {
+  for (const error of [
+    new AuthError(0, "NETWORK_ERROR"),
+    new AuthError(500, "INTERNAL_ERROR"),
+    new AuthError(503, "SERVICE_UNAVAILABLE"),
+  ]) {
+    let calls = 0
+    let reads = 0
+    const session = createAuthSession(
+      fake({
+        me: async () => {
+          reads++
+          return limited
+        },
+        changePassword: async () => {
+          calls++
+          throw error
+        },
+      }),
+    )
+    await session.check()
+    await session.changePassword("old", "new")
+    await session.check()
+    await session.changePassword("old", "new")
+    assert.equal(session.getSnapshot().phase, "password-uncertain")
+    assert.equal(session.getSnapshot().principal, null)
+    assert.equal(reads, 1)
+    assert.equal(calls, 1)
+    session.loginAfterUncertainChange()
+    await session.check()
+    assert.equal(reads, 1)
+    assert.equal(session.getSnapshot().phase, "signed-out")
+    assert.match(session.getSnapshot().message, /mật khẩu mới.*mật khẩu cũ/)
+  }
+})
+
+test("login kiểm tra sau kết quả chưa rõ bị lỗi mạng: vẫn có đường kiểm lại phiên", async () => {
+  const session = createAuthSession(
+    fake({
+      me: async () => limited,
+      changePassword: async () => {
+        throw new AuthError(0, "NETWORK_ERROR")
+      },
+      login: async () => {
+        throw new AuthError(0, "NETWORK_ERROR")
+      },
+    }),
+  )
+  await session.check()
+  await session.changePassword("old", "new")
+  session.loginAfterUncertainChange()
+  await session.login("email", "new")
+  assert.equal(session.getSnapshot().phase, "unavailable")
+  await session.check()
+  assert.equal(session.getSnapshot().phase, "authenticated")
 })

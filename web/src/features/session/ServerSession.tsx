@@ -4,6 +4,7 @@ import { ArchiveIcon, ExitIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { createAuthApi, type SystemRole } from "./auth-api"
 import { createAuthSession } from "./auth-session"
+import { PasswordChangeForm } from "./PasswordChangeForm"
 
 const roleLabels: Record<SystemRole, string> = {
   ADMIN: "Quản trị viên",
@@ -85,6 +86,20 @@ export function ServerSession() {
         <p role="status" className="mt-3 text-sm text-muted-foreground">
           Vui lòng chờ trong giây lát…
         </p>
+      </Frame>
+    )
+  if (state.phase === "password-uncertain")
+    return (
+      <Frame>
+        <h1 className="text-xl font-semibold">Chưa xác nhận được kết quả</h1>
+        {feedback}
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          Yêu cầu không được tự gửi lại. Việc đăng nhập giúp bạn kiểm tra mật khẩu nào đang có hiệu
+          lực.
+        </p>
+        <Button className="mt-5" onClick={() => session.loginAfterUncertainChange()}>
+          Về đăng nhập để kiểm tra
+        </Button>
       </Frame>
     )
   if (state.phase === "unavailable")
@@ -189,6 +204,7 @@ export function ServerSession() {
   if (
     location.pathname === "/login" ||
     (limited && location.pathname !== "/change-password") ||
+    (!limited && location.pathname === "/change-password") ||
     location.search ||
     location.hash
   )
@@ -198,14 +214,14 @@ export function ServerSession() {
     <Frame>
       <h1 className="text-2xl font-semibold">
         {limited
-          ? "Cần đổi mật khẩu"
+          ? "Đổi mật khẩu lần đầu"
           : unsupported
             ? "Chức năng chưa được kết nối"
             : "Đã đăng nhập"}
       </h1>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {limited
-          ? "Bạn cần đổi mật khẩu trước khi sử dụng các chức năng nghiệp vụ. Tính năng này chưa sẵn sàng trong phiên bản hiện tại; bạn có thể đăng xuất."
+          ? "Bạn cần đặt mật khẩu mới trước khi sử dụng các chức năng nghiệp vụ."
           : unsupported
             ? "Dữ liệu của chức năng này chưa được kết nối với hệ thống. Bạn có thể quay về màn chính."
             : "Các chức năng nghiệp vụ đang được kết nối. Đây là màn tiếp nối tạm thời."}
@@ -231,6 +247,17 @@ export function ServerSession() {
         )}
       </dl>
       {feedback}
+      {limited && (
+        <PasswordChangeForm
+          busy={state.busy}
+          waitSeconds={waitSeconds}
+          issueCode={state.issueCode}
+          onSubmit={(currentPassword, newPassword) => {
+            setValidation("")
+            void session.changePassword(currentPassword, newPassword)
+          }}
+        />
+      )}
       <div className="mt-5 flex flex-wrap gap-3">
         {unsupported && (
           <Button variant="outline" onClick={() => navigate("/", { replace: true })}>
@@ -246,7 +273,9 @@ export function ServerSession() {
         >
           <ExitIcon />
           {state.busy
-            ? "Đang đăng xuất…"
+            ? limited
+              ? "Đang xử lý…"
+              : "Đang đăng xuất…"
             : waitSeconds > 0
               ? `Thử lại sau ${waitSeconds}s`
               : "Đăng xuất"}

@@ -63,6 +63,7 @@ export type AuthApi = {
   login: (email: string, password: string) => Promise<Principal>
   csrf: () => Promise<string>
   logout: (csrf: string) => Promise<void>
+  changePassword: (currentPassword: string, newPassword: string, csrf: string) => Promise<void>
 }
 
 export function createAuthApi(fetcher: typeof fetch = fetch): AuthApi {
@@ -140,6 +141,15 @@ export function createAuthApi(fetcher: typeof fetch = fetch): AuthApi {
       const response = await request("logout", {
         method: "POST",
         headers: { "X-CSRF-Token": csrf },
+      })
+      if (response.status !== 204 || (await response.text()) !== "")
+        throw new AuthError(0, "INVALID_RESPONSE")
+    },
+    changePassword: async (currentPassword, newPassword, csrf) => {
+      const response = await request("change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       })
       if (response.status !== 204 || (await response.text()) !== "")
         throw new AuthError(0, "INVALID_RESPONSE")
