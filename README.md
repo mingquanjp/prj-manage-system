@@ -74,13 +74,11 @@ Không mở rộng thành HRM đầy đủ, chấm công/lương, sprint, duyệ
 | Migration | golang-migrate, SQL nhúng bằng `embed.FS` |
 | Kiểm tra | Node test runner cho harness/model demo; Go test/vet/build cho backend |
 
-Backend hiện yêu cầu **Go 1.26.5** theo `go.mod`. Frontend dùng **Node 24.x**, **pnpm 11.x**, pin **pnpm 11.19.0** tại `web/package.json`; giữ lockfile khi cài đặt. Chưa tích hợp API/auth, TanStack Query hoặc nhúng frontend vào Go.
+Backend hiện yêu cầu **Go 1.26.5** theo `go.mod`. Frontend dùng **Node 24.x**, **pnpm 11.x**, pin **pnpm 11.19.0** tại `web/package.json`; giữ lockfile khi cài đặt. DATN-19 đã nối bốn API auth nền ở chế độ server riêng; xem [hướng dẫn FE auth](web/README.md#chạy-fe-auth-thật--datn-19--auth-t18). Chưa nối API nghiệp vụ, TanStack Query hoặc nhúng frontend vào Go.
 
-## Chạy frontend demo
+## Chạy local
 
-Không cần tài khoản thật, backend hoặc database.
-
-Từ thư mục gốc repository:
+Cần Node24/pnpm11, Go theo go.mod, Python3 và Docker Desktop đang chạy. Từ root repo:
 
 ```bash
 cd web
@@ -88,7 +86,15 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Mở [http://127.0.0.1:5173](http://127.0.0.1:5173). Dev server dùng `strictPort`: nếu cổng bận, kiểm tra tiến trình hiện có thay vì tự dừng tiến trình khác.
+Mở [http://127.0.0.1:5174](http://127.0.0.1:5174). Swagger trên cùng backend tại [http://127.0.0.1:8080/docs/](http://127.0.0.1:8080/docs/). Một lệnh khởi động FE + Go auth local, không tự dừng sau20phút. Ctrl+C dừng cả hai. Runner chỉ dùng PostgreSQL local sở hữu, tạo DB giả riêng theo lượt chạy và dọn khi dừng; không đọc `.env` thật hoặc dùng Neon. Khởi động lại không giữ thay đổi dữ liệu local. Xem [hướng dẫn FE auth](web/README.md#chạy-fe-auth-thật--datn-19--auth-t18).
+
+Chỉ xem các màn nghiệp vụ prototype, không cần Go/Docker/DB:
+
+```bash
+pnpm dev:demo
+```
+
+Hai chế độ đều5174 nên chạy từng lệnh một; cổng bận thì báo lỗi, không chiếm tiến trình khác. Các bước bên dưới áp dụng **prototype demo**.
 
 ### Cách xem luồng chính
 

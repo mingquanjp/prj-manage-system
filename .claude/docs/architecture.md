@@ -34,6 +34,7 @@ Giữ Go + chi + pgx/PostgreSQL; SQL trực tiếp hiện tại, không tự th�
 Frontend đã có Vite/React/TypeScript/Tailwind/React Router và primitives tùy biến shadcn/Radix. Pilot chỉ mock trong bộ nhớ; TanStack Query/API/auth chưa triển khai.
 Đích build static nhúng embed.FS: một process, một port, cùng origin, không cần CORS; pilot local chưa tích hợp Go.
 Auth dùng cookie secret và server-side session check DB; cùng origin không loại bỏ CSRF.
+Composition root auth dùng chung tại `internal/app.AuthHandler`: cmd/server giữ loader/validation production; cmd/localdev chỉ runner local với DB giả riêng được guard, không dotenv/Neon. `pnpm dev` lắp FE+Go local tới Ctrl+C, `pnpm dev:demo` giữ prototype. Không dùng Go test làm server dev; harness Swagger/FE20phút vẫn riêng. Hướng dẫn hiện hành và giới hạn dữ liệu theo lượt chạy tại web/README.
 
 ## 3. Transaction và snapshot
 

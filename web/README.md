@@ -2,16 +2,17 @@
 
 ## Hiện trạng
 
-Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có đăng nhập/phiên UI mô phỏng trong bộ nhớ; chưa API/xác thực server/persistence/Go embed/TanStack Query. [Bằng chứng pilot](DESIGN-PILOT.md).
+Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có hai chế độ tách biệt: prototype trong bộ nhớ và FE auth server (DATN-19) nối login/me/csrf/logout. Phiên server dùng màn tiếp nối tạm, không mở workspace mẫu; DATN-20 đã bổ sung form đổi mật khẩu lần đầu; luồng local hạn chế → đổi → login mới đã được kiểm phối hợp với người dùng, giới hạn kiểm chứng ghi tại sổ công việc. Chưa API nghiệp vụ/persistence nghiệp vụ/Go embed/TanStack Query. `pnpm dev` chạy FE+Go local cùng nhau, `pnpm dev:demo` giữ prototype riêng. [Bằng chứng pilot](DESIGN-PILOT.md).
 
-## Chạy lại không cần DB
+## Chạy local
 
 Môi trường đã chạy: Node **24.15.0**, pnpm **11.19.0**; package.json khai báo Node 24.x/pnpm 11.x và pin packageManager, lockfile là nguồn phiên bản dependency. Node 24.x dùng native TypeScript stripping cho test; không đổi runtime/dependency chỉ để làm bố cục.
 
 ```bash
 # Từ thư mục web/
 pnpm install --frozen-lockfile
-pnpm dev                 # localhost:5173; giữ strictPort, không tự kill tiến trình khác
+pnpm dev                 # FE + Go auth local; Docker Desktop cần chạy
+pnpm dev:demo            # chỉ prototype, không cần Go/Docker/DB
 pnpm typecheck
 pnpm lint                # ESLint, không --fix; cảnh báo cũng làm cổng thất bại
 pnpm format:check        # Prettier chỉ kiểm tra, không ghi file
@@ -26,6 +27,46 @@ node ../scripts/check-harness.mjs --staged # chỉ lúc chuẩn bị bàn giao G
 
 Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/workspace.test.ts`; test harness từ root: `node --test scripts/check-harness.test.mjs`. Pattern test được quote để Node 24 tìm đệ quy, không phụ thuộc shell mở rộng glob một cấp; thêm test `.test.ts` dưới `src/` không phải sửa danh sách lệnh. Test Git dùng repo tạm riêng, tự dọn sau chạy, không đụng index/config/commit repo thật. Không truyền một file TS riêng cho tsc thay tsconfig project. Chưa có React/E2E tự động; không ghi đã chạy các cổng chưa tồn tại. Các check không gọi DB/API; build ghi `dist/` bị ignore, không tự sửa mã nguồn. Lệnh cài đặt cần registry/cache và quyền phù hợp; lỗi môi trường không phải test pass.
 
+### Chạy FE auth thật — DATN-19 / AUTH-T18
+
+Cổng local mặc định của DATN là **5174** cho cả demo và server; host `127.0.0.1`, giữ `strictPort`. `pnpm dev`, `pnpm dev:demo` và chạy Vite trực tiếp đều dùng cấu hình này. Cổng 5173 dành cho dự án khác; không tự nhảy cổng hoặc dừng tiến trình khác. `.env.example` dùng cùng `APP_ORIGIN=http://127.0.0.1:5174`; nếu đang chạy backend bằng cấu hình riêng, cập nhật biến môi trường rồi khởi động lại, không sao chép URL DB test sang DB thật.
+
+- `VITE_AUTH_MODE=demo` hoặc không khai báo: giữ prototype hiện có. `VITE_AUTH_MODE=server`: dùng principal máy chủ; giá trị khác báo lỗi cấu hình. Đây là cấu hình lúc Vite chạy/build, không nút hay query đổi quyền. Không tự fallback demo khi API lỗi.
+- `TASKASSIGN_API_TARGET` là địa chỉ backend **chỉ cho Vite dev proxy**, mặc định `http://127.0.0.1:8080`. Không chứa credential. `/api` giữ nguyên path/Origin; backend phải cấu hình `APP_ORIGIN` đúng scheme/host/port FE. Không mở CORS hoặc giả Origin. Production chưa triển khai proxy/Go embed; phải phục vụ API cùng origin trước vận hành.
+- Chế độ server không khởi tạo `useDemoWorkspace`, không tra principal vào employee fixture và không có bộ chọn danh tính. Người đăng nhập thường tới `/` với màn “Đã đăng nhập”; URL nghiệp vụ báo chưa nối. Phiên buộc đổi tới `/change-password` chỉ có hướng dẫn và logout, chưa có form/API đổi lần đầu ở FE.
+
+Chạy ứng dụng local chỉ bằng một lệnh, từ `web/` (Docker Desktop đã mở, Go/Node/pnpm/Python3 sẵn):
+
+```sh
+pnpm dev
+```
+
+Mở FE `http://127.0.0.1:5174/`; Swagger nằm ngay backend `http://127.0.0.1:8080/docs/` (đường `/docs` tự chuyển về `/docs/`). Không cần khởi động server Swagger riêng. [Runner local](../scripts/dev.py) kiểm hai cổng, khởi động/xác minh PostgreSQL local bằng guard có sẵn, build [Go localdev](../cmd/localdev/main.go), chờ health backend rồi mở Vite ở mode server. Cấu hình được runner đặt cố định: backend8080, hai Origin cố định `http://127.0.0.1:5174` (FE) và `http://127.0.0.1:8080` (Swagger). Không cần chạy terminal backend riêng, không `go test`, không tự dừng sau20phút. Một tiến trình lỗi thì tiến trình còn lại cũng được dừng; cổng bị chiếm thì báo lỗi, không tự kill hoặc nhảy cổng.
+
+Ctrl+C dừng cả FE/BE và dọn **DB ngẫu nhiên `auth_dev_*` vừa tạo của đúng lượt chạy**, không DROP/FORCE DB có sẵn, không reset DB gốc. Đây là dữ liệu local giả theo lượt chạy, **chưa persistence cho môi trường dev lâu dài**: khởi động lại tạo dữ liệu ban đầu; mất điện/kill9 có thể để lại DB cần đối soát, không tự quét/xóa. Container/volume local được giữ. Không đọc `.env` thật hoặc `DATABASE_URL`, không dùng Neon; guard xác minh Docker/PG18/owner/system-ID trước DDL. Chỉ nâng000001–000003 trên DB mới và cấp hai tài khoản tổng hợp, không migrate33bảng hoặc thực hiện nghiệp vụ cấp tài khoản/email.
+
+Hai tài khoản local: `quan1652005@gmail.com` (HR) và `quan1652005+limited@gmail.com` (buộc đổi), mật khẩu ban đầu `12345678`; chỉ hash bcrypt được lưu trong DB local, không gửi email. Màn server sẽ hiện tên/mã local từ DB, không tên fixture frontend. Sau khi tài khoản limited đổi mật khẩu, mật khẩu mới chỉ tồn tại trong DB riêng của lượt chạy này; khởi động lại runner sẽ tạo lại dữ liệu ban đầu.
+
+Chỉ xem prototype, không cần backend/Docker:
+
+```sh
+pnpm dev:demo
+```
+
+Hai lệnh dùng cùng5174 nên chạy từng chế độ một. Không cần `VITE_AUTH_MODE=server` trước `pnpm dev` nữa. Chạy Vite trực tiếp vẫn dùng `VITE_AUTH_MODE` khi cần kiểm adapter riêng. `TASKASSIGN_API_TARGET` chỉ dành cấu hình Vite riêng; runner một lệnh không nhận target khác để tránh chuyển credential tới backend khác.
+
+**Harness kiểm thử vẫn riêng:** `TestFrontendDemoServer`/`TestSwaggerDemoServer` giữ giới hạn20phút và cleanup, không phải backend của `pnpm dev`. Harness cũ vẫn dùng backend18080, không phải ứng dụng local; nếu kiểm FE với harness thì dừng localdev và trỏ `TASKASSIGN_API_TARGET=http://127.0.0.1:18080` khi chạy Vite riêng. Xem [runbook Swagger](../docs/api/README.md#demo-trên-db-test-riêng) cho các ca kiểm tạm.
+
+Luồng tự kiểm:
+
+1. Mở FE khi chưa đăng nhập → login. Sai mật khẩu → lỗi chung, đúng → màn tạm với danh tính server.
+2. Reload → khôi phục bằng `me`; mở `/projects/kho` → chưa nối nghiệp vụ, không danh sách mẫu.
+3. Logout → lấy CSRF rồi POST body rỗng → về login; Back/reload không khôi phục phiên cũ.
+4. Đăng nhập tài khoản limited → form đổi mật khẩu; reload/URL dự án vẫn giữ cổng này. Nhập current/new/xác nhận, đổi thành công → login lại bằng mật khẩu mới; không tự login. Logout vẫn hoạt động.
+5. Lỗi dịch vụ/kết nối vẫn hiện rõ, không tự fallback demo hoặc báo logout thành công. Kiểm riêng lỗi backend bằng harness; Ctrl+C của lệnh dev sẽ dừng cả FE và BE theo thiết kế.
+
+Adapter chỉ giữ credential trong thời gian request, CSRF trong bộ nhớ phiên, cookie do browser quản lý. Không localStorage/sessionStorage/URL chứa token hoặc mật khẩu; không log response thô. Timeout HTTP 15 giây không khẳng định mutation chưa commit: kiểm lại bằng GET, không tự gửi lại POST. `Retry-After` dạng giây được giữ qua kiểm tra phiên 401; đọc `me` khi focus/pageshow/Back để cập nhật hiện hành, không có refresh/gia hạn phiên.
+
 ### Convention và cấu hình công cụ
 
 - Quy ước ngắn nằm tại [AGENTS.md](AGENTS.md); không tạo thêm bản sao nghiệp vụ hoặc một bộ convention khác theo từng màn.
@@ -38,7 +79,7 @@ Có thể chạy riêng test: `node --experimental-strip-types --test src/demo/w
 - `src/models/workspace.ts` giữ type frontend dùng chung, `workspace-labels.ts` giữ nhãn hiển thị; không phải DTO/schema và không import fixture/UI.
 - `src/demo/fixtures.ts` giữ dữ liệu khởi tạo; `identity.ts` tra danh tính/quyền demo; `projects.ts`, `task-structure.ts`, `execution.ts`, `assignment.ts` giữ logic theo trách nhiệm. Các module effort/corrections/personnel tiếp tục giữ miền của mình. Không có barrel model.ts; bên dùng import đúng chủ sở hữu.
 - Điểm, thứ tự gợi ý, background load và danh mục mẫu vẫn chỉ là demo; việc tách file không công nhận công thức mới hoặc biến fixture thành nguồn server.
-- `App.tsx` chặn workspace trước phiên demo hợp lệ, điều phối danh tính, điều hướng và dialog; `demo/session.ts` kiểm tra trạng thái tài khoản/hồ sơ/quyền và đích nội bộ, không xử lý mật khẩu/token. `NavigationGuard` nhận trạng thái nháp từ workspace và trì hoãn mở thông báo/logout/đổi danh tính/hết phiên demo khi có nháp; chưa chặn toàn bộ router/back/reload.  `src/app/AppShell.tsx` trình bày shell, `WorkspaceRoutes.tsx` nối route với feature, `navigation.ts` suy dữ liệu điều hướng/nhãn demo từ nguồn hiện hành. Đổi danh tính giữ state nhưng remount feature theo key như trước, không tự cấp quyền hoặc reset dữ liệu.
+- `App.tsx` chọn mode và lazy-load `app/DemoApp.tsx`; `features/session/ServerSession.tsx` điều phối phiên server qua `auth-api.ts`/`auth-session.ts`, không import dữ liệu demo. `app/DemoApp.tsx` chặn workspace trước phiên demo hợp lệ, điều phối danh tính, điều hướng và dialog; `demo/session.ts` kiểm tra trạng thái tài khoản/hồ sơ/quyền và đích nội bộ, không xử lý mật khẩu/token. `NavigationGuard` nhận trạng thái nháp từ workspace và trì hoãn mở thông báo/logout/đổi danh tính/hết phiên demo khi có nháp; chưa chặn toàn bộ router/back/reload.  `src/app/AppShell.tsx` trình bày shell, `WorkspaceRoutes.tsx` nối route với feature, `navigation.ts` suy dữ liệu điều hướng/nhãn demo từ nguồn hiện hành. Đổi danh tính giữ state nhưng remount feature theo key như trước, không tự cấp quyền hoặc reset dữ liệu.
 - `useDemoWorkspace` nối React với `demo/workspace-state.ts` và `demo/workspace-actions.ts`: reducer thuần giữ projects/tasks/groups/events/work/profileState/organization/skillCatalog/employeeSkills/employeeCvs/accounts/comments/notifications/notice; biên thao tác chạy validation/hàm demo trước dispatch, thời điểm/ID phát sinh ngoài reducer. Kết quả nộp/nghiệm thu ghi tasks + work trong cùng action; hồ sơ + quyết định và official skill + quyết định ghi cùng action; đổi nhóm rồi task vẫn hợp nhất trên state mới nhất. Không Redux/API/persistence; callback vẫn dùng snapshot render, chưa là cơ chế chống cạnh tranh backend.
 - `demo/profiles.ts` giữ tạo/gửi/xử lý hồ sơ và projection `professionalPeople`, nhận danh mục tổ chức hiện hành để không hiển thị tên vị trí cũ từ fixture. `components/people-directory.tsx` chia sẻ tên/vị trí nghề nghiệp, không giữ bản sao state hoặc cấp quyền. Phone/address/email và ID hành chính không nằm trong Person/tra cứu/ứng viên. Cấp bậc suy tên từ jobLevelId nullable, không suy mức kỹ năng. Projection duyệt toàn bộ hồ sơ hiện hành để có người mới; hoạt động kết hợp trạng thái hồ sơ và tài khoản, fixture chỉ giữ nền ban đầu và background load mẫu. Vai trò/trạng thái lấy từ accounts; IdentityProvider chia sẻ snapshot quyền riêng, không ghép role vào Person. HR vô hiệu hóa hồ sơ khác Admin khóa tài khoản; mở khóa không khôi phục hồ sơ inactive. Chưa có tái kích hoạt hồ sơ.
 - `models/organization.ts` và `demo/organization.ts` giữ danh mục phòng ban/vị trí/cấp bậc cùng kiểm tra CRUD/HR/tham chiếu. EmployeeProfile dùng departmentId/jobLevelId nullable, positionId bắt buộc; danh mục không tự cấp role/trách nhiệm hoặc thay kỹ năng/cấp bậc. State danh mục dùng chung, reset khôi phục cùng hồ sơ; HR gán tổ chức/cập nhật hồ sơ trực tiếp tại đợt hồ sơ nhân sự riêng.
@@ -97,6 +138,39 @@ Bàn giao: rủi ro còn lại; bước kế tiếp được giao/chờ duyệt:
 Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt lớn cần kế hoạch riêng thì dẫn tới một file duy nhất và đóng/lưu lịch sử sau khi xong.
 
 ## Sổ công việc
+
+### DATN-20 / AUTH-T19 — đổi mật khẩu lần đầu (đã triển khai, chờ bàn giao Git)
+
+- Mục tiêu: thay màn hạn chế tạm bằng form current/new/xác nhận; nối API thứ năm, thành công về login và không tự đăng nhập.
+- Nguồn: proposal auth mục 6.2.5, OpenAPI change-password, FR-001.AC4/FR-004 và security A08/A09; kế thừa adapter/controller DATN-19.
+- Ngoài phạm vi: không đổi schema, reset/quên mật khẩu, đổi tự nguyện, API nghiệp vụ, email hoặc Neon. Giữ prototype riêng.
+- Tiêu chí: kiểm Unicode/code point/byte, không gửi xác nhận; xử lý lỗi/429/phiên/mất phản hồi; browser local hạn chế → đổi → login mới, pnpm check và review.
+- Đã kiểm: pnpm check đạt (14 harness, 153 test FE, lint/format/typecheck/build); harness kiểm kê 304 nguồn. Sub-agent review read-only không còn finding cần sửa sau kiểm đường phục hồi login lỗi mạng. Browser thật 5174 → backend8080 → PostgreSQL18 local: login limited, deep link/reload về form, submit trống báo từng ô. Sau bước đổi do người dùng tự thao tác, agent quan sát màn login và xác nhận mật khẩu cũ bị từ chối qua browser. Người dùng tự login bằng mật khẩu mới; agent quan sát đúng tab Chrome thấy “Đã đăng nhập”, LOCAL-002 và vai trò Quản trị viên, không còn form hạn chế. IAB giữ phiên trước đổi đã về login; hai browser không chia cookie.
+- Giới hạn: browser xác nhận hành trình local login hạn chế → người dùng đổi → mật khẩu cũ bị từ chối → người dùng login mới → agent thấy màn tiếp nối. Lượt kiểm reload sau login mới bị extension UI của Chrome chặn automation, nên chưa xác nhận reload/Back và truy cập lại URL đổi với phiên mới tại lượt này; không ghi pass. Viewport nhỏ chưa kiểm trong đợt DATN-20. Timeout/500/503/429 và chống tự retry được kiểm bằng HTTP giả/controller; không gọi đó là cắt mạng hoặc transaction thật. Không đổi backend/schema/Neon; chưa commit DATN-20.
+- Review trước commit 14/11: chạy lại pnpm check đạt (153 test FE +14 harness, lint/format/typecheck/build), 11 test contract đạt, harness304 nguồn và git diff --check đạt. Sub-agent review lần cuối không có finding cần sửa; 23 test auth API/session/validation và typecheck của reviewer đạt. Browser IAB riêng dùng tài khoản thường LOCAL-001: reload khôi phục danh tính, /change-password chuyển về màn chính, logout rồi Back vẫn login. Màn login390px có body/page390px, không tràn ngang; đã reset viewport và dọn tab. Không đồng nhất các ca LOCAL-001 này với reload sau đổi của LOCAL-002, hoặc với form đổi ở viewport nhỏ.
+- Bàn giao: đủ để chuẩn bị commit phạm vi DATN-20 với các giới hạn đã ghi; còn kiểm riêng reload/Back sau login mới LOCAL-002, form đổi trên viewport nhỏ và tổng hợp xuyên luồng ở DATN-21; HTTPS/mất mạng thật vẫn chưa kiểm. Nhánh feature/DATN-20-initial-password-change; DATN-19 đã commit 21c464c, không stage/commit DATN-20, push/merge hoặc cập nhật Jira trong lượt review này.
+
+
+### Swagger cùng backend local — 14/11/2026
+
+- Người dùng yêu cầu Swagger ở URL backend8080/docs, chạy cùng `pnpm dev`, không server/harness riêng. Ngoài phạm vi: schema/API nghiệp vụ/Neon/production.
+- Đồng bộ localdev/runner/proxy mặc định sang8080; Swagger đã nhúng trong Go. Localdev dùng một router/limiter/DB chung, cho phép chính xác hai Origin loopback5174/8080 để Try it out và FE cùng hoạt động; không CORS, không tin Host/Forwarded hoặc query để cấp Origin. Production `cmd/server` vẫn chỉ APP_ORIGIN.
+- Đã kiểm: Go vet/test/build; HTTP tests hai Origin, từ chối Origin lạ/đa header, production không nhận local, chung limiter và Swagger; 28 test Swagger/contract/harness, 4 test Python runner, FE typecheck/build và format config đạt.
+- Cổng8080 đang được dự án khác sử dụng: không tự dừng tiến trình đó hoặc chuyển cổng. Runtime local mới cần người dùng giải phóng8080 trước; các kiểm HTTP Origin/Swagger/limiter chạy qua httptest, không ghi browser đã pass cấu hình mới khi chưa chạy.
+
+### DATN-19 / AUTH-T18 — Nối FE auth server — hoàn tất phạm vi, chờ người dùng duyệt
+
+- Mục tiêu: tách demo/server bằng cấu hình, nối login/me/csrf/logout; màn “Đã đăng nhập” tạm, phiên hạn chế chờ DATN-20.
+- Nguồn: proposal auth mục 6.2–6.4/9.2.2, OpenAPI, architecture/security, web/AGENTS. Người dùng đã chốt đích tạm và không mở fixture cho principal thật.
+- Ngoài phạm vi: API nghiệp vụ, schema/Neon, email, form đổi mật khẩu và thiết kế lại prototype.
+- Đã code: adapter bốn route, kiểm DTO allowlist/lỗi/Retry-After, controller có chống phản hồi cũ và gửi lặp, proxy dev giữ Origin, login/bootstrap/loading/error/logout, đích tạm/phiên hạn chế; lazy-load demo tách khỏi app server. Giữ visual token và primitives, không dependency/lockfile mới.
+- Đã kiểm: `pnpm check` đạt 14 test harness, 143 test FE (13 auth adapter/controller), lint/format/typecheck/build; 25 test contract/harness; Go vet/test/build và vet build tag integration/swaggerdemo đạt. Browser thật qua Vite5174 → backend18080 → PostgreSQL18 test sở hữu: sai/đúng login, reload, URL dự án, logout, Back/reload, phiên hạn chế/logout, backend dừng rồi phục hồi; mobile390px không tràn ngang. Prototype demo5175 giữ luồng riêng. Review agent đọc độc lập phát hiện mất cooldown khi focus; đã sửa và thêm hồi quy.
+- Chưa kiểm: HTTPS production, hết hạn tự nhiên sau8h trên browser, mọi lỗiDB/429 qua browser, mất phản hồi mạng sau commit thực. 401/403/429/503/response sai/race FE được kiểm bằng HTTP giả/controller; không thay bằng chứng transaction/DB. Không có React/E2E tự động; browser là kiểm thủ công bằng công cụ.
+- Tiếp nối runner local: người dùng chốt `pnpm dev` chạy FE+Go thật, không tự dừng20phút; `pnpm dev:demo` chạy prototype. Go `cmd/localdev` dùng chung `internal/app.AuthHandler`, chỉ migrate/seed DB ngẫu nhiên sở hữu trong cluster local được guard; Ctrl+C dọn riêng DB lượt chạy, không đọc dotenv/Neon. Harness kiểm thử giữ riêng.
+- Kiểm runner local: `pnpm dev` thực khởi động Go+Vite; browser login/reload/CSRF/logout đạt, Ctrl+C giải phóng5174/18080 và DB `auth_dev_*` còn0, khởi động lại đạt. 4 unit test Python runner +8 test guard DB, Go vet/test/build và HTTP/PostgreSQL integration `-race` cmd/server đạt; `pnpm check` đạt143 test FE. Không kiểm kill9/mất điện hoặc vận hành production; không lấy test/mock thay bằng chứng DB/browser.
+- Tiếp nối cổng local: người dùng chốt mặc định5174 cho DATN; đồng bộ package script, Vite config, `.env.example` và hướng dẫn. Đã kiểm format/typecheck/build/harness, `git diff --check`; chạy thực `pnpm dev` mở127.0.0.1:5174. Không sửa `.env` thật hoặc tiến trình5173 của dự án khác.
+- Bàn giao: DATN-20 nối form đổi mật khẩu; DATN-21 kiểm xuyên luồng. Không nhận hoàn tất toàn feature auth. Nhánh `feature/DATN-19-server-auth-frontend`; chưa commit/push, không đổi schema/Neon.
+
 
 ### Sửa các điểm sau review FE — 29/10/2026 — hoàn tất phạm vi
 
@@ -536,7 +610,7 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 75 file, typecheck, 31 test model và build; `git diff --check` qua. Browser Khoa/Kho: gợi ý chọn An → tìm Cường báo nháp An còn nguyên → manual không điểm/hạng → chọn Cường thiếu mandatory bị yêu cầu cả lý do lựa chọn sau run và lý do ngoại lệ → nhập đủ mới xác nhận được → hủy giữ nháp → thu gọn vẫn thấy tải → xác nhận T001 sang ASSIGNED/Cường và số chờ giao giảm. Chọn An cho T001/T002 chỉ tăng nháp 56 giờ, hiện tại vẫn 36, tổng dự kiến 92; không đổi dữ liệu chính thức trước xác nhận.
 - Responsive: 1600px ba vùng (184/821/260), 1280px dải việc + hai vùng (701/260), 390px một vùng, page375/viewport390, bảng470 cuộn trong vùng341; không tràn ngang trang. Kiểm tra console và khôi phục viewport sau phiên. Bằng chứng UI: `/tmp/taskassign-assignment-wide.png`. Bản local không còn nút “Quay lại kết quả gợi ý” hoặc ba cụm từ kỹ thuật đã ghi từ Make; không sửa export hoặc tuyên bố đã sửa các màn chưa dựng.
 - Bàn giao: chỉ đổi AssignmentWorkspace/CSS và mục sổ này; model/thuật toán/quyền/DB/backend/dependency không đổi, giữ mọi sửa cũ; chưa stage/commit/push. Demo trong bộ nhớ, chưa API/auth/persistence hoặc React/E2E tự động. Không chạy lại toàn bộ vòng nộp/nghiệm thu hay mọi quyền bằng browser trong đợt bố cục này; test model liên quan vẫn qua. Bước sau chờ duyệt: rà luồng phân công → thực hiện → nghiệm thu ở mức MVP rồi mở rộng màn hình khác.
-- Tự xem: localhost:5173 → danh tính Khoa → dự án Kho → chọn ba task chờ giao → Xem gợi ý; thử đổi task, mở Đối chiếu kỹ năng, chọn người/tìm kiếm/chuyển thủ công, theo dõi tải và xác nhận/hủy. Reload để lấy lại fixture; không lưu thật.
+- Tự xem: 127.0.0.1:5174 → danh tính Khoa → dự án Kho → chọn ba task chờ giao → Xem gợi ý; thử đổi task, mở Đối chiếu kỹ năng, chọn người/tìm kiếm/chuyển thủ công, theo dõi tải và xác nhận/hủy. Reload để lấy lại fixture; không lưu thật.
 
 ### Nghiệm thu và Kanban dự án — 21–22/10/2026 — hoàn tất phạm vi, chờ duyệt UI
 
@@ -549,7 +623,7 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 75 file, typecheck, 31 test model và build; `git diff --check` qua. Năm test mới kiểm tra vòng trả sửa/nộp lại/chấp nhận, thiếu log vẫn được nghiệm thu, snapshot cũ/bất biến dữ liệu đầu vào, quyền PM/Director/PTCM cũ/tự review, khóa project/task/lượt giao, quyết định cũ/lặp và mapping Kanban.
 - Browser: Dũng/KHO-T006 Start → nộp không log → Khoa trả sửa (thiếu lý do bị chặn) → Dũng thấy phản hồi, thêm 30 phút và nộp lại → Thanh PM-only xem Kanban/kết quả không có nút review/raw log → Khoa hủy xác nhận không lưu rồi chấp nhận không cần nhận xét. Hai lần nộp giữ đúng snapshot rỗng/30 phút, task DONE, hàng chờ giảm, Kanban cột DONE và tiến độ 2/7 =29%, project vẫn IN_PROGRESS. Tìm “báo cáo” chuyển bảng/Kanban giữ đúng task; T007 mẫu cũ thiếu submission không được quyết định. 390px: page 375/viewport390, board341/cuộn1340, không tràn trang; đã reset viewport. Console không có error/warn trong phiên. Ảnh minh họa local: `/tmp/taskassign-project-kanban-review.png`.
 - Review/bàn giao: không đổi DB/schema/backend/dependency/lockfile/Make; review diff gồm tệp mới, giữ toàn bộ thay đổi cũ, chưa stage/commit/push. Mô phỏng trong bộ nhớ, reload mất dữ liệu; chưa API/auth/transaction/concurrency server, React/E2E tự động hoặc mọi thiết bị. Tình huống task đóng/hủy và PTCM đổi được kiểm tra model, chưa thử đầy đủ bằng browser; UI chưa có toàn bộ vòng đời/hiệu chỉnh log sau khóa, không tạo thêm nút chưa xây. Skill frontend-patterns giúp tái dùng phần lần nộp và state chung, không nhân bản nghiệp vụ trong màn hình.
-- Tự kiểm tra: localhost:5173/my-work → Điều khiển prototype/Dũng → KHO-T006/Bắt đầu → Kết quả/nộp → đổi Khoa → dự án Kho/Nghiệm thu → mở T006/Yêu cầu chỉnh sửa → đổi Dũng/nộp lại → đổi Khoa/chấp nhận → Công việc/Xem Kanban và Thông tin để đối chiếu tiến độ. Đổi Thanh để kiểm tra góc nhìn PM; reload để khôi phục mẫu. Bước tiếp theo chờ duyệt: hoàn thiện UX workspace phân công theo hướng đã thống nhất, không tự triển khai.
+- Tự kiểm tra: 127.0.0.1:5174/my-work → Điều khiển prototype/Dũng → KHO-T006/Bắt đầu → Kết quả/nộp → đổi Khoa → dự án Kho/Nghiệm thu → mở T006/Yêu cầu chỉnh sửa → đổi Dũng/nộp lại → đổi Khoa/chấp nhận → Công việc/Xem Kanban và Thông tin để đối chiếu tiến độ. Đổi Thanh để kiểm tra góc nhìn PM; reload để khôi phục mẫu. Bước tiếp theo chờ duyệt: hoàn thiện UX workspace phân công theo hướng đã thống nhất, không tự triển khai.
 
 ### Bắt đầu trước khi ghi nhật ký — 21/10/2026 — hoàn tất phạm vi, chờ duyệt
 
@@ -558,7 +632,7 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Tiêu chí: chưa bắt đầu/tạm dừng vẫn đọc log nhưng không ghi/sửa/xóa; Start/Resume mở lại thao tác; nộp vẫn khóa log và không bắt buộc có log; giữ kiểm tra ngày/phút/lý do/history. Kiểm tra model, pnpm check, một luồng UI và review đồng bộ tài liệu.
 - Kết quả: guard chung cho UI và create/update/delete kiểm tra trạng thái khi lưu, ASSIGNED/PAUSED hiển thị hướng dẫn Bắt đầu/Tiếp tục trong Chi tiết; log cũ vẫn đọc được. Đồng bộ quyết định tiếp nối, workflow/quyền/security/architecture, test đích, brief/contract; đánh dấu R01 baseline cũ đã thay thế. Skill frontend-patterns giữ quyền dùng chung, không thêm state/UI hoặc dependency trùng lặp.
 - Đã kiểm tra/review: `pnpm check` qua 6 test harness, kiểm kê 70 file, typecheck, 26 test model và build. Test R01 đổi theo quyết định mới, kiểm tra cả create/update/delete bị từ chối khi ASSIGNED/PAUSED và được phép lại sau Resume, đọc không mất log, không tự sinh giờ/đổi estimate; các kiểm tra ngày/tổng/history/snapshot/nộp không log vẫn qua. Browser desktop: Dũng/KHO-T006 trước Start không có Ghi nhật ký; Start → thêm 1 giờ → Pause có lý do → còn đọc log nhưng không thêm/sửa/xóa → Resume mở lại cả ba nút và tổng vẫn 1 giờ. `git diff --check` qua; rà nguồn hiện hành không còn chỉ dẫn cho ghi trực tiếp khi ASSIGNED/PAUSED.
-- Tự kiểm tra: localhost:5173/my-work → danh tính Dũng → KHO-T006 → Nhật ký (chưa có nút ghi) → Chi tiết/Bắt đầu công việc → Nhật ký/ghi → Chi tiết/Tạm dừng → Nhật ký chỉ đọc → Chi tiết/Tiếp tục công việc → Nhật ký thêm/sửa/xóa trở lại. Reload để khôi phục mẫu.
+- Tự kiểm tra: 127.0.0.1:5174/my-work → danh tính Dũng → KHO-T006 → Nhật ký (chưa có nút ghi) → Chi tiết/Bắt đầu công việc → Nhật ký/ghi → Chi tiết/Tạm dừng → Nhật ký chỉ đọc → Chi tiết/Tiếp tục công việc → Nhật ký thêm/sửa/xóa trở lại. Reload để khôi phục mẫu.
 - Bàn giao: mục đợt nhật ký bên dưới là bằng chứng phiên bản trước thay đổi này, không áp dụng quyền ghi khi ASSIGNED/PAUSED nữa. Không đổi layout nên không chạy lại viewport nhỏ; chưa React/E2E/API/server/DB và không cam kết kiểm tra quyền client là bảo mật production. Giữ toàn bộ thay đổi trước, chưa stage/commit/push; nghiệm thu PTCM vẫn là đợt tiếp theo chưa triển khai.
 
 ### Nhật ký và nộp kết quả cá nhân — 21/10/2026 — hoàn tất phạm vi, chờ duyệt UI
@@ -570,7 +644,7 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Đã code: Chi tiết/Nhật ký/Kết quả tại task cá nhân; thêm/sửa/xóa mềm và history before/after có lý do, tổng phút xuyên task/project và lỗi theo trường. Bổ sung projection lượt giao hiện hành và thời điểm triển khai thực tế trong demo, không thêm cột DB; không dùng ngày kế hoạch hay mốc Start task thay ngày triển khai. Nộp có bước xác nhận, link http/https, snapshot log hiệu lực đúng lượt; thiếu log vẫn nộp. PENDING_REVIEW dùng state chung ở bảng/Kanban/dự án, khóa thao tác log/nộp lặp. Xem lần nộp/snapshot chỉ đọc; fixture cũ chưa có submission hiện thông báo rõ, không bịa nội dung/kết luận. Khôi phục mẫu cũng xóa dữ liệu effort/kết quả trong phiên.
 - Đã kiểm tra: `pnpm check` qua 6 test harness, kiểm kê 70 file, typecheck, 26 test model và build; `git diff --check` qua. Các test mới kiểm tra R01, ngày Việt Nam/không tương lai/trước giao/trước triển khai, ngày sau hạn kế hoạch hợp lệ, tổng xuyên dự án và ngưỡng 480/1440, sửa/xóa có lý do/giá trị nền/xóa mềm/history, sai người/PTCM/khóa, nộp không log/URL không hợp lệ/nộp lặp và snapshot độc lập. Browser: Dũng thêm khi ASSIGNED → sửa thiếu lý do bị chặn → sửa có lý do → hủy xóa → thêm/xóa mục ghi nhầm → Start → nộp kèm log; snapshot/tổng đúng, nút sửa/thêm bị khóa, Kanban và bảng dự án PENDING_REVIEW. Bình nộp không log/link thành công; An ở project PLANNING/task DONE không thêm nhật ký. Escape đóng hộp nộp không đóng task; form 390px rộng 358px, trang không tràn (390px), đã khôi phục viewport; console không có error/warn trong phiên.
 - Review/bàn giao: giữ nguyên thay đổi các đợt trước, không backend/DB/migration/dependency/lockfile; test script mở rộng để chạy mọi `src/demo/*.test.ts`. Chỉ mock trong bộ nhớ; không transaction/audit/chống cạnh tranh server hay persistence. Chưa React/E2E tự động, chưa tích hợp API, chưa thử mọi thiết bị; nộp lại và quyết định PTCM chờ đợt nghiệm thu. Chưa stage/commit/push.
-- Tự kiểm tra nhanh: mở localhost:5173/my-work → danh tính Dũng → KHO-T006 → Nhật ký (hôm nay, 1 giờ 30 phút, nội dung) → thử icon sửa/xóa và hủy → Chi tiết/Bắt đầu → Kết quả/Nộp → xác nhận → xem snapshot và khóa Nhật ký → Kanban/Chờ nghiệm thu. Đổi Khoa xem cùng task trong dự án; muốn thử lại thì reload (mọi dữ liệu mô phỏng được khôi phục).
+- Tự kiểm tra nhanh: mở 127.0.0.1:5174/my-work → danh tính Dũng → KHO-T006 → Nhật ký (hôm nay, 1 giờ 30 phút, nội dung) → thử icon sửa/xóa và hủy → Chi tiết/Bắt đầu → Kết quả/Nộp → xác nhận → xem snapshot và khóa Nhật ký → Kanban/Chờ nghiệm thu. Đổi Khoa xem cùng task trong dự án; muốn thử lại thì reload (mọi dữ liệu mô phỏng được khôi phục).
 
 ### Bố cục nền workspace và chi tiết task — 21/10/2026 — hoàn tất phạm vi, chờ duyệt UI
 
@@ -665,3 +739,13 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 - Đã xác minh: 6 test harness qua (5 phép thử được lưu lại + ca Git có cả từ chối/cho qua); cổng thường qua 59 file. `--staged` từ chối lúc thiếu nguồn, qua sau khi staging đúng danh sách; test repo tạm cũng phát hiện sửa tiếp chưa stage. `pnpm check` qua harness, typecheck, 5 test model và build.
 - Review cuối: staging khớp đúng 59 file cần bàn giao; `git diff --cached --check` qua; 127 link file trong 16 nguồn nghiệp vụ/UI tồn tại. Không sửa UI/logic, không backend/DB/dependency hoặc export; không kiểm toán lại toàn bộ nghiệp vụ, anchor hay nội dung bí mật bằng công cụ này.
 - Bàn giao: người dùng đã cho phép lưu 59 file nguồn hiện hành/pilot/harness thành ba commit local, thông điệp hoàn toàn bằng tiếng Anh: tài liệu nghiệp vụ → pilot frontend → harness. Các file dùng chung được tách theo phần thay đổi để pilot không gọi script harness chưa tồn tại; thay đổi ngoài danh sách giữ nguyên ngoài commit. Chưa push, chưa xác minh clone/cài mới trên máy sạch. Hiệu quả thời gian/chi phí cần quan sát qua vài đợt, không cam kết số liệu chưa đo. Không có lỗi chặn phát triển UI trên máy hiện tại.
+
+### Luồng đổi mật khẩu FE — DATN-20 / AUTH-T19
+
+Form thay màn hạn chế tạm, chỉ xuất hiện khi principal từ login/me có `must_change_password=true`. Reload/deep link đọc lại server; cờ false tới `/change-password` về màn tiếp nối tạm, không mở đổi tự nguyện. Server vẫn là cổng quyền chính, FE không nâng quyền bằng cờ/role client.
+
+`PasswordChangeForm` giữ current/new/xác nhận cục bộ và xóa cả ba ô khi gửi input hợp lệ; unmount khi kiểm lại/hết phiên/rời màn cũng bỏ form. `password-validation.ts` đếm code point bằng Array.from và byte bằng TextEncoder, từ chối surrogate lẻ trước mã hóa; không trim/chuẩn hóa/cấm paste/khoảng trắng. Chỉ current/new được adapter gửi; không lưu input trong session state/storage hoặc log.
+
+Controller lấy CSRF trong bộ nhớ trước POST. 204 xóa principal/token và yêu cầu login thủ công; không gọi login, không giữ credential để thử tự động. 400 current sai/policy được phân biệt, 401 về login, 403 cờ không cần đổi đọc lại me thay vì sửa principal cục bộ. 429 giữ deadline qua check/focus; thao tác bị khóa trước hạn. 500/503/network sau POST vào trạng thái chưa xác nhận, dừng check tự động để cảnh báo không mất; nút về login hướng dẫn thử mật khẩu mới rồi cũ, không gửi lại mutation. Lỗi lấy CSRF trước POST dùng đường lỗi phiên/dịch vụ thông thường. Sau một lần login lỗi mạng vẫn có thể GET kiểm lại phiên.
+
+Bằng chứng và giới hạn của đợt được ghi tại mục DATN-20 trong sổ công việc; HTTP giả không chứng minh transaction/cookie/browser. Không áp dụng migration Neon hoặc chạy email/reset từ FE.

@@ -2,11 +2,16 @@
 
 Swagger đọc [contract hiện hành](auth.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Không sinh bản spec thứ hai hoặc thêm annotation vào handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
 
-## Mở tài liệu
+## Mở tài liệu cùng ứng dụng local
 
-Khi server đã chạy trên DB phát triển được xác nhận và schema qua 000003, mở `/docs/` tại đúng `APP_ORIGIN`. Ví dụ `APP_ORIGIN=http://localhost:8080` thì mở `http://localhost:8080/docs/`. Chỉ `APP_ENV=dev` đăng ký `/docs`, `/docs/`, `/docs/openapi.json` và các assets allowlist; production trả 404. Không cần thêm biến môi trường. API auth vẫn qua bảo vệ hiện có.
+Từ `web/`, chạy `pnpm dev`, rồi mở:
 
-Nếu đang dùng APP_ORIGIN của frontend ở cổng 5173 thì request từ docs trên cổng 8080 sẽ không khớp Origin. Chạy cấu hình dev phù hợp cho demo backend riêng; chưa thêm proxy docs/Vite trong đợt này. Không đổi APP_ORIGIN của tiến trình đang dùng chỉ để bỏ kiểm nguồn.
+- FE: `http://127.0.0.1:5174/`.
+- Swagger trên **chính backend Go**: `http://127.0.0.1:8080/docs/` (`/docs` redirect về `/docs/`).
+
+Không cần chạy Swagger harness hoặc thêm terminal backend. Localdev lắp một router/limiter/DB chung cho năm API và tài liệu. Để FE và Swagger đều thử mutation được, chỉ command localdev nhận đúng hai Origin `http://127.0.0.1:5174` và `http://127.0.0.1:8080`; vẫn kiểm cookie/CSRF, không CORS/Origin wildcard, không nhận localhost thay127.0.0.1. Cookie theo host, không theo port: FE và Swagger local chia sẻ cùng phiên, đăng xuất ở một nơi ảnh hưởng nơi còn lại; login lại phải lấy CSRF mới.
+
+`cmd/server` bình thường vẫn chỉ chấp nhận `APP_ORIGIN` cấu hình. Chỉ APP_ENV=dev mở docs, production404. Chạy backend production không tự bật ngoại lệ local hoặc Swagger. Cổng8080 bị chiếm thì runner dừng, không kill dự án khác. Cách chạy/dừng/dữ liệu giả tại [web README](../../web/README.md#chạy-fe-auth-thật--datn-19--auth-t18).
 
 ## Demo trên DB test riêng
 
@@ -27,6 +32,12 @@ Mở `http://127.0.0.1:18080/docs/`. Cổng chỉ bind loopback; nếu đã bị
 Mật khẩu ban đầu cho cả hai: `12345678`, chốt riêng cho demo local để dễ nhập; chỉ lưu bcrypt hash trong database case. Hai email chỉ là định danh trong dữ liệu demo, không gửi thư hoặc kết nối Gmail. Mỗi lượt dựng lại fixture ban đầu; thay đổi không được giữ lâu dài. Khi thử đổi mật khẩu lần đầu vẫn phải nhập mật khẩu mới đáp ứng policy ít nhất 15 ký tự Unicode/tối đa 72 byte UTF-8, ví dụ `QuanDemo2026Moi!`; không dùng lại `12345678` làm mật khẩu mới.
 
 Harness in PID, tự dừng sau 20 phút. Để dừng sớm và cho cleanup đóng server/pool rồi xóa đúng DB case, chạy `kill -USR1 <PID-đã-in>` từ terminal khác. Không kill -9, không chạy song song bộ integration khác trên cluster này. Dòng PASS của harness chỉ có nghĩa đã đóng/dọn harness, **không chứng minh người dùng đã thử đủ các luồng trên browser**.
+
+## Harness FE auth riêng — DATN-19
+
+**Ứng dụng local chạy liên tục:** từ `web/`, dùng `pnpm dev` để mở cả FE+Go, `pnpm dev:demo` để xem prototype. Runner này backend8080/docs chạy cùng ứng dụng, không dùng Go test và không có timer20phút; Ctrl+C dọn DB giả theo lượt chạy.
+
+**Kiểm harness tạm:** FE dùng proxy `/api` tại `http://127.0.0.1:5174`, backend vẫn bind18080. Chạy cùng lệnh runner phía trên nhưng chọn `-run '^TestFrontendDemoServer$'`; harness đặt APP_ORIGIN chính xác5174, không nới Origin/cookie/CSRF. Không dùng harness Swagger18080 hoặc chạy cả hai cùng lúc. Nếu dùng harness này với FE, dừng localdev rồi chạy Vite riêng với `TASKASSIGN_API_TARGET=http://127.0.0.1:18080 VITE_AUTH_MODE=server`; mặc định proxy ứng dụng hiện là8080. Hướng dẫn FE, mode và cách tự kiểm tại [web README](../../web/README.md#chạy-fe-auth-thật--datn-19--auth-t18). Form đổi mật khẩu FE chưa thuộc DATN-19.
 
 ## Thử request
 

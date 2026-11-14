@@ -17,6 +17,10 @@ Cần Python 3 stdlib, Go theo go.mod, Docker local qua Unix socket và image ch
 
 Password ngẫu nhiên chỉ dùng local test, sinh khi tạo mới; không in URL/password. User bootstrap của image là superuser trong cluster test riêng; không là mô hình quyền runtime production. Không dùng credential này cho app hoặc mailbox thật. Docker admin vẫn có thể inspect credential container: đây không phải kho bí mật production.
 
+## Ứng dụng local và test dùng DB riêng
+
+`pnpm dev` tại web gọi [runner local](../dev.py), tái dùng guard Docker/owner/cluster ở module này để dựng DB ngẫu nhiên `auth_dev_*` riêng. `cmd/localdev` chạy HTTP auth thực liên tục đến Ctrl+C và chỉ dọn DB vừa tạo; không dùng `auth_case_*` hoặc nạp fixture test làm runtime. DB gốc vẫn0bảng; kiểm thử `auth_case_*` và localdev không dùng chung dữ liệu. Không tự quét DB còn lại sau crash. Các lệnh `stop`/`destroy` bên dưới sẽ ngắt cả localdev đang dùng cluster; cần dừng `pnpm dev` trước, không chạy destroy để sửa UI.
+
 ## Lệnh từ root repo
 
 ```sh

@@ -20,6 +20,17 @@ import (
 // TestSwaggerDemoServer là harness thủ công có opt-in build tag, không là test pass nghiệp vụ.
 // Chỉ dùng runner DB sở hữu; dữ liệu giả được dọn khi nhận tín hiệu hoặc hết 20 phút.
 func TestSwaggerDemoServer(t *testing.T) {
+	runAuthDemoServer(t, "http://127.0.0.1:18080")
+}
+
+// TestFrontendDemoServer dùng Origin FE cố định, vẫn chạy cùng adapter và DB test sở hữu.
+// Cổng 5174 tránh chiếm tiến trình dự án khác đang chạy tại 5173.
+func TestFrontendDemoServer(t *testing.T) {
+	runAuthDemoServer(t, "http://127.0.0.1:5174")
+}
+
+func runAuthDemoServer(t *testing.T, origin string) {
+	t.Helper()
 	f := authdb.NewFixture(t)
 	// Credential dễ nhập chỉ dành cho demo loopback, không đổi policy mật khẩu mới.
 	hash, err := bcrypt.GenerateFromPassword([]byte("12345678"), bcrypt.DefaultCost)
@@ -27,7 +38,6 @@ func TestSwaggerDemoServer(t *testing.T) {
 	f.PasswordHash = string(hash)
 	f.AddAccount(t, authdb.AccountOptions{Email: "quan1652005@gmail.com", Roles: []string{"HR"}})
 	f.AddAccount(t, authdb.AccountOptions{Email: "quan1652005+limited@gmail.com", Roles: []string{"ADMIN"}, MustChangePassword: true})
-	const origin = "http://127.0.0.1:18080"
 	handler, err := buildHandler(&config.Config{AppEnv: "dev", AppOrigin: origin, SessionTTL: 8 * time.Hour}, f.DB.Pool(t), systemClock{})
 	authdb.Require(t, "lắp server Swagger test", err)
 	listener, err := net.Listen("tcp", "127.0.0.1:18080")
@@ -44,7 +54,7 @@ func TestSwaggerDemoServer(t *testing.T) {
 	defer stop()
 	timer := time.NewTimer(20 * time.Minute)
 	defer timer.Stop()
-	t.Logf("Swagger test local: %s/docs/; PID=%d; dừng bằng SIGUSR1 hoặc tự dừng sau 20 phút", origin, os.Getpid())
+	t.Logf("Auth test local: backend=127.0.0.1:18080; APP_ORIGIN=%s; PID=%d; dừng bằng SIGUSR1 hoặc tự dừng sau 20 phút", origin, os.Getpid())
 	// Không in credential; thông tin đăng nhập demo được ghi trong docs/api/README.md.
 	select {
 	case <-ctx.Done():

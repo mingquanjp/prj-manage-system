@@ -111,7 +111,7 @@ test("Git: phân biệt untracked, đã stage và sửa tiếp chưa stage", asy
 
 test("kiểm kê giữ runner PostgreSQL test riêng và không đưa credential local vào nguồn", async () => {
   const files = await requiredFiles()
-  for (const path of ["scripts/authdb/manage.py", "scripts/authdb/test_manage.py", "scripts/authdb/probe.go", "scripts/authdb/README.md"]) {
+  for (const path of ["scripts/dev.py", "scripts/test_dev.py", "scripts/authdb/manage.py", "scripts/authdb/test_manage.py", "scripts/authdb/probe.go", "scripts/authdb/README.md"]) {
     assert.ok(files.includes(path), `Thiếu công cụ DB test: ${path}`)
   }
   assert.ok(!files.some((path) => path.startsWith(".local/authdb/")))

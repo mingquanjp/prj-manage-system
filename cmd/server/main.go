@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	"ai-staffing/internal/app"
 	"ai-staffing/internal/config"
 	"ai-staffing/internal/repository/postgres"
 	"ai-staffing/internal/service/auth"
-	httptransport "ai-staffing/internal/transport/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -93,13 +93,7 @@ func (systemClock) Now() time.Time { return time.Now() }
 
 // buildHandler dùng chung cho startup và integration HTTP trên pool test thật.
 func buildHandler(cfg *config.Config, pool *pgxpool.Pool, clock auth.Clock) (http.Handler, error) {
-	repository := postgres.NewAuthRepository(pool, clock)
-	return httptransport.NewAuthRouter(pool, cfg.AppEnv, cfg.AppOrigin, httptransport.AuthServices{
-		Sessions:       auth.NewService(repository, clock),
-		Login:          auth.NewLoginService(repository, clock, cfg.SessionTTL),
-		PasswordChange: auth.NewPasswordChangeService(repository, clock),
-		Clock:          clock,
-	})
+	return app.AuthHandler(cfg, pool, clock)
 }
 
 // logStartupError chỉ nhận lỗi cấu hình/kết nối đã được các cổng startup làm an toàn.
