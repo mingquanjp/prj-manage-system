@@ -81,14 +81,14 @@ func roles(t *testing.T, db *authdb.Case) {
 func TestAuthMigrationEmpty(t *testing.T) {
 	db := authdb.NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	authdb.Require(t, "up từ DB rỗng", m.Up())
+	authdb.Require(t, "up từ DB rỗng", m.Migrate(3))
 	head(t, m, 3)
 	var count int
 	authdb.Require(t, "đếm nền auth", db.Conn.QueryRow(context.Background(), `SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('user_roles','auth_sessions')`).Scan(&count))
 	if count != 2 {
 		t.Fatal("thiếu bảng auth")
 	}
-	if !errors.Is(m.Up(), migrate.ErrNoChange) {
+	if !errors.Is(m.Migrate(3), migrate.ErrNoChange) {
 		t.Fatal("up lại phải không thay đổi")
 	}
 }
@@ -117,7 +117,7 @@ func TestAuthMigrationLegacy(t *testing.T) {
 	sameJSON(t, before, usersAfter)
 	authdb.Require(t, "preflight legacy v2", legacyPreflight(db, true))
 	baseline := snapshot(t, db)
-	authdb.Require(t, "up auth", m.Up())
+	authdb.Require(t, "up auth", m.Migrate(3))
 	head(t, m, 3)
 	sameJSON(t, baseline, snapshot(t, db))
 	roles(t, db)
@@ -132,7 +132,7 @@ func TestAuthMigrationPreservesFlagsAndRollback(t *testing.T) {
 	exec(t, db.Conn, `UPDATE users SET must_change_password=true WHERE user_id=101`)
 	authdb.Require(t, "preflight trước auth", legacyPreflight(db, true))
 	before := snapshot(t, db)
-	authdb.Require(t, "up auth", m.Up())
+	authdb.Require(t, "up auth", m.Migrate(3))
 	head(t, m, 3)
 	sameJSON(t, before, snapshot(t, db))
 	roles(t, db)
@@ -147,7 +147,7 @@ func TestAuthMigrationPreservesFlagsAndRollback(t *testing.T) {
 	if !absent {
 		t.Fatal("down chưa xóa đúng bảng auth")
 	}
-	authdb.Require(t, "up auth lại", m.Up())
+	authdb.Require(t, "up auth lại", m.Migrate(3))
 	head(t, m, 3)
 	roles(t, db)
 	var sessions int

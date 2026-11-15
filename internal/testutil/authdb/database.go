@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"net/url"
@@ -15,6 +16,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"ai-staffing/migrations"
 
 	"github.com/golang-migrate/migrate/v4"
 	driver "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -174,8 +177,32 @@ func (r *Migrator) Close(t *testing.T) {
 
 func (db *Case) OpenMigrator(t *testing.T, source fs.FS) *Migrator {
 	t.Helper()
-	// Dùng đúng driver hiện hành; không loader/CLI dotenv, không SQL version thủ công.
+	return db.openMigrator(t, source, db.cfg, nil)
+}
+
+// OpenMappedMigrator truyền mapping tổng hợp trên connection của case test.
+func (db *Case) OpenMappedMigrator(t *testing.T, source fs.FS, approved map[string]string) *Migrator {
+	t.Helper()
+	cfg := db.cfg.Copy()
+	payload, err := json.Marshal(approved)
+	Require(t, "mã hóa mapping fixture", err)
+	cfg.RuntimeParams["app.oap_m1_job_levels"] = string(payload)
+	return db.openMigrator(t, source, cfg, approved)
+}
+
+func (db *Case) CheckM1(t *testing.T, approved map[string]string) error {
+	t.Helper()
 	sqlDB := stdlibDB(t, db.cfg)
+	defer sqlDB.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return migrations.CheckM1(ctx, sqlDB, approved)
+}
+
+func (db *Case) openMigrator(t *testing.T, source fs.FS, cfg *pgx.ConnConfig, approved map[string]string) *Migrator {
+	t.Helper()
+	// Dùng đúng driver hiện hành; không loader/CLI dotenv, không SQL version thủ công.
+	sqlDB := stdlibDB(t, cfg)
 	d, err := driver.WithInstance(sqlDB, &driver.Config{MultiStatementEnabled: false, StatementTimeout: 35 * time.Second})
 	if err != nil {
 		sqlDB.Close()
@@ -183,7 +210,7 @@ func (db *Case) OpenMigrator(t *testing.T, source fs.FS) *Migrator {
 	Require(t, "driver migration", err)
 	src, err := iofs.New(source, ".")
 	Require(t, "nguồn migration", err)
-	m, err := migrate.NewWithInstance("iofs", src, "pgx", d)
+	m, err := migrate.NewWithInstance("iofs", src, "pgx", migrations.WithM1Preflight(d, sqlDB, approved))
 	Require(t, "runner migration", err)
 	r := &Migrator{migrationEngine: m}
 	t.Cleanup(func() { r.Close(t) })

@@ -187,13 +187,13 @@ func prepare(ctx context.Context, cfg *pgx.ConnConfig, systemID string) error {
 		_ = d.Close()
 		return errors.New("không mở được nguồn migration")
 	}
-	m, err := migrate.NewWithInstance("iofs", source, "pgx", d)
+	m, err := migrate.NewWithInstance("iofs", source, "pgx", migrations.WithM1Preflight(d, sqlDB, nil))
 	if err != nil {
 		_ = source.Close()
 		_ = d.Close()
 		return errors.New("không tạo được migration local")
 	}
-	err = m.Migrate(3)
+	err = m.Up()
 	a, b := m.Close()
 	if err != nil || a != nil || b != nil {
 		return errors.New("migration DB local không hoàn tất")

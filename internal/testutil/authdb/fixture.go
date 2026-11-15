@@ -43,7 +43,7 @@ func NewFixture(t *testing.T) *Fixture {
 	t.Helper()
 	db := NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	Require(t, "nâng fixture đến migration auth", m.Migrate(3))
+	Require(t, "nâng fixture đến head hiện hành", m.Up())
 	m.Close(t)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(FixturePassword), bcrypt.DefaultCost)

@@ -148,3 +148,39 @@ node scripts/check-harness.mjs
 ```
 
 Unit tests dùng Docker giả, không là bằng chứng PostgreSQL thật. Bằng chứng local thực chạy được ghi riêng tại proposal mục 6.1.7. Không tự chạy `destroy` trong test suite. Không dùng seed ứng dụng hoặc Neon làm DB test.
+
+## DATN-24 — Migration M1 cho danh mục, hồ sơ và audit
+
+M1 là `000004_oap_m1`. Ca bootstrap và ca legacy đi qua driver pgx của
+golang-migrate. Fixture auth dùng head hiện hành. Các ca lịch sử riêng của auth
+vẫn kiểm mốc `000003`.
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./cmd/server ./cmd/localdev -count=1 -timeout=5m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+```
+
+Chạy từng lượt theo thứ tự. Runner xác minh PG18 và quyền sở hữu. Test đóng kết nối
+rồi dọn đúng database case của từng lượt. Nếu cleanup thất bại, giữ case lại
+để đối soát. Không dùng `destroy` như bước dọn thường ngày.
+
+- OAP-DB01/02 kiểm schema M1, seed lặp lại và snapshot legacy gồm ID, liên kết,
+  hash, email, trạng thái, quyền, phiên, mã và timestamp. Backfill chỉ tắt
+  trigger timestamp của employee trong transaction giữ khóa rồi bật lại.
+- OAP-DB03/04 kiểm runner dừng ở version 3 sạch khi thiếu mapping, tên trùng,
+  tên trắng hoặc schema lệch. Mapping fixture nối giá trị seniority gốc với tên
+  cấp bậc đã xác nhận, truyền qua tham số phiên của kết nối test. CLI mặc định
+  nhận mapping rỗng, nên dừng nếu có giá trị legacy cần ánh xạ. Đường áp dụng
+  mapping dữ liệu đích cần brief và review riêng trước khi triển khai.
+- OAP-DB12 phần M1 kiểm down/up và lỗi giữa DDL. Lỗi DDL rollback schema nhưng
+  driver giữ version 4 dirty. Down loại bỏ địa chỉ, cấp bậc và audit của M1.
+  Dữ liệu legacy còn lại được giữ, còn dữ liệu mới cần backup nếu phải phục hồi.
+- Hồi quy auth dùng repository và HTTP với PostgreSQL M1. Test localdev gọi
+  bước chuẩn bị thật trên DB case riêng, kiểm schema/fixture mà không mở cổng.
+
+Unique index dùng `lower(btrim(name))` theo SQL plan. Preflight chặn tên legacy
+có padding Unicode còn lại sau `btrim`, thay vì tự sửa. CHECK nhận diện chuỗi
+toàn khoảng trắng Unicode, kể cả NBSP. Kiểm case tiếng Việt chạy theo collation
+của cluster test. Cần đối chiếu collation và mapping ở môi trường đích trước
+khi lên kế hoạch áp dụng ngoài test.
