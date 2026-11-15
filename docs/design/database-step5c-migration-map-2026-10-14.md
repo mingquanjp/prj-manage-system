@@ -4,6 +4,8 @@ Cập nhật 15/10/2026 theo [quyết định hiện hành](database-review-deci
 
 **Tiếp nối 26/10/2026:** đích có 33 bảng, thêm job_levels và employees.job_level_id nullable thay seniority_level. Kiểm kê giá trị cấp bậc cũ (kể cả text ở phiên FE), đối chiếu/chuẩn hóa tên với HR rồi tạo danh mục và map ID; trống giữ NULL, giá trị chưa xác minh phải phân loại, không đoán cấp bậc từ tên vị trí. Giữ snapshot/audit cũ. Đây là hướng chuyển đổi tài liệu, không đã backfill/chạy migration; giữ nguyên 000001.
 
+**Chốt cuối 15/11/2026 — users.username:** bỏ cột khỏi thiết kế đích, không chuyển sang nullable hoặc tạo alias. Migration tiến thêm phải rà code/seed/fixture/test/runner/UI, kiểm phụ thuộc và không DROP CASCADE tùy tiện; không sửa 000001–000003. Username là dữ liệu bị loại bỏ có chủ đích, các ID/liên kết/hash/email/status/role/session/mã nhân viên vẫn bảo toàn. Drop không thể khôi phục giá trị cũ bằng down đơn thuần: cần backup được phép/restore nếu cần phục hồi; không bịa username. SQL và kiểm thử chuyển đổi theo [proposal mục 6.1](../proposals/backend-organization-accounts-profile.md#61-databasemigration-và-bảo-toàn), chưa áp Neon.
+
 ## 0. Kiểm kê Neon thực tế 06/11/2026 — trước cập nhật
 
 **Đã kết nối và chỉ đọc** project `ai-staffing` (`tiny-boat-30803147`), branch duy nhất/default `production` (`br-patient-meadow-azczu1hg`), database `neondb`. Tên branch không chứng minh đây là môi trường demo hay dữ liệu có thể xóa. Chưa tạo branch/snapshot, chạy DDL, backfill, seed/reset hoặc sửa `schema_migrations`.

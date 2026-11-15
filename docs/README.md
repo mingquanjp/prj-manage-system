@@ -41,7 +41,11 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 - [Runbook PostgreSQL test](../scripts/authdb/README.md): guard, môi trường sở hữu, cách chạy/dọn và integration; không dùng DATABASE_URL/Neon thay DB test.
 - [Swagger UI dev và hướng dẫn demo](api/README.md): dùng cùng OpenAPI, tài nguyên local; production không mở docs. Không nhận Swagger render được là bằng chứng browser/cookie/CSRF đã kiểm hết.
 - [Bộ ticket auth](proposals/backend-auth-session-tickets.md): 1 Epic và 20 Task, mapping 33 đơn vị WBS/105 giờ cơ sở; review nằm trong Done. Jira DATN hiện ở site riêng theo [workflow](ai/workflow.md); tiến độ thực xem Jira, không lấy estimate làm giờ còn lại.
-- [Công cụ Jira](../scripts/jira/README.md): diagnose/plan/apply/check khi được giao; token nhập ẩn. Không chạy import lại để cập nhật tiến độ.
+- [Proposal danh mục tổ chức, cấp tài khoản và hồ sơ](proposals/backend-organization-accounts-profile.md): bản đề xuất cho ba feature tiếp theo D01/D02; đã chốt 15/11 chỉ email đăng nhập, không username sản phẩm, mã mới EMP000001… tại [baseline](business-baseline-2026-10-20.md#quyết-định-tiếp-nối-15112026--email-đăng-nhập-và-mã-nhân-viên). Đã duyệt OAP-A01–A08 và Gmail API/OAuth gmail.send, hoãn cấp lại/gửi lại. Đã soạn OpenAPI và kế hoạch SQL để review; mapping legacy cụ thể/brief OAuth và ticket là bước tiếp theo. Chưa có code nghiệp vụ hoặc Jira mới.
+- [OpenAPI tổ chức/tài khoản/hồ sơ](api/organization-accounts-profile.openapi.json): contract thiết kế cho 16 thao tác, chưa có endpoint mới trong runtime/Swagger. Kiểm tĩnh bằng `node --test scripts/check-organization-contract.test.mjs`, không thay kiểm thử HTTP/DB.
+- [Kế hoạch SQL và DB test OAP](proposals/backend-organization-accounts-profile-sql-plan.md): preflight/mapping, M1 danh mục/hồ sơ, M2 bỏ username/cấp mã/email, khóa/rollback và ma trận test; chưa là migration được chạy hoặc quyền áp Neon.
+- [Bộ ticket tổ chức/tài khoản/hồ sơ](proposals/backend-organization-accounts-profile-tickets.md): 1 Epic/13 Task ánh xạ 15 WBS, Rank và 17 Blocks; một task bàn giao thiết kế đã làm, 12 task triển khai. Chưa nhập Jira, không dùng script auth để import đợt mới.
+- [Công cụ Jira](../scripts/jira/README.md): diagnose/plan/apply/check khi được giao; token nhập ẩn. Đợt OAP dùng [script/hướng dẫn riêng](../scripts/jira/README-oap.md), không dùng apply auth hoặc journal auth. Không chạy import lại để cập nhật tiến độ.
 
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 
@@ -68,6 +72,8 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 Không chuyển hàng loạt file đang được dẫn chiếu sang thư mục khác chỉ để ít file hơn; tránh hỏng liên kết báo cáo/DB. Phần dư thừa được bỏ khỏi luồng đọc và chỉ dẫn chủ động. Chỉ xóa tài liệu sau khi xác nhận không còn nội dung riêng hoặc bên dùng liên kết.
 
 ## 5. Vận hành tài liệu
+
+[Kế hoạch triển khai và báo cáo thứ Năm đến 14/01/2027](ai/delivery-plan.md): đề xuất dựa trên 15–20 giờ/tuần, hiện trạng code và FR; chưa thay đổi phạm vi/nghiệp vụ hoặc xác nhận tỷ lệ hoàn thành.
 
 - Nhận việc, branch/commit/PR và liên kết Jira: [workflow solo](ai/workflow.md), [mẫu brief/bàn giao](ai/task-template.md), [PR template](../.github/pull_request_template.md). Quy trình không thay nguồn nghiệp vụ; hướng học Go giữ phần người dùng tự viết. Chưa xác minh Development nhận liên kết trên Jira chỉ từ việc Git remote đã cấu hình.
 - Thay quyết định đã chốt: hỏi người dùng; sửa nguồn đúng miền và phần UI/DB có liên quan, không thêm một bản sao “final-vN”.

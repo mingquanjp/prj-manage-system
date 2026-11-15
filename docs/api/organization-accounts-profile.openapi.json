@@ -1,0 +1,2408 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "DATN — Tổ chức, cấp tài khoản và hồ sơ",
+    "version": "0.1.0-draft",
+    "description": "Contract thiết kế để review theo proposal OAP đã duyệt 15/11/2026; chưa có endpoint triển khai/DB migration. Không thêm route auth, reset/gửi lại, HR sửa hồ sơ hoặc API nghiệp vụ khác. Mọi route yêu cầu phiên thường hiện hành; cookie/CSRF dùng contract auth. Quy tắc dài chuỗi Unicode theo code point sau trim; giới hạn byte JSON thực 8192 riêng. JSON response/ lỗi no-store. Các x-* là yêu cầu cần test runtime, không được OpenAPI tự thực thi. Raw request string không đặt maxLength/format cho giá trị cần trim: x-normalized-* mô tả giới hạn/format sau trim mà handler bắt buộc kiểm; JSON Schema không tự biến đổi input. Response dùng giới hạn đã chuẩn hóa. Request body vẫn giới hạn 8192 byte thực."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Cùng origin ứng dụng; dev qua proxy /api, production HTTPS."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Organization"
+    },
+    {
+      "name": "Accounts"
+    },
+    {
+      "name": "Profile"
+    }
+  ],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "paths": {
+    "/api/departments": {
+      "get": {
+        "operationId": "listDepartmentCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Danh sách phòng ban",
+        "description": "HR/Admin đọc danh mục để quản trị hoặc chọn dữ liệu tạo hồ sơ. Sắp id tăng dần; không tự có quyền mutation.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR",
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách phòng ban thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createDepartmentCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Thêm phòng ban",
+        "description": "Chỉ HR. Tên duy nhất trong chính loại danh mục sau trim/lower. Ghi audit cùng transaction. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thêm phòng ban thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "/api/departments/{id} là URI tài nguyên, không hàm ý có GET item riêng trong đợt này."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                },
+                "example": {
+                  "id": 12,
+                  "name": "Tên danh mục thử nghiệm"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogCreateConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/{id}": {
+      "patch": {
+        "operationId": "renameDepartmentCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Đổi tên phòng ban",
+        "description": "Chỉ HR. Đối chiếu expected_before_name chính xác dưới khóa; lệch trả409 STALE_DATA. Tên mới giữ nguyên ID/liên kết; name trùng chính nó là no-op, không audit giả. Mục không tồn tại trả404. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đổi tên phòng ban thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogRenameConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogRename"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDepartmentCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Xóa phòng ban",
+        "description": "Chỉ HR. JSON expected_before_name; lệch trả409 STALE_DATA. FK còn tham chiếu trả409 CATALOG_IN_USE, không cascade/set NULL. Xóa và audit cùng transaction; đã xóa trả404 khi gọi lại, không tự retry. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Không body.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogDeleteConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogDelete"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/positions": {
+      "get": {
+        "operationId": "listPositionCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Danh sách vị trí",
+        "description": "HR/Admin đọc danh mục để quản trị hoặc chọn dữ liệu tạo hồ sơ. Sắp id tăng dần; không tự có quyền mutation.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR",
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách vị trí thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPositionCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Thêm vị trí",
+        "description": "Chỉ HR. Tên duy nhất trong chính loại danh mục sau trim/lower. Ghi audit cùng transaction. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thêm vị trí thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "/api/positions/{id} là URI tài nguyên, không hàm ý có GET item riêng trong đợt này."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                },
+                "example": {
+                  "id": 12,
+                  "name": "Tên danh mục thử nghiệm"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogCreateConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/positions/{id}": {
+      "patch": {
+        "operationId": "renamePositionCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Đổi tên vị trí",
+        "description": "Chỉ HR. Đối chiếu expected_before_name chính xác dưới khóa; lệch trả409 STALE_DATA. Tên mới giữ nguyên ID/liên kết; name trùng chính nó là no-op, không audit giả. Mục không tồn tại trả404. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đổi tên vị trí thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogRenameConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogRename"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePositionCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Xóa vị trí",
+        "description": "Chỉ HR. JSON expected_before_name; lệch trả409 STALE_DATA. FK còn tham chiếu trả409 CATALOG_IN_USE, không cascade/set NULL. Xóa và audit cùng transaction; đã xóa trả404 khi gọi lại, không tự retry. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Không body.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogDeleteConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogDelete"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/job-levels": {
+      "get": {
+        "operationId": "listJobLevelCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Danh sách cấp bậc",
+        "description": "HR/Admin đọc danh mục để quản trị hoặc chọn dữ liệu tạo hồ sơ. Sắp id tăng dần; không tự có quyền mutation.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR",
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách cấp bậc thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createJobLevelCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Thêm cấp bậc",
+        "description": "Chỉ HR. Tên duy nhất trong chính loại danh mục sau trim/lower. Ghi audit cùng transaction. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thêm cấp bậc thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "/api/job-levels/{id} là URI tài nguyên, không hàm ý có GET item riêng trong đợt này."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                },
+                "example": {
+                  "id": 12,
+                  "name": "Tên danh mục thử nghiệm"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogCreateConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/job-levels/{id}": {
+      "patch": {
+        "operationId": "renameJobLevelCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Đổi tên cấp bậc",
+        "description": "Chỉ HR. Đối chiếu expected_before_name chính xác dưới khóa; lệch trả409 STALE_DATA. Tên mới giữ nguyên ID/liên kết; name trùng chính nó là no-op, không audit giả. Mục không tồn tại trả404. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đổi tên cấp bậc thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogRenameConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogRename"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteJobLevelCatalog",
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Xóa cấp bậc",
+        "description": "Chỉ HR. JSON expected_before_name; lệch trả409 STALE_DATA. FK còn tham chiếu trả409 CATALOG_IN_USE, không cascade/set NULL. Xóa và audit cùng transaction; đã xóa trả404 khi gọi lại, không tự retry. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "HR"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Không body.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/CatalogDeleteConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogDelete"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/employees/next-code": {
+      "get": {
+        "operationId": "previewEmployeeCode",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Xem mã nhân viên dự kiến",
+        "description": "Admin xem mã có thể được cấp; không nextval/giữ chỗ hoặc cam kết mã khi lưu. Chỉ phản ánh snapshot đọc; tạo đồng thời có thể làm mã thực khác. Không đổi mã legacy.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Xem mã nhân viên dự kiến thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextEmployeeCode"
+                },
+                "example": {
+                  "employee_code": "EMP000001",
+                  "is_preview": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/employees": {
+      "post": {
+        "operationId": "createEmployeeAccount",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Tạo tài khoản kèm hồ sơ",
+        "description": "Chỉ Admin. User/employee/role/audit commit nguyên tử, sinh mật khẩu tạm ngoài transaction. Sau commit gửi qua Gmail API; 201 chỉ xác nhận tài khoản đã tạo, mail.status phân biệt accepted/failed/unknown. Không password/Set-Cookie. Không auto retry/idempotency key trong đợt này; mất phản hồi đối soát GET users. Họ tên không unique. FK chọn không tồn tại trả400 VALIDATION_ERROR; email đã có kể cả inactive trả409 EMAIL_CONFLICT. Thứ tự cổng HTTP: xác thực phiên → cờ buộc đổi/quyền → Origin/CSRF → Content-Type/body/JSON → validate input → service. Không đi qua kiểm sớm khi đã lỗi.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "x-required-system-roles": [
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Tạo tài khoản kèm hồ sơ thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateEmployeeResult"
+                },
+                "examples": {
+                  "accepted": {
+                    "summary": "Tài khoản đã tạo; Google nhận gửi",
+                    "value": {
+                      "account_created": true,
+                      "account": {
+                        "user_id": 12,
+                        "employee_id": 25,
+                        "employee_code": "EMP000001",
+                        "fullname": "Nhân viên thử nghiệm",
+                        "company_email": "employee@example.invalid",
+                        "status": "ACTIVE",
+                        "system_roles": [],
+                        "must_change_password": true
+                      },
+                      "mail": {
+                        "status": "accepted"
+                      }
+                    }
+                  },
+                  "failed": {
+                    "summary": "Tài khoản đã tạo, gửi email thất bại",
+                    "value": {
+                      "account_created": true,
+                      "account": {
+                        "user_id": 12,
+                        "employee_id": 25,
+                        "employee_code": "EMP000001",
+                        "fullname": "Nhân viên thử nghiệm",
+                        "company_email": "employee@example.invalid",
+                        "status": "ACTIVE",
+                        "system_roles": [],
+                        "must_change_password": true
+                      },
+                      "mail": {
+                        "status": "failed"
+                      }
+                    }
+                  },
+                  "unknown": {
+                    "summary": "Tài khoản đã tạo; chưa xác định kết quả gửi",
+                    "value": {
+                      "account_created": true,
+                      "account": {
+                        "user_id": 12,
+                        "employee_id": 25,
+                        "employee_code": "EMP000001",
+                        "fullname": "Nhân viên thử nghiệm",
+                        "company_email": "employee@example.invalid",
+                        "status": "ACTIVE",
+                        "system_roles": [],
+                        "must_change_password": true
+                      },
+                      "mail": {
+                        "status": "unknown"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "409": {
+            "$ref": "#/components/responses/EmployeeCreateConflict"
+          }
+        },
+        "x-max-body-bytes": 8192,
+        "requestBody": {
+          "required": true,
+          "description": "application/json; tối đa 8192 byte thực đọc, kể cả chunked/không Content-Length. Chỉ một object, từ chối field lạ, key trùng, trailing JSON/null sai schema.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEmployeeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "listAccounts",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Danh sách tài khoản",
+        "description": "Chỉ Admin. q tìm literal theo employee_code/fullname/company_email; user_id tăng dần. Role từ user_roles, không legacy system_role. Không phone/address/hash/username/mail body. Không persist delivery status trong đợt này: reload chỉ đối soát account, không biết kết quả thư cũ. Count/items đọc cùng snapshot; email projection chuẩn hóa trim/lower, dữ liệu lưu legacy giữ nguyên.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [
+          "ADMIN"
+        ],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách tài khoản thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/employees/{id}": {
+      "get": {
+        "operationId": "readSelfProfile",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Xem hồ sơ của tôi",
+        "description": "Phiên thường và ID employee liên kết đúng user hiện hành; Admin cũng chỉ đọc chính chủ. ID không tồn tại/không phải chính chủ cùng404 NOT_FOUND. Limited trả403 PASSWORD_CHANGE_REQUIRED trước kiểm quyền tài nguyên. Position bắt buộc; department/job_level nullable; lịch sử đề nghị ngoài phạm vi.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-system-roles": [],
+        "x-requires-business-session": true,
+        "x-reject-unknown-query": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xem hồ sơ của tôi thành công.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Không cache kể cả lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfProfile"
+                },
+                "example": {
+                  "user_id": 12,
+                  "employee_id": 25,
+                  "employee_code": "EMP000001",
+                  "fullname": "Nhân viên thử nghiệm",
+                  "company_email": "employee@example.invalid",
+                  "phone": null,
+                  "address": null,
+                  "position": {
+                    "id": 12,
+                    "name": "Chuyên viên"
+                  },
+                  "department": null,
+                  "job_level": null,
+                  "employment_status": "ACTIVE"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "staffing_session",
+        "description": "Cookie phiên HttpOnly do trình duyệt tự nhận sau POST login và tự gửi cho /api cùng origin. Không nhập cookie vào Authorize; JavaScript không được tự đặt header Cookie. Server kiểm expiry/revoke/active/cờ/quyền hiện hành."
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "Lấy csrf_token bằng GET /api/auth/csrf sau login, nhập token vào đây để gửi X-CSRF-Token. Lấy token mới sau mỗi login; không lưu authorization qua reload. Cùng cookie trong một Security Requirement là bắt buộc cả hai."
+      }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "page_size",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Query": {
+        "name": "q",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "x-normalization": "Go strings.TrimSpace; không bỏ dấu hoặc Unicode normalize",
+          "x-normalized-max-length": 100
+        },
+        "description": "Trim biên; tìm chuỗi con literal không phân biệt hoa/thường, không bỏ dấu. %/_ không là wildcard. Rỗng tương đương không lọc."
+      },
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Trình duyệt tự gửi; phải khớp scheme/host/effective port APP_ORIGIN, không tin forwarded header. Thiếu/null/nhiều/sai nguồn bị từ chối."
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Lỗi 400: VALIDATION_ERROR. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "VALIDATION_ERROR"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
+                "value": {
+                  "code": "VALIDATION_ERROR",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Lỗi 401: UNAUTHENTICATED. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "UNAUTHENTICATED"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "UNAUTHENTICATED": {
+                "value": {
+                  "code": "UNAUTHENTICATED",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Phiên hạn chế trả PASSWORD_CHANGE_REQUIRED; thiếu quyền hoặc Origin/CSRF sai trả FORBIDDEN theo helper auth hiện hành.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "FORBIDDEN",
+                        "PASSWORD_CHANGE_REQUIRED"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "value": {
+                  "code": "FORBIDDEN",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              },
+              "PASSWORD_CHANGE_REQUIRED": {
+                "value": {
+                  "code": "PASSWORD_CHANGE_REQUIRED",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Lỗi 404: NOT_FOUND. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "NOT_FOUND"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "NOT_FOUND": {
+                "value": {
+                  "code": "NOT_FOUND",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "Lỗi 413: PAYLOAD_TOO_LARGE. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "PAYLOAD_TOO_LARGE"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "PAYLOAD_TOO_LARGE": {
+                "value": {
+                  "code": "PAYLOAD_TOO_LARGE",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error415": {
+        "description": "Lỗi 415: UNSUPPORTED_MEDIA_TYPE. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "UNSUPPORTED_MEDIA_TYPE"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "UNSUPPORTED_MEDIA_TYPE": {
+                "value": {
+                  "code": "UNSUPPORTED_MEDIA_TYPE",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error500": {
+        "description": "Lỗi 500: INTERNAL_ERROR. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "INTERNAL_ERROR"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "INTERNAL_ERROR": {
+                "value": {
+                  "code": "INTERNAL_ERROR",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "Lỗi 503: SERVICE_UNAVAILABLE. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "SERVICE_UNAVAILABLE": {
+                "value": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CatalogCreateConflict": {
+        "description": "Lỗi 409: DUPLICATE_NAME. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "DUPLICATE_NAME"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "DUPLICATE_NAME": {
+                "value": {
+                  "code": "DUPLICATE_NAME",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CatalogRenameConflict": {
+        "description": "Lỗi 409: STALE_DATA, DUPLICATE_NAME. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "STALE_DATA",
+                        "DUPLICATE_NAME"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "STALE_DATA": {
+                "value": {
+                  "code": "STALE_DATA",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              },
+              "DUPLICATE_NAME": {
+                "value": {
+                  "code": "DUPLICATE_NAME",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CatalogDeleteConflict": {
+        "description": "Lỗi 409: STALE_DATA, CATALOG_IN_USE. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "STALE_DATA",
+                        "CATALOG_IN_USE"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "STALE_DATA": {
+                "value": {
+                  "code": "STALE_DATA",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              },
+              "CATALOG_IN_USE": {
+                "value": {
+                  "code": "CATALOG_IN_USE",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EmployeeCreateConflict": {
+        "description": "Lỗi 409: EMAIL_CONFLICT. Không chi tiết SQL/PII/credential.",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "const": "no-store"
+            },
+            "description": "Không cache kể cả lỗi."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "EMAIL_CONFLICT"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "EMAIL_CONFLICT": {
+                "value": {
+                  "code": "EMAIL_CONFLICT",
+                  "message": "Không thể hoàn tất yêu cầu.",
+                  "request_id": "demo-request"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CatalogItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "Trim Unicode ở biên trước kiểm độ dài; không bỏ dấu/normalize Unicode. Không chỉ khoảng trắng."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "CatalogCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "Trim Unicode ở biên trước kiểm độ dài; không bỏ dấu/normalize Unicode. Không chỉ khoảng trắng.",
+            "x-normalization": "Go strings.TrimSpace; không bỏ dấu hoặc Unicode normalize",
+            "x-normalized-max-length": 100
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CatalogRename": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "Trim Unicode ở biên trước kiểm độ dài; không bỏ dấu/normalize Unicode. Không chỉ khoảng trắng.",
+            "x-normalization": "Go strings.TrimSpace; không bỏ dấu hoặc Unicode normalize",
+            "x-normalized-max-length": 100
+          },
+          "expected_before_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "description": "Tên nguyên bản từ lần GET gần nhất; không trim/chuẩn hóa giá trị nền trước so chính xác."
+          }
+        },
+        "required": [
+          "name",
+          "expected_before_name"
+        ]
+      },
+      "CatalogDelete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_before_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "expected_before_name"
+        ]
+      },
+      "Pagination": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "page",
+          "page_size",
+          "total"
+        ]
+      },
+      "CreateEmployeeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fullname": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "Trim Unicode ở biên trước kiểm độ dài; không bỏ dấu/normalize Unicode. Không chỉ khoảng trắng.",
+            "x-normalization": "Go strings.TrimSpace; không bỏ dấu hoặc Unicode normalize",
+            "x-normalized-max-length": 100
+          },
+          "company_email": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Email đơn, không display name/list/CRLF; trim Unicode ở biên, so khớp lower(btrim) nhất quán auth/DB theo SQL plan. Không giới hạn domain demo cho sản phẩm.",
+            "x-normalization": "Go strings.ToLower(strings.TrimSpace); không bỏ dấu hoặc Unicode normalize",
+            "x-normalized-max-length": 100,
+            "x-normalized-format": "email"
+          },
+          "position_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "department_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "job_level_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "pattern": "\\S",
+            "x-normalization": "Go strings.TrimSpace; không bỏ dấu hoặc Unicode normalize",
+            "x-normalized-max-length": 20
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "system_roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADMIN",
+                "HR",
+                "DIRECTOR"
+              ]
+            },
+            "uniqueItems": true,
+            "maxItems": 3,
+            "default": []
+          }
+        },
+        "required": [
+          "fullname",
+          "company_email",
+          "position_id"
+        ]
+      },
+      "Account": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_code": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "description": "Mã đã cấp có thể là legacy E001/EMP001; mã mới EMP000001… Không dùng làm credential."
+          },
+          "fullname": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "company_email": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "format": "email",
+            "description": "Email đơn, không display name/list/CRLF; trim Unicode ở biên, so khớp lower(btrim) nhất quán auth/DB theo SQL plan. Không giới hạn domain demo cho sản phẩm. Projection chuẩn hóa bằng helper trim/lower auth; không UPDATE email legacy."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DISABLED"
+            ]
+          },
+          "system_roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADMIN",
+                "HR",
+                "DIRECTOR"
+              ]
+            },
+            "uniqueItems": true,
+            "maxItems": 3
+          },
+          "must_change_password": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "user_id",
+          "employee_id",
+          "employee_code",
+          "fullname",
+          "company_email",
+          "status",
+          "system_roles",
+          "must_change_password"
+        ]
+      },
+      "SelfProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_code": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "description": "Mã đã cấp có thể là legacy E001/EMP001; mã mới EMP000001… Không dùng làm credential."
+          },
+          "fullname": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "company_email": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "format": "email",
+            "description": "Email đơn, không display name/list/CRLF; trim Unicode ở biên, so khớp lower(btrim) nhất quán auth/DB theo SQL plan. Không giới hạn domain demo cho sản phẩm. Projection chuẩn hóa bằng helper trim/lower auth; không UPDATE email legacy."
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/CatalogItem"
+          },
+          "department": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "job_level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "employment_status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "RESIGNED"
+            ]
+          }
+        },
+        "required": [
+          "user_id",
+          "employee_id",
+          "employee_code",
+          "fullname",
+          "company_email",
+          "phone",
+          "address",
+          "position",
+          "department",
+          "job_level",
+          "employment_status"
+        ]
+      },
+      "NextEmployeeCode": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "employee_code": {
+            "type": "string",
+            "maxLength": 30,
+            "pattern": "^EMP[0-9]{6,}$"
+          },
+          "is_preview": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "employee_code",
+          "is_preview"
+        ]
+      },
+      "MailResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "failed",
+              "unknown"
+            ],
+            "description": "accepted: Gmail API nhận gửi, chưa chứng minh inbox; failed: lỗi xác định; unknown: không xác định sau gửi. Không delivered/pending/auto retry."
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "CreateEmployeeResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "account_created": {
+            "type": "boolean",
+            "const": true
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "mail": {
+            "$ref": "#/components/schemas/MailResult"
+          }
+        },
+        "required": [
+          "account_created",
+          "account",
+          "mail"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ]
+      },
+      "CatalogPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogItem"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": [
+          "items",
+          "pagination"
+        ]
+      },
+      "AccountPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": [
+          "items",
+          "pagination"
+        ]
+      }
+    }
+  }
+}

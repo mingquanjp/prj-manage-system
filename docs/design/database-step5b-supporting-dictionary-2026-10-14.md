@@ -26,13 +26,12 @@ Một tài khoản đăng nhập; không lưu lại PM/PTCM như quyền toàn h
 | Cột | Kiểu / NULL / default | Nguồn và nghĩa |
 |---|---|---|
 | user_id | PK | Identity |
-| username | VARCHAR(50) NN | Định danh riêng UQ; cách cấp còn mở, backend đăng nhập bằng email công ty theo chốt 05/11. E001 → e001 chỉ là quy ước demo tạm theo chốt 28/10 tại baseline 20/10; không đổi dữ liệu cũ |
 | password_hash | VARCHAR(255) NN | Server bcrypt; không DTO/audit |
 | must_change_password | BOOLEAN NN / false | Chốt 06/11: tài khoản cũ giữ false; tạo mới với mật khẩu tạm ghi true; sau đổi thành công ghi false cùng thay bản băm. Server chặn nghiệp vụ khi true |
 | status | user_status NN / ACTIVE | Admin khóa/mở theo quyền |
 | timestamps | Như quy ước | Server |
 
-Role nằm ở user_roles. Reset/đổi role/khóa thu hồi session cùng transaction. Chốt cuối 06/11: mật khẩu tạm gửi qua email đăng ký, chưa có thời hạn, có cờ buộc đổi trước nghiệp vụ. Không thêm temporary_password_expires_at. Hạn phiên vẫn riêng: 8 giờ tuyệt đối theo A03. Chính sách mật khẩu mới/phiên hạn chế đã duyệt A08/A09, xem security/proposal auth; gửi lỗi/reset và hợp đồng triển khai toàn auth vẫn chưa hoàn tất. Chuẩn hóa username phải thống nhất với seed/login trước migration, không tự đổi uniqueness hoa/thường của dữ liệu cũ.
+Role nằm ở user_roles. Reset/đổi role/khóa thu hồi session cùng transaction. Chốt cuối 06/11: mật khẩu tạm gửi qua email đăng ký, chưa có thời hạn, có cờ buộc đổi trước nghiệp vụ. Không thêm temporary_password_expires_at. Hạn phiên vẫn riêng: 8 giờ tuyệt đối theo A03. Chính sách mật khẩu mới/phiên hạn chế đã duyệt A08/A09, xem security/proposal auth; gửi lỗi/reset và hợp đồng triển khai toàn auth vẫn chưa hoàn tất. Chốt cuối 15/11 bỏ hẳn users.username khỏi thiết kế đích, không giữ nullable/alias. Rà code/seed/fixture/test/runner trước migration tiến thêm; drop mất giá trị username cũ, rollback không tự khôi phục. Chưa thay schema đang chạy; chi tiết chuyển đổi tại proposal tổ chức/tài khoản/hồ sơ mục 6.1.
 
 ## 2. user_roles
 
@@ -49,7 +48,7 @@ PK(user_id, role_code). Không thêm EMPLOYEE/PM/PTCM vào bảng này: tư các
 |---|---|---|
 | employee_id | PK | Hồ sơ chính thức |
 | user_id | INT NN FK users, UQ | Một hồ sơ/tài khoản |
-| employee_code | VARCHAR(30) NN, UQ | Mã nhân viên hệ thống tự cấp E001, E002…; không tái dùng mã khóa/vô hiệu hóa; server bảo đảm cấp đồng thời, không Admin nhập |
+| employee_code | VARCHAR(30) NN, UQ | Mã nhân viên mới tự cấp EMP000001, EMP000002… (tối thiểu sáu chữ số, không cắt/quay vòng); giữ mã legacy; không tái dùng mã khóa/vô hiệu hóa; server bảo đảm cấp đồng thời, không Admin nhập |
 | fullname | VARCHAR(100) NN | Họ tên hiện hành |
 | email | VARCHAR(100) NN, UQ | Email công ty; HR sửa trực tiếp, không đồng nghĩa username |
 | phone | VARCHAR(20) ? | Liên hệ, không đưa vào candidate DTO mặc định |

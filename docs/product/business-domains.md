@@ -47,7 +47,7 @@ Tổng: **62 FR**. FR-014/FR-061/FR-062 đã chuyển loại tại bảng truy v
 - **Dữ liệu chính:** `users`, `user_roles`, `auth_sessions`. Mã nhân viên lưu ở D02 nhưng việc cấp mã là phần của luồng tạo do D01 chủ trì, không có hai bộ cấp mã độc lập.
 - **Cần từ miền khác:** D02 cung cấp hồ sơ/trạng thái công tác và kiểm tra dữ liệu tạo; D04 cung cấp trách nhiệm hiện hành khi cần kiểm tra tác động đổi quyền. Xác thực quyền không thể chỉ dựa dữ liệu lúc đăng nhập.
 - **Không nhận thêm:** D01 không quyết định PM/PTCM, không sửa hồ sơ thường xuyên thay HR hoặc duyệt kỹ năng. Không suy quyền từ cấp bậc/vị trí.
-- **Điểm mở:** O01 của FR; không áp username/mật khẩu/phiên demo thành contract thật.
+- **Điểm mở:** O01 của FR: SQL bỏ username theo chốt cuối 15/11 và cơ chế cấp số còn phải review; sản phẩm đã chốt chỉ email login, mã mới EMP000001… ngày 15/11. Không áp mật khẩu/phiên demo thành contract thật.
 
 ### D02 — Hồ sơ và cơ cấu công tác
 

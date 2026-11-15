@@ -31,7 +31,7 @@ FR mô tả hệ thống phải làm được gì; AC mô tả kết quả để
 | S07 | [Hồ sơ nhân sự](../../.claude/docs/employee_profile_workflow.md), mục 1–5, Địa chỉ khi hoàn thiện hồ sơ |
 | S08 | [Phê duyệt kỹ năng](../../.claude/docs/skill_approval_workflow.md), chốt 27/10 và mục 1–8 |
 | S09 | [CV và trích xuất](../../.claude/docs/cv_extraction_approval_workflow.md), mục 1–4 và R03 |
-| S10 | [Chốt bổ sung 20/10–06/11](../business-baseline-2026-10-20.md), địa chỉ, nhật ký, cấp mã, thay PM/hạn task/trao đổi |
+| S10 | [Chốt bổ sung 20/10–15/11](../business-baseline-2026-10-20.md), địa chỉ, nhật ký, cấp mã, thay PM/hạn task/trao đổi |
 | S11 | [Sổ quyết định DB](../design/database-review-decisions-2026-10-14.md), Quyết định hiện hành và Bàn giao; [dictionary lõi](../design/database-step5a-core-dictionary-2026-10-14.md), [dictionary hỗ trợ](../design/database-step5b-supporting-dictionary-2026-10-14.md): ràng buộc thiết kế đã chốt, không chứng minh đã có migration |
 | S12 | [Bảo mật](../../.claude/docs/security.md), mục 1–5: session, dữ liệu riêng tư, upload và bảo vệ ghi |
 | S13 | [Contract màn hình](../design/figma-make/screen-contracts.md), UI-01–UI-15 và tiếp nối 28–29/10: góc nhìn UI, thông báo, phiên mô phỏng |
@@ -89,15 +89,15 @@ FR mô tả hệ thống phải làm được gì; AC mô tả kết quả để
 
 - **AC1:** tạo cùng lúc tài khoản và hồ sơ với họ tên, email công ty, vị trí và các dữ liệu bắt buộc hiện hành; sai dữ liệu/lưu thất bại không để lại tài khoản hoặc hồ sơ dở dang.
 - **AC2:** điện thoại/phòng ban/cấp bậc có thể chưa bổ sung; không bắt Admin nhập địa chỉ, không thêm bước HR duyệt tạo. Sau tạo HR quản lý hồ sơ, Admin không được mặc nhiên sửa hành chính thường xuyên.
-- **AC3:** không có quyền PM/PTCM tự phát sinh từ tạo tài khoản. Chính sách username còn O01.
-- **AC4:** theo chốt 06/11 tại S10, hệ thống sinh mật khẩu tạm ngẫu nhiên và gửi qua email đăng ký; chưa có thời hạn trong phiên bản hiện tại, DB chỉ lưu bản băm, không log/hiển thị mật khẩu trong quản trị. Gửi lỗi/gửi lại còn O01; chưa chốt transaction gửi thư.
+- **AC3:** không có quyền PM/PTCM tự phát sinh từ tạo tài khoản. Theo chốt 15/11 tại S10, không username riêng trong form/API mới/email; bỏ hẳn cột users.username khỏi thiết kế đích; SQL chuyển đổi còn O01.
+- **AC4:** theo chốt 06/11 tại S10, hệ thống sinh mật khẩu tạm ngẫu nhiên và gửi qua email đăng ký; chưa có thời hạn trong phiên bản hiện tại, DB chỉ lưu bản băm, không log/hiển thị mật khẩu trong quản trị. Chốt 15/11 tại S10: commit DB trước gửi thư; lỗi gửi phải báo tài khoản đã tạo nhưng gửi thất bại, kết quả gửi chưa xác định phải báo đúng. Hoãn cấp lại/gửi lại mật khẩu tạm, ghi rõ chưa có khôi phục trên UI; Kênh đã chốt Gmail API + OAuth 2.0, chỉ quyền gmail.send; cấu hình hộp thư/contract cụ thể theo proposal trước triển khai.
 
 #### FR-006 — Tự cấp mã nhân viên và hiển thị định danh được cấp
 
-**Actor/điều kiện:** hệ thống khi Admin tạo hồ sơ. **Nguồn:** S10 chốt cấp mã 28/10.
+**Actor/điều kiện:** hệ thống khi Admin tạo hồ sơ. **Nguồn:** S10 chốt cấp mã 28/10 và định danh 15/11.
 
-- **AC1:** Admin xem mã dự kiến chỉ đọc; sau lưu thấy mã thực được cấp duy nhất. Hai lần tạo đồng thời không cấp trùng; không tái dùng mã đã khóa/vô hiệu hóa hoặc đổi mã hồ sơ cũ.
-- **AC2:** không dựa số lượng hồ sơ cộng một để cam kết cấp mã; `e001` theo mã nhân viên chỉ là username demo, không tự áp thành quy tắc backend.
+- **AC1:** Mã mới dùng `EMP000001`, `EMP000002`… (phần số tối thiểu sáu chữ số, không cắt/quay vòng). Admin xem mã dự kiến chỉ đọc; sau lưu thấy mã thực được cấp duy nhất. Hai lần tạo đồng thời không cấp trùng; không tái dùng mã đã khóa/vô hiệu hóa hoặc đổi mã hồ sơ cũ.
+- **AC2:** không dựa số lượng hồ sơ cộng một để cam kết cấp mã; không dùng mã nhân viên để đăng nhập hoặc cấp thêm username riêng. Giữ mã legacy đã lưu; SQL bỏ cột username/cấp sequence cần thiết kế trước migration.
 
 #### FR-007 — Tra cứu danh sách tài khoản
 
@@ -562,7 +562,7 @@ Các UC hỗ trợ danh mục được bao phủ dù không cần sơ đồ phâ
 
 | ID | Cần làm rõ/chốt ở bước thiết kế | FR ảnh hưởng | Cách xử lý hiện tại |
 |---|---|---|---|
-| O01 | A01–A09 đã chốt email/chuẩn hóa, mật khẩu mới, phiên 8 giờ/CSRF/đổi lần đầu, hướng test/migration; còn cấp username, sinh/gửi lỗi/gửi lại, reset, đổi tự nguyện và retention phiên | FR-001, FR-003–FR-008, FR-063–FR-064 | Proposal auth phân biệt quyết định đã duyệt với OpenAPI/ports/SQL/mapping legacy/fixture chưa hoàn thiện. Không áp username demo/mật khẩu seed hoặc tự thêm invite/JWT; mật khẩu tạm chưa có hạn. Estimate/dự phòng còn đề xuất, không phải giờ đã làm. |
+| O01 | A01–A09 đã chốt email/chuẩn hóa, mật khẩu mới, phiên 8 giờ/CSRF/đổi lần đầu, hướng test/migration; 15/11 đã chốt không username sản phẩm và mã mới EMP000001; còn SQL bỏ username theo chốt cuối 15/11, cơ chế cấp số, chi tiết triển khai sinh/gửi và contract lỗi, reset, đổi tự nguyện và retention phiên | FR-001, FR-003–FR-008, FR-063–FR-064 | Proposal auth phân biệt quyết định đã duyệt với OpenAPI/ports/SQL/mapping legacy/fixture chưa hoàn thiện. Không áp username demo/mật khẩu seed hoặc tự thêm invite/JWT; mật khẩu tạm chưa có hạn. Chốt 15/11 chọn Gmail API/OAuth gmail.send, duyệt OAP-A01–A08; chi tiết SQL/contract/cấu hình chưa là runtime. Hoãn cấp lại/gửi lại, ghi rõ giới hạn và lỗi gửi sau commit; không còn là điều kiện phải triển khai trong đợt tạo tài khoản này. Estimate/dự phòng còn đề xuất, không phải giờ đã làm. |
 | O02 | Công thức gợi ý cuối, miền/chuẩn hóa weight, tham số/phiên bản và tiêu chí dữ liệu lịch sử tin cậy | FR-038, FR-044–FR-046, FR-065 | Giữ định hướng và quy tắc eligibility; bộ 0,7/0,2/0,1, 80h, 1–5… chỉ thử nghiệm. Chưa chốt điều kiện nghiệm thu điểm số cụ thể. |
 | O03 | Cloud/provider, vòng đời tệp/cleanup, xác thực download và cơ chế gắn tệp thật vào CV/căn cứ | FR-018–FR-021, FR-024 | Không chọn dependency/provider hoặc gọi metadata demo là đã lưu tệp. HR xác nhận CV hiện tại thay nhân viên chưa được mở quyền. |
 | O04 | API/model/parser, mapping/adapter, worker/lease/retry và bộ CV đánh giá được phép dùng | FR-021–FR-022 | Hoãn tích hợp theo chốt người dùng; không biến đề xuất model thành lựa chọn đã xác nhận. |

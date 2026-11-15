@@ -4,6 +4,8 @@ Tiếp nối [baseline 12/10](business-baseline-2026-10-12.md), [nguồn nhân l
 
 > Tiếp nối 26/10: phần cấp bậc và tổng số bảng ưu tiên [quyết định cấp bậc theo công ty](design/database-review-decisions-2026-10-14.md#quyết-định-tiếp-nối-26102026--cấp-bậc-theo-công-ty-hiện-hành). Mốc 20/10 dưới đây có 32 bảng; hiện tại là 33, cấp bậc dùng danh mục HR và khóa ngoại nullable. Các quy tắc tạo ban đầu/địa chỉ giữ nguyên.
 
+> **Định danh hiện hành:** chốt cuối 15/11 bên dưới bỏ hẳn cột users.username khỏi thiết kế đích; mã mới EMP000001, mã nhân viên cũ giữ nguyên. Thay đổi DB thực tế cần migration riêng, chưa thực thi.
+
 ## Quyết định đã xác nhận
 
 **Admin tạo tài khoản kèm hồ sơ nhân viên ban đầu trong một lần; HR quản lý/cập nhật hồ sơ về sau.**
@@ -106,3 +108,40 @@ Người dùng đã xác nhận giới hạn body JSON của `POST /api/auth/log
 Giới hạn body không thay chính sách mật khẩu mới ≥15 code point Unicode và ≤72 byte UTF-8, không áp giới hạn 8 KiB cho upload CV hoặc mọi endpoint khác. Mốc 8192 byte không vượt giới hạn body nhưng request vẫn phải đạt JSON/allowlist/validation/Origin/CSRF/limiter tương ứng. Khi có HTTP runtime phải kiểm biên 8192/8193 byte, body thiếu/sai Content-Length và không có tác dụng phụ khi bị chặn; hiện chỉ cập nhật thiết kế/contract, chưa có handler.
 
 Chốt này thay đúng các ghi nhận body limit còn đề xuất trong proposal/OpenAPI; không duyệt estimate, mapping legacy hoặc áp DB thật.
+
+
+## Quyết định tiếp nối 15/11/2026 — email đăng nhập và mã nhân viên
+
+- **Không có username riêng trong sản phẩm:** nhân viên đăng nhập bằng email công ty. Form tạo, danh sách/chi tiết tài khoản, DTO API mới và email cấp tài khoản không yêu cầu, sinh hoặc giới thiệu thêm username `e001`. Không lấy phần trước `@` làm alias đăng nhập. Email không thay khóa nội bộ `user_id`/`employee_id`.
+- **Mã nhân viên mới dùng `EMP000001`, `EMP000002`…:** prefix `EMP`, phần số có tối thiểu sáu chữ số (đệm 0 bên trái); không cắt hoặc quay vòng khi vượt sáu chữ số. Mã tự cấp, ổn định, duy nhất, không tái dùng; không mã hóa phòng ban/năm/quyền và không dùng để đăng nhập.
+- Giữ mã nhân viên và username legacy đã lưu; không đổi `E001`/`EMP001` thành format mới hàng loạt. Mã trên form là dự kiến chỉ đọc, mã server trả sau lưu mới chính thức; không dùng `COUNT + 1`, không cam kết dãy liền hoặc dùng mã làm số đếm nhân sự.
+- Quyết định sản phẩm không tự xóa cột `users.username` hiện còn NOT NULL/UNIQUE. Cách tương thích cho tài khoản mới (nullability/chuyển tiếp), cấp sequence và khởi tạo dải qua preflight còn phải review trong proposal trước code/migration. Không cấp cặp mã/username hoặc bỏ số nhân viên chỉ vì username legacy trùng.
+- Chốt này thay format mã mới và quy ước username demo ở 28/10, cùng phần còn mở về username sản phẩm ở 05/11. Chưa chốt provider email/gửi lỗi/gửi lại, chưa chạy SQL hoặc thay dữ liệu/FE hiện có.
+
+
+## Quyết định tiếp nối 15/11/2026 — phạm vi gửi mật khẩu tạm
+
+- Đợt cấp tài khoản này chỉ tạo tài khoản và gửi email mật khẩu tạm; **hoãn cấp lại/gửi lại mật khẩu tạm**, không thêm nút/endpoint reset hoặc hàng đợi retry tự động.
+- DB commit trước khi gửi email. Gửi lỗi sau commit phải báo rõ **“Tài khoản đã tạo, gửi email thất bại”**; giữ tài khoản đã lưu, không rollback giả hoặc báo thành công toàn bộ. Nhà cung cấp nhận thư không đồng nghĩa đã tới inbox; timeout/mất phản hồi phải diễn đạt chưa xác định kết quả gửi.
+- DB chỉ giữ hash; không thể khôi phục mật khẩu cũ từ hash để gửi lại. Trường hợp nhân viên không nhận được thư chưa có đường khôi phục trên UI trong đợt này; kiểm tra hộp thư không giải quyết được lỗi chưa gửi. Đây là giới hạn được chấp nhận, cần bổ sung đường khôi phục trước sử dụng thực tế.
+- Không tự gửi lại POST tạo tài khoản sau mất phản hồi; đối soát danh sách tài khoản theo quyền hiện hành. Không trả mật khẩu cho Admin hoặc lưu plaintext để bù cho phần hoãn.
+- Kênh gửi/cấu hình và contract phản hồi cụ thể vẫn cần hoàn thiện trước triển khai; demo phải kiểm tra email trước, mail giả không là bằng chứng gửi thật. Chưa gửi thư hoặc sửa code/DB trong đợt tài liệu này.
+
+
+## Quyết định tiếp nối 15/11/2026 — duyệt proposal tổ chức/tài khoản/hồ sơ và kênh gửi
+
+- Người dùng duyệt các lựa chọn OAP-A01–A08 tại [proposal](proposals/backend-organization-accounts-profile.md#4-các-lựa-chọn-đã-duyệt--15112026): PostgreSQL sequence cho mã mới; quy tắc tên danh mục/đối chiếu tên nền; body 8 KiB và pagination 20/max 100; mật khẩu tạm từ 32 byte random base64url, bcrypt ngoài transaction; gửi sau commit; đọc hồ sơ chính chủ, không mở quyền đọc riêng tư cho Admin từ quyền tạo. Giữ ranh giới HR/Admin và ba feature đã chốt.
+- Kênh gửi chọn **Gmail API + OAuth 2.0**, một hộp thư do Quân quản lý, chỉ quyền `gmail.send`. Không SMTP/App Password; không thêm đăng nhập Google hoặc yêu cầu nhân viên cấp quyền mailbox. Backend giữ credential ngoài Git/log/frontend.
+- Chấp nhận vận hành demo bằng OAuth Testing với giới hạn refresh token 7 ngày, cần kiểm/cấp quyền lại trước báo cáo; giữ phạm vi miễn phí/quota hiện hành, không tự bật dịch vụ trả phí. Chi tiết cấu hình và nguồn Google tại proposal mục 6.5.
+- Gửi sau DB commit, tách kết quả tạo với kết quả gửi; 201 biểu thị tài khoản đã tạo, không cam kết thư tới inbox. Cấp lại/gửi lại tiếp tục hoãn theo chốt cùng ngày; không tự thêm queue/reset/delivery schema.
+- Đã duyệt hướng không thay review OpenAPI/SQL/mapping legacy/consumer username hoặc brief OAuth cụ thể chưa có. Chưa chọn nullability username/di trú dữ liệu hoặc thư viện mới; chưa có quyền chạy migration Neon/gửi email thật/commit/push chỉ từ chốt tài liệu này.
+
+
+## Quyết định cuối 15/11/2026 — bỏ cột username khỏi thiết kế đích
+
+- Người dùng đồng ý bỏ hẳn `users.username`; không giữ cột nullable hoặc sinh username kỹ thuật cho tài khoản mới. Email là định danh đăng nhập; `user_id`/`employee_id` là khóa nội bộ, `employee_code` là mã nhân sự.
+- Quyết định này thay yêu cầu giữ username legacy và điểm mở nullability/chuyển tiếp ở các ghi nhận trước, kể cả phần đầu ngày 15/11. Chỉ mã nhân viên cũ vẫn phải giữ; username cũ không còn là trường cần bảo toàn trong schema đích.
+- Thực hiện bằng migration tiến thêm sau khi rà code/seed/fixture/test/runner/UI còn dùng cột. Không sửa migration lịch sử 000001–000003; test đường legacy vẫn có thể dùng username để dựng schema cũ trước khi nâng cấp.
+- Kiểm tra schema đích không còn cột/ràng buộc username; tạo tài khoản, seed/runner hiện hành và auth email hoạt động khi không có cột. Không đổi ID/liên kết/hash/email/status/roles/sessions hay mã nhân viên như tác dụng phụ.
+- Drop cột làm mất giá trị username cũ. Kế hoạch chuyển đổi phải nêu backup được phép và giới hạn rollback: thêm lại cột không khôi phục dữ liệu đã xóa, không bịa username để tuyên bố rollback bảo toàn. Không tự drop CASCADE hoặc xóa phụ thuộc chưa rà.
+- Đợt này chốt và cập nhật tài liệu; chưa viết/chạy migration, sửa dữ liệu hoặc áp thay đổi Neon. SQL/backfill/down cụ thể vẫn phải review theo môi trường được giao.
