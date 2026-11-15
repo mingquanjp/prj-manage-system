@@ -76,3 +76,10 @@ Go httptest kiểm dev/prod, asset/method allowlist, MIME, security headers, HEA
 Lượt triển khai 12/11/2026 đã đạt Go vet/test/build; vet build tag integration/swaggerdemo; 28 kiểm thử Node Swagger/contract/harness; kiểm kê harness và git diff check. Integration HTTP transport + cmd/server với `-race -tags=integration -p 1` đạt trên PostgreSQL test sở hữu. Harness demo đã mở loopback và HEAD `/docs/` trả 200 cùng CSP/security headers; chưa tính là browser proof. Công cụ browser hiện báo local browser use bị tắt trong Work settings nên rendering/CSP, cookie tự gửi và CSRF qua Swagger trên trình duyệt vẫn chờ kiểm; mất mạng thật, proxy FE và scan dependency cũng chưa thực hiện. Review read-only của agent hỗ trợ không phát hiện lỗi actionable sau khi sửa allowlist embed và default Origin.
 
 Tham khảo chính thức: [phân phối Swagger UI](https://swagger.io/docs/open-source-tools/swagger-ui/usage/installation/), [cấu hình](https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/), [giới hạn header cookie của browser](https://swagger.io/docs/open-source-tools/swagger-ui/usage/limitations/).
+
+
+## Contract tổ chức, tài khoản và hồ sơ đang chuẩn bị
+
+[OpenAPI OAP](organization-accounts-profile.openapi.json) mô tả 16 thao tác theo [proposal](../proposals/backend-organization-accounts-profile.md) và [kế hoạch SQL/test](../proposals/backend-organization-accounts-profile-sql-plan.md). Đây là thiết kế, chưa có route thực/nhúng vào Swagger dev; `/docs` hiện vẫn chỉ phục vụ năm API auth. Không mở Try it out giả hoặc sửa auth.openapi.json để tuyên bố đã tích hợp.
+
+Kiểm tĩnh: `node --test scripts/check-organization-contract.test.mjs`. Script kiểm ref/phạm vi/security/DTO/response cần bảo vệ, không phải OpenAPI validator đầy đủ hoặc bằng chứng handler/SQL chạy đúng. Chỉ mở rộng Swagger khi implementation có route và được kiểm runtime theo ticket tương ứng.

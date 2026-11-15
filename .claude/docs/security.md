@@ -8,7 +8,7 @@
 Đọc trước auth, upload và mọi endpoint có ID. Quyền/session chi tiết ở roles_permissions.md.
 Đây là yêu cầu triển khai, không khẳng định code skeleton đã đáp ứng.
 
-Theo [chốt tài khoản 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản), e010 chỉ là tên đăng nhập demo tạm. [Chốt 05/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-05112026--định-danh-đăng-nhập-backend) chọn email công ty để đăng nhập backend phiên bản đầu; username vẫn là dữ liệu riêng. Chuẩn hóa email đã chốt trim đầu/cuối và so không phân biệt hoa/thường (trùng thì dừng, không sửa dữ liệu tự động); quy tắc cấp username còn cần đặc tả; kênh cấp tài khoản mới bằng mật khẩu tạm qua email theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email). Không suy chính sách từ fixture.
+Theo [chốt tài khoản 28/10](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-28102026--tự-cấp-mã-và-nhãn-quyền-tài-khoản), e010 chỉ là tên đăng nhập demo tạm. [Chốt 05/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-05112026--định-danh-đăng-nhập-backend) chọn email công ty để đăng nhập backend phiên bản đầu; chốt 15/11 không có username sản phẩm, chốt cuối cùng bỏ hẳn cột users.username khỏi thiết kế đích bằng migration tiến thêm, chưa áp DB. Chuẩn hóa email đã chốt trim đầu/cuối và so không phân biệt hoa/thường (trùng thì dừng, không sửa dữ liệu tự động); SQL bỏ cột username và giới hạn rollback còn cần review; kênh cấp tài khoản mới bằng mật khẩu tạm qua email theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email). Không suy chính sách từ fixture.
 
 ## 1. Bí mật và dữ liệu trả về
 
@@ -20,6 +20,12 @@ Cấm hash/token/secret trong DTO mọi vai trò; candidate view không chứa p
 Gợi ý chỉ hiển thị thời điểm tạo và thông tin tổng hợp được phép, không lý do hiệu chỉnh riêng tư của project khác. Lỗi API/health tổng quát, lỗi nội bộ đã che bí mật chỉ vào log.
 SQL tham số hóa; cột/direction sort allowlist; không nối giá trị client vào SQL.
 React escape mặc định không thay thế toàn bộ phòng XSS; tránh HTML tùy ý, URL nguy hiểm và script bên ngoài.
+
+### Gửi thư cấp tài khoản — chốt 15/11/2026
+
+Dùng Gmail API qua OAuth 2.0, chỉ scope `gmail.send`, một hộp thư gửi do người vận hành cấp quyền; không đổi cơ chế login/session TaskAssign. Client secret/refresh token chỉ phía backend, không Git/log/DTO/localStorage hoặc bảng session; refresh token hết hạn/thu hồi cần chủ hộp thư cấp quyền lại. OAuth Testing với Gmail có hạn refresh token 7 ngày; cấu hình/runbook theo [proposal mục 6.5](../../docs/proposals/backend-organization-accounts-profile.md#65-gửi-email--gmail-api--oauth-20).
+
+DB commit trước gửi; không giữ transaction qua network. Lỗi gửi sau commit không rollback giả tài khoản hoặc báo delivered; mất phản hồi không tự gửi lại. Hoãn cấp lại/gửi lại mật khẩu tạm, không bù bằng plaintext DB/outbox/admin response. Phần cấu hình/provider/token lỗi cần kiểm riêng; mail fake không là bằng chứng gửi thật.
 
 ## 2. Auth và CSRF
 
@@ -53,7 +59,7 @@ Phối hợp khóa theo thứ tự thống nhất trên mọi đường đổi t
 
 Bcrypt DefaultCost; DB chỉ lưu bản băm. Có đổi mật khẩu chính chủ (xác minh mật khẩu cũ); ADMIN reset theo chính sách sẽ đặc tả.
 Theo [chốt 06/11](../../docs/business-baseline-2026-10-20.md#quyết-định-tiếp-nối-06112026--cấp-mật-khẩu-tạm-qua-email), hệ thống sinh mật khẩu tạm ngẫu nhiên khi cấp tài khoản mới, gửi qua email đã đăng ký; không log hoặc hiển thị mật khẩu trong giao diện quản trị. Đăng nhập bằng mật khẩu tạm chỉ được đổi mật khẩu và thao tác phiên cần thiết, không truy cập API nghiệp vụ. Mật khẩu tạm chưa có thời hạn trong phiên bản hiện tại; thời hạn phiên vẫn riêng. Đổi thành công vô hiệu mật khẩu tạm, sau đó đăng nhập bằng mật khẩu mới.
-Cờ buộc đổi đã chốt; tạo tài khoản mới với mật khẩu tạm phải ghi true (không dựa default false), đổi thành công thay hash và đặt false atomically. A08 đã duyệt thay hash + false + revoke mọi phiên của user cùng transaction, sau đó xóa cookie và yêu cầu login mới; không tự nâng phiên cũ. A09 đã duyệt mật khẩu mới tối thiểu 15 code point Unicode, tối đa 72 byte UTF-8, khác mật khẩu hiện tại; không cắt/trim/tự chuẩn hóa hoặc ép nhóm ký tự, cho phép khoảng trắng/chữ có dấu/paste. Áp cho đặt mật khẩu mới lần đầu, không áp ngược lên login credential cũ. Gửi lỗi/gửi lại vẫn chưa chốt. Không tự mở rộng sang quên mật khẩu hay mặc định Admin reset cùng quy trình.
+Cờ buộc đổi đã chốt; tạo tài khoản mới với mật khẩu tạm phải ghi true (không dựa default false), đổi thành công thay hash và đặt false atomically. A08 đã duyệt thay hash + false + revoke mọi phiên của user cùng transaction, sau đó xóa cookie và yêu cầu login mới; không tự nâng phiên cũ. A09 đã duyệt mật khẩu mới tối thiểu 15 code point Unicode, tối đa 72 byte UTF-8, khác mật khẩu hiện tại; không cắt/trim/tự chuẩn hóa hoặc ép nhóm ký tự, cho phép khoảng trắng/chữ có dấu/paste. Áp cho đặt mật khẩu mới lần đầu, không áp ngược lên login credential cũ. Gửi lỗi sau commit báo riêng failed/unknown theo chốt 15/11 tại mục Gửi thư cấp tài khoản; cấp lại/gửi lại đã hoãn, không thuộc đợt này. Không tự mở rộng sang quên mật khẩu hay mặc định Admin reset cùng quy trình.
 Không giả định seed password là quy trình cấp tài khoản hoàn chỉnh.
 
 Body JSON login/đổi mật khẩu lần đầu tối đa 8 KiB (8192 byte), đã duyệt riêng 06/11; lớn hơn trả 413/PAYLOAD_TOO_LARGE trước bcrypt/ghi dữ liệu. Kiểm byte thực đọc, không chỉ Content-Length; không áp sang upload hoặc thay min 15 code point/max 72 byte của mật khẩu. HTTP tests cần kiểm 8192/8193 byte và request không khai báo độ dài.

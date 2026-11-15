@@ -1,5 +1,7 @@
 # Đưa ticket auth lên Jira DATN
 
+**Đợt mới OAP (tổ chức/tài khoản/hồ sơ):** dùng [hướng dẫn OAP](README-oap.md) và `oap_import.py`, journal `.local/jira-oap/` riêng. Tài liệu bên dưới chỉ dành cho đợt auth; không chạy apply auth để tạo OAP.
+
 Nguồn nội dung: [bộ ticket đã review](../../docs/proposals/backend-auth-session-tickets.md), đối chiếu [proposal/WBS](../../docs/proposals/backend-auth-session.md). Script không chứa bản sao description: mỗi lần chạy sinh manifest từ nguồn và kiểm mapping 33 WBS, 105 giờ cơ sở, 20 Task và hai chiều của 47 phụ thuộc.
 
 Đích hiện hành là `https://datn-mingquanjp.atlassian.net`, project `DATN`, board `1`. Người dùng đã đối chiếu 21 work item trên site mới. Để xác nhận kết nối hoặc đọc metadata, chạy `--mode diagnose` ở mục 2. Các lệnh `plan`, `apply` và `check` phục vụ đối soát đợt import ban đầu. Giữ journal site cũ làm lịch sử và dừng nếu cần thao tác import lại trên project đã chuyển. Dùng Python **3.9+** và thư viện chuẩn.
