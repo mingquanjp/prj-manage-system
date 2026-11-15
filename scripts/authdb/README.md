@@ -184,3 +184,65 @@ có padding Unicode còn lại sau `btrim`, thay vì tự sửa. CHECK nhận di
 toàn khoảng trắng Unicode, kể cả NBSP. Kiểm case tiếng Việt chạy theo collation
 của cluster test. Cần đối chiếu collation và mapping ở môi trường đích trước
 khi lên kế hoạch áp dụng ngoài test.
+
+## DATN-25 — Repository/service CRUD danh mục
+
+Đầu ra cho OAP-T04 là `internal/service/organization.CatalogService`, port
+`CatalogRepository` và adapter `postgres.NewCatalogRepository(db, timeout)`.
+Composition root của ticket HTTP cấp pool và timeout dương; mỗi lời gọi dùng một
+transaction với deadline hữu hạn. Service không import HTTP/pgx. `ActorID` phải
+lấy từ principal đã được middleware xác thực, không nhận từ JSON/query của client.
+Adapter chỉ dùng ID này để đọc lại trạng thái, cờ và quyền hiện hành trong DB;
+không dùng role/status client gửi hoặc `users.system_role` legacy.
+
+- List mặc định page 1, page_size 20, tối đa 100; page tối đa 2147483647,
+  OFFSET int64. Transport phải từ chối giá trị query được truyền tường minh sai
+  (kể cả `page=0`), chỉ dùng mặc định khi vắng input. `q` trim Unicode, tối đa
+  100 code point; `%`, `_` và `\` tìm literal. Actor/count/items cùng transaction
+  REPEATABLE READ READ ONLY, ID tăng dần, trang vượt tổng vẫn trả total.
+- Mutation READ COMMITTED khóa user → employee của actor, kiểm ACTIVE/cờ/HR,
+  rồi khóa catalog khi rename/delete. Missing trước stale; giá trị nền giữ nguyên
+  để so chính xác. Tên mới trim Unicode và kiểm 1–100 code point; không NFC/bỏ dấu.
+  Rename no-op không UPDATE timestamp hoặc ghi audit.
+- Delete kiểm tham chiếu employee bằng SELECT thường sau khóa catalog, gồm cả
+  inactive; FK NO ACTION bảo vệ cuối. Schema M1 hiện chỉ có employee tham chiếu
+  ba danh mục này. Schema/consumer mới phải rà lại FK và thứ tự khóa trước tích hợp.
+  Không thêm row lock employee sau catalog, tránh đảo khóa với Admin tạo tài khoản.
+- Audit CREATE/RENAME/DELETE cùng transaction, JSON chỉ schema_version/id/name;
+  create có before NULL, delete có after NULL. Không ghi credential, profile hay
+  principal thô. Không tự retry mutation; sequence identity có thể mất số khi rollback.
+- Port phân biệt validation, unauthenticated, password-change-required, forbidden,
+  not-found, stale, duplicate-name, catalog-in-use, unavailable và persistence.
+  Deadline nội bộ có `ErrUnavailable`; caller cancel/deadline được giữ để caller
+  xử lý context. Lỗi COMMIT có thêm `ErrCommitUnknown`: chưa được khẳng định
+  mutation chưa ghi hoặc tự gửi lại. Mapping HTTP/DTO thuộc OAP-T04.
+
+Lệnh tái hiện trên PG18 test sở hữu, chạy từng lượt tuần tự:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/repository/postgres -count=1 -timeout=5m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+```
+
+Bằng chứng thực chạy ngày 15/11/2026: cổng `go vet ./...`,
+`go test ./... -count=1`, `go build ./...` đạt; toàn bộ repository integration
+với race detector đạt (57.815s), gồm hồi quy auth trên schema M1. Kiểm môi trường
+xác nhận PostgreSQL 18, owner đúng, DB gốc 0 bảng. Test cleanup sau suite đạt
+(0.581s), không còn DB case và DB gốc vẫn trống. Harness tests 14/14 đạt;
+kiểm kê nguồn và `git diff --check` đạt. Không có migration/dependency mới.
+
+| Ca | Test/bằng chứng | Giới hạn |
+|---|---|---|
+| OAP-DB05 | `TestCatalogCRUDAndAudit`, `TestCatalogCurrentActorAndReferences`: cả ba loại, 100/101 code point, Unicode trim, no-op/timestamp, duplicate, stale, missing, quyền hiện hành và inactive reference | Collation của PG test; chưa kiểm collation đích |
+| Snapshot/literal search | `TestCatalogPaginationSnapshotAndLiteral`: connection khác DELETE/INSERT giữa count/items, trang thường/rỗng; `%`, `_`, `\` không wildcard | DB thật, barrier qua wrapper transaction chỉ trong test |
+| OAP-DB06 | `TestCatalogDeleteWithAdminReferenceRace`, `TestCatalogDeleteWaitsForNewReference`: cả hai chiều chờ khóa, gồm Admin actor tham chiếu mục bị xóa; không orphan | SQL tạo fixture trên M1 và KEY SHARE theo giao thức, chưa phải adapter tạo tài khoản OAP-T09 |
+| OAP-DB10 | `TestCatalogActorRecheckAfterLock`: user lock chặn request, đổi role/status/cờ rồi commit; request phải đọc lại | Mutation quản trị giả lập đúng thứ tự user → employee; chưa có API quản trị |
+| Duplicate/stale race | `TestCatalogConcurrentDuplicateAndStale`: hai HR/connection tạo cùng tên khác case và rename cùng nền; UNIQUE/row lock quyết định kết quả | `pg_blocking_pids` xác nhận chờ thật, không sleep ngẫu nhiên |
+| Atomic/lỗi | `TestCatalogAtomicAuditAndCommit`: trigger audit lỗi rollback CREATE/RENAME/DELETE; deferred trigger gây lỗi COMMIT thật; commit DB thật rồi wrapper trả lỗi I/O | Mất phản hồi được fault injection, chưa cắt mạng thật |
+| Timeout | `TestCatalogLockTimeoutRollsBack` và unit tests adapter | Context deadline có giới hạn; không giả timeout thành stale hoặc mất quyền |
+
+Chưa có endpoint/UI danh mục, wiring composition root hoặc quyền middleware của
+OAP-T04. Bộ test này không nhận mail/browser/real create adapter là đã đạt. Không
+chạm Neon, `.env` thật hoặc dữ liệu production. Các DB case do runner tạo/dọn;
+không dùng `destroy`, FORCE hoặc prune để làm test xanh.
