@@ -44,7 +44,8 @@ func (s *catalogStub) Delete(ctx context.Context, c org.CatalogCommand) error {
 func catalogHTTPRouter(t *testing.T, session *passwordChangeHTTPStub, catalogs *catalogStub, env string) http.Handler {
 	t.Helper()
 	clock := csrfTestClock{time.Unix(1800000000, 0)}
-	h, err := NewApplicationRouter(fakeHealth{}, env, loginTestOrigin, AuthServices{Sessions: session, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: session, Clock: clock, Catalogs: catalogs})
+	// Router auth cho phép lắp riêng catalog để kiểm phạm vi chưa có profile.
+	h, err := NewAuthRouter(fakeHealth{}, env, loginTestOrigin, AuthServices{Sessions: session, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: session, Clock: clock, Catalogs: catalogs})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +320,7 @@ func TestCatalogLocalDocsOriginIsolation(t *testing.T) {
 		clock := csrfTestClock{time.Unix(1800000000, 0)}
 		session := catalogHR()
 		stub := &catalogStub{}
-		h, err := NewLocalDevelopmentApplicationRouter(fakeHealth{}, AuthServices{Sessions: session, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: session, Clock: clock, Catalogs: stub})
+		h, err := NewLocalDevelopmentAuthRouter(fakeHealth{}, AuthServices{Sessions: session, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: session, Clock: clock, Catalogs: stub})
 		if err != nil {
 			t.Fatal(err)
 		}

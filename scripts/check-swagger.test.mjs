@@ -75,12 +75,16 @@ test("bootstrap lỗi tải spec hiển thị thông báo, không dựng UI thà
   assert.match(element.textContent, /Không thể mở tài liệu API/)
 })
 
-test("Swagger chọn danh mục và chỉ cho phép 12 operation đã triển khai", async () => {
+for (const profiles of [false, true]) test(`Swagger chọn đúng ${profiles ? 13 : 12} operation đã triển khai`, async () => {
   let ready, config, change
   const selector = { value: "auth", append() {}, addEventListener(_, fn) { change = fn } }
   const auth = JSON.parse(await readFile(new URL("../docs/api/auth.openapi.json", import.meta.url)))
   const catalogs = JSON.parse(await readFile(new URL("../docs/api/organization-accounts-profile.openapi.json", import.meta.url)))
   catalogs.paths = Object.fromEntries(Object.entries(catalogs.paths).filter(([p]) => /^\/api\/(departments|positions|job-levels)(\/\{id\})?$/.test(p)))
+  if (profiles) {
+    const canonical = JSON.parse(await readFile(new URL("../docs/api/organization-accounts-profile.openapi.json", import.meta.url)))
+    catalogs.paths["/api/employees/{id}"] = canonical.paths["/api/employees/{id}"]
+  }
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
@@ -98,6 +102,9 @@ test("Swagger chọn danh mục và chỉ cho phép 12 operation đã triển kh
     for (const method of ["GET", "POST"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}?page=1`, method }))
     for (const method of ["PATCH", "DELETE"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}/12`, method }))
   }
+  if (profiles) assert.doesNotThrow(() => config.requestInterceptor({ url: "/api/employees/25", method: "GET" }))
+  else assert.throws(() => config.requestInterceptor({ url: "/api/employees/25", method: "GET" }))
+  assert.throws(() => config.requestInterceptor({ url: "/api/employees/25", method: "PATCH" }))
   for (const [url, method] of [["/api/users", "GET"], ["/api/employees", "POST"], ["/api/departments/0", "PATCH"], ["/api/departments/2147483648", "DELETE"], ["/api/departments/1/extra", "PATCH"], ["/api/departments/1", "GET"], ["https://other.invalid/api/departments", "GET"]]) {
     assert.throws(() => config.requestInterceptor({ url, method }))
   }

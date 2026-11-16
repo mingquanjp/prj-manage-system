@@ -330,3 +330,78 @@ Các test mới:
 Chưa nối UI danh mục OAP-T05, chưa API tài khoản/hồ sơ hoặc cấp tài khoản/mail.
 Các ca cạnh tranh repository dùng lại bộ DB thật DATN-25; create adapter thật vẫn
 thuộc OAP-T09. Không tuyên bố toàn OAP/FR đã hoàn tất hoặc tự chuyển Jira Done.
+
+## DATN-28 — API hồ sơ chính chủ
+
+Mục tiêu: bàn giao GET `/api/employees/{id}` với projection tối thiểu cho OAP-T07.
+Nguồn: proposal OAP mục6.2–6.4/F3, SQL plan mục5/OAP-DB11, SelfProfile trong
+OpenAPI OAP và workflow hồ sơ/bảo mật. Không sửa schema, nối UI, cấp quyền HR/Admin
+đọc người khác, trả lịch sử đề nghị/CV/audit hoặc mở rộng `/auth/me`.
+
+### Triển khai và đầu vào cho OAP-T07
+
+- Service/port: `internal/service/organization/profile.go`; HTTP/DTO:
+  `internal/transport/http/organization_profile.go`; adapter PG:
+  `internal/repository/postgres/organization_profile.go`.
+- Composition root hiện có lắp profile cùng auth/catalog; application router thiếu
+  dependency phải lỗi startup. Route yêu cầu phiên thường, không cần role đặc biệt.
+- Actor lấy user_id từ middleware; requested ID là employee_id. Repository kiểm lại
+  trạng thái user/employee và cờ trong transaction REPEATABLE READ READ ONLY, rồi
+  query `WHERE user_id=$actor AND employee_id=$requested` trong cùng snapshot.
+  Không đọc hồ sơ người khác hoặc JOIN roles làm nhân dòng. Inactive/mất actor401,
+  cờ true403 PASSWORD_CHANGE_REQUIRED; other/missing cùng404 NOT_FOUND.
+- Profile gồm đúng11 trường theo canonical schema. Position bắt buộc; phone/address/
+  department/job_level NULL giữ null. Tên danh mục hiện hành theo ID. Company email
+  dùng NormalizeLoginEmail khi đọc, không ghi lại email legacy. Projection dữ liệu
+  hỏng trả500; lỗi DB/deadline phân loại500/503, không che thành404.
+- OAP-T07 bootstrap me, lấy employee_id từ principal, gọi endpoint này rồi map DTO
+  vào UI thật; không ghép principal với employee fixture. Cookie/no-store theo auth
+  hiện có, không cấp/gia hạn cookie qua GET. Query lạ bị400 theo contract.
+- Swagger dev cùng backend `/docs/`: nhóm Tổ chức và hồ sơ có13 operation đã nối,
+  giữ URL spec `/docs/catalog.openapi.json`; canonical OAP không sao chép vào handler.
+  Ba API tài khoản còn lại chưa công bố. Không mở docs ngoài dev.
+
+### Ca kiểm chứng
+
+| Ca | Bằng chứng | Giới hạn |
+|---|---|---|
+| Self/other/missing, user_id khác employee_id, nhiều role, nullable, email canonical không UPDATE, tên danh mục đổi giữ ID | `TestSelfProfileProjectionAndCurrentState`, `TestSelfProfileApplicationPostgres` | Dữ liệu tổng hợp trong DB case sở hữu; không dữ liệu Neon |
+| Actor/cờ thay đổi sau principal cũ | `TestSelfProfileRejectsStaleMiddlewarePrincipal` dùng auth stub giữ principal cũ và adapter PG thật | Chứng minh recheck của profile; xác thực cookie thật kiểm riêng qua composition root |
+| Snapshot khi connection khác commit giữa đọc actor/projection | `TestSelfProfileConsistentSnapshot` | Barrier sau Scan actor; không sleep. Request đọc snapshot hợp lệ đã bắt đầu, lần sau thấy trạng thái mới; không hứa hủy ngược request |
+| Actor không có employee/missing, email malformed, thiếu position do drift | `TestSelfProfileMissingBasisAndMalformedData` | Fault FK chỉ trên case hy sinh, không sửa migration lịch sử |
+| DB schema lỗi500, chờ khóa quá deadline503 | `TestSelfProfileDatabaseErrors`, `TestSelfProfileStorageTimeoutIs503`, HTTP composition test | Khóa DB thật trước query và deadline nội bộ100ms; không mô phỏng mất mạng thật |
+| DTO11 trường, null/no-store/không Set-Cookie, query400, guard401/403, route/Swagger | `TestSelfProfileHTTP`, `TestSelfProfileRouteAndSwagger`, `TestApplicationRequiresProfileDependency`, Swagger VM | Unit/fake không thay HTTP/PG; không chứng minh browser rendering |
+
+### Lệnh tái hiện
+
+Tại thư mục gốc, mỗi lượt DB chạy tuần tự qua runner đã xác minh:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/transport/http -run '^TestSelfProfileStorageTimeoutIs503$' -count=1 -timeout=1m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+node --test scripts/check-swagger.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Runner/NewCase tạo-dọn DB case riêng, DB gốc giữ trống; không fallback DATABASE_URL,
+không nạp `.env` thật, không truy cập Neon hoặc chạy suite DB song song. Không có
+migration mới cần rollback trong ticket này. Browser/HTTPS production và UI hồ sơ
+chưa kiểm trong DATN-28; tests HTTP/DB không thay bằng chứng browser của OAP-T07.
+Không nhận toàn FR-009, chức năng edit/duyệt hoặc HR read-all đã hoàn tất.
+
+Bằng chứng thực chạy 16/11/2026: guard xác nhận PG18/owner đúng, DB gốc0 bảng;
+`go vet ./...`, `go test ./... -count=1`, `go build ./...` đạt trên snapshot cuối.
+37 tests Node Swagger/contract/harness đạt; source inventory345 đạt, diff check đạt.
+Suite integration có race detector đạt: postgres77.035s, transport5.851s,
+cmd/server65.179s (gồm regression auth/catalog và HTTP profile thật). Ca timeout503
+được chạy riêng sau cùng đạt2.397s; root-cleanup check đạt0.501s. Không chạy các
+lượt DB song song. Lượt trước đã sửa lỗi test đếm12 thay11 trường DTO và dùng nhầm
+helper catalog cấm Set-Cookie cho logout; không thay contract để làm test xanh.
+Sub-agent review chỉ đọc hai lượt, các finding đã xử lý và không còn điểm chặn.
+Chưa commit/push hoặc tự chuyển Jira Done; Done sau review/bàn giao/merge theo workflow.

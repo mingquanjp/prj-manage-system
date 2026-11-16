@@ -22,6 +22,10 @@ const swaggerCSP = "default-src 'none'; script-src 'self'; style-src 'self'; sty
 func swaggerHandler(w http.ResponseWriter, r *http.Request) { swaggerWithCatalogs(false)(w, r) }
 
 func swaggerWithCatalogs(catalogs bool) http.HandlerFunc {
+	return swaggerWithServices(catalogs, false)
+}
+
+func swaggerWithServices(catalogs, profiles bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", swaggerCSP)
@@ -48,11 +52,11 @@ func swaggerWithCatalogs(catalogs bool) http.HandlerFunc {
 			data, err = apispec.Files.ReadFile("auth.openapi.json")
 			contentType = "application/json"
 		case "/docs/catalog.openapi.json":
-			if !catalogs {
+			if !catalogs && !profiles {
 				http.NotFound(w, r)
 				return
 			}
-			data, err = catalogSwaggerSpec()
+			data, err = organizationSwaggerSpec(catalogs, profiles)
 			contentType = "application/json"
 		case "/docs/assets/init.js", "/docs/assets/swagger-ui-bundle.js":
 			data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
@@ -75,7 +79,7 @@ func swaggerWithCatalogs(catalogs bool) http.HandlerFunc {
 }
 
 // Chọn paths từ canonical spec; không tạo bản sao contract viết tay.
-func catalogSwaggerSpec() ([]byte, error) {
+func organizationSwaggerSpec(catalogs, profiles bool) ([]byte, error) {
 	raw, err := apispec.Files.ReadFile("organization-accounts-profile.openapi.json")
 	if err != nil {
 		return nil, err
@@ -89,10 +93,15 @@ func catalogSwaggerSpec() ([]byte, error) {
 		return nil, err
 	}
 	selected := map[string]map[string]json.RawMessage{}
-	for _, kind := range catalogCollections {
-		path := "/api/" + string(kind)
-		selected[path] = map[string]json.RawMessage{"get": paths[path]["get"], "post": paths[path]["post"]}
-		selected[path+"/{id}"] = map[string]json.RawMessage{"patch": paths[path+"/{id}"]["patch"], "delete": paths[path+"/{id}"]["delete"]}
+	if catalogs {
+		for _, kind := range catalogCollections {
+			path := "/api/" + string(kind)
+			selected[path] = map[string]json.RawMessage{"get": paths[path]["get"], "post": paths[path]["post"]}
+			selected[path+"/{id}"] = map[string]json.RawMessage{"patch": paths[path+"/{id}"]["patch"], "delete": paths[path+"/{id}"]["delete"]}
+		}
+	}
+	if profiles {
+		selected["/api/employees/{id}"] = map[string]json.RawMessage{"get": paths["/api/employees/{id}"]["get"]}
 	}
 	doc["paths"], err = json.Marshal(selected)
 	if err != nil {
@@ -160,8 +169,8 @@ func catalogSwaggerSpec() ([]byte, error) {
 	if err = json.Unmarshal(doc["info"], &info); err != nil {
 		return nil, err
 	}
-	info["title"] = "TaskAssign — Danh mục tổ chức"
-	info["description"] = "12 API danh mục đã tích hợp. HR quản lý; HR/Admin đọc. Tài khoản và hồ sơ thuộc đợt triển khai sau."
+	info["title"] = "TaskAssign — Tổ chức và hồ sơ"
+	info["description"] = "API danh mục đã tích hợp: HR quản lý; HR/Admin đọc. Hồ sơ chỉ đọc chính chủ khi operation được công bố. API tài khoản chưa triển khai."
 	doc["info"], err = json.Marshal(info)
 	if err != nil {
 		return nil, err
