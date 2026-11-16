@@ -6,10 +6,10 @@ import type { EmployeeSkillsState } from "@/models/employee-skills"
 import type { Task } from "@/models/workspace"
 import type { WorkState } from "@/demo/effort"
 import { cn } from "@/lib/utils"
-import { ProfileFields } from "./ProfileFields"
+import { ProfileInformation } from "./ProfileInformation"
 import { useState } from "react"
 import { Pencil1Icon } from "@radix-ui/react-icons"
-import { Avatar, EmptyState } from "@/components/shared"
+import { EmptyState } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { usePeople } from "@/components/people-directory"
 import type { ProfileState, ProfileValues } from "@/models/profile"
@@ -110,56 +110,18 @@ export function PersonalProfile({
         />
       ) : (
         <>
-          <div className="rounded-xl border border-border bg-white px-5 py-4 sm:px-6 sm:py-5">
-            <div className="mb-5 flex items-center gap-3 border-b border-border pb-4">
-              <Avatar initials={person.initials} />
-              <div>
-                <h2 className="section-title">{profile.fullname}</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {profile.employeeCode} · {person.position}
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2 md:gap-6">
-              <section aria-labelledby="personal-information-title" className="min-w-0">
-                <h3 id="personal-information-title" className="section-title mb-3">
-                  Thông tin cá nhân
-                </h3>
-                <ProfileFields
-                  fields={[
-                    ["Họ và tên", profile.fullname],
-                    ["Số điện thoại", profile.phone],
-                    ["Địa chỉ", profile.address],
-                  ]}
-                />
-                {!profile.address && (
-                  <p className="mt-2 text-xs leading-5 text-warning">
-                    Bạn chưa bổ sung địa chỉ. Hãy gửi đề nghị khi hoàn thiện hồ sơ.
-                  </p>
-                )}
-              </section>
-              <section
-                aria-labelledby="employment-information-title"
-                className="min-w-0 border-t border-border pt-5 md:border-t-0 md:border-l md:pt-0 md:pl-6"
-              >
-                <h3 id="employment-information-title" className="section-title mb-3">
-                  Thông tin công tác
-                </h3>
-                <ProfileFields
-                  fields={[
-                    ["Email công ty", profile.companyEmail],
-                    [
-                      "Phòng ban",
-                      organization.departments.find((entry) => entry.id === profile.departmentId)
-                        ?.name ?? null,
-                    ],
-                    ["Vị trí công việc", person.position],
-                    ["Cấp bậc", person.seniority],
-                  ]}
-                />
-              </section>
-            </div>
-          </div>
+          <ProfileInformation
+            profile={{
+              ...profile,
+              position: person.position,
+              department:
+                organization.departments.find((entry) => entry.id === profile.departmentId)?.name ??
+                null,
+              jobLevel: person.seniority,
+            }}
+            initials={person.initials}
+            addressNotice="Bạn chưa bổ sung địa chỉ. Hãy gửi đề nghị khi hoàn thiện hồ sơ."
+          />
           <section className="mt-8" aria-label="Lịch sử yêu cầu cập nhật hồ sơ">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="section-title">Lịch sử đề nghị</h2>

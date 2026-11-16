@@ -198,7 +198,7 @@ export function ServerSession() {
   if (!limited)
     return (
       <ServerWorkspace
-        key={principal.user_id}
+        key={`${principal.user_id}:${principal.employee_id}`}
         principal={principal}
         session={session}
         busy={state.busy}
