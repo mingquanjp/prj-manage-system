@@ -3,7 +3,9 @@ package http
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	apispec "ai-staffing/docs/api"
@@ -17,45 +19,152 @@ var swaggerFiles embed.FS
 // Chỉ áp dụng cho trang tài liệu, không thay header hoặc bảo vệ của API.
 const swaggerCSP = "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
-func swaggerHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Content-Security-Policy", swaggerCSP)
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Referrer-Policy", "same-origin")
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		w.Header().Set("Allow", "GET, HEAD")
-		http.Error(w, "Phương thức không được hỗ trợ", http.StatusMethodNotAllowed)
-		return
+func swaggerHandler(w http.ResponseWriter, r *http.Request) { swaggerWithCatalogs(false)(w, r) }
+
+func swaggerWithCatalogs(catalogs bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Security-Policy", swaggerCSP)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "same-origin")
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			http.Error(w, "Phương thức không được hỗ trợ", http.StatusMethodNotAllowed)
+			return
+		}
+		if r.URL.Path == "/docs" {
+			http.Redirect(w, r, "/docs/", http.StatusTemporaryRedirect)
+			return
+		}
+		var data []byte
+		var contentType string
+		var err error
+		switch r.URL.Path {
+		case "/docs/":
+			data, err = swaggerFiles.ReadFile("swagger/index.html")
+			contentType = "text/html; charset=utf-8"
+		case "/docs/openapi.json":
+			data, err = apispec.Files.ReadFile("auth.openapi.json")
+			contentType = "application/json"
+		case "/docs/catalog.openapi.json":
+			if !catalogs {
+				http.NotFound(w, r)
+				return
+			}
+			data, err = catalogSwaggerSpec()
+			contentType = "application/json"
+		case "/docs/assets/init.js", "/docs/assets/swagger-ui-bundle.js":
+			data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
+			contentType = "text/javascript; charset=utf-8"
+		case "/docs/assets/docs.css", "/docs/assets/swagger-ui.css":
+			data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
+			contentType = "text/css; charset=utf-8"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, "Không thể tải tài liệu API", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(data))
 	}
-	if r.URL.Path == "/docs" {
-		http.Redirect(w, r, "/docs/", http.StatusTemporaryRedirect)
-		return
-	}
-	var data []byte
-	var contentType string
-	var err error
-	switch r.URL.Path {
-	case "/docs/":
-		data, err = swaggerFiles.ReadFile("swagger/index.html")
-		contentType = "text/html; charset=utf-8"
-	case "/docs/openapi.json":
-		data, err = apispec.Files.ReadFile("auth.openapi.json")
-		contentType = "application/json"
-	case "/docs/assets/init.js", "/docs/assets/swagger-ui-bundle.js":
-		data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
-		contentType = "text/javascript; charset=utf-8"
-	case "/docs/assets/docs.css", "/docs/assets/swagger-ui.css":
-		data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
-		contentType = "text/css; charset=utf-8"
-	default:
-		http.NotFound(w, r)
-		return
-	}
+
+}
+
+// Chọn paths từ canonical spec; không tạo bản sao contract viết tay.
+func catalogSwaggerSpec() ([]byte, error) {
+	raw, err := apispec.Files.ReadFile("organization-accounts-profile.openapi.json")
 	if err != nil {
-		http.Error(w, "Không thể tải tài liệu API", http.StatusInternalServerError)
-		return
+		return nil, err
 	}
-	w.Header().Set("Content-Type", contentType)
-	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(data))
+	var doc map[string]json.RawMessage
+	if err = json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+	var paths map[string]map[string]json.RawMessage
+	if err = json.Unmarshal(doc["paths"], &paths); err != nil {
+		return nil, err
+	}
+	selected := map[string]map[string]json.RawMessage{}
+	for _, kind := range catalogCollections {
+		path := "/api/" + string(kind)
+		selected[path] = map[string]json.RawMessage{"get": paths[path]["get"], "post": paths[path]["post"]}
+		selected[path+"/{id}"] = map[string]json.RawMessage{"patch": paths[path+"/{id}"]["patch"], "delete": paths[path+"/{id}"]["delete"]}
+	}
+	doc["paths"], err = json.Marshal(selected)
+	if err != nil {
+		return nil, err
+	}
+	// Chỉ giữ components có thể tới từ paths/security được công bố.
+	var all map[string]map[string]json.RawMessage
+	if err = json.Unmarshal(doc["components"], &all); err != nil {
+		return nil, err
+	}
+	keep := map[string]map[string]json.RawMessage{}
+	var visit func(any)
+	visit = func(value any) {
+		switch v := value.(type) {
+		case map[string]any:
+			if ref, ok := v["$ref"].(string); ok {
+				parts := strings.Split(ref, "/")
+				if len(parts) == 4 && parts[0] == "#" && parts[1] == "components" {
+					group, key := parts[2], parts[3]
+					if keep[group] == nil {
+						keep[group] = map[string]json.RawMessage{}
+					}
+					if _, seen := keep[group][key]; !seen {
+						payload := all[group][key]
+						keep[group][key] = payload
+						var next any
+						if json.Unmarshal(payload, &next) == nil {
+							visit(next)
+						}
+					}
+				}
+			}
+			if sec, ok := v["security"].([]any); ok {
+				for _, req := range sec {
+					if names, ok := req.(map[string]any); ok {
+						for name := range names {
+							if keep["securitySchemes"] == nil {
+								keep["securitySchemes"] = map[string]json.RawMessage{}
+							}
+							keep["securitySchemes"][name] = all["securitySchemes"][name]
+						}
+					}
+				}
+			}
+			for _, child := range v {
+				visit(child)
+			}
+		case []any:
+			for _, child := range v {
+				visit(child)
+			}
+		}
+	}
+	var roots any
+	rootRaw, _ := json.Marshal(map[string]json.RawMessage{"paths": doc["paths"], "security": doc["security"]})
+	if err = json.Unmarshal(rootRaw, &roots); err != nil {
+		return nil, err
+	}
+	visit(roots)
+	doc["components"], err = json.Marshal(keep)
+	if err != nil {
+		return nil, err
+	}
+	var info map[string]any
+	if err = json.Unmarshal(doc["info"], &info); err != nil {
+		return nil, err
+	}
+	info["title"] = "TaskAssign — Danh mục tổ chức"
+	info["description"] = "12 API danh mục đã tích hợp. HR quản lý; HR/Admin đọc. Tài khoản và hồ sơ thuộc đợt triển khai sau."
+	doc["info"], err = json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(doc)
 }

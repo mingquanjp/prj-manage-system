@@ -19,6 +19,11 @@ func hasAuthJSONContentType(r *http.Request) bool {
 }
 
 func decodeAuthStringPair(body []byte, first, second string) (map[string]string, bool) {
+	return decodeStringFields(body, first, second)
+}
+
+// decodeStringFields chỉ nhận đúng tập khóa chuỗi, không duplicate/unknown/trailing JSON.
+func decodeStringFields(body []byte, names ...string) (map[string]string, bool) {
 	if !utf8.Valid(body) {
 		return nil, false
 	}
@@ -26,10 +31,16 @@ func decodeAuthStringPair(body []byte, first, second string) (map[string]string,
 	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
 		return nil, false
 	}
-	fields := make(map[string]string, 2)
+	fields := make(map[string]string, len(names))
 	for decoder.More() {
 		token, err := decoder.Token()
-		if err != nil || (token != first && token != second) {
+		allowed := false
+		for _, name := range names {
+			if token == name {
+				allowed = true
+			}
+		}
+		if err != nil || !allowed {
 			return nil, false
 		}
 		key := token.(string)
@@ -53,7 +64,7 @@ func decodeAuthStringPair(body []byte, first, second string) (map[string]string,
 		return nil, false
 	}
 
-	return fields, len(fields) == 2
+	return fields, len(fields) == len(names)
 }
 
 // encoding/json đã kiểm cú pháp nhưng thay surrogate đơn bằng U+FFFD khi giải mã.

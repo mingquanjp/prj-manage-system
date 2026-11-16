@@ -17,7 +17,7 @@ test("tài nguyên Swagger được ghim và khớp checksum vendor", async () =
   }
 })
 
-test("bootstrap Swagger chặn cấu hình ngoài và chỉ gửi auth cùng origin", async () => {
+test("bootstrap Swagger chặn cấu hình ngoài và chỉ gửi API đã triển khai cùng origin", async () => {
   let config
   let ready
   const source = JSON.parse(await readFile(new URL("../docs/api/auth.openapi.json", import.meta.url)))
@@ -26,11 +26,13 @@ test("bootstrap Swagger chặn cấu hình ngoài và chỉ gửi auth cùng ori
     URL,
     window: { location: { href: "http://localhost:8080/docs/?url=https://evil.invalid/spec", origin: "http://localhost:8080" }, addEventListener: (_, fn) => { ready = fn() } },
     fetch: async (url, options) => {
+      if (url === "/docs/catalog.openapi.json") return { ok: false, status: 404 }
       assert.equal(url, "/docs/openapi.json")
       assert.equal(options.credentials, "same-origin")
       assert.equal(options.cache, "no-store")
       return { ok: true, json: async () => spec }
     },
+    document: { getElementById: () => ({ addEventListener() {} }) },
     SwaggerUIBundle: (value) => { config = value },
   })
   await ready
@@ -71,4 +73,32 @@ test("bootstrap lỗi tải spec hiển thị thông báo, không dựng UI thà
   })
   await ready
   assert.match(element.textContent, /Không thể mở tài liệu API/)
+})
+
+test("Swagger chọn danh mục và chỉ cho phép 12 operation đã triển khai", async () => {
+  let ready, config, change
+  const selector = { value: "auth", append() {}, addEventListener(_, fn) { change = fn } }
+  const auth = JSON.parse(await readFile(new URL("../docs/api/auth.openapi.json", import.meta.url)))
+  const catalogs = JSON.parse(await readFile(new URL("../docs/api/organization-accounts-profile.openapi.json", import.meta.url)))
+  catalogs.paths = Object.fromEntries(Object.entries(catalogs.paths).filter(([p]) => /^\/api\/(departments|positions|job-levels)(\/\{id\})?$/.test(p)))
+  vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
+    URL,
+    window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
+    fetch: async (url) => ({ ok: true, json: async () => url === "/docs/openapi.json" ? auth : catalogs }),
+    document: { getElementById: () => selector, createElement: () => ({}) },
+    SwaggerUIBundle: value => { config = value },
+  })
+  await ready
+  selector.value = "catalogs"
+  change()
+  assert.equal(config.spec, catalogs)
+  assert.equal(config.spec.components.parameters.Origin.schema.default, "http://127.0.0.1:8080")
+  assert.deepEqual(Array.from(config.supportedSubmitMethods), ["get", "post", "patch", "delete"])
+  for (const collection of ["departments", "positions", "job-levels"]) {
+    for (const method of ["GET", "POST"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}?page=1`, method }))
+    for (const method of ["PATCH", "DELETE"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}/12`, method }))
+  }
+  for (const [url, method] of [["/api/users", "GET"], ["/api/employees", "POST"], ["/api/departments/0", "PATCH"], ["/api/departments/2147483648", "DELETE"], ["/api/departments/1/extra", "PATCH"], ["/api/departments/1", "GET"], ["https://other.invalid/api/departments", "GET"]]) {
+    assert.throws(() => config.requestInterceptor({ url, method }))
+  }
 })

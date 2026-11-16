@@ -13,12 +13,27 @@ type AuthServices struct {
 	Sessions       authSessionService
 	Login          loginUseCase
 	PasswordChange passwordChangeUseCase
+	Catalogs       catalogUseCase
 	Clock          auth.Clock
 }
 
 // NewAuthRouter yêu cầu đủ năm route; dependency thiếu phải chặn startup.
 func NewAuthRouter(health healthChecker, appEnv, appOrigin string, services AuthServices) (http.Handler, error) {
 	return newAuthRouter(health, appEnv, appOrigin, services, false)
+}
+
+// NewApplicationRouter yêu cầu cả auth và catalog trước khi mở ứng dụng.
+func NewApplicationRouter(health healthChecker, appEnv, appOrigin string, services AuthServices) (http.Handler, error) {
+	if services.Catalogs == nil {
+		return nil, errors.New("thiếu dependency danh mục khi dựng router")
+	}
+	return newAuthRouter(health, appEnv, appOrigin, services, false)
+}
+func NewLocalDevelopmentApplicationRouter(health healthChecker, services AuthServices) (http.Handler, error) {
+	if services.Catalogs == nil {
+		return nil, errors.New("thiếu dependency danh mục khi dựng router")
+	}
+	return newAuthRouter(health, "dev", "http://127.0.0.1:5174", services, true)
 }
 
 // NewLocalDevelopmentAuthRouter chỉ dùng command localdev với hai origin loopback cố định.
@@ -46,10 +61,13 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	router := newRouter(health, services.Sessions, protection,
 		&loginRoute{service: services.Login, limiter: limiter, clock: services.Clock},
 		&passwordChangeRoute{service: services.PasswordChange, limiter: limiter})
+	if services.Catalogs != nil {
+		registerCatalogRoutes(router, services.Sessions, services.Catalogs, protection)
+	}
 	// Dev tường minh mới mở tài liệu; không nới allowlist của phiên hạn chế.
 	if appEnv == "dev" {
-		router.HandleFunc("/docs", swaggerHandler)
-		router.HandleFunc("/docs/*", swaggerHandler)
+		router.HandleFunc("/docs", swaggerWithCatalogs(services.Catalogs != nil))
+		router.HandleFunc("/docs/*", swaggerWithCatalogs(services.Catalogs != nil))
 	}
 	return router, nil
 }
