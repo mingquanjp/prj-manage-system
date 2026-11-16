@@ -1,6 +1,6 @@
 import { useIdentity } from "@/components/identity"
 import { useState } from "react"
-import { Pencil1Icon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
+import { PlusIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { EmptyState, SearchInput } from "@/components/shared"
@@ -15,6 +15,7 @@ import {
   type OrganizationKind,
   type OrganizationState,
 } from "@/models/organization"
+import { CatalogTable } from "./CatalogTable"
 import { CatalogEntryForm } from "./CatalogEntryForm"
 
 export function OrganizationCatalogs({
@@ -101,66 +102,16 @@ export function OrganizationCatalogs({
         </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-white">
-        <table className="w-full min-w-[460px] text-left text-sm">
-          <thead className="table-heading">
-            <tr>
-              <th scope="col" className="px-5 py-3">
-                {kind === "departments"
-                  ? "Tên phòng ban"
-                  : kind === "positions"
-                    ? "Tên vị trí công việc"
-                    : "Tên cấp bậc"}
-              </th>
-              <th scope="col" className="px-5 py-3 text-right">
-                Hồ sơ sử dụng
-              </th>
-              <th scope="col" className="w-28 px-5 py-3 text-right">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id} className="border-t border-border">
-                <th
-                  scope="row"
-                  className="max-w-md whitespace-pre-wrap break-words px-5 py-3 font-medium"
-                >
-                  {entry.name}
-                </th>
-                <td className="px-5 py-3 text-right tabular-nums">
-                  {organizationReferences(profiles, kind, entry.id).length}
-                </td>
-                <td className="px-4 py-2">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title={`Sửa ${entry.name}`}
-                      aria-label={`Sửa ${entry.name}`}
-                      onClick={() => setEditor({ kind, entry })}
-                    >
-                      <Pencil1Icon />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-warning"
-                      title={`Xóa ${entry.name}`}
-                      aria-label={`Xóa ${entry.name}`}
-                      onClick={() => {
-                        setRemoving({ kind, entry })
-                        setError("")
-                      }}
-                    >
-                      <TrashIcon />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <CatalogTable
+          entries={entries}
+          label={`Tên ${organizationLabels[kind].toLowerCase()}`}
+          referenceCount={(entry) => organizationReferences(profiles, kind, entry.id).length}
+          onEdit={(entry) => setEditor({ kind, entry })}
+          onRemove={(entry) => {
+            setRemoving({ kind, entry })
+            setError("")
+          }}
+        />
         {!entries.length && (
           <EmptyState
             title={query ? "Không tìm thấy kết quả" : "Danh mục chưa có dữ liệu"}

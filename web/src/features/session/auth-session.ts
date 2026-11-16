@@ -61,7 +61,7 @@ export function createAuthSession(api: AuthApi, now: () => number = Date.now) {
           : previous.retryAt,
     })
   }
-  async function check() {
+  async function check(background = false) {
     if (
       state.busy ||
       (recoveryLogin && state.phase === "signed-out") ||
@@ -71,7 +71,11 @@ export function createAuthSession(api: AuthApi, now: () => number = Date.now) {
     const id = ++generation
     const previous = state
     csrf = null
-    set({ phase: "checking", principal: null, busy: false, message: "", retryAt: state.retryAt })
+    set(
+      background && state.phase === "authenticated" && !state.principal?.must_change_password
+        ? { ...state, busy: true }
+        : { phase: "checking", principal: null, busy: false, message: "", retryAt: state.retryAt },
+    )
     try {
       const principal = await api.me()
       if (id === generation)
@@ -94,7 +98,27 @@ export function createAuthSession(api: AuthApi, now: () => number = Date.now) {
         listeners.delete(listener)
       }
     },
-    check,
+    check: () => check(),
+    refresh: () => check(true),
+    async catalogMutation<T>(operation: (token: string) => Promise<T>): Promise<T> {
+      if (state.phase !== "authenticated" || state.principal?.must_change_password || state.busy)
+        throw new AuthError(409, "REQUEST_BUSY")
+      const id = generation
+      set({ ...state, busy: true })
+      try {
+        csrf ??= await api.csrf()
+        return await operation(csrf)
+      } catch (error) {
+        csrf = null
+        if (id === generation && error instanceof AuthError && error.status === 401) {
+          ++generation
+          signedOut("Phiên không còn hiệu lực. Vui lòng đăng nhập lại.")
+        }
+        throw error
+      } finally {
+        if (id === generation) set({ ...state, busy: false })
+      }
+    },
     async login(email: string, password: string) {
       if (state.phase !== "signed-out" || state.busy || now() < state.retryAt) return
       const previous = state
@@ -180,3 +204,5 @@ export function createAuthSession(api: AuthApi, now: () => number = Date.now) {
     },
   }
 }
+
+export type AuthSession = ReturnType<typeof createAuthSession>

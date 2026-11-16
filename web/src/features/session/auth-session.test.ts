@@ -424,3 +424,89 @@ test("login kiểm tra sau kết quả chưa rõ bị lỗi mạng: vẫn có đ
   await session.check()
   assert.equal(session.getSnapshot().phase, "authenticated")
 })
+
+test("catalog CSRF: chặn double submit/focus, không retry lỗi không rõ, xóa token khi lỗi", async () => {
+  const pending = deferred<void>()
+  let reads = 0,
+    tokens = 0,
+    writes = 0
+  const session = createAuthSession(
+    fake({
+      me: async () => {
+        reads++
+        return person
+      },
+      csrf: async () => `token-${++tokens}`,
+    }),
+  )
+  await session.check()
+  const write = session.catalogMutation(async (token) => {
+    writes++
+    assert.equal(token, "token-1")
+    return pending.promise
+  })
+  await assert.rejects(
+    session.catalogMutation(async () => {
+      writes++
+    }),
+    /REQUEST_BUSY/,
+  )
+  await session.refresh()
+  assert.equal(reads, 1)
+  pending.reject(new AuthError(0, "NETWORK_ERROR"))
+  await assert.rejects(write, /NETWORK_ERROR/)
+  assert.equal(writes, 1)
+  assert.equal(session.getSnapshot().phase, "authenticated")
+  await session.catalogMutation(async (token) => {
+    assert.equal(token, "token-2")
+  })
+  assert.equal(tokens, 2)
+})
+test("background refresh giữ vùng đọc khi chờ và nhận quyền mới; 503 không giả 401", async () => {
+  const pending = deferred<Principal>()
+  let calls = 0
+  const session = createAuthSession(
+    fake({ me: async () => (++calls === 1 ? person : pending.promise) }),
+  )
+  await session.check()
+  const refresh = session.refresh()
+  assert.equal(session.getSnapshot().principal, person)
+  assert.equal(session.getSnapshot().busy, true)
+  pending.resolve({ ...person, system_roles: ["ADMIN"] })
+  await refresh
+  assert.deepEqual(session.getSnapshot().principal?.system_roles, ["ADMIN"])
+  const unavailable = createAuthSession(
+    fake({
+      me: async () => {
+        throw new AuthError(503, "SERVICE_UNAVAILABLE")
+      },
+    }),
+  )
+  await unavailable.refresh()
+  assert.equal(unavailable.getSnapshot().phase, "unavailable")
+})
+test("catalog 401 bỏ principal; signed-out/limited không được gửi mutation", async () => {
+  const session = createAuthSession(fake())
+  await session.check()
+  await assert.rejects(
+    session.catalogMutation(async () => {
+      throw new AuthError(401, "UNAUTHENTICATED")
+    }),
+    /UNAUTHENTICATED/,
+  )
+  assert.equal(session.getSnapshot().principal, null)
+  await assert.rejects(
+    session.catalogMutation(async () => {
+      assert.fail("không được ghi")
+    }),
+    /REQUEST_BUSY/,
+  )
+  const restricted = createAuthSession(fake({ me: async () => limited }))
+  await restricted.check()
+  await assert.rejects(
+    restricted.catalogMutation(async () => {
+      assert.fail("không được ghi")
+    }),
+    /REQUEST_BUSY/,
+  )
+})

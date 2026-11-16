@@ -1,6 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { Cross2Icon } from "@radix-ui/react-icons"
-import type { ReactNode } from "react"
+import type { ReactNode, ComponentProps } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
 
@@ -13,6 +13,7 @@ export function Dialog({
   side = false,
   wide = false,
   alert = false,
+  onCloseAutoFocus,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -22,12 +23,14 @@ export function Dialog({
   side?: boolean
   wide?: boolean
   alert?: boolean
+  onCloseAutoFocus?: ComponentProps<typeof DialogPrimitive.Content>["onCloseAutoFocus"]
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-30 bg-foreground/20" />
         <DialogPrimitive.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           role={alert ? "alertdialog" : "dialog"}
           onInteractOutside={(event) => {
             if (alert) event.preventDefault()

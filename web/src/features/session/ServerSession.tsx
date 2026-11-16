@@ -1,16 +1,11 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
-import { Navigate, useLocation, useNavigate } from "react-router"
+import { Navigate, useLocation } from "react-router"
 import { ArchiveIcon, ExitIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
-import { createAuthApi, type SystemRole } from "./auth-api"
+import { createAuthApi } from "./auth-api"
 import { createAuthSession } from "./auth-session"
+import { ServerWorkspace } from "./ServerWorkspace"
 import { PasswordChangeForm } from "./PasswordChangeForm"
-
-const roleLabels: Record<SystemRole, string> = {
-  ADMIN: "Quản trị viên",
-  HR: "HR",
-  DIRECTOR: "Giám đốc",
-}
 
 function Frame({ children }: { children: ReactNode }) {
   return (
@@ -39,13 +34,12 @@ export function ServerSession() {
   const [validation, setValidation] = useState("")
   const [clock, setClock] = useState(Date.now)
   const location = useLocation()
-  const navigate = useNavigate()
   const waitSeconds = Math.max(0, Math.ceil((state.retryAt - clock) / 1000))
 
   useEffect(() => {
     void session.check()
     const check = () => {
-      void session.check()
+      void session.refresh()
     }
     const visible = () => {
       if (document.visibilityState === "visible") check()
@@ -201,30 +195,23 @@ export function ServerSession() {
   }
   const principal = state.principal!
   const limited = principal.must_change_password
-  if (
-    location.pathname === "/login" ||
-    (limited && location.pathname !== "/change-password") ||
-    (!limited && location.pathname === "/change-password") ||
-    location.search ||
-    location.hash
-  )
-    return <Navigate to={limited ? "/change-password" : "/"} replace />
-  const unsupported = !limited && location.pathname !== "/"
+  if (!limited)
+    return (
+      <ServerWorkspace
+        key={principal.user_id}
+        principal={principal}
+        session={session}
+        busy={state.busy}
+        message={state.message}
+      />
+    )
+  if (location.pathname !== "/change-password" || location.search || location.hash)
+    return <Navigate to="/change-password" replace />
   return (
     <Frame>
-      <h1 className="text-2xl font-semibold">
-        {limited
-          ? "Đổi mật khẩu lần đầu"
-          : unsupported
-            ? "Chức năng chưa được kết nối"
-            : "Đã đăng nhập"}
-      </h1>
+      <h1 className="text-2xl font-semibold">Đổi mật khẩu lần đầu</h1>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {limited
-          ? "Bạn cần đặt mật khẩu mới trước khi sử dụng các chức năng nghiệp vụ."
-          : unsupported
-            ? "Dữ liệu của chức năng này chưa được kết nối với hệ thống. Bạn có thể quay về màn chính."
-            : "Các chức năng nghiệp vụ đang được kết nối. Đây là màn tiếp nối tạm thời."}
+        Bạn cần đặt mật khẩu mới trước khi sử dụng các chức năng nghiệp vụ.
       </p>
       <dl className="mt-6 space-y-3 border-y border-border py-5 text-sm">
         <div>
@@ -235,52 +222,28 @@ export function ServerSession() {
           <dt className="field-label">Mã nhân viên</dt>
           <dd className="mt-1">{principal.employee_code}</dd>
         </div>
-        {!limited && (
-          <div>
-            <dt className="field-label">Vai trò hệ thống</dt>
-            <dd className="mt-1">
-              {principal.system_roles.length
-                ? principal.system_roles.map((role) => roleLabels[role]).join(", ")
-                : "Nhân viên"}
-            </dd>
-          </div>
-        )}
       </dl>
       {feedback}
-      {limited && (
-        <PasswordChangeForm
-          busy={state.busy}
-          waitSeconds={waitSeconds}
-          issueCode={state.issueCode}
-          onSubmit={(currentPassword, newPassword) => {
-            setValidation("")
-            void session.changePassword(currentPassword, newPassword)
-          }}
-        />
-      )}
-      <div className="mt-5 flex flex-wrap gap-3">
-        {unsupported && (
-          <Button variant="outline" onClick={() => navigate("/", { replace: true })}>
-            Về màn chính
-          </Button>
-        )}
-        <Button
-          disabled={state.busy || waitSeconds > 0}
-          onClick={() => {
-            setValidation("")
-            void session.logout()
-          }}
-        >
-          <ExitIcon />
-          {state.busy
-            ? limited
-              ? "Đang xử lý…"
-              : "Đang đăng xuất…"
-            : waitSeconds > 0
-              ? `Thử lại sau ${waitSeconds}s`
-              : "Đăng xuất"}
-        </Button>
-      </div>
+      <PasswordChangeForm
+        busy={state.busy}
+        waitSeconds={waitSeconds}
+        issueCode={state.issueCode}
+        onSubmit={(currentPassword, newPassword) => {
+          setValidation("")
+          void session.changePassword(currentPassword, newPassword)
+        }}
+      />
+      <Button
+        className="mt-5"
+        disabled={state.busy || waitSeconds > 0}
+        onClick={() => {
+          setValidation("")
+          void session.logout()
+        }}
+      >
+        <ExitIcon />
+        {state.busy ? "Đang xử lý…" : waitSeconds > 0 ? `Thử lại sau ${waitSeconds}s` : "Đăng xuất"}
+      </Button>
     </Frame>
   )
 }
