@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TaskAssign — API auth</title>
+    <title>TaskAssign — API dev</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="/docs/assets/swagger-ui.css">
     <link rel="stylesheet" href="/docs/assets/docs.css">
@@ -12,7 +12,7 @@
   </head>
   <body>
     <header class="docs-guide">
-      <h1>TaskAssign · API auth</h1>
+      <h1>TaskAssign · API dev</h1>
       <p>Tài liệu tương tác dành cho môi trường phát triển. Execute gọi API thật và có thể thay đổi dữ liệu. Chỉ dùng tài khoản test.</p>
       <details>
         <summary>Hướng dẫn thử đăng nhập, CSRF và đăng xuất</summary>
@@ -26,6 +26,8 @@
         <p>Phiên buộc đổi mật khẩu chỉ được dùng me/csrf/logout/change-password. Authorization không được lưu khi reload. Origin do trình duyệt gửi; không nhập hoặc giả lập header Cookie/Origin.</p>
         <p>Swagger hiển thị kết quả từng request, không thay thế kiểm thử tự động. Không chia sẻ ảnh chứa mật khẩu hoặc token.</p>
       </details>
+      <p><label for="api-group">Nhóm API: </label><select id="api-group"><option value="auth">Xác thực</option></select></p>
+      <p>Danh mục: đăng nhập bằng HR để tạo/sửa/xóa, hoặc Admin để đọc. Chuyển nhóm rồi Authorize lại bằng token CSRF hiện hành. Cookie đăng nhập vẫn do trình duyệt quản lý.</p>
     </header>
     <div id="swagger-ui"></div>
   </body>

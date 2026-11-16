@@ -1,8 +1,8 @@
-# Swagger UI cho API auth
+# Swagger UI dev cho auth và danh mục tổ chức
 
 Cách chạy hằng ngày, kịch bản FE và ma trận kiểm chứng: [runbook auth FE–backend](auth-runbook.md). Các harness dưới đây chỉ phục vụ kiểm riêng, không thay `pnpm dev`.
 
-Swagger đọc [contract hiện hành](auth.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Không sinh bản spec thứ hai hoặc thêm annotation vào handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
+Swagger đọc [contract auth](auth.openapi.json) và phần danh mục đã triển khai từ [contract OAP](organization-accounts-profile.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Chọn nhóm Xác thực/Danh mục tổ chức trên trang; bản hiển thị danh mục lọc 12 operation từ canonical spec, không tạo bản contract viết tay hoặc annotation trong handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
 
 ## Mở tài liệu cùng ứng dụng local
 
@@ -11,7 +11,7 @@ Từ `web/`, chạy `pnpm dev`, rồi mở:
 - FE: `http://127.0.0.1:5174/`.
 - Swagger trên **chính backend Go**: `http://127.0.0.1:8080/docs/` (`/docs` redirect về `/docs/`).
 
-Không cần chạy Swagger harness hoặc thêm terminal backend. Localdev lắp một router/limiter/DB chung cho năm API và tài liệu. Để FE và Swagger đều thử mutation được, chỉ command localdev nhận đúng hai Origin `http://127.0.0.1:5174` và `http://127.0.0.1:8080`; vẫn kiểm cookie/CSRF, không CORS/Origin wildcard, không nhận localhost thay127.0.0.1. Cookie theo host, không theo port: FE và Swagger local chia sẻ cùng phiên, đăng xuất ở một nơi ảnh hưởng nơi còn lại; login lại phải lấy CSRF mới.
+Không cần chạy Swagger harness hoặc thêm terminal backend. Localdev lắp một router/DB chung cho năm API auth, 12 API danh mục và tài liệu; limiter auth giữ policy riêng. Để FE và Swagger đều thử mutation được, chỉ command localdev nhận đúng hai Origin `http://127.0.0.1:5174` và `http://127.0.0.1:8080`; vẫn kiểm cookie/CSRF, không CORS/Origin wildcard, không nhận localhost thay127.0.0.1. Cookie theo host, không theo port: FE và Swagger local chia sẻ cùng phiên, đăng xuất ở một nơi ảnh hưởng nơi còn lại; login lại phải lấy CSRF mới.
 
 `cmd/server` bình thường vẫn chỉ chấp nhận `APP_ORIGIN` cấu hình. Chỉ APP_ENV=dev mở docs, production404. Chạy backend production không tự bật ngoại lệ local hoặc Swagger. Cổng8080 bị chiếm thì runner dừng, không kill dự án khác. Cách chạy/dừng/dữ liệu giả tại [web README](../../web/README.md#chạy-fe-auth-thật--datn-19--auth-t18).
 
@@ -51,7 +51,7 @@ Harness in PID, tự dừng sau 20 phút. Để dừng sớm và cho cleanup đ�
 
 Origin/Cookie do trình duyệt quản lý. Để Swagger không chặn form vì ô Origin required bị trống, bootstrap điền origin hiện tại làm default trên object hiển thị; endpoint OpenAPI canonical vẫn nguyên nội dung nguồn. Đây không phải quyền sửa Origin gửi đi. Bootstrap bỏ hai header này khỏi request do Swagger xây dựng, không giả lập nguồn và không sửa middleware. CSRF phải khớp phiên mới nhất; sau mỗi login lấy token mới và thay giá trị Authorize cũ. Authorization chỉ trong bộ nhớ trang; `persistAuthorization=false`. Response/body có thể còn hiển thị khi trang mở: đóng/reload trang trước chia sẻ máy/ảnh, không chia sẻ credential/token thật. Thử request làm thay đổi dữ liệu thật trong DB đích.
 
-UI tiếng Anh là giao diện gốc của Swagger; hướng dẫn và mô tả nghiệp vụ bằng tiếng Việt. UI không có tài khoản tự cấp, không tự mở quyền nghiệp vụ, không tự fetch spec ngoài. `requestInterceptor` chỉ cho contract local và năm API auth cùng origin; `validatorUrl=null`, `queryConfigEnabled=false`, không Petstore/validator/CDN khi chạy.
+UI tiếng Anh là giao diện gốc của Swagger; hướng dẫn và mô tả nghiệp vụ bằng tiếng Việt. UI không có tài khoản tự cấp, không tự mở quyền nghiệp vụ, không tự fetch spec ngoài. `requestInterceptor` chỉ cho contract local và các operation auth/danh mục đã công bố cùng origin, gồm PATCH/DELETE item hợp lệ; `validatorUrl=null`, `queryConfigEnabled=false`, không Petstore/validator/CDN khi chạy.
 
 ## Tài nguyên và CSP
 
@@ -78,8 +78,52 @@ Lượt triển khai 12/11/2026 đã đạt Go vet/test/build; vet build tag int
 Tham khảo chính thức: [phân phối Swagger UI](https://swagger.io/docs/open-source-tools/swagger-ui/usage/installation/), [cấu hình](https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/), [giới hạn header cookie của browser](https://swagger.io/docs/open-source-tools/swagger-ui/usage/limitations/).
 
 
-## Contract tổ chức, tài khoản và hồ sơ đang chuẩn bị
+## DATN-26 — 12 API danh mục qua HTTP/PostgreSQL
 
-[OpenAPI OAP](organization-accounts-profile.openapi.json) mô tả 16 thao tác theo [proposal](../proposals/backend-organization-accounts-profile.md) và [kế hoạch SQL/test](../proposals/backend-organization-accounts-profile-sql-plan.md). Đây là thiết kế, chưa có route thực/nhúng vào Swagger dev; `/docs` hiện vẫn chỉ phục vụ năm API auth. Không mở Try it out giả hoặc sửa auth.openapi.json để tuyên bố đã tích hợp.
+[OpenAPI OAP](organization-accounts-profile.openapi.json) giữ thiết kế 16 operation.
+Runtime hiện nối 12 operation của departments/positions/job-levels: GET/POST
+collection, PATCH/DELETE item. Bốn operation tài khoản/hồ sơ chưa triển khai,
+không công bố trong Swagger dev. `/docs/openapi.json` giữ contract auth canonical;
+`/docs/catalog.openapi.json` là phần paths/components tới được của danh mục,
+được lọc từ canonical OAP. Cả hai chỉ phục vụ trong dev.
 
-Kiểm tĩnh: `node --test scripts/check-organization-contract.test.mjs`. Script kiểm ref/phạm vi/security/DTO/response cần bảo vệ, không phải OpenAPI validator đầy đủ hoặc bằng chứng handler/SQL chạy đúng. Chỉ mở rộng Swagger khi implementation có route và được kiểm runtime theo ticket tương ứng.
+Cách thử qua backend local `http://127.0.0.1:8080/docs/`:
+
+1. Chạy `pnpm dev` trong `web/` theo runbook hiện hành, dùng DB local test sở hữu.
+2. Ở nhóm Xác thực, login bằng tài khoản HR test local và lấy CSRF token.
+3. Chọn Danh mục tổ chức, Authorize lại bằng token hiện hành. Cookie vẫn được
+   trình duyệt giữ; không nhập Cookie/Origin thủ công. Chuyển nhóm không lưu
+   authorization vào storage; token không được giữ thay khi UI được dựng lại.
+4. GET collection → POST `{"name":"Phòng ban thử nghiệm"}` → ghi lại id/name.
+   POST trả201 và Location; không có GET item riêng trong đợt này.
+5. PATCH item với `name` mới và `expected_before_name` đúng tên vừa đọc.
+   Dùng tên nền cũ sẽ nhận409 STALE_DATA; trùng tên trong cùng danh mục nhận409
+   DUPLICATE_NAME. Rename no-op trả200 nhưng không sinh audit/timestamp giả.
+6. DELETE item với JSON `expected_before_name` hiện hành →204 body rỗng.
+   Mục còn employee tham chiếu, kể cả inactive, nhận409 CATALOG_IN_USE.
+7. Admin-only được GET, không được mutation; HR+Admin cộng quyền từ server.
+   Phiên limited bị403 PASSWORD_CHANGE_REQUIRED trên mọi API danh mục.
+
+GET nhận page/page_size/q theo contract, không query lạ/trùng; q tìm literal
+không phân biệt hoa/thường, `%`/`_` không là wildcard. Mutation yêu cầu JSON
+strict, Origin/CSRF và body thực tối đa8192byte, kể cả request chunked.
+Mọi response catalog no-store, không cấp/gia hạn cookie, không CORS wildcard.
+Actor lấy từ principal middleware; repository kiểm lại ACTIVE/cờ/role dưới khóa.
+
+Kiểm tự động:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+node --test scripts/check-swagger.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+```
+
+Chạy mỗi lượt DB tuần tự qua runner đã xác minh PG18/owner. Bằng chứng, phạm vi
+fault injection và kết quả thực chạy ở [runbook PostgreSQL](../../scripts/authdb/README.md#datn-26--http-danh-mục-và-swagger-dev).
+Swagger httptest/VM không thay browser rendering, cookie hoặc CSP qua browser.
+UI danh mục vẫn prototype, chưa nối API; không dùng ticket này nhận OAP-T05 đạt.
+Không thêm migration, biến môi trường, dependency hoặc truy cập Neon.

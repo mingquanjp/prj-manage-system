@@ -3,7 +3,7 @@ package api
 
 import "embed"
 
-// Files chỉ chứa contract auth đã được kiểm tra cùng mã nguồn.
+// Files chứa contract canonical; transport chỉ công bố các operation đã triển khai.
 //
-//go:embed auth.openapi.json
+//go:embed auth.openapi.json organization-accounts-profile.openapi.json
 var Files embed.FS

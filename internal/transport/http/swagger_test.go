@@ -2,9 +2,11 @@ package http
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -104,5 +106,81 @@ func TestSwaggerRejectsExtraFilesAndMutations(t *testing.T) {
 		if w.Code != 405 || w.Header().Get("Allow") != "GET, HEAD" {
 			t.Fatal("tài liệu nhận mutation hoặc preflight")
 		}
+	}
+}
+
+func TestSwaggerCatalogCanonicalSubset(t *testing.T) {
+	h := catalogHTTPRouter(t, catalogHR(), &catalogStub{}, "dev")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/docs/catalog.openapi.json", nil))
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Content-Security-Policy") != swaggerCSP {
+		t.Fatal("catalog docs/header sai")
+	}
+	var actual, source map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &actual); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile("../../../docs/api/organization-accounts-profile.openapi.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = json.Unmarshal(raw, &source); err != nil {
+		t.Fatal(err)
+	}
+	paths := actual["paths"].(map[string]any)
+	canonical := source["paths"].(map[string]any)
+	count := 0
+	for path, ops := range paths {
+		if !strings.HasPrefix(path, "/api/departments") && !strings.HasPrefix(path, "/api/positions") && !strings.HasPrefix(path, "/api/job-levels") {
+			t.Fatal("spec công bố route chưa có")
+		}
+		for method, operation := range ops.(map[string]any) {
+			count++
+			if !reflect.DeepEqual(operation, canonical[path].(map[string]any)[method]) {
+				t.Fatal("operation runtime khác canonical")
+			}
+		}
+	}
+	if count != 12 {
+		t.Fatal("phải có đúng 12 operation")
+	}
+	components := actual["components"].(map[string]any)
+	if _, exists := components["schemas"].(map[string]any)["SelfProfile"]; exists {
+		t.Fatal("không cần công bố schema hồ sơ chưa triển khai")
+	}
+	var walk func(any)
+	walk = func(value any) {
+		switch v := value.(type) {
+		case map[string]any:
+			if ref, ok := v["$ref"].(string); ok {
+				parts := strings.Split(ref, "/")
+				if len(parts) != 4 || parts[1] != "components" {
+					t.Fatal("ref bất thường")
+				}
+				if components[parts[2]].(map[string]any)[parts[3]] == nil {
+					t.Fatal("ref runtime không giải được")
+				}
+			}
+			for _, child := range v {
+				walk(child)
+			}
+		case []any:
+			for _, child := range v {
+				walk(child)
+			}
+		}
+	}
+	walk(actual)
+	for _, env := range []string{"prod", "test"} {
+		w := httptest.NewRecorder()
+		catalogHTTPRouter(t, catalogHR(), &catalogStub{}, env).ServeHTTP(w, httptest.NewRequest("GET", "/docs/catalog.openapi.json", nil))
+		if w.Code != 404 {
+			t.Fatal("docs catalog bị mở ngoài dev")
+		}
+	}
+	w = httptest.NewRecorder()
+	docsTestRouter(t, "dev").ServeHTTP(w, httptest.NewRequest("GET", "/docs/catalog.openapi.json", nil))
+	if w.Code != 404 {
+		t.Fatal("router chưa nối catalog lại công bố docs")
 	}
 }

@@ -246,3 +246,87 @@ Chưa có endpoint/UI danh mục, wiring composition root hoặc quyền middlew
 OAP-T04. Bộ test này không nhận mail/browser/real create adapter là đã đạt. Không
 chạm Neon, `.env` thật hoặc dữ liệu production. Các DB case do runner tạo/dọn;
 không dùng `destroy`, FORCE hoặc prune để làm test xanh.
+
+## DATN-26 — HTTP danh mục và Swagger dev
+
+Composition root `internal/app.AuthHandler`/`LocalAuthHandler` lắp cùng pool cho
+năm API auth và `organization.CatalogService`. Startup/localdev gọi router ứng
+dụng có dependency catalog bắt buộc. Constructor auth-only vẫn phục vụ các test
+riêng của auth, không công bố catalog khi chưa được lắp.
+
+Đầu ra OAP-T05: GET/POST `/api/departments`, `/api/positions`, `/api/job-levels`;
+PATCH/DELETE item `/{id}`. HTTP tests đối chiếu đúng 12 operation với canonical
+OAP và vẫn đủ năm API auth/health. GET cần HR/Admin, mutation chỉ HR; role kết hợp
+được cộng từ server. Mọi route cần phiên thường, kể cả ADMIN/HR bị chặn khi cờ
+buộc đổi còn true. Handler không nhận actor/role từ JSON; repository kiểm lại
+trạng thái/cờ/quyền hiện hành theo bàn giao DATN-25.
+
+Input/output cho FE:
+
+- GET: `page` mặc định1, `page_size` mặc định20/tối đa100, `q` trim Unicode
+  tối đa100 code point. Query lạ/lặp/sai encoding bị400; chỉ mặc định khi vắng
+  input, `page=0` là400. Response `{items:[{id,name}],pagination:{page,page_size,total}}`.
+- POST: `{name}` →201 `{id,name}` và Location item tương ứng. Không có GET item
+  riêng. PATCH: `{name,expected_before_name}` →200 `{id,name}`. DELETE:
+  `{expected_before_name}` →204 body rỗng, không Content-Type JSON.
+- Mutation dùng cookie và X-CSRF-Token của phiên hiện hành, Origin chính xác,
+  application/json; body8192byte thực tối đa, kể cả chunked. Parser dùng chung
+  auth: field lạ/trùng/thiếu/sai kiểu/null/trailing JSON/UTF-8 hoặc surrogate sai
+  bị từ chối. Tên mới do service trim Unicode rồi kiểm1–100 code point; tên nền
+  không trim. Không áp limiter auth sang catalog.
+- Mọi response catalog no-store, không Set-Cookie hoặc CORS wildcard. Lỗi có
+  `code,message,request_id` server cấp; không SQL/credential/driver error thô.
+  400 VALIDATION_ERROR;401 UNAUTHENTICATED;403 FORBIDDEN/PASSWORD_CHANGE_REQUIRED;
+  404 NOT_FOUND;409 DUPLICATE_NAME/STALE_DATA/CATALOG_IN_USE;413 PAYLOAD_TOO_LARGE;
+  415 UNSUPPORTED_MEDIA_TYPE;503 SERVICE_UNAVAILABLE hoặc500 INTERNAL_ERROR.
+- Mất phản hồi mutation/COMMIT chưa rõ: không tự retry POST/PATCH/DELETE; đọc lại
+  danh sách để đối soát. FE vẫn phải phân biệt lỗi DB với hết phiên.
+
+Swagger cùng backend, dev-only: `/docs/`, nhóm Auth/Danh mục. Contract auth giữ
+nguyên byte nguồn ở `/docs/openapi.json`; `/docs/catalog.openapi.json` lọc đúng
+12 operation và components cần thiết từ canonical OAP, không công bố bốn API
+account/profile chưa triển khai. Interceptor chỉ cho operation đã công bố cùng
+origin, thêm PATCH/DELETE và item ID hợp lệ. Authorize token lại khi chuyển nhóm;
+không lưu authorization vào storage. Hướng dẫn thao tác ở [API README](../../docs/api/README.md#datn-26--12-api-danh-mục-qua-httppostgresql).
+
+Lệnh kiểm:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+node --test scripts/check-swagger.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+python3 scripts/authdb/manage.py run -- go test -tags=integration ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Không chạy hai lượt DB song song. Chỉ dùng cluster test PG18 đã guard; không đọc
+`.env` thật, dùng DATABASE_URL fallback hoặc áp Neon. Không migration/dependency/
+biến môi trường mới; catalog transaction có timeout10s trong timeout HTTP30s.
+
+Bằng chứng thực chạy ngày 16/11/2026: `go vet ./...`, unit tests toàn bộ và
+`go build ./...` đạt; 36 kiểm tra Node Swagger/contract/harness đạt. Guard xác
+nhận PostgreSQL 18, đúng owner, DB gốc 0 bảng. Suite integration có race detector
+đạt: repository 102.889s, transport 5.239s, cmd/server 94.668s, gồm hồi quy năm API
+auth và 12 API danh mục qua composition root thật. Cleanup sau suite đạt (0.636s),
+DB gốc vẫn trống và không còn DB case. Sub-agent đã review hai lượt,
+không còn finding chặn. Một lỗi fixture ban đầu (dùng tài khoản kiểm quyền làm
+inactive reference) đã tách riêng và suite cuối chạy lại đạt; không sửa quyền
+để làm test xanh.
+
+Các test mới:
+
+| Ca | Bằng chứng | Giới hạn |
+|---|---|---|
+| 12 operation, quyền, lỗi/DTO/header | `TestCatalogRouteInventory`, `TestCatalogHTTPPermissionAndErrors`, `TestCatalogApplicationPostgresCRUD` | Route inventory/handler fake không thay HTTP+DB thật |
+| Body/strict JSON/Origin/CSRF | `TestCatalogHTTPBodyAndProtection`, `TestCatalogApplicationChunkedBodies`, `TestCatalogApplicationSecurityAndAuditFailure` | Actual HTTP chunked8192/8193 cho cả3 loại × POST/PATCH/DELETE; không phải browser proof |
+| Limited/missing session, localdev Origin | `TestCatalogAllRoutesRequireNormalSession`, `TestCatalogLocalDocsOriginIsolation`, HTTP PG role/limited cases | Origin từ request test; không giả browser đã kiểm |
+| Audit/DB lỗi, rotation | HTTP PostgreSQL kiểm lỗi audit rollback catalog, lỗi query/pool không biến thành401, cookie cũ và CSRF cũ bị từ chối | DDL lỗi chỉ trên DB case; đóng pool/fault injection, không cắt mạng thật |
+| Swagger | `TestSwaggerCatalogCanonicalSubset`, `scripts/check-swagger.test.mjs` | Canonical subset/ref/dev-only/selector/allowlist kiểm bằng httptest và VM; chưa kiểm rendering/cookie/CSP qua browser trong DATN-26 |
+
+Chưa nối UI danh mục OAP-T05, chưa API tài khoản/hồ sơ hoặc cấp tài khoản/mail.
+Các ca cạnh tranh repository dùng lại bộ DB thật DATN-25; create adapter thật vẫn
+thuộc OAP-T09. Không tuyên bố toàn OAP/FR đã hoàn tất hoặc tự chuyển Jira Done.
