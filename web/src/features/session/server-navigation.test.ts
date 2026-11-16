@@ -30,7 +30,7 @@ test("navigation cộng role server, không coi ADMIN/DIRECTOR là HR; limited c
     const p = principal(roles)
     assert.equal(canReadCatalogs(p), roles.includes("HR") || roles.includes("ADMIN"))
     assert.equal(canManageCatalogs(p), roles.includes("HR"))
-    assert.equal(serverHome(p), roles.includes("HR") ? "/organization/departments" : "/")
+    assert.equal(serverHome(p), roles.includes("HR") ? "/organization/departments" : "/profile")
     const limited = principal(roles, true)
     assert.equal(canReadCatalogs(limited), false)
     assert.equal(canManageCatalogs(limited), false)

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import type { Principal } from "./auth-api"
 import type { AuthSession } from "./auth-session"
 import { canManageCatalogs, canReadCatalogs, catalogKindAt, serverHome } from "./server-navigation"
+import { ServerPersonalProfile } from "../profiles/ServerPersonalProfile"
 import { ServerCatalogs } from "../organization/ServerCatalogs"
 
 export function ServerWorkspace({
@@ -20,16 +21,18 @@ export function ServerWorkspace({
   const location = useLocation()
   const home = serverHome(principal)
   const kind = catalogKindAt(location.pathname)
+  if (location.pathname === "/profile" && (location.search || location.hash))
+    return <Navigate to="/profile" replace />
   if (location.pathname === "/organization")
     return <Navigate to="/organization/departments" replace />
   if (
     location.pathname === "/login" ||
     location.pathname === "/change-password" ||
-    (location.pathname === "/" && home !== "/")
+    location.pathname === "/"
   )
     return <Navigate to={home} replace />
   const denied = !!kind && !canReadCatalogs(principal)
-  const landing = location.pathname === "/"
+  const profilePage = location.pathname === "/profile"
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-white px-5 py-4">
@@ -38,7 +41,7 @@ export function ServerWorkspace({
           TaskAssign
         </Link>
         <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm">
-          <span className="break-words">
+          <span className="min-w-0 break-words">
             {principal.fullname} · {principal.employee_code}
           </span>
           <Button
@@ -58,8 +61,12 @@ export function ServerWorkspace({
           aria-label="Điều hướng máy chủ"
           className="flex flex-wrap gap-2 self-start md:flex-col"
         >
-          <Link className="filter-chip" to={home}>
-            Trang chính
+          <Link
+            className={`filter-chip ${profilePage ? "filter-active" : ""}`}
+            aria-current={profilePage ? "page" : undefined}
+            to="/profile"
+          >
+            Hồ sơ của tôi
           </Link>
           {canManageCatalogs(principal) && (
             <Link
@@ -82,7 +89,9 @@ export function ServerWorkspace({
               Đang kiểm tra với máy chủ…
             </p>
           )}
-          {kind && !denied ? (
+          {profilePage ? (
+            <ServerPersonalProfile principal={principal} session={session} busy={busy} />
+          ) : kind && !denied ? (
             <ServerCatalogs
               key={`${kind}:${location.search}`}
               kind={kind}
@@ -93,18 +102,12 @@ export function ServerWorkspace({
           ) : (
             <section className="rounded-xl border border-border bg-white p-6">
               <h1 className="text-2xl font-semibold">
-                {denied
-                  ? "Bạn không có quyền xem danh mục"
-                  : landing
-                    ? "Đã đăng nhập"
-                    : "Chức năng chưa được kết nối"}
+                {denied ? "Bạn không có quyền xem danh mục" : "Chức năng chưa được kết nối"}
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {denied
                   ? "Danh mục tổ chức chỉ dành cho HR hoặc Quản trị viên. Quyền được xác nhận từ máy chủ."
-                  : landing
-                    ? "Các chức năng dành cho bạn đang được kết nối. Đây là màn tiếp nối tạm thời."
-                    : "Dữ liệu của chức năng này chưa được kết nối với hệ thống."}
+                  : "Dữ liệu của chức năng này chưa được kết nối với hệ thống."}
               </p>
               <p className="mt-5 text-sm">
                 Vai trò hệ thống:{" "}
@@ -112,11 +115,9 @@ export function ServerWorkspace({
                   .map((role) => ({ ADMIN: "Quản trị viên", HR: "HR", DIRECTOR: "Giám đốc" })[role])
                   .join(", ") || "Nhân viên"}
               </p>
-              {!landing && (
-                <Button asChild variant="outline" className="mt-5">
-                  <Link to={home}>Về màn chính</Link>
-                </Button>
-              )}
+              <Button asChild variant="outline" className="mt-5">
+                <Link to={home}>Về màn chính</Link>
+              </Button>
             </section>
           )}
         </main>

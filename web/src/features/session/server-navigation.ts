@@ -15,7 +15,7 @@ export function serverHome(principal: Principal) {
     ? "/change-password"
     : canManageCatalogs(principal)
       ? "/organization/departments"
-      : "/"
+      : "/profile"
 }
 export function catalogKindAt(path: string): CatalogKind | undefined {
   return catalogKinds.find((kind) => path === `/organization/${kind}`)
