@@ -2,7 +2,7 @@
 
 Cách chạy hằng ngày, kịch bản FE và ma trận kiểm chứng: [runbook auth FE–backend](auth-runbook.md). Các harness dưới đây chỉ phục vụ kiểm riêng, không thay `pnpm dev`.
 
-Swagger đọc [contract auth](auth.openapi.json) và phần danh mục đã triển khai từ [contract OAP](organization-accounts-profile.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Chọn nhóm Xác thực/Danh mục tổ chức trên trang; bản hiển thị danh mục lọc 12 operation từ canonical spec, không tạo bản contract viết tay hoặc annotation trong handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
+Swagger đọc [contract auth](auth.openapi.json) và phần danh mục/hồ sơ đã triển khai từ [contract OAP](organization-accounts-profile.openapi.json), được nhúng bằng [embed.go](embed.go) và phục vụ bởi [HTTP transport](../../internal/transport/http/swagger.go). Chọn nhóm Xác thực/Tổ chức và hồ sơ trên trang; bản hiển thị OAP lọc 13 operation từ canonical spec, không tạo bản contract viết tay hoặc annotation trong handler. Nguồn hành vi API và bằng chứng backend ở [proposal mục 6.2.13](../proposals/backend-auth-session-implementation.md#6213-tích-hợp-năm-api-với-postgresql--datn-18--auth-t17-12112026).
 
 ## Mở tài liệu cùng ứng dụng local
 
@@ -127,3 +127,31 @@ fault injection và kết quả thực chạy ở [runbook PostgreSQL](../../scr
 Swagger httptest/VM không thay browser rendering, cookie hoặc CSP qua browser.
 UI danh mục vẫn prototype, chưa nối API; không dùng ticket này nhận OAP-T05 đạt.
 Không thêm migration, biến môi trường, dependency hoặc truy cập Neon.
+
+
+## DATN-28 — API hồ sơ chính chủ
+
+GET `/api/employees/{id}` đã nối qua composition root thật và được thêm vào nhóm
+**Tổ chức và hồ sơ** tại backend `/docs/`. URL spec vẫn là
+`/docs/catalog.openapi.json` để giữ cơ chế local hiện hữu; khi application có đủ
+dependency, spec gồm 12 operation danh mục và 1 operation hồ sơ, lọc từ canonical
+OAP cùng components được tham chiếu. Không công bố ba operation tài khoản chưa nối.
+Ghi nhận DATN-26 ở trên mô tả phạm vi tại thời điểm bàn giao cũ.
+
+Cách thử: login phiên thường trong nhóm Xác thực, lấy `employee_id` từ response
+login hoặc GET `/api/auth/me`, rồi gọi GET hồ sơ với ID đó. Không dùng `user_id`
+thay `employee_id`; GET này không cần CSRF và không tạo/gia hạn cookie. Người không
+có role đặc biệt vẫn đọc được chính chủ. HR/Admin không có ngoại lệ để đọc ID khác:
+ID người khác và ID không tồn tại cùng404. Phiên hạn chế trả403, phiên không hợp lệ
+trả401; lỗi DB giữ500/503 theo nguồn.
+
+Response chỉ có 11 trường theo SelfProfile. Phone/address/department/job_level
+chưa có giữ JSON null; position bắt buộc. Company email chuẩn hóa khi đọc bằng
+helper auth, không UPDATE email legacy. Không có credential, role, CV, lịch sử
+đề nghị hoặc audit. Tất cả response no-store; không log PII/body lỗi DB.
+
+Kiểm route/DTO/canonical subset bằng Go httptest; kiểm interceptor Swagger bằng
+`scripts/check-swagger.test.mjs`. Các kiểm này không thay browser rendering hoặc
+HTTPS production. HTTP + PostgreSQL test và bàn giao OAP-T07 xem
+[runbook PostgreSQL](../../scripts/authdb/README.md#datn-28--api-hồ-sơ-chính-chủ).
+Chưa nối UI hồ sơ; không tự mở thêm quyền đọc toàn bộ hồ sơ hoặc sửa hồ sơ.

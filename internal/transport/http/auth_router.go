@@ -14,6 +14,7 @@ type AuthServices struct {
 	Login          loginUseCase
 	PasswordChange passwordChangeUseCase
 	Catalogs       catalogUseCase
+	Profiles       profileUseCase
 	Clock          auth.Clock
 }
 
@@ -22,16 +23,16 @@ func NewAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	return newAuthRouter(health, appEnv, appOrigin, services, false)
 }
 
-// NewApplicationRouter yêu cầu cả auth và catalog trước khi mở ứng dụng.
+// NewApplicationRouter yêu cầu auth, danh mục và hồ sơ trước khi mở ứng dụng.
 func NewApplicationRouter(health healthChecker, appEnv, appOrigin string, services AuthServices) (http.Handler, error) {
-	if services.Catalogs == nil {
-		return nil, errors.New("thiếu dependency danh mục khi dựng router")
+	if services.Catalogs == nil || services.Profiles == nil {
+		return nil, errors.New("thiếu dependency danh mục hoặc hồ sơ khi dựng router")
 	}
 	return newAuthRouter(health, appEnv, appOrigin, services, false)
 }
 func NewLocalDevelopmentApplicationRouter(health healthChecker, services AuthServices) (http.Handler, error) {
-	if services.Catalogs == nil {
-		return nil, errors.New("thiếu dependency danh mục khi dựng router")
+	if services.Catalogs == nil || services.Profiles == nil {
+		return nil, errors.New("thiếu dependency danh mục hoặc hồ sơ khi dựng router")
 	}
 	return newAuthRouter(health, "dev", "http://127.0.0.1:5174", services, true)
 }
@@ -64,10 +65,13 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	if services.Catalogs != nil {
 		registerCatalogRoutes(router, services.Sessions, services.Catalogs, protection)
 	}
+	if services.Profiles != nil {
+		registerProfileRoutes(router, services.Sessions, services.Profiles)
+	}
 	// Dev tường minh mới mở tài liệu; không nới allowlist của phiên hạn chế.
 	if appEnv == "dev" {
-		router.HandleFunc("/docs", swaggerWithCatalogs(services.Catalogs != nil))
-		router.HandleFunc("/docs/*", swaggerWithCatalogs(services.Catalogs != nil))
+		router.HandleFunc("/docs", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil))
+		router.HandleFunc("/docs/*", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil))
 	}
 	return router, nil
 }

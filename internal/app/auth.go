@@ -1,4 +1,4 @@
-// Package app lắp ghép adapter, service và HTTP cho auth/danh mục; không chứa quy tắc nghiệp vụ.
+// Package app lắp ghép adapter, service và HTTP cho auth/danh mục/hồ sơ; không chứa quy tắc nghiệp vụ.
 package app
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// AuthHandler lắp auth và danh mục, dùng chung giữa server và integration.
+// AuthHandler lắp auth, danh mục và hồ sơ, dùng chung giữa server và integration.
 func AuthHandler(cfg *config.Config, pool *pgxpool.Pool, clock auth.Clock) (http.Handler, error) {
 
 	services, err := applicationServices(cfg, pool, clock)
@@ -52,5 +52,10 @@ func applicationServices(cfg *config.Config, pool *pgxpool.Pool, clock auth.Cloc
 		return httptransport.AuthServices{}, err
 	}
 	services.Catalogs = organization.NewCatalogService(repository)
+	profile, err := postgres.NewProfileRepository(pool, 10*time.Second)
+	if err != nil {
+		return httptransport.AuthServices{}, err
+	}
+	services.Profiles = organization.NewProfileService(profile)
 	return services, nil
 }
