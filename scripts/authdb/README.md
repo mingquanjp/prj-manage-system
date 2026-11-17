@@ -518,3 +518,119 @@ do lượt test tạo, không dọn auth_dev đang chạy. Không đọc `.env`/
   username khi DDL lỗi đã xử lý. Không còn góp ý chặn trên snapshot bàn giao.
 
 Chưa commit/push hoặc tự chuyển Jira Done; Done sau review/bàn giao/merge theo workflow.
+
+## DATN-31 — Transaction tạo tài khoản và hồ sơ
+
+Nguồn: [proposal mục 6.3/6.4 F2](../../docs/proposals/backend-organization-accounts-profile.md#63-dto-và-quy-tắc-input),
+[SQL plan mục 5/7](../../docs/proposals/backend-organization-accounts-profile-sql-plan.md#5-truy-vấn-khóa-và-transaction).
+OAP-T09 dùng schema M2, không thêm migration, endpoint/Swagger, Gmail hoặc UI.
+
+### Đầu ra cho OAP-T11
+
+- `organization.NewAccountService(repo).Create(ctx, input)` validate/chuẩn hóa theo
+  contract, sinh32 byte `crypto/rand`, base64url không padding và bcrypt DefaultCost
+  ngoài transaction. Role chỉ ADMIN/HR/DIRECTOR, không trùng; trả thứ tự ổn định,
+  role rỗng hợp lệ. Nullable giữ đúng nghĩa; pointer/slice được copy trước chờ DB.
+- `CreateAccountInput.ActorID` phải do caller lấy từ principal đã xác thực; không
+  là field client được tự chỉ định. Handler tương lai phải allowlist DTO và giữ
+  auth/limited/ADMIN/Origin/CSRF/body gates. Validation service không thay các gate HTTP.
+- `postgres.NewAccountRepository(db, timeout)` dùng READ COMMITTED, khóa user rồi
+  employee actor; recheck ACTIVE/cờ/ADMIN từ user_roles. Thay quyền/status về sau
+  phải theo cùng giao thức khóa user trước; test mutation giả không chứng nhận
+  đã có API quản trị đổi quyền/khóa.
+- Catalog được KEY SHARE theo department → position → job_level, giữ đến commit.
+  Thiếu catalog là ErrValidation. Adapter kiểm email canonical khớp lower(btrim)
+  của DB hiện tại; không đổi normalization auth để vượt collation khác.
+- Cấp sequence rồi INSERT user(legacy EMPLOYEE, ACTIVE, true), employee(ACTIVE),
+  user_roles và một audit employee/CREATE_ACCOUNT cùng transaction. Audit schema1
+  chỉ IDs/code/catalogIDs/roles, actor là Admin; không credential/email/phone/address.
+  ID user và employee độc lập. Không cấp session, không gửi email trong transaction.
+- Repository chỉ trả `AccountProjection` sau commit xác nhận. Service trả
+  `CreateAccountResult.Account` cùng credential nội bộ qua
+  `PasswordForDelivery().RevealForDelivery()` cho bước mail được giao sau này.
+  Result/command/TemporaryPassword chặn JSON và redact String/GoString/slog;
+  không marshal toàn result hoặc log plaintext/hash. Go GC không bảo đảm xóa mọi
+  bản sao string trong RAM; credential không được persist ngoài hash DB.
+- Kết quả lỗi luôn zero account/credential. Error được sanitize, không wrap raw
+  driver vào service. Có ErrValidation/Unauthenticated/PasswordChangeRequired/
+  Forbidden/EmailConflict/Unavailable/Persistence và marker ErrCommitUnknown.
+  Duplicate chỉ map EMAIL_CONFLICT với hai constraint email đã biết; collision
+  mã ngoài allocator/lỗi constraint khác không bị báo nhầm email.
+
+### Commit, timeout và ghép mail
+
+Chỉ ErrTxCommitRollback hoặc PgError severity ERROR thuộc lỗi xác nhận hủy
+transaction (class23, 40001/40P01/25P02) được xem là thất bại đã xác định. Lỗi driver,
+class08/FATAL, 40003 hoặc phản hồi không rõ giữ ErrCommitUnknown kèm loại lỗi an
+toàn. Không thấy phản hồi commit không có nghĩa chắc chắn chưa ghi.
+
+OAP-T11 chỉ được gửi mail sau kết quả Create thành công; nếu lỗi/commit chưa xác
+định thì không gửi, không tự retry transaction, phải đối soát bằng account list
+khi endpoint đó được nối. Không có mail.status hoặc account_created=true được
+bịa từ lỗi trong ticket này. Không có Gmail/mock mail call ở implementation này;
+kiểm orchestration thứ tự DB → mail thuộc OAP-T11. Rollback có thể mất số sequence.
+
+### Kiểm thử và lệnh tái hiện
+
+Chỉ dùng PostgreSQL18 test sở hữu, case riêng và chạy DB suite tuần tự:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go test -race ./internal/service/organization ./internal/repository/postgres -count=1
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -race -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+| Ca | Test chính |
+|---|---|
+| Input Unicode/length/nullable/email/roles, copy input, random/bcrypt/cancel lỗi sớm | `TestValidateAccountInput`, `TestAccountServiceRejectsBeforeRepository` |
+| Bcrypt thật, secret32byte, redaction/JSON, lỗi port không trả credential | `TestAccountServiceBcryptAndSecretBoundary`, `TestAccountServiceFailureDoesNotReturnCredential` |
+| User/employee/roles/audit atomic, nullable/populated, audit đúng8 field và giá trị, không session | `TestAccountCreateAtomicProjectionAndAudit` |
+| Service + PG thật, generated user_id khác employee_id, hash khớp credential nội bộ | `TestAccountServiceUsesRealBcryptAndCommittedRepository` |
+| Actor/status/cờ/legacyrole và catalog thiếu | `TestAccountCreateRechecksActorAndCatalog` |
+| Fault từng write user/employee/role/audit, rollback tất cả row, sequence vẫn mất số | `TestAccountCreateWriteFailuresRollbackAllRows` |
+| Hai Admin tranh email canonical, N create cấp mã khác nhau | `TestAccountConcurrentCreatesAndEmailCollision`, `TestAccountManyCreatesKeepCodesUnique` |
+| Mutation giả theo giao thức khóa đổi actor trong lúc create chờ | `TestAccountActorChangesWhileWaiting` |
+| Create/delete thật cả3 catalog, hai thứ tự, Admin cũng đang tham chiếu mục bị xóa | `TestAccountCreateAndCatalogDeleteRealAdapters` |
+| Rollback xác nhận, deferred constraint tại COMMIT, commit thật mất phản hồi, lock timeout | `TestAccountCommitOutcomeAndNoFalseSuccess`, `TestAccountCreateLockTimeoutRollsBack` |
+
+Barrier/pg_blocking_pids chứng minh chờ khóa, không sleep ngẫu nhiên. Fault SQL
+chỉ trên DB case hy sinh; lỗi commit EOF/08006/40003 được mô phỏng tại biên driver
+sau commit PostgreSQL thật, không phải cắt mạng vật lý. Không mock nhận thay bằng
+chứng DB; unit fake chỉ kiểm từng tầng service. Không có bằng chứng Gmail/browser,
+HTTPS production, Neon hoặc tạo tài khoản qua HTTP/FE trong DATN-31.
+
+### Bằng chứng thực chạy — 17/11/2026
+
+- Nhánh `feature/DATN-31-create-account-transaction` tách từ main sau merge DATN-30
+  (`b17ea1e`); không đổi schema/migration, router, dependency hoặc UI.
+- Guard xác nhận PostgreSQL18, owner đúng, DB gốc public0 bảng và cluster system
+  identifier `7705732357505970219`. Không fallback DATABASE_URL/Neon hoặc đọc `.env`.
+- `go vet ./...`, `go test ./... -count=1`, `go build ./...`: đạt. Unit race cho
+  organization/postgres đạt (13.124s/1.870s), gồm tám tổ hợp role, biên validation,
+  random/bcrypt lỗi sớm, hash thật và redaction/zero-result khi lỗi.
+- Lượt đầu atomic/recheck/write-fault trên PG thật đạt8.109s. Lượt cuối theo lệnh
+  integration `-race` ở trên đạt: postgres156.246s, transport6.886s, server96.667s.
+  Gồm create concurrency, canonical email collision, actor/cờ/status thay đổi khi
+  chờ, ba catalog delete races, commit ambiguity và regression auth/catalog/profile.
+- Service+PG tạo employee_id khác user_id được kiểm liên kết và hash thật. Audit
+  được so exact payload/schema_version/IDs/catalogIDs/roles, không chỉ đếm field.
+  Không fake thay bằng chứng persistence. Có rollback thật bằng deferred constraint;
+  lost-reply EOF/08006/40003 là fault wrapper sau commit thật, không mất mạng vật lý.
+- Sau toàn bộ suite, chạy riêng qua runner:
+  `go test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=1m`:
+  đạt0.707s, DB gốc0 bảng và không còn auth_case. Không dọn DB localdev khác.
+- Harness14 tests, kiểm kê368 nguồn và `git diff --check`: đạt. Không stage/commit
+  trong bước triển khai; các file mới vẫn cần được đưa vào commit khi người dùng giao.
+- Sub-agent review SQL/port/secret/commit trước DB và review code/tests/runbook cuối.
+  Góp ý commit classifier quá rộng đã sửa theo allowlist xác nhận rollback; bổ sung
+  unequal IDs, exact audit và fault commit thật. Không còn góp ý chặn được phát hiện.
+
+Chưa commit/push hoặc đổi Jira Done. Bàn giao lõi transaction cho OAP-T11; phần mail
+adapter thuộc OAP-T10, HTTP/orchestration và account list thuộc OAP-T11, UI thuộc
+OAP-T12. Done sau review/bàn giao/merge phù hợp workflow, không nhận toàn luồng F2 đã xong.
