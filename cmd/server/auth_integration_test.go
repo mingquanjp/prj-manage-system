@@ -36,7 +36,11 @@ type authApp struct {
 
 func newAuthApp(t *testing.T) *authApp {
 	t.Helper()
-	f := authdb.NewFixture(t)
+	return newAuthAppWithFixture(t, authdb.NewFixture(t))
+}
+
+func newAuthAppWithFixture(t *testing.T, f *authdb.Fixture) *authApp {
+	t.Helper()
 	clock := &integrationClock{}
 	clock.nanos.Store(time.Date(2026, 11, 12, 9, 0, 0, 0, time.UTC).UnixNano())
 	handler, err := buildHandler(&config.Config{AppEnv: "dev", AppOrigin: testOrigin, SessionTTL: 8 * time.Hour}, f.DB.Pool(t), clock)
@@ -296,7 +300,8 @@ func TestAuthHTTPPostgresFailureAtomicity(t *testing.T) {
 }
 
 func TestAuthHTTPPostgresErrors(t *testing.T) {
-	a := newAuthApp(t)
+	// M2 cấm tạo dữ liệu trùng; ca phòng vệ này chạy đúng schema legacy M1.
+	a := newAuthAppWithFixture(t, authdb.NewLegacyFixture(t, 4))
 	a.fixture.AddAccount(t, authdb.AccountOptions{Email: "duplicate@example.invalid"})
 	a.fixture.AddAccount(t, authdb.AccountOptions{Email: " DUPLICATE@example.invalid "})
 	header, data := a.call(t, "POST", "/api/auth/login", nil, "", map[string]string{"email": "duplicate@example.invalid", "password": authdb.FixturePassword}, 500)

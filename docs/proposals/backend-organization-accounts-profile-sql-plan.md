@@ -1,6 +1,8 @@
 # Kế hoạch SQL và PostgreSQL test — Tổ chức, tài khoản, hồ sơ
 
-Ngày 15/11/2026. **Thiết kế để review, chưa có migration mới hoặc SQL nào được chạy.** Phạm vi theo [proposal](backend-organization-accounts-profile.md), [OpenAPI](../api/organization-accounts-profile.openapi.json), [dictionary](../design/database-step5b-supporting-dictionary-2026-10-14.md) mục 1–5.1/20 và [mapping](../design/database-step5c-migration-map-2026-10-14.md). Không thay nghiệp vụ, gửi thư, sửa 000001–000003 hoặc áp Neon. Đây không phải script triển khai có thể copy chạy trực tiếp.
+Ngày 15/11/2026. **Kế hoạch thiết kế; trạng thái thực thi được ghi tại runbook, không suy mọi ca dưới đây đã đạt.**
+
+Tiếp nối 17/11/2026: M1 đã triển khai tại DATN-24; M2/consumer được triển khai tại DATN-30 trên PostgreSQL test sở hữu. Xem [bằng chứng và giới hạn M2](../../scripts/authdb/README.md#datn-30--m2-bỏ-username-sequence-và-email-unique). Phần mô tả nền head 000003 bên dưới là snapshot lúc lập kế hoạch; head mới là 000005. Chưa áp Neon. Phạm vi theo [proposal](backend-organization-accounts-profile.md), [OpenAPI](../api/organization-accounts-profile.openapi.json), [dictionary](../design/database-step5b-supporting-dictionary-2026-10-14.md) mục 1–5.1/20 và [mapping](../design/database-step5c-migration-map-2026-10-14.md). Không thay nghiệp vụ, gửi thư, sửa 000001–000003 hoặc áp Neon. Đây không phải script triển khai có thể copy chạy trực tiếp.
 
 ## 1. Nền thực tế và thứ tự chuyển đổi
 
@@ -101,7 +103,7 @@ Thứ tự cơ sở: user → employee → session (khi cần), theo giao thức
 
 ## 7. Ma trận PostgreSQL test dự kiến
 
-**Tất cả ca dưới chưa chạy.** Test head trong case riêng; hai connection/barrier/clock điều khiển được cho race, không sleep ngẫu nhiên. Mail fake chỉ chứng minh thứ tự gọi; inbox thật thuộc OAP-12/15 được cấp quyền riêng.
+**Ma trận thiết kế; kết quả thực chạy và giới hạn xem runbook M1/M2, không tự nhận các ca create/mail chưa triển khai đã đạt.** Test head trong case riêng; hai connection/barrier/clock điều khiển được cho race, không sleep ngẫu nhiên. Mail fake chỉ chứng minh thứ tự gọi; inbox thật thuộc OAP-12/15 được cấp quyền riêng.
 
 | Mã | Dữ liệu/thao tác | Kết quả cần chứng minh | WBS |
 |---|---|---|---|

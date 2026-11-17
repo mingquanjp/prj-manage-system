@@ -405,3 +405,116 @@ lượt DB song song. Lượt trước đã sửa lỗi test đếm12 thay11 tr�
 helper catalog cấm Set-Cookie cho logout; không thay contract để làm test xanh.
 Sub-agent review chỉ đọc hai lượt, các finding đã xử lý và không còn điểm chặn.
 Chưa commit/push hoặc tự chuyển Jira Done; Done sau review/bàn giao/merge theo workflow.
+
+## DATN-30 — M2 bỏ username, sequence và email unique
+
+Nguồn: [SQL plan mục 2/4/6–7](../../docs/proposals/backend-organization-accounts-profile-sql-plan.md),
+[proposal OAP-A01/A02](../../docs/proposals/backend-organization-accounts-profile.md#4-các-lựa-chọn-đã-duyệt--15112026).
+Đầu ra OAP-T08 cho OAP-T09; không có API create/next-code/Gmail mới trong đợt này.
+
+### Schema và consumer
+
+- Head `000005_oap_m2`: DROP `users.username` không CASCADE; giữ mọi cột/dữ liệu khác.
+  UNIQUE `lower(btrim(employees.email))` áp dụng mọi trạng thái, không sửa raw email.
+- `WithM2Preflight` được nối ở cmd/migrate, localdev và runner test; kiểm trước khi
+  driver ghi dirty. Kiểm metadata M1, PK/FK/unique, default/trigger và dependency
+  username, email đơn hợp lệ/unique/parity Go–PG, mã legacy/overflow. Không in email,
+  username/hash hoặc tự sửa dữ liệu sai. SQL function body được rà bổ sung vì không
+  phải mọi dependency động đều có pg_depend; kiểm kê consumer ngoài repo vẫn là
+  đầu vào bắt buộc của một đợt chuyển đổi DB thật.
+- Cửa sổ nâng cấp yêu cầu dừng consumer ghi suốt preflight và DDL; advisory lock
+  chỉ tuần tự hóa migration runner. Không tuyên bố zero downtime. File SQL up được
+  chạy qua runner có preflight, không copy chạy rời bỏ bước Go kiểm email.
+- `employee_code_seq`: BIGINT/min1/increment1/no cycle/cache1. Khởi tạo một lần bằng
+  max phần số `EMP[0-9]+` +1; giữ `EMP001`, `EMP000001`, `E001` và mã khác nguyên vẹn.
+  Dải E không tham gia max. Max BIGINT legacy bị từ chối vì không còn số tiếp theo.
+- `postgres.AllocateEmployeeCode(ctx, tx)` cấp bằng nextval trong transaction của
+  caller. `FormatEmployeeCode` đệm tối thiểu6 chữ số, không cắt số dài.
+  `PreviewEmployeeCode` chỉ đọc last_value/is_called, không tiêu thụ hoặc giữ chỗ.
+  Collision ngoài allocator vẫn bị UNIQUE(employee_code) chặn; không skip/retry ngầm.
+- Seed dùng email tổng hợp tường minh; user mới ghi legacy EMPLOYEE, quyền từ
+  user_roles tường minh. Seed nhận diện email/code legacy, dừng nếu hai khóa xung
+  đột, giữ credential/quyền/hồ sơ hiện có. User mới lấy mã qua allocator; chạy lại
+  không nextval hoặc reset sequence cho người đã có. SQL kỹ năng nối bằng email.
+  Đây là seed dev, không phải chức năng cấp mật khẩu tạm/Gmail.
+- Localdev/fixture head không dùng username. Fixture lịch sử v1/v2/v3/M1 vẫn giữ
+  schema lịch sử; các ca auth phòng vệ email trùng được pin M1 vì M2 cấm tạo trạng
+  thái đó. Ca auth thường và các API danh mục/hồ sơ chạy head mới.
+- Đã rà frontend: prototype tài khoản còn model/form username riêng, chưa nối DB
+  và không được mở trong mode server. Việc nối UI tài khoản thuộc OAP-T12; không
+  biến demo thành consumer M2. `autocomplete="username"` ở form email là hint
+  trình duyệt, không phải cột/định danh đăng nhập thứ hai.
+
+### Down, dirty và phục hồi
+
+Down chỉ cho DB rỗng chưa từng cấp số (`is_called=false`). DB có dữ liệu, hoặc rỗng
+nhưng từng nextval kể cả rollback, phải từ chối. Không tạo username giả/backup PII
+trong schema hoặc reset high-water mark. DDL từ chối rollback nguyên khối nhưng
+golang-migrate vẫn giữ target4 dirty khi down lỗi; up lỗi giữ5 dirty. Không force
+version/retry mù. Các ca lỗi chỉ chạy trên case hy sinh do chính lượt test tạo.
+
+Down không phục hồi username cũ. Với dữ liệu thật phải có backup được xác minh,
+consumer tương thích và kế hoạch restore/sửa tiến thêm riêng; nếu restore cần giữ
+high-water mark của số đã cấp. Không gọi down/up là backup hoặc quyền áp Neon.
+
+### Lệnh và phạm vi kiểm chứng
+
+Tại root, DB tests chạy tuần tự, guard xác minh PG18/owner/cluster trước mỗi lượt:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server ./cmd/seed ./cmd/localdev -count=1 -timeout=5m
+node --test scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+| Kiểm chứng | Nguồn test |
+|---|---|
+| Rỗng qua lịch sử tới M2, unused down/up, legacy snapshot và ID/link/hash/email/status/role/session/code giữ nguyên | `TestM2EmptyAndUnusedDownUp`, `TestM2LegacyPreservesDataAndStartsAfterEMPNumbers` |
+| Email lỗi/trùng, dependency/metadata drift, overflow, dải EMP và mã dài | `TestM2PreflightRejectsBeforeDirty`, `TestM2SequenceInitialRange` |
+| Parity trên collation DB test thật, giữ raw email; mismatch phải dừng trước dirty | `TestM2EmailNormalizationParityUsesActualPostgres` |
+| Hai connection/barrier cấp số riêng, transaction mở và rollback mất số | `TestM2NextvalRollbackAndConcurrentConnections` |
+| Preview/format/collision/rollback, mã lớn và hết BIGINT | `TestEmployeeCodeAllocatorPreviewAndRollback`, `TestEmployeeCodeExhaustionAndLargeFormat`, `TestFormatEmployeeCode` |
+| Down từ chối atomic, lỗi sau DROP phục hồi cả giá trị username, dirty driver thật | `TestM2DownRefusesDataAndUsedSequenceAtomically`, `TestM2DDLFailureRollsBackAndLeavesDirty` |
+| Seed head chạy lại, dữ liệu legacy và lỗi khóa nhận diện, localdev guard+prepare | Tests `cmd/seed`, `TestPrepareM2Localdev` |
+| Năm auth API, danh mục và self-profile trên schema mới | Suite `cmd/server`, `internal/repository/postgres`, `internal/transport/http` |
+
+Không nhận test allocator là bằng chứng transaction create/account concurrent đã
+hoàn thành (OAP-T09). Không kiểm UI/browser mới, gửi thư, Neon/restore backup thật
+hoặc mọi Unicode/collation có thể có. DB gốc phải giữ0 bảng; cleanup chỉ các case
+do lượt test tạo, không dọn auth_dev đang chạy. Không đọc `.env`/fallback DB khác.
+
+### Bằng chứng thực chạy — 17/11/2026
+
+- Guard xác nhận PostgreSQL18, DB `ai_staffing_auth_test`, owner `ai_staffing_test`,
+  system identifier `7705732357505970219`, public0 bảng. Docker Desktop/container
+  test được khởi động lại vì ban đầu chưa chạy; không chuyển sang DB khác.
+- `go vet ./...`, `go test ./... -count=1`, `go build ./...`: đạt. Sau sửa lỗi trả về
+  seed để không wrap driver thô, chạy lại vet/build, unit seed và ba seed integration:
+  đạt. Không thay mật khẩu hoặc cấp quyền tài khoản thật.
+- Lượt integration cuối đủ sáu package trong lệnh trên đạt: migrations15.162s,
+  postgres23.685s, transport1.464s, server14.296s, seed1.057s, localdev0.862s.
+  Gồm nâng rỗng/legacy, preflight/drift, down/dirty, rollback/sequence, năm API auth,
+  danh mục và hồ sơ. Tests HTTP gọi adapter PostgreSQL thật; không dùng mock để
+  nhận persistence pass. Lượt này không bật race detector; race cấp số dùng hai
+  connection/barrier thật, các transaction auth dùng bộ test hiện hữu.
+- Chạy riêng corpus normalization bằng `run -- go test -tags=integration -p 1
+  ./migrations ./cmd/seed ./internal/repository/postgres -run
+  '^(TestM2EmailNormalizationParityUsesActualPostgres|TestSeed.*|TestAuthRepositoryRootRemainsEmpty)$'
+  -count=1 -v -timeout=2m`: đạt. DB test UTF8, libc provider `c`, ctype/collation
+  `en_US.utf8`; bốn fixture ASCII/case/padding, tiếng Việt, Sigma và dotted-I khớp.
+  Đây không phải bảo đảm mọi Unicode/collation. Các ca tab/NBSP padding lệch được
+  preflight từ chối trước dirty, không viết lại raw email hoặc đổi auth.
+- Root-cleanup test sau cùng đạt: DB gốc0 bảng và không còn auth_case. Localdev
+  `prepare` được kiểm trên DB case riêng, không restart server đang dùng cổng8080.
+- Harness14 tests, kiểm kê359 nguồn và `git diff --check`: đạt. Không có thay đổi
+  migration000001–000004, dependency hoặc frontend production trong đợt này.
+- Sub-agent review SQL trước DB và toàn diff sau bổ sung tests; các góp ý về
+  PG18 NOT NULL dependency, metadata drift, seed email canonical và snapshot
+  username khi DDL lỗi đã xử lý. Không còn góp ý chặn trên snapshot bàn giao.
+
+Chưa commit/push hoặc tự chuyển Jira Done; Done sau review/bàn giao/merge theo workflow.

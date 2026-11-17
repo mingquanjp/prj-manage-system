@@ -146,7 +146,7 @@ PM chỉ theo dõi và PTCM có hành động khác nhau; người không có tr
 
 ### Phân biệt hiện trạng và thiết kế đích
 
-[Migration 000001](migrations/000001_init.up.sql) và dữ liệu seed hiện tại thuộc schema legacy. Tài khoản/role, quy trình kỹ năng và cấu trúc dữ liệu trong đó **không đại diện đầy đủ cho nghiệp vụ mới**.
+[Migration 000001](migrations/000001_init.up.sql) là schema legacy bất biến; seed hiện tại đã tương thích M2 nhưng nội dung kỹ năng/demo vẫn là dữ liệu tổng hợp tham khảo. Tài khoản/role, quy trình kỹ năng và cấu trúc dữ liệu trong đó **không đại diện đầy đủ cho nghiệp vụ mới**.
 
 Thiết kế đích được mô tả bằng [bản hợp nhất 33 bảng](docs/design/database-proposal-2026-10-14.md), dictionary và DBML. Chưa có migration triển khai thiết kế này; không sửa migration đã áp dụng hoặc chạy reset để giả lập việc nâng cấp.
 
@@ -155,7 +155,7 @@ Thiết kế đích được mô tả bằng [bản hợp nhất 33 bảng](docs
 Chỉ thực hiện khi đã xác nhận môi trường và đúng DB phát triển:
 
 1. Tạo cấu hình local theo `.env.example`, không ghi đè `.env` đang có hoặc commit thông tin kết nối.
-2. Backend auth cần schema qua migration 000003. Kiểm môi trường và migration riêng trước khi chạy; môi trường kiểm chứng hiện hành là PostgreSQL test local theo [runbook auth](scripts/authdb/README.md). Nếu DB phát triển/Neon chưa nâng, health thành công vẫn chưa đủ để gọi auth. Migration/seed xử lý riêng theo bảng lệnh bên dưới.
+2. Auth được đưa vào từ migration 000003; consumer localdev/seed hiện yêu cầu head 000005 (M2), xem [runbook M2](scripts/authdb/README.md#datn-30--m2-bỏ-username-sequence-và-email-unique). Kiểm môi trường và migration riêng trước khi chạy; môi trường kiểm chứng hiện hành là PostgreSQL test local theo [runbook auth](scripts/authdb/README.md). Nếu DB phát triển/Neon chưa nâng, health thành công vẫn chưa đủ để gọi auth. Migration/seed xử lý riêng theo bảng lệnh bên dưới.
 3. Chạy từ thư mục gốc:
 
 ```bash
@@ -180,7 +180,7 @@ Swagger UI tại `/docs/` chỉ khi `APP_ENV=dev`, đọc OpenAPI hiện hành v
 |---|---|
 | `make migrate-version` | Kết nối DB và đọc version migration |
 | `make migrate-up` | Áp dụng migration SQL hiện có; không triển khai thiết kế DB mới |
-| `APP_ENV=dev make seed` | Ghi dữ liệu mẫu legacy, không dùng cho DB thật |
+| `APP_ENV=dev make seed` | Seed tổng hợp yêu cầu head M2; dùng email và sequence, không dùng cho DB thật |
 | `APP_ENV=dev make migrate-down` | Rollback một migration; có thể mất dữ liệu |
 | `APP_ENV=dev make migrate-reset` | Rollback toàn bộ rồi chạy lại migration; phá dữ liệu |
 

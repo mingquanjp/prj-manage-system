@@ -22,9 +22,9 @@ func TestM1EmptyAndSeed(t *testing.T) {
 	m := db.OpenMigrator(t, migrations.FS)
 	authdb.Require(t, "bootstrap đến auth", m.Migrate(3))
 	authdb.Require(t, "preflight DB rỗng", db.CheckM1(t, nil))
-	authdb.Require(t, "nâng M1", m.Up())
+	authdb.Require(t, "nâng M1", m.Migrate(migrations.M1Version))
 	head(t, m, migrations.M1Version)
-	if !errors.Is(m.Up(), migrate.ErrNoChange) {
+	if !errors.Is(m.Migrate(migrations.M1Version), migrate.ErrNoChange) {
 		t.Fatal("up lại phải không thay đổi")
 	}
 	for _, table := range []struct{ name, column string }{
@@ -68,7 +68,7 @@ func TestM1LegacyAndDownUp(t *testing.T) {
 	approved := map[string]string{"Fixture legacy A": "Cấp bậc kiểm thử"}
 	authdb.Require(t, "preflight mapping", db.CheckM1(t, approved))
 	m = db.OpenMappedMigrator(t, migrations.FS, approved)
-	authdb.Require(t, "nâng legacy lên M1", m.Up())
+	authdb.Require(t, "nâng legacy lên M1", m.Migrate(migrations.M1Version))
 	head(t, m, migrations.M1Version)
 	sameJSON(t, before, m1LegacySnapshot(t, db))
 
@@ -109,7 +109,7 @@ func TestM1LegacyAndDownUp(t *testing.T) {
 	sameJSON(t, before, m1LegacySnapshot(t, db))
 
 	authdb.Require(t, "preflight sau down", db.CheckM1(t, approved))
-	authdb.Require(t, "up M1 lại", m.Up())
+	authdb.Require(t, "up M1 lại", m.Migrate(migrations.M1Version))
 	head(t, m, migrations.M1Version)
 	assertMapped()
 	var count int
@@ -137,7 +137,7 @@ func TestM1PreflightRejectsBeforeMigration(t *testing.T) {
 			authdb.Require(t, "nền v3", m.Migrate(3))
 			fixture(t, db)
 			exec(t, db.Conn, test.sql)
-			if err := m.Up(); err == nil || !strings.HasPrefix(err.Error(), "M1:") {
+			if err := m.Migrate(migrations.M1Version); err == nil || !strings.HasPrefix(err.Error(), "M1:") {
 				t.Fatal("runner phải từ chối tại preflight M1")
 			}
 			head(t, m, 3)
@@ -172,7 +172,7 @@ func TestM1DDLFailureRollsBackAndLeavesDirty(t *testing.T) {
 		source[entry.Name()] = &fstest.MapFile{Data: content}
 	}
 	m = db.OpenMigrator(t, source)
-	if m.Up() == nil {
+	if m.Migrate(migrations.M1Version) == nil {
 		t.Fatal("DDL lỗi cố ý phải thất bại")
 	}
 	m.Close(t)
@@ -180,7 +180,7 @@ func TestM1DDLFailureRollsBackAndLeavesDirty(t *testing.T) {
 	sameJSON(t, before, m1LegacySnapshot(t, db))
 	m = db.OpenMigrator(t, migrations.FS)
 	var dirty migrate.ErrDirty
-	if !errors.As(m.Up(), &dirty) || dirty.Version != migrations.M1Version {
+	if !errors.As(m.Migrate(migrations.M1Version), &dirty) || dirty.Version != migrations.M1Version {
 		t.Fatal("driver phải giữ version M1 dirty và từ chối retry")
 	}
 }
