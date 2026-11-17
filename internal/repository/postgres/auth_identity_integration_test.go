@@ -61,11 +61,6 @@ func TestFindLoginIdentity(t *testing.T) {
 		}
 	}
 
-	f.AddAccount(t, authdb.AccountOptions{Email: "fixture.login@example.invalid", UserStatus: "LOCKED"})
-	got, found, err := repo.FindLoginIdentity(ctx, "fixture.login@example.invalid")
-	if found || !errors.Is(err, auth.ErrIdentityConflict) || got != (auth.LoginIdentity{}) {
-		t.Fatal("phải từ chối email trùng kể cả khi chỉ một tài khoản hoạt động")
-	}
 }
 
 func TestReadSession(t *testing.T) {
@@ -165,4 +160,18 @@ func TestAuthReadDatabaseFailure(t *testing.T) {
 
 func TestAuthRepositoryRootRemainsEmpty(t *testing.T) {
 	authdb.AssertRootEmpty(t)
+}
+
+// Dữ liệu trùng chỉ còn có thể tồn tại trước unique index M2.
+func TestFindLoginIdentityRejectsLegacyDuplicate(t *testing.T) {
+	f := authdb.NewLegacyFixture(t, 4)
+	repo := postgres.NewAuthRepository(f.DB.Conn, clockFunc(time.Now))
+	ctx := t.Context()
+	f.AddAccount(t, authdb.AccountOptions{Email: "  Fixture.Login@EXAMPLE.invalid  "})
+
+	f.AddAccount(t, authdb.AccountOptions{Email: "fixture.login@example.invalid", UserStatus: "LOCKED"})
+	got, found, err := repo.FindLoginIdentity(ctx, "fixture.login@example.invalid")
+	if found || !errors.Is(err, auth.ErrIdentityConflict) || got != (auth.LoginIdentity{}) {
+		t.Fatal("phải từ chối email trùng kể cả khi chỉ một tài khoản hoạt động")
+	}
 }

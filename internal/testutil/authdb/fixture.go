@@ -20,6 +20,7 @@ type Fixture struct {
 	PasswordHash string
 	positionID   int
 	nextAccount  int
+	legacy       bool
 }
 
 type Account struct {
@@ -40,15 +41,32 @@ type AccountOptions struct {
 }
 
 func NewFixture(t *testing.T) *Fixture {
+	return newFixture(t, 0)
+}
+
+// NewLegacyFixture chỉ dựng schema lịch sử để kiểm dữ liệu lỗi vốn bị M2 chặn.
+func NewLegacyFixture(t *testing.T, version uint) *Fixture {
+	t.Helper()
+	if version < 3 || version > migrations.M1Version {
+		t.Fatal("fixture legacy chỉ hỗ trợ auth v3 hoặc M1")
+	}
+	return newFixture(t, version)
+}
+
+func newFixture(t *testing.T, version uint) *Fixture {
 	t.Helper()
 	db := NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	Require(t, "nâng fixture đến head hiện hành", m.Up())
+	if version == 0 {
+		Require(t, "nâng fixture đến head hiện hành", m.Up())
+	} else {
+		Require(t, "dựng fixture lịch sử", m.Migrate(version))
+	}
 	m.Close(t)
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(FixturePassword), bcrypt.DefaultCost)
 	Require(t, "tạo hash fixture", err)
-	f := &Fixture{DB: db, PasswordHash: string(hash)}
+	f := &Fixture{DB: db, PasswordHash: string(hash), legacy: version != 0}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err = db.Conn.QueryRow(ctx, `INSERT INTO public.positions(position_name)
@@ -77,11 +95,18 @@ func (f *Fixture) AddAccount(t *testing.T, opts AccountOptions) Account {
 	tx, err := f.DB.Conn.Begin(ctx)
 	Require(t, "bắt đầu giao dịch fixture", err)
 	defer tx.Rollback(ctx)
-	_, err = tx.Exec(ctx, `INSERT INTO public.users
+	if f.legacy {
+		_, err = tx.Exec(ctx, `INSERT INTO public.users
  (user_id, username, password_hash, system_role, status, must_change_password)
  OVERRIDING SYSTEM VALUE VALUES ($1,$2,$3,$4,$5,$6)`,
-		account.UserID, fmt.Sprintf("fixture-%d", n), f.PasswordHash,
-		opts.LegacyRole, opts.UserStatus, opts.MustChangePassword)
+			account.UserID, fmt.Sprintf("fixture-%d", n), f.PasswordHash,
+			opts.LegacyRole, opts.UserStatus, opts.MustChangePassword)
+	} else {
+		_, err = tx.Exec(ctx, `INSERT INTO public.users
+ (user_id, password_hash, system_role, status, must_change_password)
+ OVERRIDING SYSTEM VALUE VALUES ($1,$2,$3,$4,$5)`,
+			account.UserID, f.PasswordHash, opts.LegacyRole, opts.UserStatus, opts.MustChangePassword)
+	}
 	Require(t, "tạo user fixture", err)
 
 	if !opts.WithoutEmployee {

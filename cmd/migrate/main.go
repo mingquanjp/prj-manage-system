@@ -64,7 +64,7 @@ func run() error {
 		return errors.New("DB_CONNECT_FAILED: không khởi tạo được driver migration")
 	}
 
-	m, err := migrate.NewWithInstance("iofs", source, "postgres", migrations.WithM1Preflight(driver, db, nil))
+	m, err := migrate.NewWithInstance("iofs", source, "postgres", migrations.WithM2Preflight(migrations.WithM1Preflight(driver, db, nil), db))
 	if err != nil {
 		return fmt.Errorf("không khởi tạo được migrate: %w", err)
 	}

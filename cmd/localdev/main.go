@@ -187,7 +187,7 @@ func prepare(ctx context.Context, cfg *pgx.ConnConfig, systemID string) error {
 		_ = d.Close()
 		return errors.New("không mở được nguồn migration")
 	}
-	m, err := migrate.NewWithInstance("iofs", source, "pgx", migrations.WithM1Preflight(d, sqlDB, nil))
+	m, err := migrate.NewWithInstance("iofs", source, "pgx", migrations.WithM2Preflight(migrations.WithM1Preflight(d, sqlDB, nil), sqlDB))
 	if err != nil {
 		_ = source.Close()
 		_ = d.Close()
@@ -219,8 +219,8 @@ func prepare(ctx context.Context, cfg *pgx.ConnConfig, systemID string) error {
 		{"quan1652005+limited@gmail.com", "Tài khoản local buộc đổi", "ADMIN", true},
 	} {
 		var user int
-		if err = tx.QueryRow(ctx, `INSERT INTO users(username,password_hash,system_role,status,must_change_password)
- VALUES ($1,$2,'EMPLOYEE','ACTIVE',$3) RETURNING user_id`, fmt.Sprintf("local-%d", i+1), string(hash), account.limited).Scan(&user); err != nil {
+		if err = tx.QueryRow(ctx, `INSERT INTO users(password_hash,system_role,status,must_change_password)
+ VALUES ($1,'EMPLOYEE','ACTIVE',$2) RETURNING user_id`, string(hash), account.limited).Scan(&user); err != nil {
 			return errors.New("không tạo được tài khoản local")
 		}
 		if _, err = tx.Exec(ctx, `INSERT INTO employees(user_id,employee_code,fullname,email,position_id,employment_status)

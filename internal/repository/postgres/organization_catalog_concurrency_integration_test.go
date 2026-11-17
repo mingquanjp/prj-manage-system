@@ -253,7 +253,7 @@ func TestCatalogDeleteWaitsForNewReference(t *testing.T) {
 				authdb.Require(t, "KEY SHARE job_level", tx.QueryRow(ctx, `SELECT job_level_id FROM public.job_levels WHERE job_level_id=$1 FOR KEY SHARE`, item.ID).Scan(&id))
 			}
 			// Chưa có create adapter M2: fixture tổng hợp ghi FK trên schema M1, không cấp mã sản phẩm.
-			_, err = tx.Exec(ctx, `INSERT INTO public.users(user_id,username,password_hash,system_role,status,must_change_password) OVERRIDING SYSTEM VALUE VALUES (900,'race-new-user',$1,'EMPLOYEE','ACTIVE',true)`, f.PasswordHash)
+			_, err = tx.Exec(ctx, `INSERT INTO public.users(user_id,password_hash,system_role,status,must_change_password) OVERRIDING SYSTEM VALUE VALUES (900,$1,'EMPLOYEE','ACTIVE',true)`, f.PasswordHash)
 			authdb.Require(t, "fake create user", err)
 			_, err = tx.Exec(ctx, `INSERT INTO public.employees(user_id,employee_code,fullname,email,position_id,department_id,job_level_id) VALUES(900,'RACE-NEW','Synthetic new employee','new-reference@example.invalid',$1,$2,$3)`, position, department, level)
 			authdb.Require(t, "fake create employee FK", err)
