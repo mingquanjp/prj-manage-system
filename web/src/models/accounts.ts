@@ -4,7 +4,6 @@ import type { SystemRole } from "./workspace.ts"
 export type DemoAccount = {
   id: string
   personId: string
-  username: string
   status: "ACTIVE" | "LOCKED"
   systemRoles: SystemRole[]
 }
@@ -25,6 +24,7 @@ export type AccountCreateInput = {
   departmentId: string | null
   jobLevelId: string | null
   phone: string | null
+  address?: string | null
   systemRoles: SystemRole[]
 }
 export type AccountCommand = {

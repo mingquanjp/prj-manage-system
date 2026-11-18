@@ -1,6 +1,9 @@
 import type { Principal } from "./auth-api.ts"
 import { catalogKinds, type CatalogKind } from "../organization/catalog-api.ts"
 
+export function canManageAccounts(principal: Principal) {
+  return !principal.must_change_password && principal.system_roles.includes("ADMIN")
+}
 export function canReadCatalogs(principal: Principal) {
   return (
     !principal.must_change_password &&

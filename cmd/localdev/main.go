@@ -217,6 +217,7 @@ func prepare(ctx context.Context, cfg *pgx.ConnConfig, systemID string) error {
 	}{
 		{"quan1652005@gmail.com", "Nhân viên local", "HR", false},
 		{"quan1652005+limited@gmail.com", "Tài khoản local buộc đổi", "ADMIN", true},
+		{"quan1652005+admin@gmail.com", "Quản trị viên local", "ADMIN", false},
 	} {
 		var user int
 		if err = tx.QueryRow(ctx, `INSERT INTO users(password_hash,system_role,status,must_change_password)

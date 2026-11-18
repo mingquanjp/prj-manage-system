@@ -5,17 +5,9 @@ import type { AccountCreateInput, AccountsState } from "@/models/accounts"
 import type { ProfileState } from "@/models/profile"
 import type { OrganizationState } from "@/models/organization"
 import { accountCreateErrors, nextAccountIdentifiers } from "@/demo/accounts"
-import { RoleChoices } from "./RoleChoices"
+import { AccountFields } from "./AccountFields"
+import { emptyAccountDraft, type AccountDraft } from "./account-api"
 
-const emptyInput: AccountCreateInput = {
-  fullname: "",
-  companyEmail: "",
-  positionId: "",
-  departmentId: null,
-  jobLevelId: null,
-  phone: null,
-  systemRoles: [],
-}
 export function AccountCreateForm({
   accounts,
   profiles,
@@ -29,13 +21,16 @@ export function AccountCreateForm({
   onSave: (input: AccountCreateInput) => void
   onClose: () => void
 }) {
-  const [values, setValues] = useState<AccountCreateInput>({ ...emptyInput })
+  const [values, setValues] = useState<AccountDraft>(() => ({
+    ...emptyAccountDraft,
+    systemRoles: [],
+  }))
   const [error, setError] = useState("")
   const [showErrors, setShowErrors] = useState(false)
   const [discard, setDiscard] = useState(false)
-  const dirty = JSON.stringify(values) !== JSON.stringify(emptyInput)
-  const requestClose = () => (dirty ? setDiscard(true) : onClose())
-  const identifiers = nextAccountIdentifiers(accounts, profiles)
+  const dirty = JSON.stringify(values) !== JSON.stringify(emptyAccountDraft)
+  const close = () => (dirty ? setDiscard(true) : onClose())
+  const preview = nextAccountIdentifiers(accounts, profiles).employeeCode
   const errors = showErrors ? accountCreateErrors(profiles, organization, values) : {}
   return (
     <>
@@ -43,10 +38,10 @@ export function AccountCreateForm({
         open
         wide
         onOpenChange={(open) => {
-          if (!open) requestClose()
+          if (!open) close()
         }}
         title="Tạo tài khoản kèm hồ sơ"
-        description="Tạo cùng lúc tài khoản và hồ sơ nhân viên ban đầu trong bản mô phỏng; HR quản lý hồ sơ về sau."
+        description="Bản mô phỏng trong bộ nhớ, chưa cấp thông tin đăng nhập hoặc gửi email thật."
       >
         <form
           className="space-y-5"
@@ -59,132 +54,37 @@ export function AccountCreateForm({
             try {
               onSave(values)
               onClose()
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Chưa thể tạo tài khoản.")
+            } catch (issue) {
+              setError(issue instanceof Error ? issue.message : "Chưa thể tạo tài khoản.")
             }
           }}
         >
-          <p className="rounded-md bg-accent p-3 text-xs leading-5 text-muted-foreground">
-            Chưa cấp thông tin đăng nhập thật. Mật khẩu, thư mời và kênh cấp tài khoản sẽ triển khai
-            cùng phần xác thực.
+          <label className="field-label block" htmlFor="demo-account-code">
+            Mã nhân viên dự kiến
+          </label>
+          <input
+            id="demo-account-code"
+            className="field w-full bg-accent"
+            readOnly
+            value={preview}
+          />
+          <p className="text-xs text-muted-foreground">
+            Mã demo tính trong bộ nhớ; mã chính thức do backend cấp. Email công ty là thông tin đăng
+            nhập.
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(
-              [
-                ["employeeCode", "Mã nhân viên"],
-                ["username", "Tên đăng nhập"],
-              ] as const
-            ).map(([field, label]) => (
-              <div key={field}>
-                <label className="field-label mb-2 block" htmlFor={`account-${field}`}>
-                  {label}
-                </label>
-                <input
-                  id={`account-${field}`}
-                  className="field w-full bg-accent"
-                  value={identifiers[field]}
-                  readOnly
-                  aria-describedby="account-identifiers-note"
-                />
-              </div>
-            ))}
-            <p
-              id="account-identifiers-note"
-              className="text-xs leading-5 text-muted-foreground sm:col-span-2"
-            >
-              Mã dự kiến được cấp khi lưu. Tên đăng nhập chỉ tạm dùng trong bản demo; cách đăng nhập
-              sẽ hoàn thiện cùng backend.
-            </p>
-            {(
-              [
-                ["fullname", "Họ và tên", 100],
-                ["companyEmail", "Email công ty", 100],
-                ["phone", "Số điện thoại", 20],
-              ] as const
-            ).map(([field, label, limit]) => (
-              <div key={field}>
-                <label className="field-label mb-2 block" htmlFor={`account-${field}`}>
-                  {label}
-                  {field !== "phone" && " *"}
-                </label>
-                <input
-                  id={`account-${field}`}
-                  className="field w-full"
-                  value={values[field] ?? ""}
-                  maxLength={limit}
-                  type={field === "companyEmail" ? "email" : field === "phone" ? "tel" : "text"}
-                  autoComplete="off"
-                  required={field !== "phone"}
-                  aria-invalid={Boolean(errors[field])}
-                  aria-describedby={errors[field] ? `account-error-${field}` : undefined}
-                  onChange={(e) => setValues({ ...values, [field]: e.target.value })}
-                />
-                {errors[field] && (
-                  <p
-                    id={`account-error-${field}`}
-                    role="alert"
-                    className="mt-1 text-xs text-warning"
-                  >
-                    {errors[field]}
-                  </p>
-                )}
-              </div>
-            ))}
-            {(
-              [
-                ["positionId", "positions", "Vị trí công việc", true],
-                ["departmentId", "departments", "Phòng ban", false],
-                ["jobLevelId", "jobLevels", "Cấp bậc", false],
-              ] as const
-            ).map(([field, kind, label, required]) => (
-              <div key={field}>
-                <label className="field-label mb-2 block" htmlFor={`account-${field}`}>
-                  {label}
-                  {required && " *"}
-                </label>
-                <select
-                  id={`account-${field}`}
-                  className="field w-full"
-                  value={values[field] ?? ""}
-                  required={required}
-                  aria-invalid={Boolean(errors[field])}
-                  aria-describedby={errors[field] ? `account-error-${field}` : undefined}
-                  onChange={(e) => setValues({ ...values, [field]: e.target.value || null })}
-                >
-                  <option value="">{required ? "Chọn vị trí" : "Chưa cập nhật"}</option>
-                  {organization[kind].map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </select>
-                {errors[field] && (
-                  <p
-                    id={`account-error-${field}`}
-                    role="alert"
-                    className="mt-1 text-xs text-warning"
-                  >
-                    {errors[field]}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs leading-5 text-muted-foreground">
-            Tên đăng nhập và email công ty là hai thông tin riêng. Địa chỉ cần bổ sung khi hoàn
-            thiện hồ sơ, không nhập tại bước này.
-          </p>
-          <RoleChoices
-            value={values.systemRoles}
-            onChange={(roles) => setValues({ ...values, systemRoles: roles })}
+          <AccountFields
+            values={values}
+            options={organization}
+            errors={errors}
+            onChange={setValues}
           />
           {error && (
             <p role="alert" className="text-sm text-warning">
               {error}
             </p>
           )}
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-            <Button variant="outline" onClick={requestClose}>
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button variant="outline" onClick={close}>
               Hủy
             </Button>
             <Button type="submit">Tạo tài khoản và hồ sơ</Button>

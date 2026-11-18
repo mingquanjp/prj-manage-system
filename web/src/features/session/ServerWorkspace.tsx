@@ -3,8 +3,15 @@ import { ArchiveIcon, ExitIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 import type { Principal } from "./auth-api"
 import type { AuthSession } from "./auth-session"
-import { canManageCatalogs, canReadCatalogs, catalogKindAt, serverHome } from "./server-navigation"
+import {
+  canManageAccounts,
+  canManageCatalogs,
+  canReadCatalogs,
+  catalogKindAt,
+  serverHome,
+} from "./server-navigation"
 import { ServerPersonalProfile } from "../profiles/ServerPersonalProfile"
+import { ServerAccounts } from "../accounts/ServerAccounts"
 import { ServerCatalogs } from "../organization/ServerCatalogs"
 
 export function ServerWorkspace({
@@ -31,7 +38,9 @@ export function ServerWorkspace({
     location.pathname === "/"
   )
     return <Navigate to={home} replace />
-  const denied = !!kind && !canReadCatalogs(principal)
+  const accountsPage = location.pathname === "/accounts"
+  const denied =
+    (!!kind && !canReadCatalogs(principal)) || (accountsPage && !canManageAccounts(principal))
   const profilePage = location.pathname === "/profile"
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -77,6 +86,15 @@ export function ServerWorkspace({
               Danh mục tổ chức
             </Link>
           )}
+          {canManageAccounts(principal) && (
+            <Link
+              className={`filter-chip ${accountsPage ? "filter-active" : ""}`}
+              aria-current={accountsPage ? "page" : undefined}
+              to="/accounts"
+            >
+              Tài khoản
+            </Link>
+          )}
         </nav>
         <main className="min-w-0">
           {message && (
@@ -91,6 +109,8 @@ export function ServerWorkspace({
           )}
           {profilePage ? (
             <ServerPersonalProfile principal={principal} session={session} busy={busy} />
+          ) : accountsPage && !denied ? (
+            <ServerAccounts key={principal.user_id} session={session} busy={busy} />
           ) : kind && !denied ? (
             <ServerCatalogs
               key={`${kind}:${location.search}`}
@@ -102,11 +122,13 @@ export function ServerWorkspace({
           ) : (
             <section className="rounded-xl border border-border bg-white p-6">
               <h1 className="text-2xl font-semibold">
-                {denied ? "Bạn không có quyền xem danh mục" : "Chức năng chưa được kết nối"}
+                {denied ? "Bạn không có quyền truy cập" : "Chức năng chưa được kết nối"}
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {denied
-                  ? "Danh mục tổ chức chỉ dành cho HR hoặc Quản trị viên. Quyền được xác nhận từ máy chủ."
+                  ? accountsPage
+                    ? "Quản lý tài khoản chỉ dành cho Quản trị viên. Quyền được xác nhận từ máy chủ."
+                    : "Danh mục tổ chức chỉ dành cho HR hoặc Quản trị viên. Quyền được xác nhận từ máy chủ."
                   : "Dữ liệu của chức năng này chưa được kết nối với hệ thống."}
               </p>
               <p className="mt-5 text-sm">

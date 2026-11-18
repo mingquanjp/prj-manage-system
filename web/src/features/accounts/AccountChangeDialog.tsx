@@ -48,7 +48,7 @@ export function AccountChangeDialog({
           if (!open) requestClose()
         }}
         title={title}
-        description={`${account.username} · ${fullname}`}
+        description={`${fullname}`}
       >
         <form
           className="space-y-4"

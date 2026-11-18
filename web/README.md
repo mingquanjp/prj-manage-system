@@ -2,7 +2,7 @@
 
 ## Hiện trạng
 
-Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có hai chế độ tách biệt: prototype trong bộ nhớ và FE auth server (DATN-19) nối login/me/csrf/logout. Phiên server dùng màn tiếp nối tạm, không mở workspace mẫu; DATN-20 đã bổ sung form đổi mật khẩu lần đầu; luồng local hạn chế → đổi → login mới đã được kiểm phối hợp với người dùng, giới hạn kiểm chứng ghi tại sổ công việc. DATN-27 đã nối ba danh mục tổ chức với 12 API/DB test; DATN-29 nối phần đọc hồ sơ chính chủ và thay đích tạm bằng `/profile` cho phiên thường không có HR. HR giữ đích danh mục; tài khoản/cập nhật hồ sơ chưa nối. Chưa Go embed/TanStack Query. `pnpm dev` chạy FE+Go local cùng nhau, `pnpm dev:demo` giữ prototype riêng. [Bằng chứng pilot](DESIGN-PILOT.md).
+Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có hai chế độ tách biệt: prototype trong bộ nhớ và FE auth server (DATN-19) nối login/me/csrf/logout. Phiên server dùng màn tiếp nối tạm, không mở workspace mẫu; DATN-20 đã bổ sung form đổi mật khẩu lần đầu; luồng local hạn chế → đổi → login mới đã được kiểm phối hợp với người dùng, giới hạn kiểm chứng ghi tại sổ công việc. DATN-27 đã nối ba danh mục tổ chức với 12 API/DB test; DATN-29 nối phần đọc hồ sơ chính chủ và thay đích tạm bằng `/profile` cho phiên thường không có HR. HR giữ đích danh mục; DATN-34 nối UI Admin tạo/tra cứu tại /accounts. Cập nhật hồ sơ chưa nối. Chưa Go embed/TanStack Query. `pnpm dev` chạy FE+Go local cùng nhau, `pnpm dev:demo` giữ prototype riêng. [Bằng chứng pilot](DESIGN-PILOT.md).
 
 ## Chạy local
 
@@ -43,9 +43,9 @@ pnpm dev
 
 Mở FE `http://127.0.0.1:5174/`; Swagger nằm ngay backend `http://127.0.0.1:8080/docs/` (đường `/docs` tự chuyển về `/docs/`). Không cần khởi động server Swagger riêng. [Runner local](../scripts/dev.py) kiểm hai cổng, khởi động/xác minh PostgreSQL local bằng guard có sẵn, build [Go localdev](../cmd/localdev/main.go), chờ health backend rồi mở Vite ở mode server. Cấu hình được runner đặt cố định: backend8080, hai Origin cố định `http://127.0.0.1:5174` (FE) và `http://127.0.0.1:8080` (Swagger). Không cần chạy terminal backend riêng, không `go test`, không tự dừng sau20phút. Một tiến trình lỗi thì tiến trình còn lại cũng được dừng; cổng bị chiếm thì báo lỗi, không tự kill hoặc nhảy cổng.
 
-Ctrl+C dừng cả FE/BE và dọn **DB ngẫu nhiên `auth_dev_*` vừa tạo của đúng lượt chạy**, không DROP/FORCE DB có sẵn, không reset DB gốc. Đây là dữ liệu local giả theo lượt chạy, **chưa persistence cho môi trường dev lâu dài**: khởi động lại tạo dữ liệu ban đầu; mất điện/kill9 có thể để lại DB cần đối soát, không tự quét/xóa. Container/volume local được giữ. Không đọc `.env` thật hoặc `DATABASE_URL`, không dùng Neon; guard xác minh Docker/PG18/owner/system-ID trước DDL. Chỉ nâng000001–000004 trên DB mới và cấp hai tài khoản tổng hợp, không migrate33bảng hoặc thực hiện nghiệp vụ cấp tài khoản/email.
+Ctrl+C dừng cả FE/BE và dọn **DB ngẫu nhiên `auth_dev_*` vừa tạo của đúng lượt chạy**, không DROP/FORCE DB có sẵn, không reset DB gốc. Đây là dữ liệu local giả theo lượt chạy, **chưa persistence cho môi trường dev lâu dài**: khởi động lại tạo dữ liệu ban đầu; mất điện/kill9 có thể để lại DB cần đối soát, không tự quét/xóa. Container/volume local được giữ. Không đọc `.env` thật hoặc `DATABASE_URL`, không dùng Neon; guard xác minh Docker/PG18/owner/system-ID trước DDL. Nâng đến schema head M2 trên DB mới và tạo ba tài khoản tổng hợp ban đầu; không migrate toàn33bảng. Nghiệp vụ tạo tài khoản trên UI dùng API và cấu hình Gmail backend.
 
-Hai tài khoản local: `quan1652005@gmail.com` (HR) và `quan1652005+limited@gmail.com` (buộc đổi), mật khẩu ban đầu `12345678`; chỉ hash bcrypt được lưu trong DB local, không gửi email. Màn server sẽ hiện tên/mã local từ DB, không tên fixture frontend. Sau khi tài khoản limited đổi mật khẩu, mật khẩu mới chỉ tồn tại trong DB riêng của lượt chạy này; khởi động lại runner sẽ tạo lại dữ liệu ban đầu.
+Ba tài khoản local: `quan1652005@gmail.com` (HR), `quan1652005+limited@gmail.com` (buộc đổi) và `quan1652005+admin@gmail.com` (Admin thường), mật khẩu ban đầu `12345678`; chỉ hash bcrypt được lưu trong DB local, không gửi email khi seed. Màn server hiện tên/mã local từ DB. Mật khẩu đã đổi chỉ tồn tại trong DB riêng của lượt chạy; khởi động lại runner tạo lại dữ liệu ban đầu. Từ DATN-34, Admin có thể tạo tài khoản qua UI thật, thao tác này gửi email theo cấu hình Gmail của backend.
 
 Chỉ xem prototype, không cần backend/Docker:
 
@@ -795,3 +795,43 @@ Form thay màn hạn chế tạm, chỉ xuất hiện khi principal từ login/m
 Controller lấy CSRF trong bộ nhớ trước POST. 204 xóa principal/token và yêu cầu login thủ công; không gọi login, không giữ credential để thử tự động. 400 current sai/policy được phân biệt, 401 về login, 403 cờ không cần đổi đọc lại me thay vì sửa principal cục bộ. 429 giữ deadline qua check/focus; thao tác bị khóa trước hạn. 500/503/network sau POST vào trạng thái chưa xác nhận, dừng check tự động để cảnh báo không mất; nút về login hướng dẫn thử mật khẩu mới rồi cũ, không gửi lại mutation. Lỗi lấy CSRF trước POST dùng đường lỗi phiên/dịch vụ thông thường. Sau một lần login lỗi mạng vẫn có thể GET kiểm lại phiên.
 
 Bằng chứng và giới hạn của đợt được ghi tại mục DATN-20 trong sổ công việc; HTTP giả không chứng minh transaction/cookie/browser. Không áp dụng migration Neon hoặc chạy email/reset từ FE.
+
+### DATN-34 / OAP-T12 — UI Admin cấp và tra cứu tài khoản
+
+- Brief đã chốt: `/accounts` chỉ Admin phiên thường; tạo qua dialog, giữ đích login DATN-29. HR/Admin có menu cộng theo role server. Không dashboard/mock fallback.
+- Nguồn: proposal OAP mục 6.3/6.5/6.6, OpenAPI create/preview/users/catalog. Ngoài phạm vi: khóa/reset/đổi role cũ/gửi lại/schema/dependency.
+- Tiêu chí: adapter tests + pnpm check; browser với backend PostgreSQL test cho preview/create/list/reload/quyền/lỗi, ghi đúng giới hạn mail fake/thật. Kết quả mail chỉ giữ trong màn hiện tại; POST không replay.
+
+#### Cách chạy và demo F2
+
+- Local thường: cấu hình OAuth theo [runbook Gmail](../cmd/gmail-setup/README.md), đặt `GMAIL_OAUTH_CREDENTIALS_FILE` trỏ tới file private ngoài repo trong terminal chạy `pnpm dev`. Không đưa nội dung file vào FE/Git. Admin local mới: `quan1652005+admin@gmail.com`, mật khẩu tổng hợp ban đầu `12345678`. Tạo từ UI này dùng Gmail thật; chỉ nhập hộp thư nhận được phép.
+- Admin login vẫn về `/profile`; menu Tài khoản mở `/accounts`. HR giữ đích danh mục; HR+Admin có cả hai mục. Phiên limited luôn về đổi mật khẩu. URL ngoài phạm vi không mở prototype.
+- Tạo: tải đủ trang danh mục (100/trang), vị trí bắt buộc; phòng ban/cấp bậc/điện thoại/địa chỉ optional. Email là thông tin đăng nhập, không username; mã preview readonly không giữ chỗ. Roles [] là nhân viên thường. POST chỉ gửi fullname/company_email/position_id/department_id/job_level_id/phone/address/system_roles.
+- Kết quả201 hiển thị mã thực và tài khoản đã tạo riêng với mail accepted/failed/unknown. Không thông báo delivered/gửi lại/tạo lại khi mail lỗi. Reload chỉ đọc account; kết quả mail không có storage/recovery. Không có nút khóa/reset/đổi quyền cũ/đọc full profile người khác.
+- Lỗi mạng/5xx hoặc response malformed sau POST khóa lần gửi đó và cho đối soát bằng GET users theo email. Lỗi lấy CSRF trước POST không giả đã gửi. Không tự retry mutation. Create timeout FE35s, GET15s; cookie do browser quản lý, CSRF chỉ memory. Kết quả muộn bị bỏ khi rời màn/đổi phiên.
+
+Harness browser riêng, **fake mail, không gửi Gmail**, không thay localdev thường:
+
+```sh
+# Terminal 1, tại root; check trước, chỉ DB test PG18 sở hữu
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration,accountuidemo -p 1 ./cmd/server -run '^TestAccountUIDemoServer$' -count=1 -v -timeout=50m
+
+# Terminal 2, tại web/; dừng phiên dev khác ở5174 trước
+VITE_AUTH_MODE=server TASKASSIGN_API_TARGET=http://127.0.0.1:18080 pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort
+```
+
+- Fixture browser: `admin@example.invalid`, `hr@example.invalid`, `employee@example.invalid`, `limited@example.invalid`; mật khẩu tổng hợp `12345678`. Không dùng cho vận hành.
+- Email tạo bắt đầu `failed`/`unknown` chọn fault tại fake MailSender; mặc định accepted giả. Bắt đầu `lost` mô phỏng đóng socket sau handler commit và gọi mail port. Chỉ trong test có build tag, không endpoint/cấu hình runtime production. Dùng domain `ui.example.invalid`, không hộp thư thật.
+- Dừng harness bằng SIGUSR1 tới PID được in hoặc hết45phút; runner dọn đúng DB case. Ctrl+C terminal Vite dừng FE. Không chạy suite DB khác song song harness.
+
+#### Bằng chứng thực chạy — 18/11/2026
+
+- Guard: PG18, DB/user/owner test đúng, public0 bảng, system ID7705732357505970219. Browser dùng FE5174 → proxy18080 → composition root/adapter PostgreSQL thật; MailSender fake. Không đọc credential thật/Neon/gửi thư trong lượt kiểm này.
+- Browser: Admin-only login về profile, menu tới accounts; tạo accepted EMP000001, list/reload còn row và banner mail mất sau reload. Validation trống hiện tại họ tên/email/vị trí; email conflict409 hiện ở trường email, không tự tạo lại.
+- Hai tab cùng previewEMP000002: tab thứ hai tạo failed nhậnEMP000002; tab đầu tạo unknown nhận mã thựcEMP000003. Các response vẫn báo tài khoản đã tạo, phân biệt trạng thái mail. Đây là xen kẽ thao tác browser, không thay bằng chứng race DB/barrier của DATN-31/33.
+- Ca lost đóng socket sau commit: FE cảnh báo chưa xác nhận, không có nút gửi lại, GET đối soát thấyEMP000004. Harness shutdown đối soát4 row account mới/4 lần gọi fake mail; validation/conflict không thêm row/call. PASS harness388.699s chỉ xác nhận vòng đời/đối soát, không tự đánh giá mọi bước browser.
+- HR/employee deep link accounts bị từ chối, không menu/dữ liệu mock. Limited ADMIN+HR vào accounts vẫn về change-password; không đổi password trong lượt này. Logout/login sang user khác không giữ danh sách/kết quả Admin trước.
+- Chrome390px: page390, dialog358, dialog scroll341; bảng cuộn trong vùng riêng; đóng dialog trả focus nút tạo. Ảnh tổng hợp `/tmp/datn34-account-result.jpg` và `/tmp/datn34-account-mobile.jpg` chỉ dữ liệu test. Viewport đã reset. Chrome lúc đầu có lỗi extension M_ID và click không tác dụng; luồng chính kiểm ở browser độc lập, Chrome sau đó kiểm form390px thành công.
+- Đạt `pnpm check`: harness14 tests, 174 tests FE/model, lint/format/typecheck/build. Đạt `go vet ./...`, `go test ./... -count=1`, `go build ./...`. Sau dừng/dọn harness, integration qua runner `go test -tags=integration -p 1 ./cmd/localdev ./cmd/server -count=1 -timeout=5m` đạt0.927s/8.944s; gồm fixture Admin local và regression HTTP/auth/catalog/profile/accounts.
+- Chưa nhận: Gmail thật của luồng UI, browser DB outage/revoke role ngay giữa thao tác, mất mạng vật lý, HTTPS vận hành. Adapter HTTP giả kiểm401/403/500/503/network; không thay kiểm browser/DB. DATN-32 giữ bằng chứng Gmail riêng; OAP-T13 kiểm xuyên luồng nhận mail → đổi → hồ sơ.
