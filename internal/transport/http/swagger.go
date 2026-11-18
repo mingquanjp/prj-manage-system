@@ -25,7 +25,7 @@ func swaggerWithCatalogs(catalogs bool) http.HandlerFunc {
 	return swaggerWithServices(catalogs, false)
 }
 
-func swaggerWithServices(catalogs, profiles bool) http.HandlerFunc {
+func swaggerWithServices(catalogs, profiles bool, accounts ...bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", swaggerCSP)
@@ -52,11 +52,11 @@ func swaggerWithServices(catalogs, profiles bool) http.HandlerFunc {
 			data, err = apispec.Files.ReadFile("auth.openapi.json")
 			contentType = "application/json"
 		case "/docs/catalog.openapi.json":
-			if !catalogs && !profiles {
+			if !catalogs && !profiles && (len(accounts) == 0 || !accounts[0]) {
 				http.NotFound(w, r)
 				return
 			}
-			data, err = organizationSwaggerSpec(catalogs, profiles)
+			data, err = organizationSwaggerSpec(catalogs, profiles, accounts...)
 			contentType = "application/json"
 		case "/docs/assets/init.js", "/docs/assets/swagger-ui-bundle.js":
 			data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
@@ -79,7 +79,7 @@ func swaggerWithServices(catalogs, profiles bool) http.HandlerFunc {
 }
 
 // Chọn paths từ canonical spec; không tạo bản sao contract viết tay.
-func organizationSwaggerSpec(catalogs, profiles bool) ([]byte, error) {
+func organizationSwaggerSpec(catalogs, profiles bool, accounts ...bool) ([]byte, error) {
 	raw, err := apispec.Files.ReadFile("organization-accounts-profile.openapi.json")
 	if err != nil {
 		return nil, err
@@ -102,6 +102,11 @@ func organizationSwaggerSpec(catalogs, profiles bool) ([]byte, error) {
 	}
 	if profiles {
 		selected["/api/employees/{id}"] = map[string]json.RawMessage{"get": paths["/api/employees/{id}"]["get"]}
+	}
+	if len(accounts) > 0 && accounts[0] {
+		selected["/api/employees"] = map[string]json.RawMessage{"post": paths["/api/employees"]["post"]}
+		selected["/api/employees/next-code"] = map[string]json.RawMessage{"get": paths["/api/employees/next-code"]["get"]}
+		selected["/api/users"] = map[string]json.RawMessage{"get": paths["/api/users"]["get"]}
 	}
 	doc["paths"], err = json.Marshal(selected)
 	if err != nil {

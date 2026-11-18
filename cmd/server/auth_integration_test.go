@@ -17,8 +17,12 @@ import (
 	"testing"
 	"time"
 
+	"ai-staffing/internal/app"
 	"ai-staffing/internal/config"
+	"ai-staffing/internal/service/auth"
+	org "ai-staffing/internal/service/organization"
 	"ai-staffing/internal/testutil/authdb"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const testOrigin = "http://localhost:5173"
@@ -43,7 +47,7 @@ func newAuthAppWithFixture(t *testing.T, f *authdb.Fixture) *authApp {
 	t.Helper()
 	clock := &integrationClock{}
 	clock.nanos.Store(time.Date(2026, 11, 12, 9, 0, 0, 0, time.UTC).UnixNano())
-	handler, err := buildHandler(&config.Config{AppEnv: "dev", AppOrigin: testOrigin, SessionTTL: 8 * time.Hour}, f.DB.Pool(t), clock)
+	handler, err := buildTestApplication(&config.Config{AppEnv: "dev", AppOrigin: testOrigin, SessionTTL: 8 * time.Hour}, f.DB.Pool(t), clock)
 	authdb.Require(t, "lắp startup HTTP test", err)
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
@@ -374,4 +378,14 @@ func TestAuthHTTPPostgresUnavailable(t *testing.T) {
 	if count != 0 {
 		t.Fatal("DB lỗi vẫn có phiên")
 	}
+}
+
+// Mail port dành riêng suite integration, kiểm Gmail thật theo runbook DATN-32.
+type integrationMailSender struct{}
+
+func (integrationMailSender) SendAccount(context.Context, string, org.TemporaryPassword) (org.MailStatus, error) {
+	return org.MailFailed, nil
+}
+func buildTestApplication(cfg *config.Config, pool *pgxpool.Pool, clock auth.Clock) (http.Handler, error) {
+	return app.AuthHandlerWithMail(cfg, pool, clock, integrationMailSender{})
 }
