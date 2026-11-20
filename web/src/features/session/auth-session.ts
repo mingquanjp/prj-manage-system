@@ -72,7 +72,8 @@ export function createAuthSession(api: AuthApi, now: () => number = Date.now) {
     const previous = state
     csrf = null
     set(
-      background && state.phase === "authenticated" && !state.principal?.must_change_password
+      // Giữ form khi kiểm nền do focus; busy chặn mutation cho tới khi me xác nhận.
+      background && (state.phase === "authenticated" || state.phase === "signed-out")
         ? { ...state, busy: true }
         : { phase: "checking", principal: null, busy: false, message: "", retryAt: state.retryAt },
     )
