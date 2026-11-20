@@ -127,6 +127,12 @@ export function ServerSession() {
           Sử dụng email công ty và mật khẩu được cấp.
         </p>
         {feedback}
+        {waitSeconds > 0 && (
+          <p role="status" className="mt-3 text-sm leading-6 text-muted-foreground">
+            Đăng nhập đang được giới hạn tạm thời. Vui lòng chờ {waitSeconds} giây rồi thử lại.
+            Không cần gửi lại liên tục hoặc đổi mật khẩu thêm.
+          </p>
+        )}
         <form
           className="mt-6 space-y-4"
           onSubmit={(event) => {

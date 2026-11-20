@@ -155,3 +155,20 @@ Kiểm route/DTO/canonical subset bằng Go httptest; kiểm interceptor Swagger
 HTTPS production. HTTP + PostgreSQL test và bàn giao OAP-T07 xem
 [runbook PostgreSQL](../../scripts/authdb/README.md#datn-28--api-hồ-sơ-chính-chủ).
 Chưa nối UI hồ sơ; không tự mở thêm quyền đọc toàn bộ hồ sơ hoặc sửa hồ sơ.
+
+## DATN-35 — inventory toàn phạm vi OAP
+
+Trạng thái hiện hành thay các ghi nhận phạm vi cũ DATN-26/28 ở trên: router ứng dụng đã nối đủ16 operation OAP và5 auth. Swagger dev tại backend8080 công bố `/docs/catalog.openapi.json` từ canonical OAP, gồm:
+
+| Collection/path | Method |
+|---|---|
+| `/api/departments`, `/api/positions`, `/api/job-levels` | GET/POST trên mỗi collection (6 operation) |
+| `/api/departments/{id}`, `/api/positions/{id}`, `/api/job-levels/{id}` | PATCH/DELETE trên mỗi item (6 operation) |
+| `/api/employees` | POST tạo tài khoản/hồ sơ |
+| `/api/employees/next-code` | GET mã dự kiến, không tiêu số |
+| `/api/employees/{id}` | GET hồ sơ chính chủ |
+| `/api/users` | GET danh sách tài khoản |
+
+Ngày18/11/2026 đối chiếu JSON public từ backend local8080: từng operation OAP/auth khớp canonical, tổng16+5. Test `TestApplicationOAPRouteInventoryMatchesCanonicalSwagger` đối chiếu toàn bộ method/path của Chi router ghép và nội dung paths Swagger với canonical, không chỉ đếm operation. Test không chứng minh runtime SQL/DTO; HTTP+PG suite có bằng chứng riêng tại [runbook DB](../../scripts/authdb/README.md#datn-35--ma-trận-bàn-giao-postgresql-oap).
+
+UI danh mục/tài khoản/hồ sơ đã nối server mode; [runbook demo UI](auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) là điểm vào báo cáo. Thử POST tạo bằng Swagger cũng có thể gửi Gmail thật theo cấu hình backend, chỉ dùng mailbox được phép; không lặp POST khi mất phản hồi. Swagger vẫn chỉ dev, không mở production docs hoặc CORS.

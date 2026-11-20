@@ -199,7 +199,7 @@ func TestCatalogApplicationDatabaseFailure(t *testing.T) {
 	clock := &integrationClock{}
 	clock.nanos.Store(time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC).UnixNano())
 	pool := f.DB.Pool(t)
-	h, err := buildHandler(&config.Config{AppEnv: "dev", AppOrigin: testOrigin, SessionTTL: 8 * time.Hour}, pool, clock)
+	h, err := buildTestApplication(&config.Config{AppEnv: "dev", AppOrigin: testOrigin, SessionTTL: 8 * time.Hour}, pool, clock)
 	authdb.Require(t, "composition DB lỗi", err)
 	server := httptest.NewServer(h)
 	t.Cleanup(server.Close)

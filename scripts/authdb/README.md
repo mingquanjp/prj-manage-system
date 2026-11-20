@@ -634,3 +634,97 @@ HTTPS production, Neon hoặc tạo tài khoản qua HTTP/FE trong DATN-31.
 Chưa commit/push hoặc đổi Jira Done. Bàn giao lõi transaction cho OAP-T11; phần mail
 adapter thuộc OAP-T10, HTTP/orchestration và account list thuộc OAP-T11, UI thuộc
 OAP-T12. Done sau review/bàn giao/merge phù hợp workflow, không nhận toàn luồng F2 đã xong.
+
+## DATN-33 — API Admin cấp và tra cứu tài khoản
+
+Nguồn [proposal mục 6.2–6.5](../../docs/proposals/backend-organization-accounts-profile.md), [OpenAPI](../../docs/api/organization-accounts-profile.openapi.json) và [SQL plan mục 4–5/7](../../docs/proposals/backend-organization-accounts-profile-sql-plan.md).
+
+### Cấu hình chạy
+
+Server và localdev yêu cầu `GMAIL_OAUTH_CREDENTIALS_FILE` trong môi trường tiến trình, trỏ tới file credential riêng đã cấp quyền theo [runbook Gmail](../../cmd/gmail-setup/README.md). Khởi tạo sender kiểm cấu hình file trước khi dựng router. Test DB inject MailSender riêng trong composition root để kiểm mail fault trên DB sở hữu. Lượt kiểm refresh/gửi chẩn đoán thật đã có tại DATN-32.
+
+Ví dụ sau dùng file local ngoài repo đã được chủ hộp thư chuẩn bị. Chạy từ thư mục gốc, dùng môi trường PostgreSQL test riêng đã được guard.
+
+```sh
+export GMAIL_OAUTH_CREDENTIALS_FILE="$HOME/.config/taskassign/gmail-oauth.json"
+go run ./cmd/gmail-setup check
+pnpm --dir web dev
+```
+
+Swagger dev phục vụ tại `http://127.0.0.1:8080/docs/`. Admin phiên thường có thể xem mã dự kiến và danh sách. POST tạo tài khoản cần Origin/CSRF và JSON theo canonical spec. Việc thực hiện POST với Gmail thật cần hộp thư nhận đã được chủ hộp thư cho phép.
+
+### Hành vi bàn giao OAP-T12
+
+- `POST /api/employees` lấy actor từ phiên, kiểm quyền ADMIN và dữ liệu allowlist, dùng transaction DATN-31. Commit được xác nhận rồi mới gọi MailSender một lần. Ba trạng thái mail accepted/failed/unknown đều kèm HTTP201, account_created=true và account đã lưu.
+- Lỗi trước xác nhận commit trả lỗi HTTP theo nguồn. Marker commit chưa xác định không cấp kết quả thành công và không gọi mail. Admin đối soát qua danh sách trước thao tác tiếp theo.
+- `GET /api/employees/next-code` kiểm actor trong snapshot đọc, dùng lại PreviewEmployeeCode, trả is_preview=true. Preview không tiêu số hoặc giữ chỗ, mã đã commit là mã chính thức.
+- `GET /api/users` đọc count/items và quyền trong một snapshot REPEATABLE READ, tìm literal trên employee_code/fullname/company_email và sắp user_id tăng dần. Role đọc user_roles. Email chuẩn hóa ở projection. Account list chỉ chứa allowlist account, kết quả thư chỉ có ở response create hiện tại.
+- Account và employee có ID độc lập. List phát hiện user thiếu employee theo SQL plan và trả lỗi dữ liệu. Trang rỗng vẫn giữ total của snapshot.
+- Mutation yêu cầu phiên thường, ADMIN, Origin/CSRF rồi kiểm Content-Type, body thực tối đa8192 byte, JSON strict và validation. Response account dùng no-store và không cấp cookie đăng nhập.
+
+### Lệnh kiểm tra
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go test -race ./internal/service/organization ./internal/transport/http -count=1
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+HTTP giả chỉ kiểm handler/service. Kiểm HTTP+PostgreSQL dùng DB case riêng và fake MailSender để quan sát commit từ connection độc lập, fault response và số lần gửi. Mailbox thật tái sử dụng bằng chứng DATN-32. Kiểm UI cấp tài khoản thuộc OAP-T12, tổng hợp xuyên luồng thuộc OAP-T13.
+
+### Bằng chứng thực chạy — 18/11/2026
+
+- Môi trường Go1.26.5/macOS ARM64. Guard xác nhận PostgreSQL18, DB ai_staffing_auth_test, user/owner ai_staffing_test, public0 bảng và system identifier7705732357505970219 trước integration.
+- Đạt `go vet ./...`, `go test ./... -count=1`, `go build ./...`. Unit race organization/postgres đạt12.509s/1.555s; organization/HTTP đạt16.159s/6.664s.
+- Lượt tập trung HTTP+PG thật cho account đạt transport8.631s và server3.156s. Fake MailSender đọc user/hash/roles/audit qua connection độc lập trước gửi. Cả accepted/failed/unknown giữ201. FK/email/quyền/cờ/active lỗi không gửi. Fault wrapper sau commit PostgreSQL thật trả EOF, HTTP503 và list đối soát được account.
+- Toàn bộ integration theo lệnh ba package ở trên đạt postgres40.970s, transport6.083s, server15.225s. Gồm regression auth/catalog/profile và các ca tạo tài khoản trước đó.
+- List/preview có ca cùng snapshot giữa count/items, literal search, roles tổ hợp, thiếu employee, actor mất quyền, page rỗng và preview không tiêu số. Hai connection/barrier kiểm preview trong lúc create chờ commit, thêm boundary sequence hết BIGINT.
+- Kiểm bổ sung composition root với phiên đăng nhập thật, CSRF, create/list/preview, email conflict và limited gate đạt1.486s. Swagger canonical từ router ứng dụng có16 operation OAP, gồm next-code tĩnh và profile theo ID.
+- Parser từ chối JSON field lạ/trùng/null sai kiểu, trailing JSON, UTF-8 sai và surrogate đơn, chấp nhận surrogate đôi hợp lệ. Body thực8192/8193 byte không Content-Length được kiểm. Response account no-store, không Set-Cookie và không chứa credential/phone/address.
+- Contract/harness32 tests và Swagger bootstrap5 tests đạt. Harness kiểm kê388 nguồn, `git diff --check` đạt.
+- Sub-agent review service/read/composition và transport hoàn tất. Các góp ý phân loại lỗi preview, orphan user và giữ kết quả commit khi mail lỗi đã xử lý. Góp ý surrogate đơn được sửa bằng helper hiện có và test tương ứng đạt.
+- Gmail thật tái sử dụng bằng chứng DATN-32. Fault mail mô phỏng tại port, lost commit reply mô phỏng sau commit thật. Kiểm mất mạng vật lý, UI cấp tài khoản và chuỗi nhận mật khẩu tạm trên UI tiếp tục ở OAP-T12/OAP-T13.
+
+- Sau suite, chạy qua runner `go test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=1m` đạt0.352s. DB test gốc còn0 bảng và không sót DB auth_case.
+
+## DATN-35 — ma trận bàn giao PostgreSQL OAP
+
+Mã ca từ [SQL plan mục 7](../../docs/proposals/backend-organization-accounts-profile-sql-plan.md#7-ma-trận-postgresql-test-dự-kiến); không tạo thêm contract SQL. [Runbook demo](../../docs/api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ luồng UI/Gmail và giới hạn FR. Kết quả dưới là trên PG18 local sở hữu, không phải Neon hoặc dữ liệu nhân viên thật.
+
+Ngày 18/11/2026, từ snapshot DATN-34 `7377dc6`, đã chạy:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+python3 scripts/authdb/manage.py check
+```
+
+Guard trước/sau: PG18, đúng DB/user/owner, system ID7705732357505970219, public0 bảng. Bốn package đạt lần lượt20.494s/49.963s/4.465s/10.969s. Đây là chạy lại các ca hiện có, không cộng số unit tests vào số luồng E2E. Chạy suite khi không có suite DB/harness khác; browser localdev dùng DB auth_dev riêng, không mutation từ suite.
+
+| Mã | File/test tái hiện chính (package migrations hoặc internal/repository/postgres) | Kết quả/phạm vi |
+|---|---|---|
+| OAP-DB01 | `oap_m1_integration_test.go`: `TestM1EmptyAndSeed`; `oap_m2_integration_test.go`: `TestM2EmptyAndUnusedDownUp` | Đạt đường rỗng đến head M2; seed đúng schema. |
+| OAP-DB02 | `TestM1LegacyAndDownUp`, `TestM2LegacyPreservesDataAndStartsAfterEMPNumbers` | Đạt fixture legacy tổng hợp; ID/link/role/hash/email/session/code được bảo toàn theo snapshot, chỉ username bị bỏ ở M2. |
+| OAP-DB03 | `TestM1PreflightRejectsBeforeMigration`, `TestM2PreflightRejectsBeforeDirty` | Đạt drift/duplicate/malformed/dependency guard; không cleanup tự động. |
+| OAP-DB04 | `TestM1LegacyAndDownUp`, `TestM1PreflightRejectsBeforeMigration` | Đạt mapping tổng hợp và thiếu mapping bị chặn. Không xác nhận mapping dữ liệu Neon. |
+| OAP-DB05 | `organization_catalog_integration_test.go`: `TestCatalogCRUDAndAudit`, `TestCatalogCurrentActorAndReferences`; concurrency: `TestCatalogConcurrentDuplicateAndStale` | Đạt ba danh mục, trim/code point/duplicate/no-op/stale/audit và reference. |
+| OAP-DB06 | `organization_account_concurrency_integration_test.go`: `TestAccountCreateAndCatalogDeleteRealAdapters`; catalog concurrency: `TestCatalogDeleteWithAdminReferenceRace` | Đạt adapter create thật cạnh tranh delete và actor Admin có reference; khóa/FK không orphan. |
+| OAP-DB07 | `TestAccountConcurrentCreatesAndEmailCollision`, `TestAccountManyCreatesKeepCodesUnique`, `TestEmployeeCodeAllocatorPreviewAndRollback`, `TestM2NextvalRollbackAndConcurrentConnections` | Đạt create nhiều connection, code unique, rollback có gap và preview không tiêu số. |
+| OAP-DB08 | `TestM2SequenceInitialRange`, `TestEmployeeCodeExhaustionAndLargeFormat`, `TestAccountPreviewDoesNotConsumeAndSurvivesRepositoryRestart` | Đạt dải legacy/độ dài/overflow/restart repository. Không nhận đây là diễn tập deploy nhiều instance production. |
+| OAP-DB09 | `TestAccountCreateWriteFailuresRollbackAllRows`, `TestAccountCommitOutcomeAndNoFalseSuccess`; HTTP: `TestAccountHTTPPersistsBeforeMailAndKeeps201ForMailOutcomes`, `TestAccountHTTPUnknownCommitSkipsMailAndCanReconcileByList` | Đạt write/audit/commit fault; connection độc lập thấy commit trước mail; ambiguity không gửi/retry. Mail port fake. |
+| OAP-DB10 | `TestAccountActorChangesWhileWaiting`, `TestCatalogActorRecheckAfterLock`, `TestAccountReadsRecheckCurrentActor` | Đạt recheck role/status/cờ hiện hành dưới khóa/snapshot. Không có UI sửa quyền tài khoản cũ. |
+| OAP-DB11 | `organization_profile_integration_test.go`: `TestSelfProfileProjectionAndCurrentState`, `TestSelfProfileConsistentSnapshot`, `TestSelfProfileMissingBasisAndMalformedData`; server: `TestSelfProfileApplicationPostgres` | Đạt self/other/missing, nullable/role không nhân row/email projection; Admin không bypass. |
+| OAP-DB12 | `TestM1DDLFailureRollsBackAndLeavesDirty`, `TestM2DownRefusesDataAndUsedSequenceAtomically`, `TestM2DDLFailureRollsBackAndLeavesDirty` và down/up ở DB01/02 | Đạt trên DB case hy sinh. Down M1 mất dữ liệu bổ sung; M2 không phục hồi username, từ chối data/sequence đã dùng, không force dirty. |
+| OAP-DB13 | `auth_integration_test.go`, `TestAccountApplicationRealSessionsAndComposition`, seed M1/M2; regression localdev DATN-34 | Đạt năm auth API và composition account không username. Fixture localdev đã kiểm DATN-34; không gọi suite bốn package là có chạy package localdev. |
+| OAP-DB14 | `TestM2EmailNormalizationParityUsesActualPostgres`, `TestFindLoginIdentity`, `TestSelfProfileProjectionAndCurrentState` | Đạt Go–PG18 test/collation test và giữ email legacy gốc; collation/dữ liệu đích chưa kiểm. |
+| Snapshot/literal | `TestCatalogPaginationSnapshotAndLiteral`, `TestAccountListSnapshotLiteralRolesAndProjection`, `TestSelfProfileConsistentSnapshot`, `TestAccountPreviewWhileCreateWaitsForCommit` | Đạt count/items cùng snapshot, q literal, projection và preview cạnh tranh. |
+
+Fault injection lỗi DDL/write/commit không thay kiểm mất mạng vật lý. Race dùng connection/barrier và lock timeout có kiểm soát, không sleep ngẫu nhiên. Log/evidence chỉ tên ca/kết quả, không SQL parameter chứa dữ liệu cá nhân, password/hash/token hoặc raw error provider.
+
+Migration/rollback vẫn dùng runner và bộ case hiện có, không chạy `cmd/migrate` loader production hoặc down trên DB demo đang dùng. Dừng app bằng Ctrl+C dọn đúng auth_dev vừa tạo, giữ container/volume. Giới hạn crash/kill9 và xử lý dirty xem các mục M1/M2 ở trên; không xem down là backup, không reset sequence để dùng lại mã.

@@ -63,7 +63,7 @@ export function AccountManagement({
         (role === "EMPLOYEE"
           ? !a.systemRoles.length
           : a.systemRoles.includes(role as keyof typeof systemRoleLabels))) &&
-      searchKey(`${a.username} ${profile?.employeeCode} ${profile?.fullname}`).includes(
+      searchKey(`${profile?.companyEmail} ${profile?.employeeCode} ${profile?.fullname}`).includes(
         searchKey(query),
       )
     )
@@ -93,7 +93,7 @@ export function AccountManagement({
             id="account-query"
             value={query}
             onChange={setQuery}
-            placeholder="Tên đăng nhập, mã hoặc tên nhân viên…"
+            placeholder="Email, mã hoặc tên nhân viên…"
           />
         </div>
         <div>
@@ -152,7 +152,7 @@ export function AccountManagement({
                   key={account.id}
                   className="border-b border-border last:border-0 hover:bg-accent/30"
                 >
-                  <td className="px-4 py-4 font-medium">{account.username}</td>
+                  <td className="px-4 py-4 font-medium">{profile?.companyEmail}</td>
                   <td className="px-4 py-4">
                     <p className="font-medium">{profile?.fullname}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{profile?.employeeCode}</p>
@@ -181,7 +181,7 @@ export function AccountManagement({
                       <Button
                         size="icon"
                         variant="ghost"
-                        aria-label={`Sửa quyền ${account.username}`}
+                        aria-label={`Sửa quyền ${profile?.companyEmail}`}
                         title="Sửa quyền"
                         onClick={() => openChange(account, "roles")}
                       >
@@ -190,7 +190,7 @@ export function AccountManagement({
                       <Button
                         size="icon"
                         variant="ghost"
-                        aria-label={`${account.status === "ACTIVE" ? "Khóa" : "Mở khóa"} ${account.username}`}
+                        aria-label={`${account.status === "ACTIVE" ? "Khóa" : "Mở khóa"} ${profile?.companyEmail}`}
                         title={account.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                         onClick={() =>
                           openChange(account, account.status === "ACTIVE" ? "lock" : "unlock")
@@ -233,7 +233,14 @@ export function AccountManagement({
                         UNLOCKED: "Mở khóa tài khoản",
                       }[event.action]
                     }{" "}
-                    · {accounts.accounts.find((a) => a.id === event.accountId)?.username}
+                    ·{" "}
+                    {
+                      profiles.profiles.find(
+                        (p) =>
+                          p.personId ===
+                          accounts.accounts.find((a) => a.id === event.accountId)?.personId,
+                      )?.companyEmail
+                    }
                   </p>
                   <p className="text-muted-foreground">
                     {getPerson(event.actorId)?.name} · {new Date(event.at).toLocaleString("vi-VN")}

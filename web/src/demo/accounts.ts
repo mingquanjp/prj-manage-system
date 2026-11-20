@@ -18,7 +18,6 @@ export function createAccountsState(): AccountsState {
     accounts: demoUsers.map((u) => ({
       ...u,
       id: `account-${u.personId}`,
-      username: u.personId,
       status: "ACTIVE",
       systemRoles: [...u.systemRoles],
     })),
@@ -26,19 +25,15 @@ export function createAccountsState(): AccountsState {
   }
 }
 // Mã dự kiến và mã lúc lưu dùng cùng nguồn. Không phải bộ cấp số đồng thời của server.
-// Username theo mã chỉ tạm cho demo; chính sách đăng nhập backend chưa chốt.
-export function nextAccountIdentifiers(accounts: AccountsState, profiles: ProfileState) {
+export function nextAccountIdentifiers(_accounts: AccountsState, profiles: ProfileState) {
   let latest = 0n
-  for (const value of [
-    ...profiles.profiles.map((p) => p.employeeCode),
-    ...accounts.accounts.map((a) => a.username),
-  ]) {
+  for (const value of profiles.profiles.map((p) => p.employeeCode)) {
     const match = /^e(\d+)$/i.exec(value)
     if (match && BigInt(match[1]) > latest) latest = BigInt(match[1])
   }
   const suffix = String(latest + 1n).padStart(3, "0")
   if (suffix.length > 29) throw new Error("Chưa thể cấp mã mới. Cần kiểm tra lại dải mã nhân viên.")
-  return { employeeCode: `E${suffix}`, username: `e${suffix}` }
+  return { employeeCode: `E${suffix}` }
 }
 export function normalizeRoles(roles: SystemRole[]) {
   if (!Array.isArray(roles) || roles.some((r) => !Object.hasOwn(systemRoleLabels, r)))
@@ -83,7 +78,7 @@ export function accountCreateErrors(
     positionId: "",
     jobLevelId: null,
   }
-  const values = normalizeEmployeeEdit({ ...input, address: null })
+  const values = normalizeEmployeeEdit({ ...input, address: input.address ?? null })
   const errors: Record<string, string> = {
     ...employeeEditErrors(profiles.profiles, organization, provisional, values),
   }
@@ -116,11 +111,10 @@ export function createAccountWithProfile(
   )
     throw new Error("Định danh đã tồn tại. Hãy thử tạo lại.")
   const identifiers = nextAccountIdentifiers(accounts, profileState)
-  const values = normalizeEmployeeEdit({ ...input, address: null })
+  const values = normalizeEmployeeEdit({ ...input, address: input.address ?? null })
   const account: DemoAccount = {
     id: accountId,
     personId,
-    username: identifiers.username,
     status: "ACTIVE",
     systemRoles: normalizeRoles(input.systemRoles),
   }

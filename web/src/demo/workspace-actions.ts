@@ -132,7 +132,7 @@ export function createDemoWorkspaceActions(
       dispatch({
         type: "accountCreated",
         ...next,
-        notice: `Đã tạo hồ sơ ${next.profileState.profiles.at(-1)!.employeeCode} · Tên đăng nhập: ${next.accounts.accounts.at(-1)!.username}. Chưa cấp thông tin đăng nhập thật.`,
+        notice: `Đã tạo hồ sơ ${next.profileState.profiles.at(-1)!.employeeCode}. Chưa cấp thông tin đăng nhập thật.`,
       })
     },
     changeAccount(command: AccountCommand) {

@@ -2,6 +2,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import type { Principal, SystemRole } from "./auth-api.ts"
 import {
+  canManageAccounts,
   canReadCatalogs,
   canManageCatalogs,
   serverHome,
@@ -30,10 +31,12 @@ test("navigation cộng role server, không coi ADMIN/DIRECTOR là HR; limited c
     const p = principal(roles)
     assert.equal(canReadCatalogs(p), roles.includes("HR") || roles.includes("ADMIN"))
     assert.equal(canManageCatalogs(p), roles.includes("HR"))
+    assert.equal(canManageAccounts(p), roles.includes("ADMIN"))
     assert.equal(serverHome(p), roles.includes("HR") ? "/organization/departments" : "/profile")
     const limited = principal(roles, true)
     assert.equal(canReadCatalogs(limited), false)
     assert.equal(canManageCatalogs(limited), false)
+    assert.equal(canManageAccounts(limited), false)
     assert.equal(serverHome(limited), "/change-password")
   }
 })

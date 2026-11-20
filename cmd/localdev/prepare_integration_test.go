@@ -55,14 +55,18 @@ func TestPrepareM2Localdev(t *testing.T) {
 			if !limited || role != "ADMIN" {
 				t.Fatal("fixture limited sai")
 			}
+		case "quan1652005+admin@gmail.com":
+			if limited || role != "ADMIN" {
+				t.Fatal("fixture Admin sai")
+			}
 		default:
 			t.Fatal("localdev có fixture ngoài tập tổng hợp")
 		}
 		count++
 	}
 	authdb.Require(t, "đọc hết fixture localdev", rows.Err())
-	if count != 2 {
-		t.Fatal("localdev không có đúng hai tài khoản")
+	if count != 3 {
+		t.Fatal("localdev không có đúng ba tài khoản")
 	}
 	rows.Close()
 	var nullable bool

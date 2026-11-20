@@ -510,3 +510,61 @@ test("catalog 401 bỏ principal; signed-out/limited không được gửi mutat
     /REQUEST_BUSY/,
   )
 })
+
+test("focus ở phiên limited giữ form khi kiểm nền, chặn đổi cho tới khi me trả về", async () => {
+  const pending = deferred<Principal>()
+  let reads = 0
+  let changes = 0
+  const session = createAuthSession(
+    fake({
+      me: async () => (++reads === 1 ? limited : pending.promise),
+      changePassword: async () => {
+        changes++
+      },
+    }),
+  )
+  await session.check()
+  const refresh = session.refresh()
+  assert.equal(session.getSnapshot().phase, "authenticated")
+  assert.equal(session.getSnapshot().principal?.must_change_password, true)
+  assert.equal(session.getSnapshot().busy, true)
+  await session.changePassword("old", "new")
+  assert.equal(changes, 0)
+  pending.resolve(limited)
+  await refresh
+  assert.equal(session.getSnapshot().phase, "authenticated")
+  assert.equal(session.getSnapshot().busy, false)
+})
+
+test("focus chồng nhau ở login giữ thông báo 429 và cooldown, không thêm POST", async () => {
+  const pending = deferred<Principal>()
+  let reads = 0
+  let logins = 0
+  const session = createAuthSession(
+    fake({
+      me: async () => {
+        if (++reads === 1) throw new AuthError(401, "UNAUTHENTICATED")
+        return pending.promise
+      },
+      login: async () => {
+        logins++
+        throw new AuthError(429, "RATE_LIMITED", 30)
+      },
+    }),
+    () => 1000,
+  )
+  await session.check()
+  await session.login("synthetic@example.invalid", "test")
+  const message = session.getSnapshot().message
+  const refresh = session.refresh()
+  const overlapping = session.refresh()
+  const during = session.getSnapshot()
+  pending.reject(new AuthError(401, "UNAUTHENTICATED"))
+  await Promise.all([refresh, overlapping])
+  assert.equal(during.phase, "signed-out")
+  assert.equal(during.message, message)
+  assert.equal(reads, 2)
+  assert.equal(session.getSnapshot().message, message)
+  assert.equal(session.getSnapshot().retryAt, 31000)
+  assert.equal(logins, 1)
+})

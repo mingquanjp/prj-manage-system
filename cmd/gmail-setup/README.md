@@ -66,3 +66,9 @@ HTTP giả kiểm refresh và hết hạn access token, `invalid_grant`, timeout
 - Harness kiểm kê nguồn và `git diff --check` đạt.
 
 - Kiểm Gmail thật với OAuth Desktop ở chế độ External / Testing. Chủ hộp thư hoàn tất `authorize`, chạy `check` và xác nhận refresh thành công. Một lượt `send-check` trả `accepted`. Chủ hộp thư nhận đối chiếu đúng người gửi và thư chẩn đoán trong Hộp thư đến. Bằng chứng này xác nhận đường gửi thư chẩn đoán qua adapter. Kiểm luồng thư cấp tài khoản sau commit thuộc OAP-T11.
+
+### DATN-35 — kiểm cấp tài khoản từ UI, 18–19/11/2026
+
+- CLI `check` refresh thành công trước mở localdev. Một lần tạo account qua UI Admin dùng composition root/PostgreSQL local thật và Gmail adapter thật; UI nhận account đã tạo/mã chính thức và mail accepted. Không chạy thêm send-check hoặc gửi lại.
+- Chủ hộp thư xác nhận dùng email/mật khẩu được cấp để login; browser thấy đúng EMP000001 ở cổng đổi sau reload/deep link. Người dùng tự đổi/login mới sau sửa lỗi FE focus; DB cờ buộc đổi false, browser hồ sơ/reload/logout/Back đạt. Không đọc/chụp thư chứa mật khẩu hoặc đưa email cá nhân/message ID vào evidence. [Runbook OAP](../../docs/api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ kết quả/giới hạn từng bước; không nhận accepted tự chứng minh delivered.
+- Giữ đúng lượt localdev xuyên cấp tài khoản/login: DB local bị dọn khi dừng nên thư cũ không chứng minh account còn tồn tại sau restart. Kết nối provider được cấp lại không đồng nghĩa được gửi lại thư cũ.

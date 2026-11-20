@@ -60,7 +60,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (catalogs) {
       const option = document.createElement("option")
       option.value = "catalogs"
-      option.textContent = "Tổ chức và hồ sơ"
+      option.textContent = "Tổ chức, tài khoản và hồ sơ"
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))

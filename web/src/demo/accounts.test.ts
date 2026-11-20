@@ -389,20 +389,18 @@ test("khóa tài khoản không vô hiệu hóa hồ sơ hoặc chặn HR quản
 test("tự cấp mã chỉ đọc: không lấp mã trống, không dùng lại mã khóa/inactive, tính lại khi lưu", () => {
   const f = fixture()
   const preview = nextAccountIdentifiers(f.state.accounts, f.state.profileState)
-  assert.deepEqual(preview, { employeeCode: "E010", username: "e010" })
+  assert.deepEqual(preview, { employeeCode: "E010" })
   f.act("admin").createAccount(input)
   assert.equal(f.state.profileState.profiles.at(-1)?.employeeCode, preview.employeeCode)
-  assert.equal(f.state.accounts.accounts.at(-1)?.username, preview.username)
   const id = f.state.accounts.accounts.at(-1)!.personId
   f.act("admin").changeAccount(command(f.state, id, { action: "lock" }))
   f.act("hr").deactivateEmployee(id)
   f.act("admin").createAccount({ ...input, companyEmail: "second@congty.example" })
   assert.equal(f.state.profileState.profiles.at(-1)?.employeeCode, "E011")
-  assert.equal(f.state.accounts.accounts.at(-1)?.username, "e011")
   const accounts = structuredClone(f.state.accounts)
-  accounts.accounts[0].username = "E1000"
-  assert.deepEqual(nextAccountIdentifiers(accounts, f.state.profileState), {
+  const profiles = structuredClone(f.state.profileState)
+  profiles.profiles[0].employeeCode = "E1000"
+  assert.deepEqual(nextAccountIdentifiers(accounts, profiles), {
     employeeCode: "E1001",
-    username: "e1001",
   })
 })
