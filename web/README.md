@@ -139,6 +139,20 @@ Không tạo file kế hoạch mới khi một mục ngắn đủ dùng. Đợt 
 
 ## Sổ công việc
 
+### DATN-35 / OAP-T13 — kiểm xuyên luồng và bàn giao demo (đã kiểm, chờ bàn giao Git)
+
+- Mục tiêu/brief đã xác nhận: HR danh mục → Admin tạo → nhận Gmail thật → login hạn chế → đổi mật khẩu → login mới → hồ sơ → reload/logout/Back trên cùng lượt local. Đối chiếu 16 operation OAP, giữ regression năm API auth.
+- Nguồn: proposal OAP mục 3/7–9, SQL plan mục 7, OpenAPI canonical; runbook auth/DB/Gmail hiện có. Dùng lại bằng chứng đúng tầng, bổ sung kết quả thực chạy tại DATN-35.
+- Ngoài phạm vi: Neon/deploy/HTTPS vận hành, reset/gửi lại, công thức phân công, mở rộng FR, commit/push/merge hoặc Jira Done tự động. Không đọc/lưu/chụp credential trong thư hoặc form người dùng.
+- Tiêu chí: cổng Go/FE/contract/harness và suite PG18 sở hữu có kết quả; browser có thư thật và người dùng tự đổi/login mới; runbook, ma trận bằng chứng/FR/giới hạn và kịch bản báo cáo dùng lại được. Chưa kiểm không gắn pass.
+- Kết quả18/11: `pnpm check`174 tests FE/model và14 harness đạt; Go vet/test/build đạt sau test inventory mới; integration migrations/postgres/HTTP/server đạt20.494s/49.963s/4.465s/10.969s. Contract/harness32 và Swagger5 tests đạt; kiểm kê396 nguồn và diff check đạt. Chi tiết/lệnh ở [runbook OAP](../docs/api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) và [ma trận DB](../scripts/authdb/README.md#datn-35--ma-trận-bàn-giao-postgresql-oap).
+- Browser Chrome cùng localdev5174→8080→PG18: HR tạo ba danh mục; rename/reload giữ dữ liệu; hai tab stale không ghi đè; phòng ban đang có employee tham chiếu bị chặn xóa. HR vào accounts bị từ chối, Admin vào danh mục chỉ đọc. Admin tạo một account nhân viên thường, mãEMP000001/limitedtrue; Gmail thật accepted. Reload giữ account nhưng không giữ kết quả mail. Người nhận tự dùng credential qua thư để login, browser thấy cổng đổi đúng account; không lưu mailbox/password/body thư vào evidence.
+- Limited: reload và deep link /profile hoặc /accounts vẫn về /change-password. Form390px không tràn ngang (scrollWidth375), override đã reset. Không nhập credential khi kiểm viewport.
+- Lỗi phát hiện19/11 (nguồn luồng DATN-20/19): focus refresh tháo form limited và refresh signed-out chồng nhau có thể mất thông báo. Đã giữ phase/form khi kiểm nền, busy chặn mutation tới khi me xác nhận; giữ thông báo/cooldown và thêm giải thích countdown login. Hai test hồi quy mới đạt; `pnpm check`176 tests đạt. READ ONLY metadata trước/sau xác nhận cờ từ true→false sau người dùng thử lại, không đọc hash/password, reset limiter/DB hoặc gửi lại thư.
+- Retest19/11: người dùng tự đổi/login bằng mật khẩu mới; browser quan sát `/profile` đúng EMP000001/tên/danh mục đã tạo, phone/address Chưa cập nhật, lịch sử Chưa kết nối. Reload giữ dữ liệu; /change-password chuyển về /profile; employee deep link accounts/catalog bị từ chối. Logout→Back→reload đều /login, không PII/principal cũ. Thử mật khẩu tạm cũ trên browser chưa được xác nhận riêng; HTTP/DB regression kiểm credential cũ mất hiệu lực. Success message sau204 được controller test, agent không quan sát trực tiếp lúc người dùng đổi.
+- Ảnh local chỉ dữ liệu tổng hợp: `/tmp/datn35-catalog-in-use.jpg`, `/tmp/datn35-limited-mobile.jpg`, `/tmp/datn35-profile-header.jpg` (không email/credential). Runbook có ma trận FR Done-candidate/Partial, giới hạn và demo8–10phút. Không nhận toàn FR-009/064 hoặc toàn app.
+- Đã tự review diff và đối chiếu bằng chứng; chưa sub-agent review riêng DATN-35. Chưa commit/push/merge/Jira Done. Giữ localdev đang chạy cho người dùng thử/demo, hiện đã logout; Ctrl+C dọn đúng DB lượt chạy. DB gốc/case suite đã kiểm sạch, không gọi auth_dev đang phục vụ demo là đã cleanup.
+
 ### DATN-29 / OAP-T07 — Hồ sơ chính chủ và đích sau login
 
 - Mục tiêu/nguồn: nối phần đọc hồ sơ chính thức FR-009/BR-001 qua API DATN-28; proposal OAP 6.4 F3/6.6, OpenAPI SelfProfile; giữ auth và navigation DATN-27.

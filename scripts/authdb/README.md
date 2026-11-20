@@ -692,3 +692,39 @@ HTTP giả chỉ kiểm handler/service. Kiểm HTTP+PostgreSQL dùng DB case ri
 - Gmail thật tái sử dụng bằng chứng DATN-32. Fault mail mô phỏng tại port, lost commit reply mô phỏng sau commit thật. Kiểm mất mạng vật lý, UI cấp tài khoản và chuỗi nhận mật khẩu tạm trên UI tiếp tục ở OAP-T12/OAP-T13.
 
 - Sau suite, chạy qua runner `go test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=1m` đạt0.352s. DB test gốc còn0 bảng và không sót DB auth_case.
+
+## DATN-35 — ma trận bàn giao PostgreSQL OAP
+
+Mã ca từ [SQL plan mục 7](../../docs/proposals/backend-organization-accounts-profile-sql-plan.md#7-ma-trận-postgresql-test-dự-kiến); không tạo thêm contract SQL. [Runbook demo](../../docs/api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ luồng UI/Gmail và giới hạn FR. Kết quả dưới là trên PG18 local sở hữu, không phải Neon hoặc dữ liệu nhân viên thật.
+
+Ngày 18/11/2026, từ snapshot DATN-34 `7377dc6`, đã chạy:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+python3 scripts/authdb/manage.py check
+```
+
+Guard trước/sau: PG18, đúng DB/user/owner, system ID7705732357505970219, public0 bảng. Bốn package đạt lần lượt20.494s/49.963s/4.465s/10.969s. Đây là chạy lại các ca hiện có, không cộng số unit tests vào số luồng E2E. Chạy suite khi không có suite DB/harness khác; browser localdev dùng DB auth_dev riêng, không mutation từ suite.
+
+| Mã | File/test tái hiện chính (package migrations hoặc internal/repository/postgres) | Kết quả/phạm vi |
+|---|---|---|
+| OAP-DB01 | `oap_m1_integration_test.go`: `TestM1EmptyAndSeed`; `oap_m2_integration_test.go`: `TestM2EmptyAndUnusedDownUp` | Đạt đường rỗng đến head M2; seed đúng schema. |
+| OAP-DB02 | `TestM1LegacyAndDownUp`, `TestM2LegacyPreservesDataAndStartsAfterEMPNumbers` | Đạt fixture legacy tổng hợp; ID/link/role/hash/email/session/code được bảo toàn theo snapshot, chỉ username bị bỏ ở M2. |
+| OAP-DB03 | `TestM1PreflightRejectsBeforeMigration`, `TestM2PreflightRejectsBeforeDirty` | Đạt drift/duplicate/malformed/dependency guard; không cleanup tự động. |
+| OAP-DB04 | `TestM1LegacyAndDownUp`, `TestM1PreflightRejectsBeforeMigration` | Đạt mapping tổng hợp và thiếu mapping bị chặn. Không xác nhận mapping dữ liệu Neon. |
+| OAP-DB05 | `organization_catalog_integration_test.go`: `TestCatalogCRUDAndAudit`, `TestCatalogCurrentActorAndReferences`; concurrency: `TestCatalogConcurrentDuplicateAndStale` | Đạt ba danh mục, trim/code point/duplicate/no-op/stale/audit và reference. |
+| OAP-DB06 | `organization_account_concurrency_integration_test.go`: `TestAccountCreateAndCatalogDeleteRealAdapters`; catalog concurrency: `TestCatalogDeleteWithAdminReferenceRace` | Đạt adapter create thật cạnh tranh delete và actor Admin có reference; khóa/FK không orphan. |
+| OAP-DB07 | `TestAccountConcurrentCreatesAndEmailCollision`, `TestAccountManyCreatesKeepCodesUnique`, `TestEmployeeCodeAllocatorPreviewAndRollback`, `TestM2NextvalRollbackAndConcurrentConnections` | Đạt create nhiều connection, code unique, rollback có gap và preview không tiêu số. |
+| OAP-DB08 | `TestM2SequenceInitialRange`, `TestEmployeeCodeExhaustionAndLargeFormat`, `TestAccountPreviewDoesNotConsumeAndSurvivesRepositoryRestart` | Đạt dải legacy/độ dài/overflow/restart repository. Không nhận đây là diễn tập deploy nhiều instance production. |
+| OAP-DB09 | `TestAccountCreateWriteFailuresRollbackAllRows`, `TestAccountCommitOutcomeAndNoFalseSuccess`; HTTP: `TestAccountHTTPPersistsBeforeMailAndKeeps201ForMailOutcomes`, `TestAccountHTTPUnknownCommitSkipsMailAndCanReconcileByList` | Đạt write/audit/commit fault; connection độc lập thấy commit trước mail; ambiguity không gửi/retry. Mail port fake. |
+| OAP-DB10 | `TestAccountActorChangesWhileWaiting`, `TestCatalogActorRecheckAfterLock`, `TestAccountReadsRecheckCurrentActor` | Đạt recheck role/status/cờ hiện hành dưới khóa/snapshot. Không có UI sửa quyền tài khoản cũ. |
+| OAP-DB11 | `organization_profile_integration_test.go`: `TestSelfProfileProjectionAndCurrentState`, `TestSelfProfileConsistentSnapshot`, `TestSelfProfileMissingBasisAndMalformedData`; server: `TestSelfProfileApplicationPostgres` | Đạt self/other/missing, nullable/role không nhân row/email projection; Admin không bypass. |
+| OAP-DB12 | `TestM1DDLFailureRollsBackAndLeavesDirty`, `TestM2DownRefusesDataAndUsedSequenceAtomically`, `TestM2DDLFailureRollsBackAndLeavesDirty` và down/up ở DB01/02 | Đạt trên DB case hy sinh. Down M1 mất dữ liệu bổ sung; M2 không phục hồi username, từ chối data/sequence đã dùng, không force dirty. |
+| OAP-DB13 | `auth_integration_test.go`, `TestAccountApplicationRealSessionsAndComposition`, seed M1/M2; regression localdev DATN-34 | Đạt năm auth API và composition account không username. Fixture localdev đã kiểm DATN-34; không gọi suite bốn package là có chạy package localdev. |
+| OAP-DB14 | `TestM2EmailNormalizationParityUsesActualPostgres`, `TestFindLoginIdentity`, `TestSelfProfileProjectionAndCurrentState` | Đạt Go–PG18 test/collation test và giữ email legacy gốc; collation/dữ liệu đích chưa kiểm. |
+| Snapshot/literal | `TestCatalogPaginationSnapshotAndLiteral`, `TestAccountListSnapshotLiteralRolesAndProjection`, `TestSelfProfileConsistentSnapshot`, `TestAccountPreviewWhileCreateWaitsForCommit` | Đạt count/items cùng snapshot, q literal, projection và preview cạnh tranh. |
+
+Fault injection lỗi DDL/write/commit không thay kiểm mất mạng vật lý. Race dùng connection/barrier và lock timeout có kiểm soát, không sleep ngẫu nhiên. Log/evidence chỉ tên ca/kết quả, không SQL parameter chứa dữ liệu cá nhân, password/hash/token hoặc raw error provider.
+
+Migration/rollback vẫn dùng runner và bộ case hiện có, không chạy `cmd/migrate` loader production hoặc down trên DB demo đang dùng. Dừng app bằng Ctrl+C dọn đúng auth_dev vừa tạo, giữ container/volume. Giới hạn crash/kill9 và xử lý dirty xem các mục M1/M2 ở trên; không xem down là backup, không reset sequence để dùng lại mã.

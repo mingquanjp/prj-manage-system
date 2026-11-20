@@ -306,7 +306,7 @@ Go vet/test/build khi có Go changes; pnpm check khi đổi FE; harness/contract
 - Runbook tiếp tục mở rộng điểm vào hiện có: cấu hình tên biến/mail redaction, chạy/dừng/demo và dữ liệu test; không chép secret hoặc đưa đồng thời hai nguồn contract.
 - Có review diff, lệnh/kết quả/bằng chứng, giới hạn và đầu vào cho feature sau. Commit/push/Jira/merge chỉ khi người dùng giao; Done theo workflow sau merge, không từ bản proposal này.
 
-## 9. WBS đề xuất — chia theo đầu ra, chưa nhập Jira
+## 9. WBS — chia theo đầu ra và liên kết ticket
 
 [Bộ ticket OAP](backend-organization-accounts-profile-tickets.md) gom 15 dòng dưới thành 13 Task dưới một Epic: OAP-01/02/03 là một task bàn giao thiết kế đã có; OAP-04–15 là 12 task triển khai. Bộ ticket giữ Rank/17 Blocks và description/AC; mã nội bộ không thay Jira key. Không tạo task review lặp hoặc tự ghi nhận giờ còn lại cho phần đã làm.
 
@@ -335,6 +335,8 @@ Thứ tự chủ động: F1/F3 độc lập làm trước trong khi cấu hình
 Quân đã chọn agent hỗ trợ triển khai và bản thân đọc hiểu phần quan trọng; không giao bài tự viết lớn mặc định. Các checkpoint học: create transaction vì sao nguyên tử; sequence khác COUNT+1; FK chống race; role server so với UI; boundary DB/mail. Khi Quân nhận phần tự viết cụ thể, agent chỉ hướng dẫn/review phần đó.
 
 ## 10. Trạng thái đợt soạn proposal
+
+**Tiếp nối hiện hành19/11/2026:** các đoạn bên dưới giữ lịch sử thiết kế15/11, không mô tả runtime hiện tại. M1/M2,12 API danh mục, API self và3 API tài khoản đã có cùng UI server; DATN-35/OAP-T13 đã kiểm luồng tạo trên UI → Gmail thật → người dùng tự đổi/login mới → hồ sơ/reload/logout/Back, xử lý lỗi FE focus phát hiện khi kiểm. [Runbook OAP](../api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) và [ma trận DB](../../scripts/authdb/README.md#datn-35--ma-trận-bàn-giao-postgresql-oap) giữ kết quả/giới hạn; chưa kiểm không gắn pass. Bộ ticket đã nhập Jira; Done sau merge/bàn giao theo workflow, không từ trạng thái proposal. Không áp Neon/deploy hoặc chốt công thức phân công.
 
 Đã đối chiếu nguồn/code hiện có; chưa chạy test nghiệp vụ, browser/DB/mail, không dùng bảng test dự kiến làm pass. Đã soạn OpenAPI và SQL plan dự thảo; chưa có file migration mới hoặc Jira key. Mục 4/6.5 đã duyệt hướng triển khai ngày 15/11; contract/SQL plan đã review và bộ ticket đã soạn để duyệt trước nhập Jira. Mapping legacy cụ thể và brief cấu hình OAuth là đầu ra của task tương ứng trước thực thi. SQL bỏ username/phụ thuộc/rollback và các chi tiết chưa có phương án vẫn cần review trước code; không tự áp DB hoặc gửi thư. Công thức gợi ý nằm ngoài đợt này và vẫn chờ thảo luận riêng.
 

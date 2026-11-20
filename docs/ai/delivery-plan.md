@@ -8,11 +8,13 @@ Nguồn: [mục lục](../README.md), [62 FR/AC và các điểm mở](../produc
 
 ## 1. Kết quả đối chiếu hiện trạng
 
+**Tiếp nối 19/11/2026 — DATN-35 đã kiểm, chờ bàn giao Git:** OAP đã chạy luồng UI danh mục → tạo → Gmail thật → người dùng tự đổi/login mới → hồ sơ/reload/logout/Back. Bảng dưới cập nhật phần đã nối sau mốc lập kế hoạch14/11. [Runbook xuyên luồng](../api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ kết quả thực/FR/giới hạn; kế hoạch không tự là bằng chứng runtime hoặc trạng thái Done.
+
 | Phần | Có thể dùng lại | Còn phải thực hiện |
 |---|---|---|
 | D01 auth/session | Năm API, service/repository, migration auth, cookie/CSRF/limiter, FE auth và kiểm DB/race | Khép các ca browser còn mở DATN-21; không đồng nhất auth với toàn bộ miền tài khoản |
-| D01 quản trị tài khoản | UI và model demo tạo tài khoản, cấp mã, quyền/khóa | API/DB thật, cấp mã cạnh tranh, tạo user–employee nguyên tử, cấp mật khẩu tạm và báo lỗi gửi (cấp lại/gửi lại hoãn theo chốt 15/11), quản trị cuối và thu hồi phiên |
-| D02 hồ sơ/cơ cấu | UI danh mục, hồ sơ, HR cập nhật/duyệt | Migration tiến thêm, projection đúng quyền, CRUD và transaction duyệt thực; kiểm công việc/trách nhiệm khi vô hiệu hóa |
+| D01 quản trị tài khoản | M2 bỏ username/email unique/sequence; transaction create, ba API Admin, Gmail adapter, UI tạo/tra cứu; DATN-35 kiểm mail thật → đổi/login mới → hồ sơ | Bàn giao/merge OAP theo workflow; quyền/khóa/reset tài khoản cũ và quản trị Admin cuối chưa nối. Cấp lại/gửi lại vẫn hoãn |
+| D02 hồ sơ/cơ cấu | M1, 12 API/UI danh mục; API/UI đọc hồ sơ chính chủ, quyền HR/Admin/self và nullable | Lịch sử/đề nghị cá nhân → HR duyệt, HR đọc/cập nhật hồ sơ và kiểm trách nhiệm khi vô hiệu hóa chưa nối |
 | D03 kỹ năng/CV | UI danh mục, đề nghị/xét kỹ năng, metadata CV | Official/pending/history thật, stale/version, storage và file thật; parser/model/provider chưa chốt |
 | D04 dự án/công việc | UI các bước dự án, task, phân công và thực hiện/nghiệm thu | API, migration, quyền theo tài nguyên, trạng thái/khóa đặc tả, batch và lịch sử đúng lượt |
 | D05 effort | UI nhật ký/hiệu chỉnh và logic demo | Transaction, tổng theo người/ngày xuyên dự án, snapshot nộp, lịch sử và chống lặp |
@@ -21,13 +23,13 @@ Nguồn: [mục lục](../README.md), [62 FR/AC và các điểm mở](../produc
 
 `web/src/App.tsx` hiện tách ServerSession và DemoApp; không chỉ bật cờ là toàn bộ workspace dùng API thật. Các màn đã duyệt được tái sử dụng, nhưng cần nối route/layout và adapter dần theo feature; route chưa nối phải báo giới hạn, không trộn principal thật với employee fixture.
 
-Repo hiện có migration 000001–000003; đây chưa là schema đích 33 bảng. Không dùng số bảng/tên bảng giống nhau làm bằng chứng backend đã hoàn thành. Kiểm kê Neon trong mapping mang ngày 06/11, không phải kiểm kê mới ngày 14/11. Đợt lập kế hoạch không truy cập Neon, không chạy migration/seed hoặc chọn dependency.
+Repo hiện có migration 000001–000005 (head M2); đây chưa là schema đích 33 bảng. Không dùng số bảng/tên bảng giống nhau làm bằng chứng backend đã hoàn thành. Kiểm kê Neon trong mapping mang ngày 06/11, không phải kiểm kê mới ngày 18/11. DATN-35 chỉ kiểm môi trường local/PG test sở hữu, không áp Neon.
 
 ## 2. Năng lực thực hiện và cách đo
 
 Khoảng 8,7 tuần đến 14/01 tương ứng **130–175 giờ của Quân**. Đề xuất giữ **25% cho review, sửa lỗi, kiểm xuyên luồng, học/đọc code và chuẩn bị báo cáo**; còn khoảng **98–131 giờ cho đầu ra mới**. Đây là ngân sách kế hoạch, không phải estimate đã đo. Quân xác nhận dùng Codex hằng ngày để triển khai và đọc hiểu phần quan trọng: 15–20 giờ là thời gian Quân trực tiếp tham gia, không phải tổng thời gian tự viết mọi dòng code. Agent có thể xử lý triển khai/test/tài liệu trong phạm vi đã duyệt; năng lực phải hiệu chỉnh bằng tốc độ thực của hai tuần đầu. Thời gian agent hỗ trợ không thay thời gian Quân cần đọc hiểu, kiểm tra và chốt thiết kế. Review và kiểm chứng phần quan trọng là yêu cầu xuyên suốt đã được thống nhất.
 
-**80–85% toàn app là mục tiêu có rủi ro cao với ngân sách này**, vì phần backend nghiệp vụ ngoài auth chưa có. Không cam kết chỉ từ số màn prototype. Sau hai báo cáo 19/11 và 26/11 phải so công việc hoàn thành/giờ thực với estimate để xác nhận hoặc cắt đợt tiếp theo; không hạ yêu cầu bảo mật để giữ ngày.
+**80–85% toàn app là mục tiêu có rủi ro cao với ngân sách này**, vì ngoài auth/OAP các miền nghiệp vụ lớn vẫn chưa có backend. Không cam kết chỉ từ số màn prototype. Sau hai báo cáo 19/11 và 26/11 phải so công việc hoàn thành/giờ thực với estimate để xác nhận hoặc cắt đợt tiếp theo; không hạ yêu cầu bảo mật để giữ ngày.
 
 Cách báo tiến độ đề xuất:
 
@@ -94,6 +96,6 @@ Ví dụ một tuần 18 giờ: khoảng 2 giờ chốt brief/đối chiếu, 9 
 1. Hướng triển khai theo FR/bản đồ miền đã được đồng ý; tiếp tục hiệu chỉnh lịch/phạm vi theo tiến độ thực. Mục tiêu 80–85% chưa là con số đã đạt; công thức gợi ý chờ thảo luận riêng.
 2. Người dùng đã đồng ý mở mục tiêu thành ba feature nối tiếp: danh mục tổ chức → Admin tạo tài khoản kèm hồ sơ → nhân viên login/đổi mật khẩu và xem hồ sơ thật. [Proposal đang review](../proposals/backend-organization-accounts-profile.md) giữ quyền HR/Admin riêng, không tạo tài khoản mồ côi hoặc tự cấp quyền từ vị trí; Gmail API/OAuth gmail.send đã chốt, cấp lại/gửi lại đã hoãn theo 15/11; cấu hình thực tế hoàn thiện ở task mail. Bộ [ticket OAP](../proposals/backend-organization-accounts-profile-tickets.md) đã soạn để review/nhập Jira, không là backlog cả chín tuần.
 3. Từ proposal đã duyệt mới chốt task/Jira và phần triển khai; không tạo toàn bộ backlog 9 tuần từ bảng lịch này.
-4. Khép các ca DATN-21 còn mở khi có môi trường phù hợp; không dùng việc đang lập kế hoạch để đánh dấu auth E2E hoàn tất.
+4. Khép DATN-35 và các ca auth browser còn mở bằng đúng kết quả mới; không dùng bảng lịch để đánh dấu E2E hoàn tất. Sau đó ưu tiên chốt proposal phần đề nghị hồ sơ/HR duyệt (FR-009–013 liên quan) hoặc kỹ năng thủ công (D03) theo nhu cầu báo cáo; chưa tự mở ticket/code miền mới. Công thức phân công tiếp tục chờ thảo luận riêng.
 
 Đợt này chỉ đối chiếu repo và lập kế hoạch. Không chạy DB, đổi schema/nghiệp vụ, cấp credential, gửi email, tạo Jira, commit/push hoặc deploy.

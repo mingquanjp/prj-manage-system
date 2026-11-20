@@ -65,6 +65,7 @@ web/dist/
 !/docs/api/embed.go
 !/docs/api/README.md
 !/docs/api/auth-runbook.md
+!/docs/api/demo-accounts.md
 !/docs/api/auth.openapi.json
 !/docs/api/organization-accounts-profile.openapi.json
 !/docs/business-baseline-2026-10-13.md
