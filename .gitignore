@@ -60,6 +60,9 @@ web/dist/
 !/docs/proposals/backend-organization-accounts-profile.md
 !/docs/proposals/backend-organization-accounts-profile-sql-plan.md
 !/docs/proposals/backend-organization-accounts-profile-tickets.md
+!/docs/proposals/backend-profile-change-approval.md
+!/docs/proposals/backend-profile-change-approval-sql-plan.md
+!/docs/proposals/backend-profile-change-approval-tickets.md
 !/docs/api/
 /docs/api/*
 !/docs/api/embed.go
@@ -68,6 +71,7 @@ web/dist/
 !/docs/api/demo-accounts.md
 !/docs/api/auth.openapi.json
 !/docs/api/organization-accounts-profile.openapi.json
+!/docs/api/profile-change-approval.openapi.json
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md
 !/docs/design/database-review-decisions-2026-10-14.md
@@ -91,6 +95,7 @@ web/dist/
 # Nhật ký nhập Jira local — mapping/snapshot, không phải nguồn nghiệp vụ
 /.local/jira-auth/
 /.local/jira-oap/
+/.local/jira-pca/
 __pycache__/
 *.pyc
 

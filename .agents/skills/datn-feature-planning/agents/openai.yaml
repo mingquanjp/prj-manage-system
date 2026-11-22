@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lập kế hoạch feature DATN"
+  short_description: "Từ FR đến proposal, contract và tickets đã review"
+  default_prompt: "Dùng $datn-feature-planning để tiếp nối đợt feature theo delivery-plan và chuẩn bị bộ bàn giao cho báo cáo thứ Năm."

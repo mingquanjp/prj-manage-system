@@ -1,0 +1,36 @@
+{
+  "skill_name": "datn-feature-planning",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "PCA đã duyệt và review proposal cùng contract/SQL/tickets rồi. Kiểm xem còn thiếu gì trước khi chuẩn bị script Jira cho báo cáo thứ Năm. Chưa nhập Jira, commit/push hoặc chạy DB.",
+      "files": ["docs/proposals/backend-profile-change-approval.md", "docs/proposals/backend-profile-change-approval-sql-plan.md", "docs/proposals/backend-profile-change-approval-tickets.md", "docs/api/profile-change-approval.openapi.json"],
+      "expected_output": "Tiếp nối bộ đã có, nêu phần sẵn sàng/đầu vào còn thiếu và bước importer phù hợp; không soạn lại nghiệp vụ hoặc nhận runtime pass.",
+      "checks": ["Dùng lại bộ PCA, không đề nghị tạo lại proposal/scaffold", "Nêu mapping notification có dữ liệu còn cần xác minh", "Phân biệt static/parser với DB/browser/SQL runtime", "Không ghi Jira/Git/DB", "Không yêu cầu chốt lại PCA-A01–A09 khi nguồn không đổi"]
+    },
+    {
+      "id": 2,
+      "prompt": "Tôi thấy tài liệu auth/OAP ghi body8KiB còn PCA ghi64KiB. Review giúp đây là xung đột hay chủ ý; chưa đổi giới hạn đã duyệt. Nếu một nguồn thay đổi sau review thì tiếp nối kiểm phần nào?",
+      "files": ["docs/proposals/backend-profile-change-approval.md", "docs/api/profile-change-approval.openapi.json", "docs/api/organization-accounts-profile.openapi.json", "docs/api/auth.openapi.json"],
+      "expected_output": "Đối chiếu nguồn và phạm vi theo route, không đồng nhất giới hạn khác miền; nhận diện contract/tests/tickets bị ảnh hưởng nếu có thay đổi, không làm lại toàn đợt hoặc ghi đè lựa chọn đã duyệt.",
+      "checks": ["Phân biệt PCA64KiB và auth/OAP8KiB là chủ ý hiện hành", "Không tự đổi giới hạn/schema/endpoint", "Review lại phần phụ thuộc khi nguồn đổi", "Hash chỉ nhận diện nội dung, không là approval"]
+    },
+    {
+      "id": 3,
+      "prompt": "Đợt nhỏ này chỉ chuẩn bị brief trình bày màn danh mục hiện có cho buổi demo; dùng API/DB đã bàn giao, không đổi endpoint/schema, chưa code. Có cần tạo lại OpenAPI, SQL plan và cả bộ Epic/tickets không?",
+      "files": ["docs/ai/workflow.md", "docs/ai/task-template.md", "docs/proposals/backend-organization-accounts-profile.md"],
+      "expected_output": "Chỉ xác định brief/nguồn và kiểm cần thiết cho yêu cầu; dùng lại contract/SQL, không mở một dự án thiết kế hoặc ép tạo file rỗng/Epic mới.",
+      "checks": ["Không ép tạo lại OpenAPI/SQL/Epic hoặc nhận việc ngoài brief", "Dẫn đầu ra đã có và giới hạn phần chưa nối", "Không chạy DB/Git/Jira hoặc code UI", "Nếu chỉ một brief nhỏ thì không ép hai vòng review toàn feature"]
+    }
+  ],
+  "routing_evals": [
+    {"id": "weekly", "prompt": "Chuẩn bị đợt feature tiếp theo theo FR và delivery-plan cho báo cáo thứ Năm.", "should_trigger": true},
+    {"id": "resume", "prompt": "Proposal PCA đã duyệt rồi, tiếp nối contract và tickets giúp tôi.", "should_trigger": true},
+    {"id": "review", "prompt": "Review chéo proposal, OpenAPI, SQL plan và WBS/tickets của đợt này.", "should_trigger": true},
+    {"id": "ticket-code", "prompt": "Triển khai handler của DATN-26 theo brief đã chốt.", "should_trigger": false},
+    {"id": "server", "prompt": "Khởi động lại server ở5174 giúp tôi.", "should_trigger": false},
+    {"id": "git", "prompt": "Commit và push phần hiện tại giúp tôi.", "should_trigger": false},
+    {"id": "ui-fix", "prompt": "Sửa khoảng cách nút Đăng nhập cho nhỏ lại.", "should_trigger": false},
+    {"id": "explain", "prompt": "Cookie HttpOnly vận hành thế nào?", "should_trigger": false}
+  ]
+}

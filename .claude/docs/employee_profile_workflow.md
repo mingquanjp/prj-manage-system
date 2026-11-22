@@ -41,6 +41,10 @@ Theo [quyết định 20/10](../../docs/business-baseline-2026-10-20.md), địa
 - Form mặc định chỉ đọc; “Đề nghị cập nhật” mở modal/drawer có hủy. Giá trị địa chỉ chưa thay đổi được bỏ khỏi patch; xóa trắng trường đã có báo lỗi, không gửi như một yêu cầu xóa.
 - Địa chỉ là thông tin hành chính riêng tư; không có trong tra cứu nghề nghiệp, ứng viên hoặc snapshot gợi ý. Không mở thêm quyền xem địa chỉ cho PM/PTCM/Giám đốc từ tư cách tra cứu/xét kỹ năng; Admin chỉ nhập nếu có ở bước tạo, không được sửa hành chính thường xuyên.
 
+### Tiếp nối triển khai PCA — 21/11/2026
+
+Theo [proposal đã chốt sau review](../../docs/proposals/backend-profile-change-approval.md) mục4: HR có thể xử lý đề nghị hồ sơ của chính mình khi còn quyền và phiên thường, không áp cấm tự duyệt của luồng kỹ năng. Employee đích inactive chặn approve, vẫn cho HR reject và đọc lịch sử; user đích bị khóa riêng không tự làm HR mất quyền quản lý hành chính. Actor luôn kiểm active/cờ/quyền hiện hành; đây không phải quyền đăng nhập thay cho người đích. HR sửa email công ty thực sự thay đổi thì update/audit/revoke mọi phiên của user đích cùng transaction, yêu cầu login lại; canonical không đổi thì không ghi/revoke giả. Phần inactive không mở endpoint vô hiệu hóa trong đợt PCA.
+
 ## 3. Cập nhật trực tiếp và vô hiệu hóa
 
 Theo [quyết định 20/10/2026](../../docs/business-baseline-2026-10-20.md), Admin tạo tài khoản kèm hồ sơ nhân viên ban đầu trong một lần. HR quản lý và cập nhật hồ sơ về sau. Thông tin ban đầu theo dictionary hiện hành; không thêm bước HR duyệt tạo hoặc hồ sơ/tài khoản tạm tách rời.

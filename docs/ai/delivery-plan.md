@@ -66,6 +66,12 @@ Các mốc dưới là **đích demo dự kiến**, chưa là estimate chi tiế
 
 Không có nghĩa phải làm hết D02 rồi mới D03, hoặc hết D04 mới D06. Migration, API, quyền, FE và bằng chứng được bàn giao theo feature nhỏ xuyên các miền cần thiết.
 
+### Tiếp nối 21/11 — luồng báo cáo 26/11
+
+Sau bàn giao OAP, người dùng đồng ý chuẩn bị proposal đề nghị hồ sơ → HR xét duyệt → kết quả/lịch sử, tiếp tục theo FR và bản đồ miền. Thiết kế tại [proposal hồ sơ](../proposals/backend-profile-change-approval.md); [SQL/test plan](../proposals/backend-profile-change-approval-sql-plan.md) giữ chi tiết chuyển đổi và kiểm chứng. Chưa có code/migration hoặc Jira mới cho luồng này.
+
+Ưu tiên F1–F3 của proposal cho báo cáo 26/11: đề nghị/lịch sử chính chủ, HR quyết định, thông báo liên quan hồ sơ và reload đúng official. FR-012 HR sửa trực tiếp tách đầu ra F4, chỉ ghép khi đủ kiểm chứng; khóa/đổi quyền/vô hiệu hóa tài khoản không thuộc đợt này. Các lựa chọn mục4 đã được người dùng đồng ý sau review21/11; OpenAPI/SQL cụ thể và bộ ticket PCA đã soạn, chưa code/runtime hoặc nhập Jira. Notification legacy có dữ liệu phải dừng nếu chưa map được; không nhận bản thiết kế là FR Done. Giữ mốc 03/12 cho miền kỹ năng nếu luồng chính đã bàn giao; công thức phân công vẫn thảo luận riêng.
+
 ## 5. Các quyết định cần chốt đúng hạn
 
 Chỉ dẫn tới điểm mở ở FR để tránh hai bản quy tắc:
