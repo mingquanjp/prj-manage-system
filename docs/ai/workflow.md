@@ -42,6 +42,8 @@ Tham chiếu: [hướng dẫn chính thức liên kết GitHub với Jira bằng
 
 ## Kiểm tra theo phạm vi
 
+Chuẩn bị một đợt feature mới hoặc tiếp nối bộ thiết kế: dùng [skill datn-feature-planning](../../.agents/skills/datn-feature-planning/SKILL.md) và [hướng dẫn kiểm](../../.agents/skills/datn-feature-planning/references/checks.md). Skill giữ hai lượt review proposal/bộ bàn giao, không tự coi thiết kế là runtime hoặc cấp quyền Jira/Git/DB. Đầu ra đã duyệt dùng lại, chỉ review lại phần bị thay đổi; không áp cả quy trình này cho một ticket code đã có brief.
+
 | Thay đổi | Kiểm tra |
 |---|---|
 | Tài liệu/harness | `node --test scripts/check-harness.test.mjs`, `node scripts/check-harness.mjs`, `git diff --check`; review ngữ nghĩa và nguồn |
@@ -53,3 +55,7 @@ Tham chiếu: [hướng dẫn chính thức liên kết GitHub với Jira bằng
 Chỉ khi chuẩn bị commit theo yêu cầu: review staged diff, `git diff --cached --check`, `node scripts/check-harness.mjs --staged`; tự stage đúng phạm vi trước. Harness kiểm kê nguồn và một số liên kết, không kiểm chứng mọi nghiệp vụ/quyền/transaction. Không dùng `make check` như lệnh chỉ đọc vì fmt/tidy có thể sửa file. Không đưa secret hoặc dữ liệu cá nhân thật vào evidence; không đọc `.env` để chuẩn bị PR.
 
 Hiện đợt workflow này chỉ thêm quy ước/template và nối kiểm kê harness; không cài hook/commitlint, CI hoặc branch protection, không xác nhận cấu hình remote. Nếu bổ sung tự động hóa sẽ chốt phạm vi riêng, dùng lệnh thực của repo thay quy trình Node/media của CoLearnia.
+
+**Bàn giao công cụ feature planning 21/11/2026:** đã thêm skill trong repo và `scripts/check-feature-plan.mjs` chỉ đọc, nhận file đầu vào thay vì manifest sao chép nghiệp vụ. Thử PCA đạt10 operation planned/12 WBS/12 task/17 cạnh/6 Mermaid; thử lại OAP đạt16 operation/15 WBS/13 task/17 cạnh/4 Mermaid. Parser lấy từ bundle VS Code local; chỉ kiểm grammar, chưa kiểm visual render. Lượt sub-agent thử tiếp nối và invalid-input đã phát hiện checker bỏ qua mã WBS/heading sai; đã sửa validate toàn token và sub-agent kiểm lại xác nhận khép. Bộ13 tests riêng đạt, không skip trên máy này; kiểm tổng hợp và giới hạn môi trường bàn giao trong chat. Validator Python của skill-creator không chạy được vì thiếu PyYAML; frontmatter/name/description/placeholders và interface YAML đã kiểm bằng Ruby Psych hiện có, không cài dependency. Chưa gọi DB/Jira hoặc commit/push. Công cụ không tự ghi nhận một bộ tài liệu đã được người dùng duyệt.
+
+**Đối chiếu nguồn chính thức và kiểm hành vi 21/11:** [cơ sở/ca kiểm/kết quả skill](../../.agents/skills/datn-feature-planning/references/evaluation.md) dẫn Anthropic, OpenAI và Agent Skills. Đã bổ sung điều kiện kích hoạt, điểm vào theo trạng thái và evals chỉ nạp khi sửa/đánh giá skill. Hai sub-agent mới thử8 prompt routing và3 tình huống hành vi, không được đưa đáp án/rubric; agent chính đã đối chiếu kết quả. Đây là smoke test, chưa có A/B hoặc số đo tiết kiệm token/thời gian; không suy lợi ích định lượng từ60 tests công cụ/contract.

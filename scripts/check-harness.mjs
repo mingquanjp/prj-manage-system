@@ -30,7 +30,9 @@ export async function requiredFiles(base = root) {
     "docs/api/embed.go", "scripts/check-swagger.test.mjs", "scripts/check-organization-contract.test.mjs",
     "scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
     "scripts/jira/oap_import.py", "scripts/jira/jira_batch.py", "scripts/jira/test_oap_import.py", "scripts/jira/README-oap.md",
+    "scripts/jira/pca_import.py", "scripts/jira/test_pca_import.py", "scripts/jira/README-pca.md",
     "docs/ai/workflow.md", "docs/ai/task-template.md", ".github/pull_request_template.md",
+    "scripts/check-feature-plan.mjs", "scripts/check-feature-plan.test.mjs",
     "go.mod", "go.sum", "Makefile", "cmd/server/main.go", "cmd/migrate/main.go", "cmd/seed/main.go",
     "migrations/embed.go", "db/seed/embed.go",
     "web/package.json", "web/pnpm-lock.yaml", "web/index.html", "web/tsconfig.json", "web/vite.config.ts", "web/components.json",
@@ -51,6 +53,7 @@ export async function requiredFiles(base = root) {
   }
   await collect("web/src")
   await collect("internal/transport/http/swagger")
+  await collect(".agents/skills/datn-feature-planning")
   // Chỉ kiểm kê mã Go/SQL, không đọc cấu hình bí mật hoặc chạy công cụ DB.
   for (const directory of ["cmd", "internal", "migrations", "db/seed"]) {
     await collect(directory, (path) => /\.(go|sql)$/.test(path))

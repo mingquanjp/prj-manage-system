@@ -1,5 +1,7 @@
 # Đưa ticket auth lên Jira DATN
 
+**Đợt PCA (đề nghị hồ sơ/HR duyệt/thông báo):** dùng [hướng dẫn PCA](README-pca.md) và `pca_import.py`, journal `.local/jira-pca/` riêng. Không chạy apply auth/OAP để tạo PCA.
+
 **Đợt mới OAP (tổ chức/tài khoản/hồ sơ):** dùng [hướng dẫn OAP](README-oap.md) và `oap_import.py`, journal `.local/jira-oap/` riêng. Tài liệu bên dưới chỉ dành cho đợt auth; không chạy apply auth để tạo OAP.
 
 Nguồn nội dung: [bộ ticket đã review](../../docs/proposals/backend-auth-session-tickets.md), đối chiếu [proposal/WBS](../../docs/proposals/backend-auth-session.md). Script không chứa bản sao description: mỗi lần chạy sinh manifest từ nguồn và kiểm mapping 33 WBS, 105 giờ cơ sở, 20 Task và hai chiều của 47 phụ thuộc.

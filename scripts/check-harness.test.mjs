@@ -20,6 +20,15 @@ test("kiểm kê chứa đủ config lint/format và test nguồn frontend", asy
   }
 })
 
+test("kiểm kê giữ skill feature và nguồn kiểm dùng chung để clone có thể dùng lại", async () => {
+  const files = await requiredFiles()
+  for (const path of [".agents/skills/datn-feature-planning/SKILL.md", ".agents/skills/datn-feature-planning/agents/openai.yaml",
+    ".agents/skills/datn-feature-planning/references/checks.md", ".agents/skills/datn-feature-planning/references/review.md",
+    "scripts/check-feature-plan.mjs", "scripts/check-feature-plan.test.mjs"]) {
+    assert.ok(files.includes(path), `Thiếu nguồn skill/check: ${path}`)
+  }
+})
+
 test("kiểm kê chứa entrypoint, module, test Go và SQL backend", async () => {
   const files = await requiredFiles()
   for (const path of ["go.mod", "go.sum", "Makefile", "cmd/server/main.go", "cmd/migrate/main_test.go",
@@ -50,7 +59,8 @@ test("kiểm kê giữ spec nhúng, Swagger local và nguồn vendor", async () 
 
 test("kiểm kê giữ công cụ Jira và test offline, không chạy API thật", async () => {
   const files = await requiredFiles()
-  for (const path of ["scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md"]) {
+  for (const path of ["scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
+    "scripts/jira/pca_import.py", "scripts/jira/test_pca_import.py", "scripts/jira/README-pca.md"]) {
     assert.ok(files.includes(path), `Thiếu nguồn công cụ Jira: ${path}`)
   }
 })
