@@ -210,7 +210,7 @@ func (db *Case) openMigrator(t *testing.T, source fs.FS, cfg *pgx.ConnConfig, ap
 	Require(t, "driver migration", err)
 	src, err := iofs.New(source, ".")
 	Require(t, "nguồn migration", err)
-	m, err := migrate.NewWithInstance("iofs", src, "pgx", migrations.WithM2Preflight(migrations.WithM1Preflight(d, sqlDB, approved), sqlDB))
+	m, err := migrate.NewWithInstance("iofs", src, "pgx", migrations.WithPCAPreflight(migrations.WithM2Preflight(migrations.WithM1Preflight(d, sqlDB, approved), sqlDB), sqlDB))
 	Require(t, "runner migration", err)
 	r := &Migrator{migrationEngine: m}
 	t.Cleanup(func() { r.Close(t) })
