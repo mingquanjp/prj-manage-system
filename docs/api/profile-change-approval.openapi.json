@@ -3,7 +3,7 @@
   "info": {
     "title": "Đề nghị hồ sơ, HR xét duyệt và thông báo",
     "version": "0.1.0",
-    "description": "Contract thiết kế PCA đã được giao21/11/2026; 7 operationF1–F3 và3 F4. Chưa triển khai runtime, không nhúng/publish Swagger trước khi route có bằng chứng. Auth/OAP hiện hành giữ spec riêng; không mở thêm quyền từ UI hoặc resource ID. Body PCA64KiB không thay giới hạn auth/OAP8KiB."
+    "description": "Contract PCA gồm7 operationF1–F3 và3 F4. DATN-41 đã tích hợp và kiểm HTTP/PostgreSQL test cho5 API đề nghị hồ sơ; chỉ5 operation này được công bố trên Swagger dev. Thông báo và3 API F4 còn planned. Auth/OAP hiện hành giữ spec riêng; không mở thêm quyền từ UI hoặc resource ID. Body PCA64KiB không thay giới hạn auth/OAP8KiB."
   },
   "servers": [
     {
@@ -403,7 +403,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [],
@@ -652,7 +652,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [],
@@ -936,7 +936,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [],
@@ -1297,7 +1297,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [
@@ -1670,7 +1670,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [

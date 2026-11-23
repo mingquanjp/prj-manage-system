@@ -58,6 +58,13 @@ func swaggerWithServices(catalogs, profiles bool, accounts ...bool) http.Handler
 			}
 			data, err = organizationSwaggerSpec(catalogs, profiles, accounts...)
 			contentType = "application/json"
+		case "/docs/profile-change.openapi.json":
+			if len(accounts) < 2 || !accounts[1] {
+				http.NotFound(w, r)
+				return
+			}
+			data, err = profileChangeSwaggerSpec()
+			contentType = "application/json"
 		case "/docs/assets/init.js", "/docs/assets/swagger-ui-bundle.js":
 			data, err = swaggerFiles.ReadFile("swagger/" + r.URL.Path[len("/docs/assets/"):])
 			contentType = "text/javascript; charset=utf-8"
@@ -112,6 +119,41 @@ func organizationSwaggerSpec(catalogs, profiles bool, accounts ...bool) ([]byte,
 	if err != nil {
 		return nil, err
 	}
+	return selectedSwaggerDocument(doc, "TaskAssign — Tổ chức và hồ sơ", "Các operation tổ chức, tài khoản và hồ sơ đã được lắp vào router này.")
+}
+
+func profileChangeSwaggerSpec() ([]byte, error) {
+	raw, err := apispec.Files.ReadFile("profile-change-approval.openapi.json")
+	if err != nil {
+		return nil, err
+	}
+	var doc map[string]json.RawMessage
+	if err = json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+	var paths map[string]map[string]json.RawMessage
+	if err = json.Unmarshal(doc["paths"], &paths); err != nil {
+		return nil, err
+	}
+	selected := map[string]map[string]json.RawMessage{}
+	for path, method := range map[string]string{
+		"/api/employees/{id}/profile-change-requests": "post",
+		"/api/profile-change-requests":                "get",
+		"/api/profile-change-requests/{id}":           "get",
+		"/api/profile-change-requests/{id}/approve":   "post",
+		"/api/profile-change-requests/{id}/reject":    "post",
+	} {
+		selected[path] = map[string]json.RawMessage{method: paths[path][method]}
+	}
+	doc["paths"], err = json.Marshal(selected)
+	if err != nil {
+		return nil, err
+	}
+	return selectedSwaggerDocument(doc, "TaskAssign — Đề nghị hồ sơ", "Năm API đề nghị hồ sơ đã triển khai. Thông báo và HR sửa trực tiếp chưa được công bố.")
+}
+
+func selectedSwaggerDocument(doc map[string]json.RawMessage, title, description string) ([]byte, error) {
+	var err error
 	// Chỉ giữ components có thể tới từ paths/security được công bố.
 	var all map[string]map[string]json.RawMessage
 	if err = json.Unmarshal(doc["components"], &all); err != nil {
@@ -174,8 +216,8 @@ func organizationSwaggerSpec(catalogs, profiles bool, accounts ...bool) ([]byte,
 	if err = json.Unmarshal(doc["info"], &info); err != nil {
 		return nil, err
 	}
-	info["title"] = "TaskAssign — Tổ chức và hồ sơ"
-	info["description"] = "API danh mục đã tích hợp: HR quản lý; HR/Admin đọc. Hồ sơ chỉ đọc chính chủ khi operation được công bố. API tài khoản chưa triển khai."
+	info["title"] = title
+	info["description"] = description
 	doc["info"], err = json.Marshal(info)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	"ai-staffing/internal/repository/postgres"
 	"ai-staffing/internal/service/auth"
 	"ai-staffing/internal/service/organization"
+	"ai-staffing/internal/service/profilechange"
 	httptransport "ai-staffing/internal/transport/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -84,5 +85,10 @@ func applicationServices(cfg *config.Config, pool *pgxpool.Pool, clock auth.Cloc
 		return httptransport.AuthServices{}, err
 	}
 	services.Accounts = organization.NewAccountAPI(organization.NewAccountService(accounts), organization.NewAccountReadService(reads), sender)
+	changes, err := postgres.NewProfileChangeRepository(pool, 10*time.Second)
+	if err != nil {
+		return httptransport.AuthServices{}, err
+	}
+	services.ProfileChanges = profilechange.NewService(changes)
 	return services, nil
 }

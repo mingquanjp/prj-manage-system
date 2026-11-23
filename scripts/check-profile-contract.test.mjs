@@ -10,7 +10,7 @@ const schema=n=>spec.components.schemas[n]
 const op=(p,m)=>spec.paths[p][m]
 function resolve(v){
  if(!v.$ref)return v
- assert.ok(v.$ref.startsWith('#/'),'chỉ ref local, spec chưa được embed runtime')
+ assert.ok(v.$ref.startsWith('#/'),'chỉ ref local trong canonical spec')
  return v.$ref.slice(2).split('/').reduce((n,k)=>{const key=k.replaceAll('~1','/').replaceAll('~0','~');assert.ok(n&&Object.hasOwn(n,key),v.$ref);return n[key]},spec)
 }
 function walk(v){if(!v||typeof v!=='object')return;if(v.$ref)resolve(v);Object.values(v).forEach(walk)}
@@ -46,12 +46,12 @@ function valid(s,v){
 }
 const sample=op('/api/employees/{id}/profile-change-requests','post').responses['201'].content['application/json'].examples.demo.value
 const result=(status)=>({...sample,status,resolved_by:18,resolved_at:'2026-11-21T10:00:00+07:00',decision_reason:status==='REJECTED'?'Cần đối chiếu lại':null})
-test('đúng10 thao tác, 7 ưu tiên/3 HR tiếp nối, mọi ref local tồn tại và planned',()=>{
+test('đúng10 thao tác, 7 ưu tiên/3 HR tiếp nối, năm API request implemented và phần còn lại planned',()=>{
  const expected=[['post','/api/employees/{id}/profile-change-requests'],['get','/api/profile-change-requests'],['get','/api/profile-change-requests/{id}'],['post','/api/profile-change-requests/{id}/approve'],['post','/api/profile-change-requests/{id}/reject'],['get','/api/notifications'],['post','/api/notifications/{id}/read'],['get','/api/employees'],['get','/api/employees/{id}/administrative-profile'],['patch','/api/employees/{id}']]
  assert.deepEqual(ops.map(x=>`${x.method} ${x.path}`).sort(),expected.map(([m,p])=>`${m} ${p}`).sort())
  assert.equal(new Set(ops.map(x=>x.operation.operationId)).size,10)
  assert.equal(ops.filter(x=>x.operation['x-delivery-phase']==='F1-F3').length,7)
- for(const {operation}of ops)assert.equal(operation['x-implementation-status'],'planned')
+ for(const {path,operation}of ops)assert.equal(operation['x-implementation-status'],path.includes('profile-change-requests')?'implemented':'planned')
  walk(spec)
 })
 test('phiên thường/cookie AND csrf/Origin; PCA64KiB không thay auth hoặc OAP8KiB',()=>{

@@ -16,6 +16,7 @@ type AuthServices struct {
 	Catalogs       catalogUseCase
 	Profiles       profileUseCase
 	Accounts       accountUseCase
+	ProfileChanges profileChangeUseCase
 	Clock          auth.Clock
 }
 
@@ -66,16 +67,19 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	if services.Catalogs != nil {
 		registerCatalogRoutes(router, services.Sessions, services.Catalogs, protection)
 	}
-	if services.Profiles != nil || services.Accounts != nil {
-		registerEmployeeRoutes(router, services.Sessions, services.Profiles, services.Accounts, protection)
+	if services.Profiles != nil || services.Accounts != nil || services.ProfileChanges != nil {
+		registerEmployeeRoutes(router, services.Sessions, services.Profiles, services.Accounts, protection, services.ProfileChanges)
+	}
+	if services.ProfileChanges != nil {
+		registerProfileChangeRoutes(router, services.Sessions, services.ProfileChanges, protection)
 	}
 	if services.Accounts != nil {
 		registerAccountListRoute(router, services.Sessions, services.Accounts, protection)
 	}
 	// Dev tường minh mới mở tài liệu; không nới allowlist của phiên hạn chế.
 	if appEnv == "dev" {
-		router.HandleFunc("/docs", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil))
-		router.HandleFunc("/docs/*", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil))
+		router.HandleFunc("/docs", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil, services.ProfileChanges != nil))
+		router.HandleFunc("/docs/*", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil, services.ProfileChanges != nil))
 	}
 	return router, nil
 }
