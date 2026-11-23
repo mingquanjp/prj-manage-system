@@ -338,3 +338,9 @@ Kết quả22/11:42/42 tests contract/harness đạt, không skip; harness đạ
 Đã thêm migration000006 tiến từ M2, preflight trước dirty và guard DDL dưới khóa, fixture head cùng kiểm PCA-DB01–03 trên PostgreSQL18 test sở hữu. Nguồn/lệnh/kết quả thực chạy, review và giới hạn tại [runbook PCA](../../scripts/authdb/README.md#datn-38--pca-t02--schema-đề-nghị-hồ-sơ-và-thông-báo). Không sửa migrations000001–000005; không áp Neon hoặc chuyển notification legacy có dữ liệu.
 
 Đầu ra cho DATN-39/42/47 là schema/fixture/guard; chưa có use case/HTTP/UI PCA và chưa publish Swagger. Các quy tắc application tại SQL plan vẫn do ticket consumer tiếp nhận, không nhận PCA-DB04–12 pass. Nhánh `feature/DATN-38-profile-schema`; chưa commit/push/PR hoặc tự chuyển Jira Done trong lượt triển khai này.
+
+### 10.3. Bàn giao use case DATN-39 — 22/11/2026
+
+Đã triển khai service/port và PostgreSQL adapter submit/list/detail trên schema000006; idempotency24h, request/notification/result cùng transaction, quyền self/HR và projection theo mục6.2–6.3. Lệnh/bằng chứng PCA-DB04/05/09 phần submit/read, snapshot và fault cùng giới hạn tại [runbook DATN-39](../../scripts/authdb/README.md#datn-39--pca-t03--gửi-và-đọc-đề-nghị-hồ-sơ).
+
+Tự review và sub-agent review nguồn/unit đã hoàn tất; kiểm PG thật do agent chính chạy tuần tự qua runner. Đầu ra cho DATN-40/41 là ports/use cases/projections, chưa approve/reject, HTTP/UI hoặc publish Swagger; terminal/role mutation trong fixture không thay bằng chứng API tương ứng. Nhánh `feature/DATN-39-profile-request-use-cases`, chưa commit/push/PR/merge/Jira Done trong lượt triển khai này.
