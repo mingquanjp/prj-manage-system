@@ -771,3 +771,54 @@ Không chạy nhiều lượt DB song song. Mỗi ca tạo/dọn đúng DB `auth
 Kết quả thực chạy 22/11/2026: Go1.26.5 darwin/arm64, Node24.15.0, Python3.9.6, PostgreSQL18 test do runner xác minh owner; DB gốc0bảng sau suite. Các lệnh Go vet/unit/build ở trên đạt; integration đủ5package đạt. Sau chỉnh guard theo review, nhóm `./migrations -run '^TestPCA'` được chạy lại bằng cùng runner và đạt (6.162s); thay đổi cuối chỉ ở guard down/assertions, không đổi repository/HTTP. Test prepare localdev theo tên head mới cũng đạt. Bộ42 Node tests đạt, harness417file đạt, diff check đạt. Hai finding P2 của sub-agent (namespace collision và down tự loại dependency lạ) đã sửa, bổ sung ca tái hiện, retest và sub-agent xác nhận khép ở mức source review; không gọi review là runtime proof. Không lấy Node contract/unit làm bằng chứng PostgreSQL. Fixture toàn dữ liệu tổng hợp; snapshot/hash chỉ ở bộ nhớ, không in hoặc ghi vào evidence.
 
 Giới hạn: không áp Neon, không map notification legacy có dữ liệu, không kiểm browser/mail/HTTPS/deploy trong task schema. UUID/TTL24h/result-reference đầy đủ, current actor/self/HR, tính bất biến terminal và atomic request→notification→key thuộc use case các ticket sau; các CHECK hiện tại không thay các quy tắc đó. Chưa nhận PCA-DB04–12 pass từ schema.
+
+## DATN-39 — PCA-T03 — gửi và đọc đề nghị hồ sơ
+
+Ngày22/11/2026. Dùng schema000006 từ DATN-38; không thay migration. Nhánh `feature/DATN-39-profile-request-use-cases` tiếp nối commit schema đã bàn giao. Tại thời điểm bắt đầu, PR DATN-38 còn mở; việc merge/bàn giao tuân workflow, không tự merge từ task này.
+
+### Đầu ra và cách nối tiếp
+
+- `internal/service/profilechange`: ports `Repository.Submit/List/Read`, `Service`, input/command/projection typed, validation và canonical hash. `Values` giữ sự hiện diện của trường và NULL; before không normalize/giới hạn lại legacy; proposed/explanation normalize theo proposal6.3. UUIDv4 nhận cả hoa/thường rồi canonical lowercase. Hash gồm version, employee ID, before/proposed cùng tập khóa và explanation canonical; không hash JSON theo thứ tự key client.
+- `internal/repository/postgres/profile_change.go`: READ COMMITTED, chụp recipient trước khóa; users tăng ID rồi employees tăng ID, loại trùng theo linkage nguồn. Recheck actor và recipient dưới khóa; actor mới có HR sau snapshot không được tự thêm vào tập nhận. Tra key trước stale, TTL24h theo thời gian sau chờ khóa; reference phải đúng owner/employee/payload. Ghi PENDING + notification chung + record kết quả đầy đủ trong cùng transaction, không placeholder commit, không sửa official/audit.
+- `profile_change_read.go`: self mặc định kể cả HR; scope review cần HR, Admin/Director không bypass. Quyền kiểm trước tải patch; detail chỉ current_values theo keyset patch, không JSONB thô. List chỉ projection nhận diện/trạng thái/thời gian/tên trường; REPEATABLE READ READ ONLY giữ actor/count/items cùng snapshot, page rỗng giữ total.
+- Lỗi typed: validation, unauthenticated, password-change-required, forbidden, not-found, stale, key-reused, key-expired, persistence, unavailable và commit-unknown. Lỗi driver không mang SQL/patch ra ngoài. Commit chưa rõ không trả result thành công hoặc tự retry; rollback đã xác nhận không bị gọi unknown.
+- Constructor adapter nhận timeout dương từ caller theo convention hiện hữu; khi T05 wire composition root dùng timeout nghiệp vụ10s, rollback cleanup hiện có tối đa5s. Service không import pgx/HTTP. Không dependency mới.
+
+T04 tiếp nhận types/projection và giao thức khóa để triển khai approve/reject; T05 nối handler/DTO/error mapper/middleware. ActorID của port là nguồn nội bộ đã xác thực; **session/cookie/revoke/CSRF/Origin, JSON strict (key trùng/Unicode escape) và body64KiB thực đọc vẫn phải kiểm ở T05**. Unit/service input typed không chứng minh tầng HTTP. Không nhận status/role từ client để thay DB recheck.
+
+### Kiểm và tái hiện
+
+Từ gốc repo, mở Docker Desktop; xác minh PG18/owner/DB gốc0bảng trước integration, một suite DB mỗi lượt:
+
+```sh
+python3 scripts/authdb/manage.py check
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Chạy riêng nhóm mới qua cùng runner khi cần điều tra:
+
+```sh
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./internal/repository/postgres -run '^TestProfileChange' -count=1 -timeout=5m
+```
+
+| Phạm vi bằng chứng | Test thực |
+|---|---|
+| PCA-DB04 | `TestProfileChangeInputAndSelfFailuresDoNotWrite`, `TestProfileChangeUnicodeBoundariesThroughUseCase`: before NULL/legacy, trim/code point, allowlist, stale/no-op/address sai không ghi; official giữ nguyên; nhiều pending/no HR được phép |
+| PCA-DB05 | `TestProfileChangeSubmitReplayAndRead`, `TestProfileChangeSameKeyConcurrentAndRollbackFollower`: cùng key hai connection một tác động, writer rollback thì follower thực hiện một lần; key khác payload/expired conflict; replay sau đổi official/terminal không tạo history/notification mới |
+| Key integrity/commit | `TestProfileChangeReadGatesAndReplayIntegrity`, `TestProfileChangeReplayReferenceCannotPointToOtherPayload`, `TestProfileChangeAtomicFaultsAndCommitOutcomes`: lỗi notification/key/deferred commit rollback thật; mô phỏng mất xác nhận sau commit PG thật thì không success/retry, key vẫn đối soát được; missing/wrong reference/hash/TTL fail closed |
+| PCA-DB09 phần submit/read | `TestProfileChangeTwoHRActorsLockOrder`, `TestProfileChangeActorRecheckAndExpiryAfterLock`, `TestProfileChangeRecipientRecheck`, `TestProfileChangeNewHRDoesNotExtendSnapshot`, `TestProfileChangeActorGainingHRIsNotNewRecipient`: nhiều role/actor cũng HR, employee ID ngược user ID, actor/recipient đổi quyền/cờ/status trong lúc chờ; không mở rộng recipient snapshot |
+| Read projection/snapshot | `TestProfileChangeReadSnapshotAndCorruptJSON`, `TestProfileChangeSubmitReplayAndRead`, `TestProfileChangeReadGatesAndReplayIntegrity`: self/HR, mất HR/limited/inactive, user_id khác employee_id, list/count cùng snapshot có mutation xen giữa, page rỗng, current keyset và JSONB schema hỏng |
+
+Các race dùng connection thật, channel/barrier và kiểm `pg_blocking_pids`; không sleep ngẫu nhiên. Role/status mutation là SQL fixture có kiểm soát theo giao thức khóa, không bằng chứng API quản trị chưa có. Terminal được dựng bằng SQL fixture để kiểm replay/read; không nhận approve/reject của T04 đã chạy. Commit reply lost là fault wrapper quanh commit thật, không tuyên bố đã gây mất mạng vật lý.
+
+Bằng chứng dùng dữ liệu tổng hợp, snapshot/hash/patch không xuất log/evidence. Cleanup vẫn theo runner: chỉ DB case vừa tạo được dọn, không force version/prune/đụng Neon hoặc DB demo. Read actor trạng thái/quyền theo snapshot; writer role/status tương lai phải giữ giao thức user→employee để recheck có hiệu lực.
+
+Kết quả thực chạy22/11/2026 (Go1.26.5 darwin/arm64, PostgreSQL18 test owner đã xác minh): Go vet/unit/build đạt; suite integration4package ở lệnh trên đạt (migrations13.469s, repository27.920s, HTTP3.560s, server8.824s). Sau bổ sung ca biên Unicode, chạy lại toàn nhóm `^TestProfileChange` qua runner đạt10.555s. Bộ42 Node tests đạt, harness424file và diff check đạt. Sub-agent review độc lập không thấy finding P0/P1/P2 chặn; unit validation/hash/redaction/service/error-timeout họ chạy thêm cũng đạt, không chạy DB song song. Tự review đã siết recipient snapshot khi actor mới được cấp HR và reference trỏ nhầm payload, có test PG tái hiện.
+
+Chưa HTTP/UI/browser/Gmail/Neon/deploy, chưa notify kết quả quyết định/mark-read hoặc F4; không nhận trọn PCA-DB09/10/12 hay toàn FR từ task này. Không lấy static/unit hoặc source review thay PostgreSQL. Chưa commit/push/PR trong lượt triển khai; Git bàn giao khi người dùng yêu cầu.
