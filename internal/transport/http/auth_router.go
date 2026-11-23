@@ -17,6 +17,7 @@ type AuthServices struct {
 	Profiles       profileUseCase
 	Accounts       accountUseCase
 	ProfileChanges profileChangeUseCase
+	Notifications  notificationUseCase
 	Clock          auth.Clock
 }
 
@@ -77,9 +78,12 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 		registerAccountListRoute(router, services.Sessions, services.Accounts, protection)
 	}
 	// Dev tường minh mới mở tài liệu; không nới allowlist của phiên hạn chế.
+	if services.Notifications != nil {
+		registerNotificationRoutes(router, services.Sessions, services.Notifications, protection)
+	}
 	if appEnv == "dev" {
-		router.HandleFunc("/docs", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil, services.ProfileChanges != nil))
-		router.HandleFunc("/docs/*", swaggerWithServices(services.Catalogs != nil, services.Profiles != nil, services.Accounts != nil, services.ProfileChanges != nil))
+		router.HandleFunc("/docs", swaggerWithNotifications(services, services.Notifications != nil))
+		router.HandleFunc("/docs/*", swaggerWithNotifications(services, services.Notifications != nil))
 	}
 	return router, nil
 }

@@ -74,7 +74,7 @@ Request lưu patch JSONB có schema_version, cùng tập khóa before/proposed, 
 
 ### 6.2. API và projection
 
-[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. DATN-41 đã wire/test năm API đề nghị hồ sơ và publish đúng phần đó trên Swagger dev; hai API thông báo và ba API F4 còn planned. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
+[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. DATN-41 đã wire/test năm API đề nghị hồ sơ và publish đúng phần đó trên Swagger dev; DATN-42 bổ sung hai API thông báo, ba API F4 còn planned. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
 
 | Method/path | Quyền | Kết quả |
 |---|---|---|
@@ -356,3 +356,9 @@ Nguồn/lệnh/kết quả và giới hạn tại [runbook DATN-40](../../script
 Đã nối năm operation đề nghị hồ sơ ở mục6.2 qua handler/DTO allowlist, auth phiên thường, Origin/CSRF và service/PostgreSQL từ DATN-39/40. JSON PCA strict64KiB thực đọc, phát hiện duplicate/unknown keys và Unicode lỗi; không đổi giới hạn8KiB auth/OAP. Quyền cuối được recheck trong adapter; không Admin bypass, không auto retry mutation hoặc báo success khi commit chưa rõ.
 
 Swagger dev lọc năm operation từ canonical, giữ năm auth/16 OAP; không publish notification/F4. Kiểm Go/HTTP+PG, route inventory, contract/Swagger và tự review/sub-agent review đã thực hiện; nguồn/lệnh/kết quả/giới hạn tại [runbook DATN-41](../../scripts/authdb/README.md#datn-41--pca-t05--năm-api-đề-nghị-hồ-sơ). Đầu ra cho DATN-43/44 là API input/DTO/lỗi; chưa nối UI hoặc kiểm browser PCA, chưa áp Neon/deploy. Chưa commit/push/PR/merge hoặc chuyển Jira Done trong lượt này.
+
+### 10.6. Bàn giao thông báo DATN-42 — 23/11/2026
+
+Đã bổ sung service/port, PostgreSQL adapter và hai API thông báo own theo mục6.2/6.5 và SQL plan9.3. List giữ actor/count/unread/items cùng snapshot; mark-read kiểm lại actor dưới khóa, giữ read_at đầu, không phụ thuộc quyền mở resource. Composition root lắp dependency; nhóm Swagger dev `/docs/notifications.openapi.json` chọn đúng hai operation từ canonical. Bản đầu23/11 triển khai độc lập DATN-41; bàn giao24/11 đã cập nhật từ main có DATN-41, giữ đủ hai nhóm API và kiểm lại HTTP/PG.
+
+Nguồn/lệnh/kết quả/giới hạn xem [runbook DATN-42](../../scripts/authdb/README.md#datn-42--pca-t06--thông-báo-chính-chủ). Đầu ra cho DATN-45 là DTO/list/read và lỗi; chưa khung thông báo UI, polling, mail/push hoặc sự kiện ngoài hồ sơ. Không schema/dependency mới, Neon hoặc quyền đọc tài nguyên từ link cũ; chưa commit/push/PR hoặc tự chuyển Jira Done trong lượt triển khai.

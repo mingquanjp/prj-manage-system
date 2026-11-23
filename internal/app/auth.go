@@ -10,6 +10,7 @@ import (
 	"ai-staffing/internal/notify/gmail"
 	"ai-staffing/internal/repository/postgres"
 	"ai-staffing/internal/service/auth"
+	"ai-staffing/internal/service/notification"
 	"ai-staffing/internal/service/organization"
 	"ai-staffing/internal/service/profilechange"
 	httptransport "ai-staffing/internal/transport/http"
@@ -90,5 +91,10 @@ func applicationServices(cfg *config.Config, pool *pgxpool.Pool, clock auth.Cloc
 		return httptransport.AuthServices{}, err
 	}
 	services.ProfileChanges = profilechange.NewService(changes)
+	notifications, err := postgres.NewNotificationRepository(pool, 10*time.Second)
+	if err != nil {
+		return httptransport.AuthServices{}, err
+	}
+	services.Notifications = notification.NewService(notifications)
 	return services, nil
 }

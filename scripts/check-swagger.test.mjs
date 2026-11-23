@@ -26,7 +26,7 @@ test("bootstrap Swagger chặn cấu hình ngoài và chỉ gửi API đã tri�
     URL,
     window: { location: { href: "http://localhost:8080/docs/?url=https://evil.invalid/spec", origin: "http://localhost:8080" }, addEventListener: (_, fn) => { ready = fn() } },
     fetch: async (url, options) => {
-      if (["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json"].includes(url)) return { ok: false, status: 404 }
+      if (["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json"].includes(url)) return { ok: false, status: 404 }
       assert.equal(url, "/docs/openapi.json")
       assert.equal(options.credentials, "same-origin")
       assert.equal(options.cache, "no-store")
@@ -88,7 +88,7 @@ for (const profiles of [false, true]) test(`Swagger chọn đúng ${profiles ? 1
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async (url) => url === "/docs/profile-change.openapi.json" ? { ok: false, status: 404 } : ({ ok: true, json: async () => url === "/docs/openapi.json" ? auth : catalogs }),
+    fetch: async (url) => ["/docs/profile-change.openapi.json", "/docs/notifications.openapi.json"].includes(url) ? { ok: false, status: 404 } : ({ ok: true, json: async () => url === "/docs/openapi.json" ? auth : catalogs }),
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -119,7 +119,7 @@ test("Swagger cho phép ID ở giữa đường dẫn PCA và chặn operation c
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async url => url === "/docs/catalog.openapi.json" ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : pca },
+    fetch: async url => ["/docs/catalog.openapi.json", "/docs/notifications.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : pca },
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -133,4 +133,24 @@ test("Swagger cho phép ID ở giữa đường dẫn PCA và chặn operation c
   for (const [url, method] of [["/api/employees/0/profile-change-requests", "POST"], ["/api/profile-change-requests/2147483648/approve", "POST"], ["/api/profile-change-requests/42/approve/extra", "POST"], ["/api/notifications", "GET"], ["/api/hr/employees", "GET"]]) {
     assert.throws(() => config.requestInterceptor({ url, method }))
   }
+})
+
+test("Swagger notification dùng đúng suffix read và không mở API PCA chưa triển khai", async () => {
+  let ready, config, change
+  const selector = { value: "auth", append() {}, addEventListener(_, fn) { change = fn } }
+  const auth = JSON.parse(await readFile(new URL("../docs/api/auth.openapi.json", import.meta.url)))
+  const notifications = JSON.parse(await readFile(new URL("../docs/api/profile-change-approval.openapi.json", import.meta.url)))
+  notifications.paths = Object.fromEntries(Object.entries(notifications.paths).filter(([p]) => p.startsWith("/api/notifications")))
+  vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
+    URL,
+    window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
+    fetch: async url => ["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : notifications },
+    document: { getElementById: () => selector, createElement: () => ({}) },
+    SwaggerUIBundle: value => { config = value },
+  })
+  await ready
+  selector.value = "notifications"; change()
+  assert.equal(config.spec, notifications)
+  for (const [url, method] of [["/api/notifications?filter=unread", "GET"], ["/api/notifications/42/read", "POST"]]) assert.doesNotThrow(() => config.requestInterceptor({ url, method }))
+  for (const [url, method] of [["/api/notifications/42", "POST"], ["/api/notifications/42/read/extra", "POST"], ["/api/notifications/0/read", "POST"], ["/api/notifications/2147483648/read", "POST"], ["/api/notifications/42/read", "GET"], ["/api/employees/42/profile-change-requests", "POST"]]) assert.throws(() => config.requestInterceptor({ url, method }))
 })

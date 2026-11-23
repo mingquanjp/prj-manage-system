@@ -12,6 +12,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (catalogs) specs.catalogs = catalogs
     const profileChanges = await load("/docs/profile-change.openapi.json", true)
     if (profileChanges) specs.profileChanges = profileChanges
+    const notifications = await load("/docs/notifications.openapi.json", true)
+    if (notifications) specs.notifications = notifications
     const operations = []
     for (const spec of Object.values(specs)) {
       for (const [path, methods] of Object.entries(spec.paths)) {
@@ -41,7 +43,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       requestInterceptor(request) {
         const target = new URL(request.url, window.location.href)
         const method = (request.method || "GET").toUpperCase()
-        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json"].includes(target.pathname)
+        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json"].includes(target.pathname)
         const allowed = operations.some(([verb, path]) => {
           if (verb !== method) return false
           if (!path.includes("{id}")) return path === target.pathname
@@ -69,6 +71,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       const option = document.createElement("option")
       option.value = "profileChanges"
       option.textContent = "Đề nghị hồ sơ"
+      selector.append(option)
+    }
+    if (notifications) {
+      const option = document.createElement("option")
+      option.value = "notifications"
+      option.textContent = "Thông báo hồ sơ chính chủ"
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))
