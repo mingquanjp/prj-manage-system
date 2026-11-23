@@ -822,3 +822,50 @@ Bằng chứng dùng dữ liệu tổng hợp, snapshot/hash/patch không xuất
 Kết quả thực chạy22/11/2026 (Go1.26.5 darwin/arm64, PostgreSQL18 test owner đã xác minh): Go vet/unit/build đạt; suite integration4package ở lệnh trên đạt (migrations13.469s, repository27.920s, HTTP3.560s, server8.824s). Sau bổ sung ca biên Unicode, chạy lại toàn nhóm `^TestProfileChange` qua runner đạt10.555s. Bộ42 Node tests đạt, harness424file và diff check đạt. Sub-agent review độc lập không thấy finding P0/P1/P2 chặn; unit validation/hash/redaction/service/error-timeout họ chạy thêm cũng đạt, không chạy DB song song. Tự review đã siết recipient snapshot khi actor mới được cấp HR và reference trỏ nhầm payload, có test PG tái hiện.
 
 Chưa HTTP/UI/browser/Gmail/Neon/deploy, chưa notify kết quả quyết định/mark-read hoặc F4; không nhận trọn PCA-DB09/10/12 hay toàn FR từ task này. Không lấy static/unit hoặc source review thay PostgreSQL. Chưa commit/push/PR trong lượt triển khai; Git bàn giao khi người dùng yêu cầu.
+
+## DATN-40 — PCA-T04 — HR duyệt và từ chối đề nghị hồ sơ
+
+Ngày23/11/2026. Nhánh `feature/DATN-40-profile-request-decisions` tiếp nối nguồn DATN-39 `4b921a8`; không giả định PR phụ thuộc đã vào main chỉ từ trạng thái MERGED. Không sửa schema000006 hoặc migration lịch sử.
+
+### Đầu ra cho DATN-41
+
+- `internal/service/profilechange/decision.go`: `Service.Approve(DetailQuery)` và `Service.Reject(RejectInput)`, thêm hai method vào repository port. ActorID do nguồn nội bộ server cung cấp; reject reason trim Go, 1–2000 code point, không NUL/UTF-8 lỗi hoặc NFC ngầm. Service kiểm result đúng request/status/resolver/reason; approve current phải bằng proposed. Không import pgx/HTTP, không dependency mới; input reject có redaction, không serialize thẳng thành DTO/log.
+- `profile_change_decision.go`: READ COMMITTED, đọc ID trước chỉ để lập bộ khóa; users tăng ID → employees tăng ID → request. Loại trùng actor=target; sau khóa kiểm lại linkage, actor ACTIVE/employee ACTIVE/cờ/HR và PENDING. Không tự mở rộng bộ khóa khi linkage thay đổi; dữ liệu liên kết sai fail closed. Target khác actor không bị áp điều kiện phiên actor: user đích locked/limited riêng vẫn cho HR xử lý; employee target inactive chỉ chặn approve bằng `ErrEmployeeInactive`, reject vẫn được.
+- Approve so before/current đúng từng trường, NULL khác chuỗi rỗng; ghi đúng giá trị patch và giữ trường vắng. Reject không so before và giữ official. UPDATE kết luận chỉ `WHERE status='PENDING'`, kiểm affected rows; notification owner dùng user_id, nội dung chung không patch/reason/PII. Official + terminal + notification cùng commit, không audit trùng lịch sử request. Terminal qua ports trả `ErrAlreadyResolved`, không đổi resolver/time/reason lần hai.
+- Typed errors thêm `ErrAlreadyResolved` → contract409 REQUEST_ALREADY_RESOLVED, `ErrEmployeeInactive` →409 EMPLOYEE_INACTIVE; stale →409 STALE_DATA, còn lại dùng phân loại DATN-39. Commit mất xác nhận giữ `ErrCommitUnknown`, không trả result thành công hoặc tự retry; caller phải đọc chi tiết để đối soát. Timeout do caller cấu hình và rollback cleanup hữu hạn dùng lại convention hiện hành. Không thêm Idempotency-Key cho quyết định.
+
+### Lệnh tái hiện
+
+Từ gốc repo, Docker Desktop mở; runner phải xác minh PG18 test sở hữu và DB gốc0bảng. Chỉ một suite DB mỗi lượt:
+
+```sh
+python3 scripts/authdb/manage.py up
+python3 scripts/authdb/manage.py check
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Nhóm quyết định khi cần điều tra riêng, dùng cùng guard và không chạy song song suite trên:
+
+```sh
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./internal/repository/postgres -run '^TestProfileChangeDecision' -count=1 -timeout=5m
+```
+
+| Phạm vi bằng chứng | Test thực ở `profile_change_decision*_integration_test.go` |
+|---|---|
+| PCA-DB06 | `TestProfileChangeDecisionApproveRejectAndReplay`, `TestProfileChangeDecisionFaultsAndCommitOutcomes`: approve/reject thật, official/kết luận/thông báo atomic, terminal bất biến qua ports, replay submit sau approve thật; notification/deferred commit/known rollback không half-write |
+| PCA-DB07 | `TestProfileChangeDecisionConcurrentSingleWinner`: hai HR approve–approve hoặc approve–reject; follower chờ writer rồi nhận already-resolved; chỉ một thông báo kết quả |
+| PCA-DB08 | `TestProfileChangeDecisionStaleAndDisjointFields`, `TestProfileChangeDecisionConcurrentPendingFields`: cùng trường stale giữ PENDING, khác trường không conflict giả; NULL khác chuỗi rỗng, phone NULL là xóa; reject stale giữ official |
+| PCA-DB09 phần decision | `TestProfileChangeDecisionTargetAndSelfRules`, `TestProfileChangeDecisionValidationAndGates`, `TestProfileChangeDecisionActorRecheckAfterLock`, `TestProfileChangeDecisionChangedOwnerLinkageFailsClosed`, `TestProfileChangeDecisionAndSubmitShareLockOrder`: HR tự xử lý/multiple roles, target employee inactive/user locked/limited riêng, actor mất HR/status/cờ lúc chờ khóa, linkage sai, submit và approve dùng cùng giao thức |
+| PCA-DB12 phần commit | `TestProfileChangeDecisionFaultsAndCommitOutcomes`: commit PG thật rồi wrapper làm mất xác nhận; typed unknown không success/retry, đọc detail đối soát được một kết luận/thông báo. Không nhận fault wrapper là mất mạng vật lý |
+
+Các race dùng connection thật, channel/barrier và `pg_blocking_pids`, không sleep ngẫu nhiên. Thay quyền/status/linkage là SQL fixture có kiểm soát, không nhận API quản trị đã chạy; writer tương lai phải tuân giao thức user→employee. Cleanup theo runner chỉ dọn DB case vừa tạo; không force version/prune/reset DB demo hoặc Neon. Không đưa patch/reason/credential/PII vào evidence.
+
+Kết quả thực chạy23/11/2026: Go1.27.4 darwin/arm64, Node24.15.0, Python3.9.6; runner xác minh PostgreSQL18 test đúng owner và DB gốc0bảng trước/sau suite. `up` khởi động container test hiện có, `check` đạt trước suite. Go vet/unit/build đạt; sau thêm ca timeout quyết định, unit hai package service/profilechange và repository/postgres chạy lại đạt. Suite integration4package trong lệnh trên đạt: migrations29.223s, repository64.638s, HTTP6.669s, server17.991s. Bộ42 contract/harness tests đạt, harness429file và diff check đạt. Tự review và sub-agent review code/tests/tài liệu không còn finding P0/P1/P2 chặn; sub-agent unit/diff checks đạt, không chạy DB song song. Review không thay bằng chứng PG; compile-only integration của agent viết tests không được nhận làm runtime proof.
+
+Giới hạn: chưa HTTP/UI/browser/CSRF/Origin/session revoke/strict JSON/body/no-store/Swagger PCA, notification list/mark-read hoặc F4; DATN-41 tiếp nhận integration HTTP. Không có trigger chống writer SQL tùy ý thay terminal; bất biến được bảo đảm qua application ports và constraints hiện hành. Không email, Neon/HTTPS/deploy, không nhận trọn PCA-DB09/10/11/12 hoặc toàn FR từ ticket này. Chưa commit/push/PR hoặc Jira Done trong lượt triển khai.
