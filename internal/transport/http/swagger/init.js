@@ -10,6 +10,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     const specs = { auth: await load("/docs/openapi.json") }
     const catalogs = await load("/docs/catalog.openapi.json", true)
     if (catalogs) specs.catalogs = catalogs
+    const profileChanges = await load("/docs/profile-change.openapi.json", true)
+    if (profileChanges) specs.profileChanges = profileChanges
     const operations = []
     for (const spec of Object.values(specs)) {
       for (const [path, methods] of Object.entries(spec.paths)) {
@@ -39,13 +41,13 @@ window.addEventListener("DOMContentLoaded", async () => {
       requestInterceptor(request) {
         const target = new URL(request.url, window.location.href)
         const method = (request.method || "GET").toUpperCase()
-        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json"].includes(target.pathname)
+        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json"].includes(target.pathname)
         const allowed = operations.some(([verb, path]) => {
           if (verb !== method) return false
           if (!path.includes("{id}")) return path === target.pathname
-          const base = path.slice(0, -4)
-          if (!target.pathname.startsWith(base)) return false
-          const id = target.pathname.slice(base.length)
+          const [base, suffix] = path.split("{id}")
+          if (!target.pathname.startsWith(base) || !target.pathname.endsWith(suffix)) return false
+          const id = target.pathname.slice(base.length, suffix ? -suffix.length : undefined)
           return /^[0-9]+$/.test(id) && Number(id) >= 1 && Number(id) <= 2147483647
         })
         if (target.origin !== window.location.origin || (!specRequest && !allowed)) throw new Error("Chỉ được gọi contract local và API đã triển khai cùng origin.")
@@ -61,6 +63,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       const option = document.createElement("option")
       option.value = "catalogs"
       option.textContent = "Tổ chức, tài khoản và hồ sơ"
+      selector.append(option)
+    }
+    if (profileChanges) {
+      const option = document.createElement("option")
+      option.value = "profileChanges"
+      option.textContent = "Đề nghị hồ sơ"
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))

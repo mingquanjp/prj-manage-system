@@ -869,3 +869,42 @@ Các race dùng connection thật, channel/barrier và `pg_blocking_pids`, khôn
 Kết quả thực chạy23/11/2026: Go1.27.4 darwin/arm64, Node24.15.0, Python3.9.6; runner xác minh PostgreSQL18 test đúng owner và DB gốc0bảng trước/sau suite. `up` khởi động container test hiện có, `check` đạt trước suite. Go vet/unit/build đạt; sau thêm ca timeout quyết định, unit hai package service/profilechange và repository/postgres chạy lại đạt. Suite integration4package trong lệnh trên đạt: migrations29.223s, repository64.638s, HTTP6.669s, server17.991s. Bộ42 contract/harness tests đạt, harness429file và diff check đạt. Tự review và sub-agent review code/tests/tài liệu không còn finding P0/P1/P2 chặn; sub-agent unit/diff checks đạt, không chạy DB song song. Review không thay bằng chứng PG; compile-only integration của agent viết tests không được nhận làm runtime proof.
 
 Giới hạn: chưa HTTP/UI/browser/CSRF/Origin/session revoke/strict JSON/body/no-store/Swagger PCA, notification list/mark-read hoặc F4; DATN-41 tiếp nhận integration HTTP. Không có trigger chống writer SQL tùy ý thay terminal; bất biến được bảo đảm qua application ports và constraints hiện hành. Không email, Neon/HTTPS/deploy, không nhận trọn PCA-DB09/10/11/12 hoặc toàn FR từ ticket này. Chưa commit/push/PR hoặc Jira Done trong lượt triển khai.
+## DATN-41 — PCA-T05 — năm API đề nghị hồ sơ
+
+Ngày kiểm: **23/11/2026**. Nhánh `feature/DATN-41-profile-request-api`, nguồn đầu vào `origin/main` tại `bacfbc1` đã có DATN-39/40. Đợt này nối năm method/path request ở canonical PCA, không migration/seed/reset, dependency mới, UI, Gmail hoặc Neon. Các ghi nhận DATN-38–40 phía trên giữ phạm vi tại thời điểm bàn giao; trạng thái HTTP hiện hành xem mục này.
+
+**Nguồn thay đổi:** `internal/transport/http/profile_change.go` và `profile_change_json.go` nhận DTO strict/allowlist, lấy actor từ phiên server và map typed errors; `auth_router.go`, `organization_profile.go`, `internal/app/auth.go` lắp service/PostgreSQL timeout10s. Không query DB trong handler. `docs/api/embed.go`, `swagger.go` và `swagger/init.js` công bố đúng năm API PCA từ canonical; giữ năm auth/16 OAP, không mở API thông báo/F4. JSON PCA65536 byte không đổi auth/OAP8192.
+
+**Môi trường thực:** macOS arm64, Go1.27.4, Node24.15.0, Python3.9.6. Runner `check` xác nhận PostgreSQL18, DB test `ai_staffing_auth_test`, owner `ai_staffing_test`,0 bảng public, system ID `7705732357505970219`. Chỉ dùng DB case runner cấp và dọn; không fallback DATABASE_URL/.env/Neon hoặc chạy nhiều lượt DB song song.
+
+**Lệnh đã chạy tại gốc repo, đều đạt:**
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Suite PG đầy đủ đạt: migrations14.542s, repository36.192s, HTTP5.332s, server9.425s. Unit Go không thay integration;48 tests Node chỉ là kiểm tĩnh/VM, không browser/SQL. Harness kiểm kê nguồn, không kiểm ngữ nghĩa nghiệp vụ. Kết quả kiểm cuối sau cập nhật tài liệu được bàn giao cùng diff.
+
+| Bằng chứng mới | Tầng và kết quả |
+|---|---|
+| `internal/transport/http/profile_change_integration_test.go`: `TestProfileChangeHTTPFiveRoutesPersistReplayAndProject` | HTTP + auth session/PG thật: submit/list/detail/approve/reject; user_id khác employee_id, NULL, DTO allowlist, review scope, total trang rỗng, replay cả terminal; request/notification không nhân dòng |
+| `TestProfileChangeHTTPCurrentServerRightsAndSessions` | Self/HR/Admin/Director; không HR không review/quyết định, ngoài quyền/missing404; limited403, locked/inactive/revoked401 từ server |
+| `TestProfileChangeHTTPStrictInputAndActualBodyBoundary` | Không ghi khi JSON/header/query/media/Origin/CSRF/Unicode sai;65536 byte submit được,65537 trả413 không Content-Length; quyết định quá giới hạn không thay PENDING |
+| `TestProfileChangeHTTPConflictCodesAndTargetGate` | Key reused/expired, stale submit/approve, target inactive, reject/terminal; giữ official và atomicity |
+| `TestProfileChangeHTTPDatabaseFaultAndUnknownCommit` | Trigger lỗi notification rollback request/key/notification; wrapper thực sự commit PG rồi trả lỗi xác nhận cho submit/approve →503, GET đối soát; không tự retry hoặc success giả |
+| `TestProfileChangeHTTPDatabaseTimeoutIs503` | Khóa bảng bằng connection thứ hai trước HTTP read, timeout DB100ms →503; không sleep ngẫu nhiên |
+| `cmd/server/profile_change_integration_test.go`: `TestProfileChangeApplicationComposition` | HTTP server qua composition root thật: login →CSRF →submit →list/detail, cookie không bị cấp lại và Swagger PCA có đúng năm paths |
+| `internal/transport/http/profile_change_test.go`, `scripts/check-swagger.test.mjs` | Parser/gates/error/DTO, inventory health+5auth+16OAP+5PCA; Swagger subset canonical, refs hợp lệ, không notification/F4; interceptor hỗ trợ ID giữa path và chặn route ngoài phạm vi |
+
+**Review:** tự rà diff và sub-agent review read-only parser/quyền/DTO/wiring/Swagger/test; không còn góp ý chặn P0/P1/P2. Đã sửa assertion test đếm14 trường detail thành đúng canonical; review không thay runtime proof.
+
+**Tái hiện và dọn:** chạy đúng lệnh runner bên trên; các fixture dùng dữ liệu tổng hợp và DB case hy sinh, tự dọn theo runner. Không reset DB demo/volume hoặc force migration version. Chạy local và `/docs/` theo [hướng dẫn API](../../docs/api/README.md#datn-41--năm-api-đề-nghị-hồ-sơ); không cần thêm biến môi trường PCA.
+
+**Giới hạn/consumer:** bằng chứng HTTP là httptest/server + PG local, không browser PCA, HTTPS/Neon/deploy hoặc physical network loss. Wrapper commit unknown chỉ chứng minh xử lý mất xác nhận sau commit PG thật; race/atomicity sâu PCA-DB04–09 tái sử dụng suite DATN-39/40 đã chạy lại, không nhận toàn PCA-DB01–12 hoặc toàn FR đã đạt. DATN-43/44 tiếp nhận input/DTO/lỗi canonical; DATN-42 tiếp tục API thông báo, F4 còn ngoài phạm vi. Chưa commit/push/PR/merge hoặc đổi Jira Done trong lượt này.

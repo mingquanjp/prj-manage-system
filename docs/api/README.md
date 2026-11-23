@@ -172,3 +172,11 @@ Trạng thái hiện hành thay các ghi nhận phạm vi cũ DATN-26/28 ở tr�
 Ngày18/11/2026 đối chiếu JSON public từ backend local8080: từng operation OAP/auth khớp canonical, tổng16+5. Test `TestApplicationOAPRouteInventoryMatchesCanonicalSwagger` đối chiếu toàn bộ method/path của Chi router ghép và nội dung paths Swagger với canonical, không chỉ đếm operation. Test không chứng minh runtime SQL/DTO; HTTP+PG suite có bằng chứng riêng tại [runbook DB](../../scripts/authdb/README.md#datn-35--ma-trận-bàn-giao-postgresql-oap).
 
 UI danh mục/tài khoản/hồ sơ đã nối server mode; [runbook demo UI](auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) là điểm vào báo cáo. Thử POST tạo bằng Swagger cũng có thể gửi Gmail thật theo cấu hình backend, chỉ dùng mailbox được phép; không lặp POST khi mất phản hồi. Swagger vẫn chỉ dev, không mở production docs hoặc CORS.
+
+## DATN-41 — năm API đề nghị hồ sơ
+
+Backend ứng dụng công bố thêm nhóm **Đề nghị hồ sơ** tại `/docs/`; `/docs/profile-change.openapi.json` lọc đúng năm operation đã tích hợp từ [canonical PCA](profile-change-approval.openapi.json), cùng các components tới được. Hai operation thông báo và ba operation HR sửa trực tiếp còn planned, không xuất hiện trong nhóm này. Năm auth và16 OAP giữ nguyên.
+
+Đăng nhập phiên thường rồi lấy CSRF như hướng dẫn trên. Gửi đề nghị cần `Idempotency-Key` UUIDv4 mới, body theo canonical và đúng employee_id chính chủ; approve dùng `{}`, reject dùng `{reason}` và phải là HR hiện hành. Không lấy user_id thay employee_id. Khi mất phản hồi mutation, GET danh sách/chi tiết để đối soát, không tự gửi lại. Body PCA tối đa65536 byte thực đọc; auth/OAP vẫn8192.
+
+Go httptest/HTTP+PostgreSQL test, inventory router và test bootstrap VM đạt ngày23/11/2026; nguồn/lệnh/giới hạn tại [runbook DATN-41](../../scripts/authdb/README.md#datn-41--pca-t05--năm-api-đề-nghị-hồ-sơ). Chưa kiểm browser rendering/CSRF qua Swagger cho PCA hoặc nối UI PCA; không dùng spec render thay runtime proof.

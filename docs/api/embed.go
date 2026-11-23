@@ -5,5 +5,5 @@ import "embed"
 
 // Files chứa contract canonical; transport chỉ công bố các operation đã triển khai.
 //
-//go:embed auth.openapi.json organization-accounts-profile.openapi.json
+//go:embed auth.openapi.json organization-accounts-profile.openapi.json profile-change-approval.openapi.json
 var Files embed.FS

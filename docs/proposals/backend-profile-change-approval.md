@@ -74,7 +74,7 @@ Request lưu patch JSONB có schema_version, cùng tập khóa before/proposed, 
 
 ### 6.2. API và projection
 
-[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. Các operation còn planned, chưa nhúng hoặc publish Swagger. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
+[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. DATN-41 đã wire/test năm API đề nghị hồ sơ và publish đúng phần đó trên Swagger dev; hai API thông báo và ba API F4 còn planned. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
 
 | Method/path | Quyền | Kết quả |
 |---|---|---|
@@ -350,3 +350,9 @@ Tự review và sub-agent review nguồn/unit đã hoàn tất; kiểm PG thật
 Đã bổ sung service/port và PostgreSQL transaction approve/reject trên schema000006 theo giao thức khóa mục5 SQL plan, giữ PCA-A09 và quyền HR xử lý chính mình. Approve so before theo từng trường; reject không sửa official; kết luận và thông báo owner cùng transaction. Request terminal không được xử lý lại qua ports; commit chưa rõ không tự retry hoặc trả success.
 
 Nguồn/lệnh/kết quả và giới hạn tại [runbook DATN-40](../../scripts/authdb/README.md#datn-40--pca-t04--hr-duyệt-và-từ-chối-đề-nghị-hồ-sơ). Đầu ra cho DATN-41 là decision ports/outcomes và fixtures/races; HTTP/session/CSRF/body/DTO/Swagger vẫn thuộc consumer. Không migration/dependency mới, email, UI hoặc F4; chưa commit/push/PR/merge hoặc chuyển Jira Done trong lượt triển khai này.
+
+### 10.5. Bàn giao HTTP DATN-41 — 23/11/2026
+
+Đã nối năm operation đề nghị hồ sơ ở mục6.2 qua handler/DTO allowlist, auth phiên thường, Origin/CSRF và service/PostgreSQL từ DATN-39/40. JSON PCA strict64KiB thực đọc, phát hiện duplicate/unknown keys và Unicode lỗi; không đổi giới hạn8KiB auth/OAP. Quyền cuối được recheck trong adapter; không Admin bypass, không auto retry mutation hoặc báo success khi commit chưa rõ.
+
+Swagger dev lọc năm operation từ canonical, giữ năm auth/16 OAP; không publish notification/F4. Kiểm Go/HTTP+PG, route inventory, contract/Swagger và tự review/sub-agent review đã thực hiện; nguồn/lệnh/kết quả/giới hạn tại [runbook DATN-41](../../scripts/authdb/README.md#datn-41--pca-t05--năm-api-đề-nghị-hồ-sơ). Đầu ra cho DATN-43/44 là API input/DTO/lỗi; chưa nối UI hoặc kiểm browser PCA, chưa áp Neon/deploy. Chưa commit/push/PR/merge hoặc chuyển Jira Done trong lượt này.
