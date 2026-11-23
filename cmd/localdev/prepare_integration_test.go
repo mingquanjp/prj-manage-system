@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestPrepareM2Localdev(t *testing.T) {
+func TestPrepareHeadLocaldev(t *testing.T) {
 	// Case do guard tạo và sở hữu, không mở/reset database auth_dev đang chạy.
 	db := authdb.NewCase(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
@@ -31,8 +31,8 @@ func TestPrepareM2Localdev(t *testing.T) {
 	var version int
 	var dirty bool
 	authdb.Require(t, "head localdev", db.Conn.QueryRow(ctx, `SELECT version,dirty FROM schema_migrations`).Scan(&version, &dirty))
-	if version != migrations.M2Version || dirty {
-		t.Fatal("localdev chưa ở M2 sạch")
+	if version != migrations.PCAVersion || dirty {
+		t.Fatal("localdev chưa ở head PCA sạch")
 	}
 	rows, err := db.Conn.Query(ctx, `SELECT u.password_hash,u.system_role,u.must_change_password,e.email,r.role_code
  FROM users u JOIN employees e USING(user_id) JOIN user_roles r USING(user_id) ORDER BY u.user_id`)

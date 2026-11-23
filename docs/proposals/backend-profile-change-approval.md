@@ -332,3 +332,9 @@ node scripts/check-feature-plan.mjs \
 Kết quả22/11:42/42 tests contract/harness đạt, không skip; harness đạt413 nguồn; diff check đạt. Checker feature đạt10 operation planned/12 WBS/12 task/17 cạnh,6/6 Mermaid qua parser local VS Code,130 link file hợp lệ. Không kiểm mọi anchor, render hình hoặc ngữ nghĩa toàn bộ OpenAPI/SQL. Đã tự review phần sửa bàn giao: chỉ cập nhật trạng thái/mapping/đầu vào/bằng chứng, không đổi contract/SQL/ticket hoặc các quyết định A01–A09.
 
 **Giới hạn và bước tiếp:** không Go/FE/PG/browser/mail/HTTPS/Neon/deploy, không ghi Jira hoặc commit/push/merge/Done. Không thêm endpoint hoặc publish10 operation planned vào Swagger. Các góp ý thiết kế trước đã được xử lý theo ghi nhận21/11; mapping notification có dữ liệu là đầu vào mở tại DATN-38. Proposal thay đổi sau import làm fingerprint nguồn khác journal; không chạy lại apply để đồng bộ bàn giao/tiến độ và không sửa/xóa journal vượt kiểm. Bước tiếp là nhận brief DATN-38 để triển khai migration theo SQL plan đã bàn giao; Done DATN-37 tuân workflow merge/bàn giao, không suy ra từ static PASS.
+
+### 10.2. Bàn giao schema DATN-38 — 22/11/2026
+
+Đã thêm migration000006 tiến từ M2, preflight trước dirty và guard DDL dưới khóa, fixture head cùng kiểm PCA-DB01–03 trên PostgreSQL18 test sở hữu. Nguồn/lệnh/kết quả thực chạy, review và giới hạn tại [runbook PCA](../../scripts/authdb/README.md#datn-38--pca-t02--schema-đề-nghị-hồ-sơ-và-thông-báo). Không sửa migrations000001–000005; không áp Neon hoặc chuyển notification legacy có dữ liệu.
+
+Đầu ra cho DATN-39/42/47 là schema/fixture/guard; chưa có use case/HTTP/UI PCA và chưa publish Swagger. Các quy tắc application tại SQL plan vẫn do ticket consumer tiếp nhận, không nhận PCA-DB04–12 pass. Nhánh `feature/DATN-38-profile-schema`; chưa commit/push/PR hoặc tự chuyển Jira Done trong lượt triển khai này.

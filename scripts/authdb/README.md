@@ -728,3 +728,46 @@ Guard trước/sau: PG18, đúng DB/user/owner, system ID7705732357505970219, pu
 Fault injection lỗi DDL/write/commit không thay kiểm mất mạng vật lý. Race dùng connection/barrier và lock timeout có kiểm soát, không sleep ngẫu nhiên. Log/evidence chỉ tên ca/kết quả, không SQL parameter chứa dữ liệu cá nhân, password/hash/token hoặc raw error provider.
 
 Migration/rollback vẫn dùng runner và bộ case hiện có, không chạy `cmd/migrate` loader production hoặc down trên DB demo đang dùng. Dừng app bằng Ctrl+C dọn đúng auth_dev vừa tạo, giữ container/volume. Giới hạn crash/kill9 và xử lý dirty xem các mục M1/M2 ở trên; không xem down là backup, không reset sequence để dùng lại mã.
+
+## DATN-38 — PCA-T02 — schema đề nghị hồ sơ và thông báo
+
+Ngày 22/11/2026. Schema head mới là `000006_pca_profile_change`; nguồn thiết kế tại [SQL plan mục9](../../docs/proposals/backend-profile-change-approval-sql-plan.md#9-sql-cụ-thể-cho-task-triển-khai). Đợt này chỉ bàn giao schema/fixture/guard, chưa có use case hoặc API PCA và chưa publish contract PCA vào Swagger.
+
+- `migrations/000006_pca_profile_change.up.sql`: hai bảng request/idempotency, JSON/state/FK/index và notification nhận theo `users.user_id`. Không đổi migrations000001–000005, không reset identity notification hoặc employee code sequence.
+- `migrations/pca.go`: preflight dưới advisory lock của runner, trước khi ghi dirty; chỉ nhận nguồn M2 sạch, notification legacy rỗng, metadata/dependency đã biết và namespace đích chưa bị chiếm. Nối ở `cmd/migrate`, `cmd/localdev`, `internal/testutil/authdb`; không chạy CLI production để kiểm test.
+- DDL kiểm lại bảng rỗng dưới `ACCESS EXCLUSIVE`; notification được ghi sau preflight khiến up từ chối, bảo toàn dòng/schema legacy. Preflight không thay việc dừng consumer trong cửa sổ migration và không chứng minh đã kiểm mọi dạng SQL động của consumer ngoài repo.
+- Down khóa cả ba bảng, từ chối khi có bất kỳ request/key/notification hoặc dependency local lạ (index/check/trigger/function consumer/cột thêm). Chỉ DB case rỗng mới về M2; khôi phục cột/FK/index notification legacy mà giữ sequence. Down không phải backup và không khôi phục lịch sử đã mất.
+- `NewFixture` tự nâng tới head6; fixture lịch sử và test M1/M2 tiếp tục dựng đúng version. Localdev/test seed dùng schema đích không cần notification legacy. Không có writer notification trong app/seed hiện tại; consumer PCA sẽ được bổ sung ở DATN-39/42/47.
+
+### Tái hiện và bằng chứng
+
+Chạy từ gốc repo, Docker Desktop mở. `up` chỉ dùng runner đã chốt; nếu state/owner không khớp thì dừng, không xóa tài nguyên để vượt guard.
+
+```sh
+python3 scripts/authdb/manage.py up
+python3 scripts/authdb/manage.py check
+
+go vet ./...
+go test ./... -count=1
+go build ./...
+
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server ./cmd/localdev -count=1 -timeout=5m
+
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Không chạy nhiều lượt DB song song. Mỗi ca tạo/dọn đúng DB `auth_case_*` riêng theo guard; DB gốc giữ0bảng. Không reset lượt `pnpm dev` hoặc DB lạ. Nếu DDL lỗi: dữ liệu/cấu trúc rollback, metadata runner vẫn có thể dirty. Không force version; giữ DB case lỗi để đối chiếu nếu cleanup không hoàn tất. `stop`/`destroy` chỉ theo điều kiện chung ở đầu runbook, không dùng để sửa metadata.
+
+| Bằng chứng | Test thực trong `migrations/pca_integration_test.go` |
+|---|---|
+| PCA-DB01 | `TestPCAEmptyDownUp`: empty→head6, up lặp, down5/up6, identity high-water; `TestPCAJSONStateFKAndIndexes`: JSON/types/keyset/schema/NULL/giới hạn Unicode, trạng thái/resolver/time/reason, FK/unique/hash/expiry và định nghĩa index |
+| PCA-DB02 | `TestPCALegacyPreservesAuthOAP`: legacy user101/employee201, roles/session/audit/email padding/hash/code giữ nguyên; recipient201 bị FK từ chối, recipient101 hợp lệ. `TestPCAPreflightRefusesBeforeDirty`: notification có dữ liệu hoặc schema/dependency/namespace lệch giữ version5 sạch và dữ liệu nguyên vẹn |
+| PCA-DB03 | `TestPCADownRefusesEachHistoryTable`, `TestPCADownRefusesUnknownDependency`: không mất lịch sử/dependency; `TestPCADDLFailureAndTOCTOUGuard`: fault DDL và hai connection qua advisory barrier sau preflight, không sleep; `TestPCADownDDLFailureRollsBack`: rollback down lỗi giữa DDL |
+| Dirty thực | Up DDL lỗi: version6 dirty; down DDL/guard lỗi: version5 dirty. Retry up bị `ErrDirty`; không force. Preflight từ chối trước DDL: version5 sạch |
+| Regression | Bộ integration migration lịch sử, PostgreSQL repository, HTTP, server năm auth API/catalog/profile/account, localdev prepare cùng chạy trên head6 |
+
+Kết quả thực chạy 22/11/2026: Go1.26.5 darwin/arm64, Node24.15.0, Python3.9.6, PostgreSQL18 test do runner xác minh owner; DB gốc0bảng sau suite. Các lệnh Go vet/unit/build ở trên đạt; integration đủ5package đạt. Sau chỉnh guard theo review, nhóm `./migrations -run '^TestPCA'` được chạy lại bằng cùng runner và đạt (6.162s); thay đổi cuối chỉ ở guard down/assertions, không đổi repository/HTTP. Test prepare localdev theo tên head mới cũng đạt. Bộ42 Node tests đạt, harness417file đạt, diff check đạt. Hai finding P2 của sub-agent (namespace collision và down tự loại dependency lạ) đã sửa, bổ sung ca tái hiện, retest và sub-agent xác nhận khép ở mức source review; không gọi review là runtime proof. Không lấy Node contract/unit làm bằng chứng PostgreSQL. Fixture toàn dữ liệu tổng hợp; snapshot/hash chỉ ở bộ nhớ, không in hoặc ghi vào evidence.
+
+Giới hạn: không áp Neon, không map notification legacy có dữ liệu, không kiểm browser/mail/HTTPS/deploy trong task schema. UUID/TTL24h/result-reference đầy đủ, current actor/self/HR, tính bất biến terminal và atomic request→notification→key thuộc use case các ticket sau; các CHECK hiện tại không thay các quy tắc đó. Chưa nhận PCA-DB04–12 pass từ schema.

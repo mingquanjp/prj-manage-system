@@ -21,18 +21,18 @@ import (
 func TestM2EmptyAndUnusedDownUp(t *testing.T) {
 	db := authdb.NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	authdb.Require(t, "nâng DB rỗng qua chuỗi lịch sử tới M2", m.Up())
+	authdb.Require(t, "nâng DB rỗng qua chuỗi lịch sử tới M2", m.Migrate(migrations.M2Version))
 	head(t, m, migrations.M2Version)
 	assertM2Present(t, db)
 	assertM2Sequence(t, db, 1, false)
-	if !errors.Is(m.Up(), migrate.ErrNoChange) {
+	if !errors.Is(m.Migrate(migrations.M2Version), migrate.ErrNoChange) {
 		t.Fatal("startup/up lặp lại không được đổi schema hoặc sequence")
 	}
 	assertM2Sequence(t, db, 1, false)
 	authdb.Require(t, "down M2 rỗng chưa từng cấp số", m.Steps(-1))
 	head(t, m, migrations.M1Version)
 	assertM2Absent(t, db)
-	authdb.Require(t, "up M2 lại trên case chưa dùng", m.Up())
+	authdb.Require(t, "up M2 lại trên case chưa dùng", m.Migrate(migrations.M2Version))
 	head(t, m, migrations.M2Version)
 	assertM2Present(t, db)
 	assertM2Sequence(t, db, 1, false)
@@ -51,7 +51,7 @@ func TestM2LegacyPreservesDataAndStartsAfterEMPNumbers(t *testing.T) {
 		UPDATE employees SET email='  FIXTURE-ADMIN@EXAMPLE.INVALID  ' WHERE user_id=101`)
 	authdb.Require(t, "nâng M1", m.Migrate(migrations.M1Version))
 	before := m2Snapshot(t, db)
-	authdb.Require(t, "nâng legacy M1 tới M2", m.Up())
+	authdb.Require(t, "nâng legacy M1 tới M2", m.Migrate(migrations.M2Version))
 	head(t, m, migrations.M2Version)
 	assertM2Present(t, db)
 	assertM2Sequence(t, db, 2, false)
@@ -60,7 +60,7 @@ func TestM2LegacyPreservesDataAndStartsAfterEMPNumbers(t *testing.T) {
 	// Ràng buộc canonical áp dụng cả user LOCKED và employee INACTIVE.
 	expectState(t, db.Conn, "23505", `UPDATE employees SET email='fixture-admin@example.invalid' WHERE user_id=102`)
 	sameJSON(t, before, m2Snapshot(t, db))
-	if !errors.Is(m.Up(), migrate.ErrNoChange) {
+	if !errors.Is(m.Migrate(migrations.M2Version), migrate.ErrNoChange) {
 		t.Fatal("up head lần hai phải giữ dữ liệu và sequence")
 	}
 	assertM2Sequence(t, db, 2, false)
@@ -84,7 +84,7 @@ func TestM2SequenceInitialRange(t *testing.T) {
 			authdb.Require(t, "nền v3", m.Migrate(3))
 			fixture(t, db)
 			exec(t, db.Conn, `UPDATE employees SET employee_code=$1 WHERE user_id=101`, tc.code)
-			authdb.Require(t, "nâng M2 với dải mã tổng hợp", m.Up())
+			authdb.Require(t, "nâng M2 với dải mã tổng hợp", m.Migrate(migrations.M2Version))
 			assertM2Sequence(t, db, tc.want, false)
 		})
 	}
@@ -124,7 +124,7 @@ func TestM2PreflightRejectsBeforeDirty(t *testing.T) {
 			authdb.Require(t, "nền M1", m.Migrate(migrations.M1Version))
 			exec(t, db.Conn, tc.sql)
 			before := m2Snapshot(t, db)
-			if err := m.Up(); err == nil || !strings.HasPrefix(err.Error(), "M2:") {
+			if err := m.Migrate(migrations.M2Version); err == nil || !strings.HasPrefix(err.Error(), "M2:") {
 				t.Fatal("phải dừng tại preflight M2 trước DDL/dirty; không xuất dữ liệu lỗi")
 			}
 			head(t, m, migrations.M1Version)
@@ -163,7 +163,7 @@ func TestM2EmailNormalizationParityUsesActualPostgres(t *testing.T) {
 			before := m2Snapshot(t, db)
 			matches := auth.NormalizeLoginEmail(raw) == pgNormalized
 			t.Logf("Go/PostgreSQL normalization match=%t", matches)
-			err := m.Up()
+			err := m.Migrate(migrations.M2Version)
 			if !matches {
 				if err == nil || !strings.HasPrefix(err.Error(), "M2:") {
 					t.Fatal("normalization lệch phải từ chối trước DDL")
@@ -181,7 +181,7 @@ func TestM2EmailNormalizationParityUsesActualPostgres(t *testing.T) {
 func TestM2NextvalRollbackAndConcurrentConnections(t *testing.T) {
 	db := authdb.NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	authdb.Require(t, "nâng M2", m.Up())
+	authdb.Require(t, "nâng M2", m.Migrate(migrations.M2Version))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	second := db.Connect(t)
@@ -234,7 +234,7 @@ func TestM2DownRefusesDataAndUsedSequenceAtomically(t *testing.T) {
 				authdb.Require(t, "nền v3", m.Migrate(3))
 				fixture(t, db)
 			}
-			authdb.Require(t, "nâng M2", m.Up())
+			authdb.Require(t, "nâng M2", m.Migrate(migrations.M2Version))
 			if tc != "data" {
 				tx, err := db.Conn.Begin(context.Background())
 				authdb.Require(t, "transaction thử cấp số", err)
