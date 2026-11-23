@@ -344,3 +344,9 @@ Kết quả22/11:42/42 tests contract/harness đạt, không skip; harness đạ
 Đã triển khai service/port và PostgreSQL adapter submit/list/detail trên schema000006; idempotency24h, request/notification/result cùng transaction, quyền self/HR và projection theo mục6.2–6.3. Lệnh/bằng chứng PCA-DB04/05/09 phần submit/read, snapshot và fault cùng giới hạn tại [runbook DATN-39](../../scripts/authdb/README.md#datn-39--pca-t03--gửi-và-đọc-đề-nghị-hồ-sơ).
 
 Tự review và sub-agent review nguồn/unit đã hoàn tất; kiểm PG thật do agent chính chạy tuần tự qua runner. Đầu ra cho DATN-40/41 là ports/use cases/projections, chưa approve/reject, HTTP/UI hoặc publish Swagger; terminal/role mutation trong fixture không thay bằng chứng API tương ứng. Nhánh `feature/DATN-39-profile-request-use-cases`, chưa commit/push/PR/merge/Jira Done trong lượt triển khai này.
+
+### 10.4. Bàn giao quyết định DATN-40 — 23/11/2026
+
+Đã bổ sung service/port và PostgreSQL transaction approve/reject trên schema000006 theo giao thức khóa mục5 SQL plan, giữ PCA-A09 và quyền HR xử lý chính mình. Approve so before theo từng trường; reject không sửa official; kết luận và thông báo owner cùng transaction. Request terminal không được xử lý lại qua ports; commit chưa rõ không tự retry hoặc trả success.
+
+Nguồn/lệnh/kết quả và giới hạn tại [runbook DATN-40](../../scripts/authdb/README.md#datn-40--pca-t04--hr-duyệt-và-từ-chối-đề-nghị-hồ-sơ). Đầu ra cho DATN-41 là decision ports/outcomes và fixtures/races; HTTP/session/CSRF/body/DTO/Swagger vẫn thuộc consumer. Không migration/dependency mới, email, UI hoặc F4; chưa commit/push/PR/merge hoặc chuyển Jira Done trong lượt triển khai này.

@@ -47,6 +47,20 @@ func TestProfileChangeRepositoryClassificationsAndTimeout(t *testing.T) {
 			t.Fatal("deadline nội bộ phải map unavailable")
 		}
 	}
+	for _, decide := range []func() error{
+		func() error {
+			_, err := repo.Approve(t.Context(), pc.DetailQuery{ActorID: 1, RequestID: 1})
+			return err
+		},
+		func() error {
+			_, err := repo.Reject(t.Context(), pc.RejectInput{ActorID: 1, RequestID: 1, Reason: "Lý do tổng hợp"})
+			return err
+		},
+	} {
+		if err := decide(); !errors.Is(err, pc.ErrUnavailable) || !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatal("decision deadline nội bộ phải map unavailable")
+		}
+	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	_, err := repo.List(ctx, pc.ListQuery{ActorID: 1})

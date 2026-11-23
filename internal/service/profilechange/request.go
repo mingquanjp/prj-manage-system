@@ -23,6 +23,8 @@ var (
 	ErrForbidden              = errors.New("profilechange: forbidden")
 	ErrNotFound               = errors.New("profilechange: not found")
 	ErrStale                  = errors.New("profilechange: stale data")
+	ErrAlreadyResolved        = errors.New("profilechange: request already resolved")
+	ErrEmployeeInactive       = errors.New("profilechange: employee inactive")
 	ErrKeyReused              = errors.New("profilechange: idempotency key reused")
 	ErrKeyExpired             = errors.New("profilechange: idempotency key expired")
 	ErrPersistence            = errors.New("profilechange: storage failure")
@@ -99,6 +101,8 @@ type Repository interface {
 	Submit(context.Context, SubmitCommand) (Detail, error)
 	List(context.Context, ListQuery) (Page, error)
 	Read(context.Context, DetailQuery) (Detail, error)
+	Approve(context.Context, DetailQuery) (Detail, error)
+	Reject(context.Context, RejectInput) (Detail, error)
 }
 type Service struct{ repo Repository }
 
