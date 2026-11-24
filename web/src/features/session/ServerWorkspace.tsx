@@ -28,7 +28,12 @@ export function ServerWorkspace({
   const location = useLocation()
   const home = serverHome(principal)
   const kind = catalogKindAt(location.pathname)
-  if (location.pathname === "/profile" && (location.search || location.hash))
+  if (
+    location.pathname === "/profile" &&
+    (location.hash ||
+      [...new URLSearchParams(location.search).keys()].some((key) => key !== "request_id") ||
+      new URLSearchParams(location.search).getAll("request_id").length > 1)
+  )
     return <Navigate to="/profile" replace />
   if (location.pathname === "/organization")
     return <Navigate to="/organization/departments" replace />

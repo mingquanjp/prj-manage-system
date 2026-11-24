@@ -2,7 +2,46 @@
 
 ## Hiện trạng
 
-Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có hai chế độ tách biệt: prototype trong bộ nhớ và FE auth server (DATN-19) nối login/me/csrf/logout. Phiên server dùng màn tiếp nối tạm, không mở workspace mẫu; DATN-20 đã bổ sung form đổi mật khẩu lần đầu; luồng local hạn chế → đổi → login mới đã được kiểm phối hợp với người dùng, giới hạn kiểm chứng ghi tại sổ công việc. DATN-27 đã nối ba danh mục tổ chức với 12 API/DB test; DATN-29 nối phần đọc hồ sơ chính chủ và thay đích tạm bằng `/profile` cho phiên thường không có HR. HR giữ đích danh mục; DATN-34 nối UI Admin tạo/tra cứu tại /accounts. Cập nhật hồ sơ chưa nối. Chưa Go embed/TanStack Query. `pnpm dev` chạy FE+Go local cùng nhau, `pnpm dev:demo` giữ prototype riêng. [Bằng chứng pilot](DESIGN-PILOT.md).
+### Brief DATN-43 / PCA-T07 — đang triển khai
+
+- Mục tiêu: nối đề nghị cập nhật, lịch sử phân trang và chi tiết chính chủ trên `/profile`, theo proposal PCA mục4/6.5, OpenAPI PCA và workflow hồ sơ. Giữ official tách khỏi pending; không dùng fixture làm danh tính/dữ liệu server.
+- URL đã chốt: `/profile?request_id=<id>` chọn chi tiết sau GET có quyền; giữ đích login và cổng limited hiện hành. Query không cấp quyền đọc người khác.
+- Form chỉ gửi patch fullname/phone/address, expected_before_values, explanation và UUIDv4 Idempotency-Key; không tự replay POST. Lỗi chưa rõ kết quả dùng GET lịch sử đối soát. Refresh nền cùng phiên không dựng lại form; rời/đổi phiên xóa PII và bỏ phản hồi cũ.
+- Ngoài phạm vi: HR duyệt, notification UI, sửa official trực tiếp, schema/dependency, Neon/deploy và Git handoff. Tiêu chí: adapter/state tests, pnpm check, contract/harness, browser với PG test sở hữu, responsive/focus và tự review/sub-agent review; ghi kết quả thực/giới hạn sau kiểm.
+
+#### Chạy lại browser DATN-43
+
+Kiểm tra cổng5174/18080 đang rảnh và không có suite DB khác chạy. Harness opt-in dùng DB case hy sinh do runner tạo/dọn, không Gmail/Neon, không endpoint fault trong ứng dụng thường:
+
+```sh
+# Tại gốc, terminal1
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration,profileuidemo -p 1 ./cmd/server -run '^TestProfileUIDemoServer$' -count=1 -v -timeout=45m
+```
+
+```sh
+# Tại web/, terminal2
+VITE_AUTH_MODE=server TASKASSIGN_API_TARGET=http://127.0.0.1:18080 pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort
+```
+
+- Tài khoản tổng hợp harness: `employee@example.invalid`, `hr@example.invalid`, `limited@example.invalid`; mật khẩu tổng hợp ban đầu `12345678`, không dùng vận hành. Employee có user_id khác employee_id, address/phone NULL. Không đưa credential thật vào bằng chứng.
+- Mở `/profile`, sửa trường cho phép, gửi; official không đổi khi pending, lịch sử có dòng mới, `/profile?request_id=<id>` mở chi tiết sau GET. Reload giữ dữ liệu DB. Form giữ nền lúc mở, không tự rebase; email/cơ cấu chỉ đọc. Không có CV/kỹ năng/dữ liệu prototype trong màn server.
+- Fault chỉ trong test: ghi chú chính xác `PCA43_STALE` đổi fullname official tổng hợp trước handler, kiểm stale khi patch fullname; `PCA43_LOST` đóng socket sau POST201 đã commit. Sau lost không gửi lại, đóng form → tải lại lịch sử → mở chi tiết đối soát. Không dùng các marker này trên dữ liệu thật.
+- Dừng bằng SIGUSR1 tới PID harness in ra, hoặc hết40phút; runner dọn đúng DB case. Ctrl+C Vite. Chạy guard lại sau dọn; không DROP/reset DB gốc hoặc dùng DATABASE_URL thay runner.
+
+#### Bằng chứng và giới hạn DATN-43 — 24/11/2026
+
+- FE5174 → proxy18080 → composition root/service/PostgreSQL18 test thật, owner/system-ID được guard xác minh; không Gmail. Browser xác nhận gửi patch Unicode → pending/detail, reload/deep link khôi phục; official trước/proposed/current tách đúng, NULL hiển thị Chưa cập nhật. Địa chỉ trắng bị validation, hủy bản nháp không thêm đề nghị.
+- Stale: marker thay nền khiến POST409, form khóa, yêu cầu tải lại official thay vì ghi đè. Lost: socket đóng sau commit, FE báo chưa xác định, không success/replay; danh sách cũ bị loại, nút đối soát bị khóa đến GET lịch sử mới; thấy đúng row đã lưu. Lượt chạy lại harness sau sửa câu SQL đối soát cuối đạt `TestProfileUIDemoServer`66.864s, đối soát2 request employee. Lượt đầu FAIL do sai tên bảng tại câu SQL kiểm cuối; không gọi lượt đó là harness pass. Fault là mô phỏng có kiểm soát tại test, không mất mạng vật lý.
+- Logout/Back về login không giữ PII; HR login chỉ thấy lịch sử self và không dựng chi tiết người khác qua adapter self; employee đổi request_id sang đề nghị HR nhận thông báo không tìm thấy. Limited ADMIN+HR deep link vẫn về change-password. Tab khác logout rồi tab đang giữ form gửi nhận401 → bỏ form/PII, về login. Đổi qua tab khác và quay lại giữ bản nháp; không suy thành mọi tổ hợp focus/pageshow đã được kiểm.
+- Responsive390px: document/scroll width390, modal358, bảng cuộn trong vùng riêng; không tràn trang. Form dài cuộn trong dialog; hủy thường trả focus về nút Đề nghị cập nhật, đóng detail trả về heading ổn định. Bổ sung fallback focus khi đóng form bị khóa qua dialog xác nhận sau lượt browser; thay đổi nhỏ này được review/code check, chưa kiểm lại riêng browser sau sửa.
+- Đã chạy `pnpm check`:15 tests harness,191 tests FE, lint/format/typecheck/build đạt. 15 tests mới input/adapter/resource kiểm patch/Go TrimSpace, code point/Unicode lỗi, byte65536/65537, DTO ownership/terminal, CSRF trước POST, clear/abort/thế hệ phản hồi, không retry và phân biệt lỗi trước/sau POST. Đây là HTTP giả/state tests, không thay bằng chứng browser/PG.
+- Tại gốc `go vet ./...`, `go test ./... -count=1`, `go build ./...` và `go vet -tags=integration,profileuidemo ./cmd/server` đạt; harness opt-in bổ sung chỉ phục vụ kiểm browser. Bộ42 tests `node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs` đạt; `node scripts/check-harness.mjs`451 nguồn và `git diff --check` đạt.
+- Sau dọn harness, chạy tuần tự `python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m` đạt: migrations15.032s, repository37.629s, HTTP11.734s, server28.133s. Guard trước/sau đúng PG18/owner/system-ID7705732357505970219, DB gốc public0 bảng; DB case đã dọn. Đây là regression HTTP/DB thật, không thay các ca browser chưa kiểm.
+- Tự review và sub-agent review đã xử lý: không đối soát bằng list cũ trước uncertain POST, mọi GET401/403 xóa form/PII, điểm trả focus không bị unmount lúc tải lại official. Review hỗ trợ không là phê duyệt GitHub độc lập hoặc runtime proof.
+- Chưa kiểm browser danh sách hơn20 dòng, phone xóa từ official khác NULL, DB outage vật lý/403 đổi quyền giữa thao tác, mọi biên64KiB qua UI, HTTPS/Neon/deploy. Pagination/phone NULL/body boundaries và lỗi503 có tests helper/HTTP/PG ở đúng tầng tương ứng; không nhận là các ca browser đã pass. T09 tiếp nhận deep link/request detail, T10 kiểm xuyên self→HR→notification và FR; chưa nhận toàn FR-009 hay toàn PCA hoàn tất. Chưa commit/push/PR hoặc chuyển Jira Done.
+
+Người dùng đã duyệt phong cách pilot ngày **20/10/2026**: shell, danh sách/chi tiết dự án và workspace phân công. Đây là nền để mở rộng từng đợt, **không phải toàn bộ frontend đã hoàn thành**. Dữ liệu tại `src/demo/` chỉ trong bộ nhớ, reload khôi phục fixture; điểm minh họa không phải engine thật. Có hai chế độ tách biệt: prototype trong bộ nhớ và FE auth server (DATN-19) nối login/me/csrf/logout. Phiên server dùng màn tiếp nối tạm, không mở workspace mẫu; DATN-20 đã bổ sung form đổi mật khẩu lần đầu; luồng local hạn chế → đổi → login mới đã được kiểm phối hợp với người dùng, giới hạn kiểm chứng ghi tại sổ công việc. DATN-27 đã nối ba danh mục tổ chức với 12 API/DB test; DATN-29 nối phần đọc hồ sơ chính chủ và thay đích tạm bằng `/profile` cho phiên thường không có HR. HR giữ đích danh mục; DATN-34 nối UI Admin tạo/tra cứu tại /accounts. DATN-43 đã nối đề nghị cập nhật/lịch sử/chi tiết self; không sửa official trực tiếp. Chưa Go embed/TanStack Query. `pnpm dev` chạy FE+Go local cùng nhau, `pnpm dev:demo` giữ prototype riêng. [Bằng chứng pilot](DESIGN-PILOT.md).
 
 ## Chạy local
 
