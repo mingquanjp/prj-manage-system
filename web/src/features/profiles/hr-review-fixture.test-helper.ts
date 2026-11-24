@@ -1,0 +1,16 @@
+export const reviewPendingFixture = {
+  request_id: 1,
+  employee_id: 9,
+  employee_code: "EMP000001",
+  fullname: "Nhân viên tổng hợp",
+  status: "PENDING",
+  before_values: { address: null },
+  proposed_values: { address: "Địa chỉ tổng hợp" },
+  current_values: { address: null },
+  explanation: null,
+  requested_by: 4,
+  requested_at: "2026-11-24T00:00:00Z",
+  resolved_by: null,
+  resolved_at: null,
+  decision_reason: null,
+}

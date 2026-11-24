@@ -1,3 +1,4 @@
+import { reviewId, reviewStatuses, type ReviewQuery } from "../profiles/hr-review-api.ts"
 import type { Principal } from "./auth-api.ts"
 import { catalogKinds, type CatalogKind } from "../organization/catalog-api.ts"
 
@@ -43,4 +44,47 @@ export function parseCatalogQuery(search: string) {
   if (!Number.isSafeInteger(p) || p > 2147483647 || !Number.isSafeInteger(size) || size > 100)
     return null
   return { q, page: p, pageSize: size }
+}
+
+export function canReviewServerProfiles(principal: Principal) {
+  return !principal.must_change_password && principal.system_roles.includes("HR")
+}
+export function parseReviewLocation(
+  path: string,
+  search: string,
+): { id?: number; query: ReviewQuery } | null {
+  const root = "/personnel/profile-requests"
+  const query: ReviewQuery = { status: "PENDING", page: 1, pageSize: 20 }
+  if (path !== root) {
+    const match = /^\/personnel\/profile-requests\/([1-9]\d*)$/.exec(path)
+    const id = match ? Number(match[1]) : 0
+    return reviewId(id) && !search ? { id, query } : null
+  }
+  const params = new URLSearchParams(search)
+  if (
+    [...params.keys()].some(
+      (key) => !["status", "page", "page_size"].includes(key) || params.getAll(key).length !== 1,
+    )
+  )
+    return null
+  const status = params.get("status")
+  if (status !== null) {
+    if (status === "all") query.status = undefined
+    else if (reviewStatuses.includes(status as (typeof reviewStatuses)[number]))
+      query.status = status as (typeof reviewStatuses)[number]
+    else return null
+  }
+  const page = params.get("page") ?? "1",
+    size = params.get("page_size") ?? "20"
+  if (
+    !/^[1-9]\d*$/.test(page) ||
+    !/^[1-9]\d*$/.test(size) ||
+    !reviewId(Number(page)) ||
+    !reviewId(Number(size)) ||
+    Number(size) > 100
+  )
+    return null
+  query.page = Number(page)
+  query.pageSize = Number(size)
+  return { query }
 }
