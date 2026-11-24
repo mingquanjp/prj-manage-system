@@ -2,6 +2,67 @@
 
 ## Hiện trạng
 
+### DATN-45 / PCA-T09 — khung thông báo server
+
+- Mục tiêu: nối chuông/panel thông báo own từ API server, filter all/unread, phân trang20 và unread_count; dùng proposal PCA mục6.2/6.5, OpenAPI canonical và screen contract thông báo. Không polling hoặc mở trang mới.
+- Mapping đã xác nhận: PROFILE_CHANGE_SUBMITTED → `/personnel/profile-requests/{id}`; APPROVED/REJECTED → `/profile?request_id={id}`. Chỉ resource PROFILE_CHANGE_REQUEST/ID hợp lệ; GET chi tiết theo quyền hiện hành thành công mới mở và đánh dấu đọc. Mở khung không tự đọc; mất quyền vẫn cho own read thủ công.
+- Tải khi vào phiên nghiệp vụ, mở khung/filter/page và sau mutation hồ sơ/read. Không fallback demo; clear/abort dữ liệu khi đổi phiên, phân biệt lỗi phiên/quyền/dịch vụ và mất phản hồi read. Giữ đóng/Escape/ngoài/focus/mobile theo visual hiện có.
+- Ngoài phạm vi: email/push/realtime, sự kiện mới, schema/dependency, Neon/deploy và Git handoff. Tiêu chí: adapter/state tests, pnpm check, contract/harness, browser PostgreSQL test thật xuyên submit→HR→decision→owner và tự review/sub-agent review; chỉ ghi kết quả sau thực chạy.
+
+#### Nguồn và cách chạy lại DATN-45
+
+`src/features/notifications/ServerNotificationMenu.tsx` giữ UI riêng server, dùng `server-notifications-api.ts`/`server-notifications-resource.ts` và `notification-opener.ts`. Không import adapter demo. `ServerWorkspace` lắp chuông cho phiên thường, nhận callback sau submit/decision đã được xác nhận; không đổi đích login hoặc cổng limited. Read chỉ cập nhật trạng thái thông báo, không quyết định hồ sơ. GET sau read lấy snapshot/count mới; không trừ số lạc quan. Payload/quyền/URL theo canonical, không nhận URL từ message.
+
+Sau khi bàn giao về checkout có state runner sở hữu, dùng lại harness DATN-43 (không Gmail):
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration,profileuidemo -p 1 ./cmd/server -run '^TestProfileUIDemoServer$' -count=1 -v -timeout=45m
+```
+
+Terminal khác tại `web/`:
+
+```sh
+VITE_AUTH_MODE=server TASKASSIGN_API_TARGET=http://127.0.0.1:18080 pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort
+```
+
+Mặc định dùng5174 cho frontend và18080 cho harness; `pnpm dev` thường dùng5174→8080. Nếu5174 đang được một lượt kiểm khác sử dụng, có thể đặt `PROFILE_UI_TEST_PORT=5175` cho harness và đổi Vite sang5175 cùng lúc; không nới Origin runtime. Dùng fixture `employee@example.invalid`/`hr@example.invalid`/`limited@example.invalid` và mật khẩu tổng hợp trong hướng dẫn DATN-43 phía dưới. Không nhập credential thật. Gửi một đề nghị từ employee, logout/login HR, mở chuông/filter rồi click thông báo để xét duyệt, logout/login employee để mở kết quả. Official chỉ thay sau approve; reject giữ official.
+
+Harness in PID của chính lượt chạy: `kill -USR2 <PID>` bỏ HR của đúng fixture; gửi lại tín hiệu phục hồi role. Dùng để kiểm link notification cũ bị từ chối nhưng own read vẫn được. Chỉ có trong build tag opt-in, không thêm endpoint điều khiển. `kill -USR1 <PID>` dừng và đối soát/dọn DB case; Ctrl+C dừng Vite. Không chạy DB suite khác cùng lúc, không sao chép state/credential hoặc dùng `.env`/Neon.
+
+**Lệnh thực cho worktree ngày25/11/2026:** runner ở `/Users/quanjp/Projects/ai-staffing` giữ state sở hữu; lệnh chạy code worktree không sao chép secret:
+
+```sh
+PROFILE_UI_TEST_PORT=5175 python3 scripts/authdb/manage.py run -- python3 -c 'import os; os.chdir("/private/tmp/ai-staffing-DATN-45"); os.execvp("go", ["go", "test", "-tags=integration,profileuidemo", "-p", "1", "./cmd/server", "-run", "^TestProfileUIDemoServer$", "-count=1", "-v", "-timeout=45m"])'
+```
+
+#### Bằng chứng thực chạy ngày25/11/2026
+
+Môi trường: Node24.15.0, pnpm11.19.0, Go1.27.4, in-app browser, PG18 test sở hữu đã qua guard; không mail thật/Neon. Checkout gốc có thay đổi ngoài phạm vi được giữ nguyên, triển khai trong worktree DATN-45 từ main324727f. Dependency dùng nguyên lockfile, không thêm package. Lần install offline ban đầu không đủ cache, chạy lại install frozen-lockfile thành công; lockfile không đổi.
+
+| Ca browser + PostgreSQL thật | Kết quả quan sát |
+|---|---|
+| Employee submit → HR notification → click → approve → owner notification → self detail | Đạt lượt đầu; pending giữ official, approve cập nhật official, link self đúng request_id; read giữ sau reload. Harness dọn đạt193.430s, đối soát1 request. |
+| Notification cũ sau mất HR | Lượt cuối gửi pending mới, SIGUSR2 bỏ HR fixture; click không điều hướng/không lộ chi tiết, hiện lỗi quyền; vẫn own read được, count1→0. Reload bỏ menu HR, không mở danh mục. Phục hồi fixture để kiểm tiếp. |
+| Reject → owner nhận kết quả → mở terminal đã đọc | Đạt lượt cuối: thông báo chung không chứa lý do; chi tiết self hiển thị kết luận/lý do đúng người, official vẫn NULL. Read không approve/reject thêm. |
+| Mở/đóng/filter không tự read | Unread giữ nguyên khi mở, đóng, đổi filter; chỉ click mở thành công hoặc nút own read mới đổi. All/unread rỗng có trạng thái riêng. |
+| Phân trang/count | Tạo thêm21 đề nghị qua form/API thật, HR có22 notifications/21 unread. All trang2 có2 mục; unread trang2 có1 mục và total21. Đọc mục cuối → total/unread20, trang2 rỗng có nút quay lại; trang1 đủ20 mục. |
+| Focus/responsive | Escape/nút đóng trả chuông; click ngoài đóng; mở HR tới review-heading, mở self tới modal chi tiết. Nút read biến mất/đổi trang trả focus tiêu đề panel. Mobile390px: document390, panel358px; desktop1280: panel420px, không tràn. Viewport đã reset. |
+| Logout/Back/đổi user/limited | Logout và Back vẫn login; đổi actor không giữ danh sách trước. Phiên limited HR+ADMIN chỉ thấy cổng đổi mật khẩu, không chuông/khung nghiệp vụ. Không đổi credential trong lượt này. |
+| Backend dừng khi read | Sau read thành công lấy CSRF, dừng đúng harness rồi bấm own read: FE báo chưa rõ kết quả, không giảm số/giả success hoặc tự POST lại; GET tải lại lỗi hiển thị dịch vụ chưa sẵn sàng, không demo. Đây là proxy mất backend, không là mất phản hồi sau commit. |
+
+Harness cuối PASS283.061s: đối soát22 requests,23 notifications,19 unread trước khi dọn DB; ca read sau dừng không thể nhận xác nhận commit. Guard sau dọn vẫn PG18 đúng owner/system-ID và DB gốc0 bảng. Log khi browser hủy GET có code lỗi chung/context cancellation; không nhận chúng là ca DB outage đã kiểm, không log payload/credential.
+
+| Cổng thực chạy tại worktree DATN-45 | Kết quả |
+|---|---|
+| Tại `web/`: `pnpm check` | PASS:15 harness tests,213 FE tests (14 mới), lint/format/typecheck/build. |
+| Tại gốc: `go vet ./...`, `go test ./... -count=1`, `go build ./...` | PASS; không thay integration có build tag. |
+| `go vet -tags=integration,profileuidemo ./cmd/server` | PASS cho harness có build tag; browser PG dùng lệnh opt-in ở trên. Không chạy lại toàn bộ DB regression suite trong ticket UI này. |
+| `node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs` | PASS42 tests kiểm tĩnh. |
+| `node scripts/check-harness.mjs`, `git diff --check` | PASS464 nguồn; kiểm kê không thay runtime. Kiểm staged được chạy riêng khi bàn giao Git. |
+
+**Review/giới hạn:** tự review và sub-agent độc lập đã tìm/sửa race load/read, clear khi401 đổi phiên và focus sau danh sách đổi;14 focused adapter/resource/opener tests đạt. Các ca401/403/503/timeout/mất phản hồi sau read và phản hồi cũ có kiểm bằng HTTP giả/deferred promises; không thay browser/PG. Chưa diễn tập browser read204 đã commit nhưng mất phản hồi hoặc DB vật lý outage; chưa HTTPS/Neon/deploy hay realtime/mọi sự kiện toàn app. Không nhận toàn FR-059/060 hoặc PCA-T10 từ ticket này. Chưa commit/push/PR/merge/Done.
+
 ### Brief DATN-43 / PCA-T07 — đang triển khai
 
 - Mục tiêu: nối đề nghị cập nhật, lịch sử phân trang và chi tiết chính chủ trên `/profile`, theo proposal PCA mục4/6.5, OpenAPI PCA và workflow hồ sơ. Giữ official tách khỏi pending; không dùng fixture làm danh tính/dữ liệu server.

@@ -97,7 +97,15 @@ function Comparison({ detail }: { detail: ReviewDetail }) {
     </>
   )
 }
-export function ServerProfileReviews({ session, busy }: { session: AuthSession; busy: boolean }) {
+export function ServerProfileReviews({
+  session,
+  busy,
+  onMutation,
+}: {
+  session: AuthSession
+  busy: boolean
+  onMutation?: () => void
+}) {
   const location = useLocation()
   const navigate = useNavigate()
   const parsed = parseReviewLocation(location.pathname, location.search)
@@ -341,7 +349,8 @@ export function ServerProfileReviews({ session, busy }: { session: AuthSession; 
                   )
                   return
                 }
-                void resource.decide(decision, reason).then(() => {
+                void resource.decide(decision, reason).then((success) => {
+                  if (success) onMutation?.()
                   setDecision(null)
                   setReason("")
                   setValidation("")
