@@ -27,6 +27,10 @@ export function createProfileResource(api: ProfileApi) {
       }
     },
     clear,
+    invalidate(message: string) {
+      clear()
+      set({ phase: "error", message })
+    },
     async load(actor: Pick<Principal, "user_id" | "employee_id">, recheckSession: () => void) {
       clear()
       const current = generation
