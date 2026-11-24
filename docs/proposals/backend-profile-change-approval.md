@@ -362,3 +362,9 @@ Swagger dev lọc năm operation từ canonical, giữ năm auth/16 OAP; không 
 Đã bổ sung service/port, PostgreSQL adapter và hai API thông báo own theo mục6.2/6.5 và SQL plan9.3. List giữ actor/count/unread/items cùng snapshot; mark-read kiểm lại actor dưới khóa, giữ read_at đầu, không phụ thuộc quyền mở resource. Composition root lắp dependency; nhóm Swagger dev `/docs/notifications.openapi.json` chọn đúng hai operation từ canonical. Bản đầu23/11 triển khai độc lập DATN-41; bàn giao24/11 đã cập nhật từ main có DATN-41, giữ đủ hai nhóm API và kiểm lại HTTP/PG.
 
 Nguồn/lệnh/kết quả/giới hạn xem [runbook DATN-42](../../scripts/authdb/README.md#datn-42--pca-t06--thông-báo-chính-chủ). Đầu ra cho DATN-45 là DTO/list/read và lỗi; chưa khung thông báo UI, polling, mail/push hoặc sự kiện ngoài hồ sơ. Không schema/dependency mới, Neon hoặc quyền đọc tài nguyên từ link cũ; chưa commit/push/PR hoặc tự chuyển Jira Done trong lượt triển khai.
+
+### 10.7. Bàn giao UI HR — DATN-44 / PCA-T08, ngày24/11/2026
+
+Đã nối hàng chờ `/personnel/profile-requests` và chi tiết `/{id}` với API DATN-41; HR menu từ principal server, giữ đích login/cổng limited theo6.5. Có list/filter/page, đối chiếu before/proposed/current, approve/reject qua CSRF, terminal và xử lý stale/target inactive/quyền/kết quả chưa rõ; không mở direct edit hoặc demo. Mapping/file/lệnh/kết quả browser+PG thực và giới hạn tại [sổ frontend](../../web/README.md#datn-44--pca-t08--hàng-chờ-và-quyết-định-hồ-sơ-hr).
+
+Tự review và sub-agent đã sửa trim Unicode khớp Go và focus Dialog; lượt kiểm lại không còn blocker P1/P2 trong phạm vi nguồn đã xem. Browser PG xác nhận approve/reject/reload/tab cũ/stale/inactive/guard/timeout DB/mobile/focus; không nhận review/HTTP giả là bằng chứng transaction. DATN-43 đang làm ở chat/worktree khác: chưa nhận đã kiểm toàn F1 self→F2 HR hoặc ghép UI thông báo DATN-45. Bộ API/SQL và quyết định PCA-A01–A09 giữ nguyên. Chưa commit/push/PR/merge hoặc chuyển Jira Done.
