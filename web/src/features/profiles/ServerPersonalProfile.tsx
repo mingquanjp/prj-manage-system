@@ -21,10 +21,12 @@ export function ServerPersonalProfile({
   principal,
   session,
   busy,
+  onMutation,
 }: {
   principal: Principal
   session: AuthSession
   busy: boolean
+  onMutation?: () => void
 }) {
   const [resource] = useState(() => createProfileResource(createProfileApi()))
   const state = useSyncExternalStore(resource.subscribe, resource.getSnapshot)
@@ -249,6 +251,7 @@ export function ServerPersonalProfile({
               recheckSession,
             )
             if (!result) return
+            onMutation?.()
             setBefore(null)
             setPage(1)
             setParams({ request_id: String(result.request_id) })

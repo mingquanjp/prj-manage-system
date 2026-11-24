@@ -15,6 +15,8 @@ import { ServerProfileReviews } from "../profiles/ServerProfileReviews"
 import { ServerPersonalProfile } from "../profiles/ServerPersonalProfile"
 import { ServerAccounts } from "../accounts/ServerAccounts"
 import { ServerCatalogs } from "../organization/ServerCatalogs"
+import { useState } from "react"
+import { ServerNotificationMenu } from "../notifications/ServerNotificationMenu"
 
 export function ServerWorkspace({
   principal,
@@ -28,6 +30,8 @@ export function ServerWorkspace({
   message: string
 }) {
   const location = useLocation()
+  const [notificationVersion, setNotificationVersion] = useState(0)
+  const refreshNotifications = () => setNotificationVersion((version) => version + 1)
   const home = serverHome(principal)
   const kind = catalogKindAt(location.pathname)
   if (
@@ -62,6 +66,12 @@ export function ServerWorkspace({
           TaskAssign
         </Link>
         <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm">
+          <ServerNotificationMenu
+            principal={principal}
+            session={session}
+            busy={busy}
+            refreshVersion={notificationVersion}
+          />
           <span className="min-w-0 break-words">
             {principal.fullname} · {principal.employee_code}
           </span>
@@ -133,9 +143,15 @@ export function ServerWorkspace({
               key={`${principal.user_id}:${location.pathname}:${location.search}`}
               session={session}
               busy={busy}
+              onMutation={refreshNotifications}
             />
           ) : profilePage ? (
-            <ServerPersonalProfile principal={principal} session={session} busy={busy} />
+            <ServerPersonalProfile
+              principal={principal}
+              session={session}
+              busy={busy}
+              onMutation={refreshNotifications}
+            />
           ) : accountsPage && !denied ? (
             <ServerAccounts key={principal.user_id} session={session} busy={busy} />
           ) : kind && !denied ? (
