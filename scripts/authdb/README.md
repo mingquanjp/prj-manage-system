@@ -908,3 +908,53 @@ Suite PG đầy đủ đạt: migrations14.542s, repository36.192s, HTTP5.332s, 
 **Tái hiện và dọn:** chạy đúng lệnh runner bên trên; các fixture dùng dữ liệu tổng hợp và DB case hy sinh, tự dọn theo runner. Không reset DB demo/volume hoặc force migration version. Chạy local và `/docs/` theo [hướng dẫn API](../../docs/api/README.md#datn-41--năm-api-đề-nghị-hồ-sơ); không cần thêm biến môi trường PCA.
 
 **Giới hạn/consumer:** bằng chứng HTTP là httptest/server + PG local, không browser PCA, HTTPS/Neon/deploy hoặc physical network loss. Wrapper commit unknown chỉ chứng minh xử lý mất xác nhận sau commit PG thật; race/atomicity sâu PCA-DB04–09 tái sử dụng suite DATN-39/40 đã chạy lại, không nhận toàn PCA-DB01–12 hoặc toàn FR đã đạt. DATN-43/44 tiếp nhận input/DTO/lỗi canonical; DATN-42 tiếp tục API thông báo, F4 còn ngoài phạm vi. Chưa commit/push/PR/merge hoặc đổi Jira Done trong lượt này.
+
+## DATN-42 — PCA-T06 — thông báo chính chủ
+
+Nguồn thực thi: `internal/service/notification/notification.go`, `internal/repository/postgres/notification.go`, `internal/transport/http/notification.go` và `notification_swagger.go`; wiring tại `internal/app/auth.go`, `internal/transport/http/auth_router.go`. Canonical vẫn là `docs/api/profile-change-approval.openapi.json`; không sửa migration000001–000006 hoặc thêm dependency. Branch `feature/DATN-42-own-notifications` nằm ở worktree riêng `/private/tmp/ai-staffing-DATN-42` để không đè DATN-41 trong checkout chính.
+
+Hai API cho phiên thường, mọi tổ hợp role, recipient từ **user_id** trong phiên:
+
+- `GET /api/notifications?filter=all|unread&page=1&page_size=20`: mặc định all/1/20, tối đa100mục, ID/page INT32 và offset INT64. Unknown/repeated query trả400. `total` sau filter, `unread_count` toàn own; actor/count/items trong REPEATABLE READ READ ONLY. Không đánh dấu đọc khi list; sort created_at DESC rồi notification_id DESC.
+- `POST /api/notifications/{id}/read`: Origin/CSRF, JSON UTF-8 body chính xác `{}`, giới hạn byte thực65536 kể cả chunked; không Content-Encoding. User→employee→notification cùng chiều writer; recheck trạng thái/cờ actor, UPDATE own với COALESCE(read_at,clock_timestamp()). Read lại204 giữ mốc đầu; ngoài own/missing cùng404. Không kiểm quyền resource để mark own, cũng không cấp quyền resource. Commit chưa rõ không trả success hoặc tự retry.
+
+DTO không trả recipient/contact/patch/reason hoặc credential; message tổng quát do writer hồ sơ hiện có tạo. Mọi response API no-store, không Set-Cookie;204 không JSON. Nhóm Swagger thông báo ở dev chỉ có hai operation đã lắp; nhóm này không công bố năm API request hoặc ba API HR khác từ canonical10operation. Production không mở docs.
+
+Lệnh tái hiện sau checkout nhánh (tại gốc repo):
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Đợt worktree thực chạy runner gốc đã có state0600, không sao chép/in credential hoặc tạo tài nguyên mới:
+
+```sh
+python3 /Users/quanjp/Projects/ai-staffing/scripts/authdb/manage.py run -- sh -c 'cd /private/tmp/ai-staffing-DATN-42 && go test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m'
+```
+
+Không chạy hai suite DB đồng thời giữa các chat. Runner xác minh cluster18/owner và cấp TEST_DATABASE_URL chỉ cho subprocess; không dùng DATABASE_URL/.env/Neon. Fixture tự tạo/dọn `auth_case_*` thuộc chính lượt test; không dọn DB demo/checkout khác hoặc chạy destroy/reset để sửa test lỗi.
+
+| Phần bằng chứng | Test thực |
+|---|---|
+| PCA-DB10 own/filter/page rỗng/read | `TestNotificationOwnSnapshotFilterAndRead`: user_id≠employee_id; Admin không bypass; mất HR làm resource404 nhưng own read vẫn204; read lặp giữ mốc; total/unread và page INT32max |
+| PCA-DB10 snapshot | `TestNotificationListConcurrentSnapshot`: hai connection, mutation insert hoặc read giữa count/items qua hook; snapshot hiện tại không trộn dữ liệu, lượt sau thấy commit |
+| PCA-DB10 cạnh tranh/recheck | `TestNotificationConcurrentReadAndActorRecheck`: `pg_blocking_pids` xác nhận chờ thật; so timestamp sau hai commit với mốc UPDATE đầu; actor limited/locked/employee inactive thay đổi trong lúc chờ bị từ chối |
+| Commit outcomes | `TestNotificationCommitFaults`: rollback xác nhận và commit PG thật nhưng wrapper làm mất xác nhận; không success giả/retry, list đối soát DB. Wrapper không phải mô phỏng mất mạng vật lý |
+| HTTP+PG | `TestNotificationApplicationPostgres`: submit/approve/reject writer thật→list own; role/limited/revoke/ID/DTO; chunked65536/65537, JSON/charset/encoding/Origin/CSRF/query;204 không body/no-store/không cookie; fault schema500 và khóa bảng gây timeout DB503 thật |
+| Writer rollback tái sử dụng | `TestProfileChangeAtomicFaultsAndCommitOutcomes`, `TestProfileChangeDecisionFaultsAndCommitOutcomes` trong suite repo: notification không thoát transaction lỗi; xem giới hạn/bằng chứng DATN-39/40. Không gọi unit/fake là transaction thật |
+| Kiểm tĩnh/unit | Notification service validation/offset/projection/error; HTTP mapper/inventory/dev-only/dependency;6 Node Swagger tests gồm suffix `/{id}/read`, không mở operation chưa có |
+
+Kết quả đợt23/11/2026: Go1.27.4 darwin/arm64, Node24.15.0, Python3.9.6. `check` trước/sau integration xác minh PG18/owner/DBgốc0bảng/systemID7705732357505970219. Go vet/unit/build đạt; notification HTTP/service unit bổ sung đạt;48 contract/harness/Swagger tests đạt. Lượt integration đầu đạt migrations/repository/HTTP nhưng server test dùng nhầm assertion không Set-Cookie của nghiệp vụ cho logout; đã sửa dùng auth helper (logout xóa cookie đúng contract). Retest `./cmd/server -run Notification -count=1 -timeout=5m` đạt11.093s, gồm fault503 thật. Suite tổng hợp cuối đạt cả4package: migrations14.298s, repository35.163s, HTTP4.388s, server19.259s; gồm assertion timestamp concurrent đã siết. Harness437file và diff check đạt.
+
+Tự review và sub-agent source/test review đã xử lý regression mock Swagger; đã bổ sung so timestamp concurrent trực tiếp theo góp ý. Review không thay bằng chứng DB. Chưa UI/browser/khung chuông, DATN-41 gộp chung, F4, polling/realtime/email/push, Neon/HTTPS/deploy; không nhận toàn FR-059 hoặc quyền resource từ link notification. Chưa commit/push/PR/Jira Done trong lượt triển khai này.
+
+**Tiếp nối bàn giao24/11/2026:** đã rebase nhánh DATN-42 lên `origin/main` tại54b75ab, chứa PR54/DATN-41 đã merge. Hợp nhất composition/router/Swagger và tài liệu hai task; fallback giữ cờ ProfileChanges, hai nhóm Swagger vẫn có5operation request và2operation notification. Hai notification operation chuyển sang implemented trong canonical/checker, ba HR/F4 vẫn planned. `TestNotificationApplicationPostgres` kiểm thêm cả hai URL Swagger qua composition root thật; không chỉ render/VM.
+
+Kiểm lại bản tích hợp: Go vet/unit/build đạt,49 contract/harness/Swagger tests đạt, integration4package tuần tự đạt: migrations15.609s, repository49.513s, HTTP5.548s, server23.947s. Runner `up` chỉ khởi động lại container test sở hữu đang dừng; `check` xác minh PG18/owner/DBgốc0bảng trước suite. Harness442file và diff/staged checks được kiểm trước commit bàn giao. Sub-agent rà lại tương thích không còn góp ý chặn; giới hạn chưa gộp DATN-41 của snapshot23/11 đã được khép, các giới hạn UI/browser/F4/Neon/HTTPS/deploy vẫn giữ. Commit/push/PR do người dùng giao trong lượt bàn giao này; không tự merge hoặc chuyển Jira Done.

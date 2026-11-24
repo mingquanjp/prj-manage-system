@@ -1912,7 +1912,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [],
@@ -2230,7 +2230,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F1-F3",
         "x-requires-business-session": true,
         "x-required-system-roles": [],
