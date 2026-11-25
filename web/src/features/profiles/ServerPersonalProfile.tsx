@@ -59,10 +59,25 @@ export function ServerPersonalProfile({
   useEffect(() => {
     void requests.loadList(employeeId, page, recheckSession)
   }, [requests, employeeId, page, recheckSession])
+  const loadDetail = useCallback(
+    async (isActive: () => boolean = () => true) => {
+      if (!requestId) return
+      const detail = await requests.loadDetail(employeeId, requestId, recheckSession)
+      if (!isActive() || !detail) return
+      // Kết quả từ thông báo/tab khác phải khớp official và lịch sử đang hiển thị.
+      void resource.load({ user_id: userId, employee_id: employeeId }, recheckSession)
+      void requests.loadList(employeeId, page, recheckSession)
+    },
+    [requests, resource, userId, employeeId, requestId, page, recheckSession],
+  )
   useEffect(() => {
-    if (requestId) void requests.loadDetail(employeeId, requestId, recheckSession)
+    let active = true
+    if (requestId) void loadDetail(() => active)
     else requests.clearDetail()
-  }, [requests, employeeId, requestId, recheckSession])
+    return () => {
+      active = false
+    }
+  }, [requests, requestId, loadDetail])
   const profile = state.profile
   const blocked = requestState.submission === "uncertain" || requestState.submission === "stale"
   const reloadList = () => requests.loadList(employeeId, page, recheckSession)
@@ -287,7 +302,7 @@ export function ServerPersonalProfile({
                 variant="outline"
                 disabled={busy}
                 onClick={() => {
-                  void requests.loadDetail(employeeId, requestId, recheckSession)
+                  void loadDetail()
                 }}
               >
                 Tải lại chi tiết

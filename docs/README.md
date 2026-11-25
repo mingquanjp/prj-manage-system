@@ -29,6 +29,8 @@ Các checklist đặc tả không phải kết quả test đã chạy. Một s�
 
 ### Chuẩn bị backend từ yêu cầu
 
+- DATN-46/PCA-T10 tổng hợp kiểm xuyên hồ sơ F1–F3 trên bản ghép DATN-43/44/45: [runbook demo26/11/bằng chứng/FR/giới hạn](api/auth-runbook.md#8-datn-46--pca-t10--demo-hồ-sơ-ngày26112026), [ma trận PCA-DB/regression](../scripts/authdb/README.md#datn-46--pca-t10--ma-trận-pg-và-regression). Có sửa/retest đồng bộ official/lịch sử khi mở notification kết quả cùng phiên; không nhận F4 hoặc toàn notifications, Neon/HTTPS/deploy từ đầu ra này.
+
 Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/functional-requirements.md) kiểm kê yêu cầu từ UC/workflow để chuẩn bị phân miền và proposal; phân biệt chức năng FR, quy tắc BR và yêu cầu dùng chung CR, có bảng truy vết ID sau review. Đây không phải nguồn thay quyết định nghiệp vụ, bản thiết kế API hoặc xác nhận chức năng đã chạy; điểm chưa chốt được ghi riêng trong tài liệu.
 
 [Bản đồ miền nghiệp vụ](product/business-domains.md) nối FR với trách nhiệm, dữ liệu thiết kế và phụ thuộc; đề xuất 6 miền và phần hỗ trợ thông báo trong cùng backend. Đọc sau FR, trước chọn feature/proposal; không phải sơ đồ package hoặc kế hoạch tách service.

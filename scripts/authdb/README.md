@@ -1,5 +1,36 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
+## DATN-46 / PCA-T10 — ma trận PG và regression
+
+Snapshot main2278de8 đã ghép F1–F3. Kịch bản/bằng chứng browser, lệnh/môi trường/FR và giới hạn tại [runbook PCA phần8](../../docs/api/auth-runbook.md#8-datn-46--pca-t10--demo-hồ-sơ-ngày26112026). Bảng này nối ma trận [SQL plan PCA mục6](../../docs/proposals/backend-profile-change-approval-sql-plan.md#6-ma-trận-kiểm-chứng-dự-kiến) tới test hiện hữu; không thay contract hoặc nhân bản test thành task mới.
+
+Ngày25/11/2026 thực chạy từ checkout giữ state sở hữu:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-46 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+```
+
+Lượt đầu FAIL ở kiểm cleanup migrations/repository vì còn đúng một DB case cũ,0connection; không forceversion hoặc sửa test. Người dùng cho phép dọn đúng case, kiểm lại owner `ai_staffing_test`/0connection rồi DROP đúng tên không FORCE. Lượt chạy lại toàn bộ tuần tự PASS: migrations14.335s, repository36.359s, HTTP5.377s, server19.682s. Đây là PG/HTTP thật, không lấy unit thay transaction. Không chạy suite song song với browser harness.
+
+| Ca | Test thực trong suite chạy lại | Phạm vi/giới hạn |
+|---|---|---|
+| PCA-DB01 | `TestPCAEmptyDownUp`, `TestPCAJSONStateFKAndIndexes` | Migration/constraint/index/FK trên DB case rỗng |
+| PCA-DB02 | `TestPCALegacyPreservesAuthOAP`, `TestPCAPreflightRefusesBeforeDirty` | Legacy user≠employee, bảo toàn auth/OAP; notification có dữ liệu/drift dừng trước dirty |
+| PCA-DB03 | `TestPCADownRefusesEachHistoryTable`, `TestPCADownRefusesUnknownDependency`, `TestPCADDLFailureAndTOCTOUGuard`, `TestPCADownDDLFailureRollsBack` | Down/up case hy sinh, rollback DDL và metadata dirty; không down dữ liệu đích |
+| PCA-DB04 | `TestProfileChangeInputAndSelfFailuresDoNotWrite`, `TestProfileChangeUnicodeBoundariesThroughUseCase` | Allowlist/Unicode/BR-001/NULL/official chưa đổi |
+| PCA-DB05 | `TestProfileChangeSubmitReplayAndRead`, `TestProfileChangeSameKeyConcurrentAndRollbackFollower`, `TestProfileChangeAtomicFaultsAndCommitOutcomes` | Key24h/result/rollback, hai connection/barrier; không auto retry |
+| PCA-DB06 | `TestProfileChangeDecisionApproveRejectAndReplay`, `TestProfileChangeDecisionFaultsAndCommitOutcomes` | Kết luận/official/notification nguyên tử, terminal bất biến |
+| PCA-DB07 | `TestProfileChangeDecisionConcurrentSingleWinner` | Approve/approve và approve/reject hai connection, chỉ một kết luận |
+| PCA-DB08 | `TestProfileChangeDecisionStaleAndDisjointFields`, `TestProfileChangeDecisionConcurrentPendingFields` | Cùng trường stale, khác trường không conflict giả; phone NULL |
+| PCA-DB09 | `TestProfileChangeActorRecheckAndExpiryAfterLock`, `TestProfileChangeRecipientRecheck`, `TestProfileChangeTwoHRActorsLockOrder`, `TestProfileChangeDecisionActorRecheckAfterLock`, `TestProfileChangeDecisionTargetAndSelfRules`, `TestProfileChangeDecisionChangedOwnerLinkageFailsClosed` | Role/status/flag/linkage/recipient/actor=target/target inactive; các writer tương lai còn phải theo giao thức khóa |
+| PCA-DB10 | `TestNotificationOwnSnapshotFilterAndRead`, `TestNotificationListConcurrentSnapshot`, `TestNotificationConcurrentReadAndActorRecheck` | Snapshot/count/read idempotent/own, link mất quyền không cấp quyền; không PII |
+| PCA-DB12 | `TestProfileChangeHTTPStrictInputAndActualBodyBoundary`, `TestProfileChangeHTTPDatabaseFaultAndUnknownCommit`, `TestProfileChangeHTTPDatabaseTimeoutIs503`, `TestNotificationCommitFaults`, hai test commit outcomes ở trên | 64KiB thực đọc/strictJSON/HTTP/error/unknowncommit; fault sau commit thật không là mất mạng vật lý |
+
+Auth/OAP regression nằm trong cùng bốn package, gồm năm API auth và16OAP qua composition root; body auth/OAP8KiB không bị đổi bởi PCA64KiB. Các ca projection/snapshot/actor/CSRF/Origin và DTO ở source test tương ứng; danh sách bảng này không là số lượng E2E. PCA-DB11/F4 chưa thuộc phạm vi, không gắn pass.
+
+Harness browser sau suite PASS474.04s,3requests employee/17notifications/10unread; các request HR bổ sung được ghi trong runbook browser. Sau dọn: guard PG18/system-ID7705732357505970219/owner đúng, DB gốc0bảng; truy vấn metadata kiểm0 DB `auth_case_*`. Không sửa migrations000001–000006, không thêm seed/runtimefixture hoặc áp Neon. Ma trận đã chạy không cấp quyền migration đích thật. Chưa commit/push/PR/Done trong lượt kiểm này.
+
 Nguồn SQL/mapping/fixture và phạm vi: [proposal mục 6.1.7](../../docs/proposals/backend-auth-session-implementation.md#617-bàn-giao-môi-trường-và-kế-hoạch-dữ-liệu--datn-6--auth-t05-08112026). Đây là công cụ local dành riêng cho test, không phải server/runner migration production.
 
 ## Điều kiện và tài nguyên

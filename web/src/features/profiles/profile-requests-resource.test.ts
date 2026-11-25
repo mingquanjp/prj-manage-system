@@ -52,6 +52,27 @@ test("clear discards late list/detail responses after leaving session", async ()
   await Promise.all([loading, reading])
   assert.equal(resource.getSnapshot().list.data, undefined)
   assert.equal(resource.getSnapshot().detail.data, undefined)
+  assert.equal(await reading, undefined)
+})
+
+test("terminal detail clears obsolete submit notice and returns only confirmed current data", async () => {
+  const terminal: RequestDetail = {
+    ...detail,
+    status: "APPROVED",
+    resolved_at: "2026-11-24T03:00:00Z",
+    resolved_by: 8,
+    current_values: { phone: "123" },
+  }
+  const resource = createProfileRequestsResource(api({ read: async () => terminal }))
+  await resource.submit(
+    (post) => post("csrf"),
+    async () => detail,
+    noop,
+  )
+  assert.equal(resource.getSnapshot().submission, "success")
+  assert.equal(await resource.loadDetail(2, 9, noop), terminal)
+  assert.equal(resource.getSnapshot().message, "")
+  assert.equal(resource.getSnapshot().submission, "idle")
 })
 test("newer page wins even if earlier GET ignores abort", async () => {
   const first = deferred<RequestPage>()

@@ -89,8 +89,16 @@ export function createProfileRequestsResource(api: ProfileRequestsApi) {
       set({ ...state, detail: { phase: "loading", message: "" } })
       try {
         const data = await api.read(employeeId, requestId, detailController.signal)
-        if (epoch === generation && current === detailGeneration)
-          set({ ...state, detail: { phase: "ready", data, message: "" } })
+        if (epoch === generation && current === detailGeneration) {
+          set({
+            ...state,
+            ...(data.status !== "PENDING" && state.submission === "success"
+              ? { submission: "idle" as const, message: "" }
+              : {}),
+            detail: { phase: "ready", data, message: "" },
+          })
+          return data
+        }
       } catch (error) {
         if (epoch !== generation || current !== detailGeneration) return
         if (!sessionError(error, recheck))
