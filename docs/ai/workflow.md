@@ -30,6 +30,20 @@ Một nhánh/PR thường ứng với một ticket; commit chia theo đầu ra c
 
 PR description tiếng Việt: giữ What, Why, Environment Variables, Developer Test; How/Limits chỉ khi hữu ích. Nêu hành vi cuối cùng và lý do, không chép nguyên lịch sử chat hay toàn bộ ticket. Khi squash, kiểm title/message cuối giữ đúng mã Jira. Việc commit, push, mở PR và merge cần được người dùng giao; chấp thuận sửa code không tự bao gồm các bước này.
 
+### Viết description PR cho người review
+
+**Chốt theo góp ý của Quân ngày26/11/2026:** người đọc PR có thể chưa đọc ticket hoặc chat. Description phải giúp họ hiểu thay đổi và đánh giá diff; không biến thành nhật ký triển khai hoặc bản chép evidence.
+
+- **What:** mở đầu bằng chức năng/hành vi sau thay đổi. Với bug, nêu tình huống gây lỗi và kết quả sau sửa. Chỉ liệt kê các thay đổi chính, kèm link Jira.
+- **Why:** giải thích vấn đề và tác động bằng lời cụ thể. Không chỉ ghi “hoàn thành ticket” hoặc liệt kê mã FR/WBS.
+- **How:** chỉ giữ lựa chọn kỹ thuật, ranh giới hoặc đánh đổi cần người review chú ý. Thuật ngữ, tên trường, package và helper chỉ xuất hiện khi giúp hiểu diff; tránh chuỗi viết tắt không giải thích.
+- **Environment Variables:** nêu biến mới/thay đổi và mục đích; không có thì ghi ngắn. Cách dựng môi trường chi tiết dẫn về runbook.
+- **Developer Test:** tóm tắt các cổng và luồng thực sự đã kiểm cùng kết quả. Phân biệt kiểm tự động, browser/DB thật và kiểm thủ công do Quân xác nhận; không suy từ review/unit thành runtime. Lệnh dài, đường dẫn worktree tạm, thời lượng từng package, log và ma trận đầy đủ để ở runbook/evidence có link.
+- **Limits:** chỉ ghi giới hạn ảnh hưởng đến phạm vi, sử dụng hoặc đánh giá thay đổi. Không lặp toàn bộ ngoài phạm vi của Epic, danh sách mọi điều chưa test hoặc lời nhắc quy trình Git/Jira thông thường.
+- Độ dài theo độ phức tạp: PR nhỏ thường chỉ cần vài câu và kiểm thử; PR lớn dùng đoạn/bullet ngắn để quét được. Không điền How/Limits cho đủ template, không kể lỗi công cụ, các lần thử, lịch sử review hoặc phương án đã bỏ nếu chúng không giải thích một giới hạn hiện hành.
+
+Trước khi tạo **hoặc cập nhật** PR, đọc lại như người chưa xem chat: có hiểu ngay **đã đổi gì, vì sao, kiểm bằng cách nào và còn giới hạn gì đáng chú ý** không? Bỏ câu chỉ mô tả quá trình làm; chuyển bằng chứng chi tiết về runbook; kiểm lại link và nguồn xác nhận. Duy trì bước này ở mọi lần bàn giao, không chỉ đợt vừa được góp ý.
+
 ## Liên kết Jira–GitHub
 
 DATN dùng repo `mingquanjp/ai-staffing` và project **DATN**, board **1** trên site Jira Free riêng. Khi gặp liên kết DATN trên site cũ, mở cùng mã ở site mới, ví dụ [DATN-12](https://datn-mingquanjp.atlassian.net/browse/DATN-12). Mọi thao tác DATN dùng [board DATN](https://datn-mingquanjp.atlassian.net/jira/software/projects/DATN/boards/1).
