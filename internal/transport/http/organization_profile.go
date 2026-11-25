@@ -28,11 +28,16 @@ type selfProfileResponse struct {
 	EmploymentStatus string               `json:"employment_status"`
 }
 
-func registerEmployeeRoutes(router chi.Router, sessions sessionAuthenticator, s profileUseCase, accounts accountUseCase, protection authProtection, changes ...profileChangeUseCase) {
+func registerEmployeeRoutes(router chi.Router, sessions sessionAuthenticator, s profileUseCase, accounts accountUseCase, protection authProtection, changes profileChangeUseCase, administrative administrativeProfileUseCase) {
 	router.Route("/api/employees", func(r chi.Router) {
 		r.Use(serverAuthRequestID, recoverAuth, catalogNoStore, authenticateSession(sessions))
-		if len(changes) > 0 && changes[0] != nil {
-			r.Post("/{id}/profile-change-requests", profileChangeHandler(changes[0], protection, "submit"))
+		if changes != nil {
+			r.Post("/{id}/profile-change-requests", profileChangeHandler(changes, protection, "submit"))
+		}
+		if administrative != nil {
+			r.Get("/", administrativeProfileHandler(administrative, protection, "list"))
+			r.Get("/{id}/administrative-profile", administrativeProfileHandler(administrative, protection, "read"))
+			r.Patch("/{id}", administrativeProfileHandler(administrative, protection, "edit"))
 		}
 		if accounts != nil {
 			r.Post("/", accountHandler(accounts, protection, "create"))

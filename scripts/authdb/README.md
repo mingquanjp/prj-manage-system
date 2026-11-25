@@ -1,5 +1,60 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
+## DATN-47 / PCA-T11 — API HR sửa trực tiếp hồ sơ
+
+Phạm vi F4 theo [proposal PCA](../../docs/proposals/backend-profile-change-approval.md), [OpenAPI canonical](../../docs/api/profile-change-approval.openapi.json) và SQL plan mục9.4. Ba API HR giữ projection riêng; không mở rộng GET self hoặc quyền Admin-only. DATN-48 tiếp nhận UI; không coi kết quả API là bằng chứng browser.
+
+Nhánh triển khai từ main `d76e4ae` sau PR59. Không thêm migration/dependency; giữ nguyên migrations000001–000006 và checkout gốc có thay đổi ngoài phạm vi. Guard ngày25/11/2026 xác minh PG18, owner `ai_staffing_test`, public_tables0, system-ID7705732357505970219. Kiểm tĩnh nền42test đạt trước triển khai; chưa phải kết quả kiểm backend F4.
+
+Lệnh tái hiện từ checkout gốc giữ state test sở hữu; các nhóm DB chạy tuần tự, không đồng thời với browser harness:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-47 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+```
+
+Tại worktree DATN-47:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+| Ca PCA-DB11 / HTTP | Test thực | Mức kiểm |
+|---|---|---|
+| Legacy/no-op/NULL/inactive/locked target; audit đúng actor và đúng trường thực đổi | `TestAdministrativeProfileProjectionMutationAndNoop` | Service + PG; email canonical không đổi giữ raw và hai phiên hiện hữu |
+| HR tự đổi email | `TestAdministrativeProfileActorEqualsTarget`, `TestAdministrativeProfileSelfEmailRequiresNewLogin` | PG + HTTP composition; không tự cấp cookie, request tiếp theo401 rồi login email mới |
+| Audit/revoke lỗi; commit có/không xác nhận | `TestAdministrativeProfileAuditRollbackAndCommitUnknown` | Trigger PG thật và wrapper transaction; GET đối soát, không retry; không nhận wrapper là mất mạng vật lý |
+| Danh mục/nullable và list cùng snapshot, q literal, page rỗng | `TestAdministrativeProfileCatalogAndListSnapshot` | PG, count/items REPEATABLE READ; không lấy role join nhân row |
+| Direct edit/approve cùng và khác trường, cả hai thứ tự | `TestAdministrativeProfileRaceActualApprove`, `TestAdministrativeProfileRaceApproveBeforeDirect` | Hai connection/barrier, **adapter Submit/Approve PCA thật DATN-40**, không dùng writer giả thay approve |
+| Email unique và catalog delete | `TestAdministrativeProfileRaceEmailUnique`, `TestAdministrativeProfileRaceCatalogDelete` | Hai connection/barrier; catalog delete hai thứ tự, không orphan/half-audit |
+| Quyền/cờ/status đổi trong lúc chờ khóa | `TestAdministrativeProfileActorRecheckUnderLock` | PG; không dùng principal client làm quyền cuối |
+| Ba route, DTO/no-store/no-cookie, stale/conflict/inactive, body65536/65537 không Content-Length | `TestAdministrativeHTTPPostgresThreeRoutesAndEmailRevocation`, `TestAdministrativeProfileApplicationComposition` | HTTP + PG thật, composition có login và CSRF |
+| Audit500, timeout503 và commit thật rồi mất xác nhận503 | `TestAdministrativeHTTPPostgresThreeRoutesAndEmailRevocation`, `TestAdministrativeHTTPPostgresTimeoutAndUnknownCommit` | PG trigger/lock thật; commit wrapper không là bằng chứng mất mạng vật lý |
+| StrictJSON/Unicode/quyền/Origin/CSRF và Swagger/inventory | `TestAdministrativeHTTPStrictJSONAndBody`, `TestAdministrativeHTTPGatesErrorsAndProjection`, `TestAdministrativeHTTPMutationProtection`, `TestAdministrativeSwaggerCanonicalAndDependency`, `TestProfileChangeHTTPCompleteInventoryAndSwagger` | httptest/contract; inventory32 gồm5auth+16OAP+10PCA+health, không thay HTTP/PG |
+
+Kết quả thực chạy ngày25/11/2026 (macOS arm64, Go1.27.4, Node24.15.0):
+
+- `go vet ./...`, `go test ./... -count=1`, `go build ./...`: PASS. Vet bổ sung build tag `integration` cho repository/HTTP/server: PASS.
+- Lệnh integration toàn bộ ở trên: PASS migrations15.832s, repository39.806s, HTTP6.210s, server20.673s. Bốn package chạy tuần tự; regression auth/OAP/PCA cùng suite. Kiểm cleanup case trong suite đạt; guard sau suite vẫn đúng owner/system-ID/public_tables0.
+- Lệnh Node năm file ở trên:50test PASS (42contract/harness +8Swagger). `node scripts/check-harness.mjs`:475file PASS; `git diff --check`: PASS. Đây là kiểm tĩnh/kiểm kê, không thay runtime.
+- Tự review và sub-agent review độc lập: không còn góp ý P1/P2 chặn ở diff đã kiểm. Reviewer tự chạy focused unit service/HTTP đạt; PG được agent chính thực chạy, không gọi review là kiểm chứng DB hoặc approval trên GitHub. Đã sửa assertion số trường DTO và fixture Swagger sau thêm nhóm optional, chạy lại đạt.
+
+Review bổ sung trước bàn giao: một sub-agent mới đọc lại service/repository/HTTP/Swagger và test, không phát hiện lỗi P1/P2 chặn. Đã sửa mô tả tổng quan OpenAPI còn ghi thông báo/F4 planned; chạy lại50test Node và diff check đạt. Chạy thêm lệnh dưới đây tuần tự qua runner đã guard: PASS repository13.997s, HTTP3.784s, server6.774s, không có báo cáo data race. Đây là race detector Go kết hợp các DB barrier, không chứng minh mọi lịch thực thi có thể có. Trường hợp login đồng thời với đổi email chưa có test cạnh tranh trực tiếp; hiện đã kiểm thu hồi các phiên có sẵn, login cũ/mới và đối chiếu giao thức khóa chung của `FinalizeLogin`.
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-47 test -race -tags=integration -p 1 ./internal/repository/postgres ./internal/transport/http ./cmd/server -run '^TestAdministrative' -count=1 -timeout=5m
+```
+
+Không dùng unit/fake thay PG. Không áp Neon, gửi thư, thay role/status hoặc tự tạo notification cho direct edit. Down migration không phải backup; ticket không cần down hoặc reset schema để chạy API. DB case integration do fixture tạo/dọn; nếu guard phát hiện case bỏ lại, xác minh trước và không dọn rộng. Chưa commit/push/PR hoặc chuyển Jira Done trong lượt triển khai này.
+
+Đầu ra DATN-48: service `organization.AdministrativeProfileService`, typed patch `AdministrativeValues` tách present/null, ba route và nhóm Swagger dev `/docs/administrative-profile.openapi.json`. PATCH chỉ gửi cùng tập khóa before/changes, không gửi actor/status/role. Khi mất xác nhận commit, tải lại chi tiết để đối soát, không tự replay. Các response list không phone/address; chi tiết không credential/role/audit thô. UI F4, browser xuyên sửa hành chính, HTTPS/production/Neon/deploy chưa kiểm trong ticket này. Không nhận backend F4 là toàn FR-012 đã nghiệm thu qua UI.
+
 ## DATN-46 / PCA-T10 — ma trận PG và regression
 
 Snapshot main2278de8 đã ghép F1–F3. Kịch bản/bằng chứng browser, lệnh/môi trường/FR và giới hạn tại [runbook PCA phần8](../../docs/api/auth-runbook.md#8-datn-46--pca-t10--demo-hồ-sơ-ngày26112026). Bảng này nối ma trận [SQL plan PCA mục6](../../docs/proposals/backend-profile-change-approval-sql-plan.md#6-ma-trận-kiểm-chứng-dự-kiến) tới test hiện hữu; không thay contract hoặc nhân bản test thành task mới.

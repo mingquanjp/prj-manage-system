@@ -10,15 +10,16 @@ import (
 
 // AuthServices là các use case được composition root lắp trước khi mở server.
 type AuthServices struct {
-	Sessions       authSessionService
-	Login          loginUseCase
-	PasswordChange passwordChangeUseCase
-	Catalogs       catalogUseCase
-	Profiles       profileUseCase
-	Accounts       accountUseCase
-	ProfileChanges profileChangeUseCase
-	Notifications  notificationUseCase
-	Clock          auth.Clock
+	Sessions               authSessionService
+	Login                  loginUseCase
+	PasswordChange         passwordChangeUseCase
+	Catalogs               catalogUseCase
+	Profiles               profileUseCase
+	Accounts               accountUseCase
+	ProfileChanges         profileChangeUseCase
+	Notifications          notificationUseCase
+	AdministrativeProfiles administrativeProfileUseCase
+	Clock                  auth.Clock
 }
 
 // NewAuthRouter yêu cầu đủ năm route; dependency thiếu phải chặn startup.
@@ -68,8 +69,8 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	if services.Catalogs != nil {
 		registerCatalogRoutes(router, services.Sessions, services.Catalogs, protection)
 	}
-	if services.Profiles != nil || services.Accounts != nil || services.ProfileChanges != nil {
-		registerEmployeeRoutes(router, services.Sessions, services.Profiles, services.Accounts, protection, services.ProfileChanges)
+	if services.Profiles != nil || services.Accounts != nil || services.ProfileChanges != nil || services.AdministrativeProfiles != nil {
+		registerEmployeeRoutes(router, services.Sessions, services.Profiles, services.Accounts, protection, services.ProfileChanges, services.AdministrativeProfiles)
 	}
 	if services.ProfileChanges != nil {
 		registerProfileChangeRoutes(router, services.Sessions, services.ProfileChanges, protection)

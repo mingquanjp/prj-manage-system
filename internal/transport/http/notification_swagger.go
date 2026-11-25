@@ -13,6 +13,10 @@ import (
 func swaggerWithNotifications(s AuthServices, enabled bool) http.HandlerFunc {
 	fallback := swaggerWithServices(s.Catalogs != nil, s.Profiles != nil, s.Accounts != nil, s.ProfileChanges != nil)
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/docs/administrative-profile.openapi.json" {
+			administrativeSwaggerHandler(s.AdministrativeProfiles != nil)(w, r)
+			return
+		}
 		if r.URL.Path != "/docs/notifications.openapi.json" {
 			fallback(w, r)
 			return

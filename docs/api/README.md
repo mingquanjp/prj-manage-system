@@ -53,6 +53,12 @@ Origin/Cookie do trình duyệt quản lý. Để Swagger không chặn form vì
 
 UI tiếng Anh là giao diện gốc của Swagger; hướng dẫn và mô tả nghiệp vụ bằng tiếng Việt. UI không có tài khoản tự cấp, không tự mở quyền nghiệp vụ, không tự fetch spec ngoài. `requestInterceptor` chỉ cho contract local và các operation auth/danh mục đã công bố cùng origin, gồm PATCH/DELETE item hợp lệ; `validatorUrl=null`, `queryConfigEnabled=false`, không Petstore/validator/CDN khi chạy.
 
+## DATN-47 — ba API HR hồ sơ hành chính
+
+Khi composition root đã lắp dependency F4, Swagger dev có nhóm **Hồ sơ hành chính HR** từ `/docs/administrative-profile.openapi.json`. Spec được lọc từ [canonical PCA](profile-change-approval.openapi.json), chỉ gồm GET list, GET administrative-profile và PATCH employee. Giữ nguyên các nhóm auth/OAP/đề nghị/thông báo; không mở tài liệu production.
+
+Đăng nhập HR có phiên thường, lấy CSRF, đọc chi tiết trước PATCH và gửi đúng tập trường before/changes. Đổi email thực sự thu hồi mọi phiên target; HR tự đổi email có thể nhận200 rồi request tiếp theo401, cần đăng nhập bằng email mới. No-op không thu hồi phiên. Không nhập credential thật vào evidence hoặc nhận200 khi kết quả commit chưa rõ; GET đối soát trước thao tác mới. Bằng chứng HTTP/PG và giới hạn tại [runbook DATN-47](../../scripts/authdb/README.md#datn-47--pca-t11--api-hr-sửa-trực-tiếp-hồ-sơ); nhóm Swagger này chưa phải UI quản lý hồ sơ DATN-48.
+
 ## Tài nguyên và CSP
 
 Vendored `swagger-ui-dist` **5.34.1**, Apache-2.0, chỉ bundle JS/CSS cần thiết. [Manifest](../../internal/transport/http/swagger/vendor.json) ghi URL tarball chính thức, integrity SHA-512 của archive và SHA-256 từng file; LICENSE/NOTICE được giữ cạnh assets, không mở directory listing. Archive đã kiểm khớp metadata npm trước khi trích file. Checksum không thay kiểm tra lỗ hổng hoặc chữ ký publisher; chưa nhận một lượt scan vulnerability dependency này là đã chạy.

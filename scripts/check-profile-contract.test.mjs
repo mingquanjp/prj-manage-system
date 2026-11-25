@@ -46,12 +46,12 @@ function valid(s,v){
 }
 const sample=op('/api/employees/{id}/profile-change-requests','post').responses['201'].content['application/json'].examples.demo.value
 const result=(status)=>({...sample,status,resolved_by:18,resolved_at:'2026-11-21T10:00:00+07:00',decision_reason:status==='REJECTED'?'Cần đối chiếu lại':null})
-test('đúng10 thao tác, 7 ưu tiên/3 HR tiếp nối, bảy API request/notification implemented và ba API HR planned',()=>{
+test('đúng10 thao tác, 7 F1–F3 và3 F4 đã nối runtime; trạng thái không thay bằng chứng HTTP/PG',()=>{
  const expected=[['post','/api/employees/{id}/profile-change-requests'],['get','/api/profile-change-requests'],['get','/api/profile-change-requests/{id}'],['post','/api/profile-change-requests/{id}/approve'],['post','/api/profile-change-requests/{id}/reject'],['get','/api/notifications'],['post','/api/notifications/{id}/read'],['get','/api/employees'],['get','/api/employees/{id}/administrative-profile'],['patch','/api/employees/{id}']]
  assert.deepEqual(ops.map(x=>`${x.method} ${x.path}`).sort(),expected.map(([m,p])=>`${m} ${p}`).sort())
  assert.equal(new Set(ops.map(x=>x.operation.operationId)).size,10)
  assert.equal(ops.filter(x=>x.operation['x-delivery-phase']==='F1-F3').length,7)
- for(const {path,operation}of ops)assert.equal(operation['x-implementation-status'],(path.includes('profile-change-requests')||path.startsWith('/api/notifications'))?'implemented':'planned')
+ for(const {operation}of ops)assert.equal(operation['x-implementation-status'],'implemented')
  walk(spec)
 })
 test('phiên thường/cookie AND csrf/Origin; PCA64KiB không thay auth hoặc OAP8KiB',()=>{

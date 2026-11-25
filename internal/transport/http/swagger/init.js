@@ -14,6 +14,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (profileChanges) specs.profileChanges = profileChanges
     const notifications = await load("/docs/notifications.openapi.json", true)
     if (notifications) specs.notifications = notifications
+    const administrativeProfiles = await load("/docs/administrative-profile.openapi.json", true)
+    if (administrativeProfiles) specs.administrativeProfiles = administrativeProfiles
     const operations = []
     for (const spec of Object.values(specs)) {
       for (const [path, methods] of Object.entries(spec.paths)) {
@@ -43,7 +45,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       requestInterceptor(request) {
         const target = new URL(request.url, window.location.href)
         const method = (request.method || "GET").toUpperCase()
-        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json"].includes(target.pathname)
+        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json"].includes(target.pathname)
         const allowed = operations.some(([verb, path]) => {
           if (verb !== method) return false
           if (!path.includes("{id}")) return path === target.pathname
@@ -80,6 +82,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))
+    if (administrativeProfiles) {
+      const option = document.createElement("option")
+      option.value = "administrativeProfiles"
+      option.textContent = "Hồ sơ hành chính HR"
+      selector.append(option)
+    }
     render(specs.auth)
   } catch {
     document.getElementById("swagger-ui").textContent = "Không thể mở tài liệu API. Hãy kiểm tra server và tải lại trang."
