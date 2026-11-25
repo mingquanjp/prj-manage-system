@@ -77,6 +77,11 @@ func applicationServices(cfg *config.Config, pool *pgxpool.Pool, clock auth.Cloc
 		return httptransport.AuthServices{}, err
 	}
 	services.Profiles = organization.NewProfileService(profile)
+	administrative, err := postgres.NewAdministrativeProfileRepository(pool, 10*time.Second)
+	if err != nil {
+		return httptransport.AuthServices{}, err
+	}
+	services.AdministrativeProfiles = organization.NewAdministrativeProfileService(administrative)
 	accounts, err := postgres.NewAccountRepository(pool, 10*time.Second)
 	if err != nil {
 		return httptransport.AuthServices{}, err

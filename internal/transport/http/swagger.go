@@ -149,7 +149,7 @@ func profileChangeSwaggerSpec() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return selectedSwaggerDocument(doc, "TaskAssign — Đề nghị hồ sơ", "Năm API đề nghị hồ sơ đã triển khai. Thông báo và HR sửa trực tiếp chưa được công bố.")
+	return selectedSwaggerDocument(doc, "TaskAssign — Đề nghị hồ sơ", "Năm API đề nghị hồ sơ đã được lắp vào router này; thông báo và hồ sơ hành chính HR dùng nhóm tài liệu riêng khi có dependency.")
 }
 
 func selectedSwaggerDocument(doc map[string]json.RawMessage, title, description string) ([]byte, error) {

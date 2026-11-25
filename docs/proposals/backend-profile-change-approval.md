@@ -74,7 +74,7 @@ Request lưu patch JSONB có schema_version, cùng tập khóa before/proposed, 
 
 ### 6.2. API và projection
 
-[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. DATN-41 đã wire/test năm API đề nghị hồ sơ và publish đúng phần đó trên Swagger dev; DATN-42 bổ sung hai API thông báo, ba API F4 còn planned. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
+[OpenAPI PCA](../api/profile-change-approval.openapi.json) là nguồn HTTP canonical cho10 thao tác; bảng dưới chỉ kiểm kê quyền/phạm vi, schema/query/lỗi chi tiết đọc spec. DATN-41 đã wire/test năm API đề nghị hồ sơ và publish đúng phần đó trên Swagger dev; DATN-42 bổ sung hai API thông báo. DATN-47 nối ba API F4, nguồn/lệnh/bằng chứng/giới hạn tại [bàn giao PostgreSQL](../../scripts/authdb/README.md#datn-47--pca-t11--api-hr-sửa-trực-tiếp-hồ-sơ); UI thuộc DATN-48. Không chép contract vào từng ticket; task HTTP chỉ publish operation đã wire/test.
 
 | Method/path | Quyền | Kết quả |
 |---|---|---|

@@ -3,7 +3,7 @@
   "info": {
     "title": "Đề nghị hồ sơ, HR xét duyệt và thông báo",
     "version": "0.1.0",
-    "description": "Contract PCA gồm7 operationF1–F3 và3 F4. DATN-41 đã tích hợp và kiểm HTTP/PostgreSQL test cho5 API đề nghị hồ sơ; chỉ5 operation này được công bố trên Swagger dev. Thông báo và3 API F4 còn planned. Auth/OAP hiện hành giữ spec riêng; không mở thêm quyền từ UI hoặc resource ID. Body PCA64KiB không thay giới hạn auth/OAP8KiB."
+    "description": "Contract PCA gồm7 operation F1–F3 và3 F4 đã tích hợp và kiểm HTTP/PostgreSQL test. Swagger dev công bố theo dependency đã lắp: nhóm đề nghị hồ sơ5 operation, thông báo2 và hồ sơ hành chính HR3. UI sửa trực tiếp F4 thuộc DATN-48; triển khai API không thay bằng chứng browser. Auth/OAP hiện hành giữ spec riêng; không mở thêm quyền từ UI hoặc resource ID. Body PCA64KiB không thay giới hạn auth/OAP8KiB."
   },
   "servers": [
     {
@@ -2467,7 +2467,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F4",
         "x-requires-business-session": true,
         "x-required-system-roles": [
@@ -2721,7 +2721,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F4",
         "x-requires-business-session": true,
         "x-required-system-roles": [
@@ -3083,7 +3083,7 @@
             }
           }
         },
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-delivery-phase": "F4",
         "x-requires-business-session": true,
         "x-required-system-roles": [
