@@ -7,6 +7,7 @@
 - Frontend: đọc [web/AGENTS.md](web/AGENTS.md), [quy trình và thiết kế đã duyệt](web/README.md), rồi contract/workflow liên quan.
 - Không tạo bản sao nghiệp vụ trong kế hoạch; dẫn đường dẫn và mục áp dụng.
 - Khi nhận task/chuẩn bị Git: theo [workflow Jira–GitHub](docs/ai/workflow.md); dùng mã Jira thật trong branch/commit/PR, giữ checkpoint Go người dùng tự viết.
+- Description PR viết cho người review chưa đọc chat: theo [chuẩn viết PR](docs/ai/workflow.md#viết-description-pr-cho-người-review). Nêu hành vi và lý do trước; tóm tắt kiểm thử, dẫn evidence chi tiết về runbook. Trước tạo/sửa PR, tự đọc lại để bỏ thuật ngữ thừa và nhật ký làm việc.
 - Khi chuẩn bị/tiếp nối một đợt feature từ delivery-plan/FR: dùng [skill lập kế hoạch](.agents/skills/datn-feature-planning/SKILL.md); không áp toàn quy trình cho một ticket code đã có brief.
 
 ## Phạm vi và an toàn
