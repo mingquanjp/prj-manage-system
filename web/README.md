@@ -2,6 +2,16 @@
 
 ## Hiện trạng
 
+### DATN-46 / PCA-T10 — kiểm xuyên F1–F3
+
+Mục tiêu: nghiệm thu self gửi → HR xử lý → thông báo kết quả và official/lịch sử trên bản ghép `2278de8`, theo proposal PCA mục4–9, OpenAPI canonical và SQL plan PCA-DB01–10/12. Giữ URL/login/limited đã chốt. Đầu ra là runbook demo26/11, ma trận bằng chứng/FR và giới hạn; không mở F4, workflow mới, Neon/deploy hoặc tự bàn giao Git. Tiêu chí: Go/PG/FE/contract/harness và browser thật có kết quả, lỗi chặn được xử lý/retest, tự review cùng sub-agent review trước bàn giao. Kết quả được ghi sau thực chạy.
+
+- [Runbook demo/bằng chứng/FR DATN-46](../docs/api/auth-runbook.md#8-datn-46--pca-t10--demo-hồ-sơ-ngày26112026) là nguồn tổng hợp, không thay contract. [Ma trận PostgreSQL/regression](../scripts/authdb/README.md#datn-46--pca-t10--ma-trận-pg-và-regression) giữ PCA-DB01–10/12.
+- Lỗi tích hợp DATN-43/45 tìm bằng browser hai tab: detail đã APPROVED nhưng lịch sử owner còn PENDING. Sau GET detail hợp lệ, UI tải lại official/lịch sử; bỏ thông báo submit cũ khi có terminal. Phản hồi đã hủy/đổi phiên không kích hoạt tải lại; không remount bản nháp do refresh nền. Ca request5/hai tab và giữ draft đã retest browser trên PG thật, không lấy test helper thay component proof.
+- `pnpm check` sau sửa PASS214 FE tests +15 harness, lint/format/typecheck/build. Browser gửi/duyệt/từ chối/stale/khác trường/terminal/lost POST/quyền/limited/logout/Back/mất HR và own read có kết quả; harness PASS474.04s rồi dọn case. Không kiểm browser DB vật lý outage/read204 mất phản hồi; giới hạn/Chrome extension/HMR ghi ở runbook.
+- Review cuối khép cả nhánh nút Tải lại chi tiết dùng chung callback đồng bộ. Sub-agent không còn blocker P1/P2 trong diff; smoke browser bản cuối kiểm retry404→tài nguyên vừa tạo và hai tab approve→notification→official/lịch sử đúng; harness PASS66.48s, đã dọn0case. `pnpm check` chạy lại sau gom callback đạt214FE+15harness. Chi tiết review/giới hạn ở runbook, không nhận review là runtime proof.
+- Không dependency/schema/API mới hoặc F4; chưa commit/push/PR/merge/Done trong lượt này.
+
 ### DATN-45 / PCA-T09 — khung thông báo server
 
 - Mục tiêu: nối chuông/panel thông báo own từ API server, filter all/unread, phân trang20 và unread_count; dùng proposal PCA mục6.2/6.5, OpenAPI canonical và screen contract thông báo. Không polling hoặc mở trang mới.

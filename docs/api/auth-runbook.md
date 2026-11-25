@@ -1,6 +1,6 @@
 # Runbook auth và demo tổ chức, tài khoản, hồ sơ
 
-Điểm vào để chạy, demo và đối chiếu bằng chứng auth/OAP. Thiết kế tại [proposal auth](../proposals/backend-auth-session.md) và [proposal OAP](../proposals/backend-organization-accounts-profile.md); HTTP tại [OpenAPI auth](auth.openapi.json) và [OpenAPI OAP](organization-accounts-profile.openapi.json). Runbook không thay contract. Phần 4/6 giữ bằng chứng lịch sử DATN-21; phần 7 tiếp nối DATN-35. Chưa có reset, gửi lại hoặc đổi mật khẩu tự nguyện; hồ sơ mới nối phần đọc chính thức.
+Điểm vào để chạy, demo và đối chiếu bằng chứng auth/OAP/PCA. Thiết kế tại [proposal auth](../proposals/backend-auth-session.md), [proposal OAP](../proposals/backend-organization-accounts-profile.md), [proposal PCA](../proposals/backend-profile-change-approval.md); HTTP tại các OpenAPI canonical tương ứng. Runbook không thay contract. Phần4/6 giữ bằng chứng lịch sử DATN-21; phần7 tiếp nối DATN-35; phần8 bàn giao F1–F3 PCA/DATN-46. Chưa có reset, gửi lại hoặc đổi mật khẩu tự nguyện; phạm vi hồ sơ hiện hành xem phần8, không suy từ các ghi nhận lịch sử bên dưới.
 
 ## 1. Chạy hằng ngày
 
@@ -213,3 +213,97 @@ Rà redaction: DTO account chỉ allowlist8 trường, profile11 trường; secr
 - Mail fault dùng fake provider/port ở test, commit ambiguity dùng fault sau commit thật; không coi đó là mất mạng vật lý hoặc thu hồi OAuth thật. Không cố làm hỏng kết nối Gmail để demo lỗi.
 - Mở rộng hồ sơ đề nghị/HR duyệt hoặc miền kỹ năng theo FR/bản đồ miền là ứng viên tiếp theo; chốt proposal/phạm vi riêng. Storage/CV và công thức phân công vẫn cần quyết định tương ứng, không chốt trong DATN-35.
 - Dừng bằng Ctrl+C dọn đúng DB lượt chạy. Không destroy container/volume, FORCE/drop wildcard hoặc dùng down như backup. M1/M2 rollback/dirty và khả năng mất dữ liệu theo runbook DB; không thực thi rollback trên DB demo đang có tài khoản cần dùng.
+
+## 8. DATN-46 / PCA-T10 — demo hồ sơ ngày26/11/2026
+
+### Snapshot và điều kiện chạy
+
+Bản kiểm bắt đầu từ main `2278de8` (đã merge PR56/57/58 của DATN-43/44/45), nhánh `feature/DATN-46-profile-e2e-handoff`. Nguồn: [proposal PCA mục4–9](../proposals/backend-profile-change-approval.md), [OpenAPI](profile-change-approval.openapi.json), [SQL/test plan](../proposals/backend-profile-change-approval-sql-plan.md). Không mở lại URL/quyền/nghiệp vụ; F4/FR-012 và PCA-DB11 không thuộc nghiệm thu này. Thay đổi ngoài phạm vi tại checkout gốc được giữ nguyên.
+
+Môi trường thực chạy25/11: macOS arm64, Go1.27.4, Node24.15.0, pnpm11.19.0, PostgreSQL18 test owner/cluster đã qua guard; browser chính là in-app browser. Không dùng `.env`, Neon hoặc Gmail. Dependency nguyên lockfile, `pnpm install --frozen-lockfile` đạt. Không có biến runtime/dependency/migration mới.
+
+Để tập/demo F1–F3, dùng harness opt-in với DB case hy sinh, frontend **5174 → backend18080**. Không chạy đồng thời integration hoặc `pnpm dev` chiếm5174. Harness tự kết thúc sau40phút; lên báo cáo cần khởi động lại trước buổi demo, không dùng tiến trình từ hôm trước. `pnpm dev` thường là5174→8080 và dùng fixture khác; không trộn tài khoản giữa hai môi trường.
+
+```sh
+# Terminal1 tại root checkout có state runner sở hữu
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go test -tags=integration,profileuidemo -p 1 ./cmd/server -run '^TestProfileUIDemoServer$' -count=1 -v -timeout=45m
+```
+
+Chờ `Profile UI test ready: 18080 PID=...`. Nếu code ở worktree chưa merge, chạy runner tại checkout giữ state, thêm `go -C /private/tmp/ai-staffing-DATN-46 test ...` thay `go test ...`; không copy state/URL/password.
+
+```sh
+# Terminal2 tại web/ của cùng bản code
+VITE_AUTH_MODE=server TASKASSIGN_API_TARGET=http://127.0.0.1:18080 pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort
+```
+
+Tài khoản harness: `employee@example.invalid`, `hr@example.invalid`, `limited@example.invalid`; mật khẩu tổng hợp ban đầu `12345678` (chỉ môi trường hy sinh, không credential vận hành). Login tại `http://127.0.0.1:5174/login`. Employee/HR có ID user khác employee; employee bắt đầu phone/address NULL. Limited có ADMIN+HR nhưng vẫn chỉ đổi mật khẩu/phiên. Không cần đổi credential hoặc gửi mail để demo PCA.
+
+### Kịch bản báo cáo trên UI
+
+| Bước | Thao tác | Điểm trình bày/kết quả cần thấy |
+|---|---|---|
+| 1 — chủ hồ sơ | Login employee, `/profile`, chỉ ra địa chỉ chưa cập nhật; mở Đề nghị cập nhật | Official/công tác lấy từ server; email/cơ cấu chỉ đọc, BR-001 nhắc bổ sung |
+| 2 — gửi | Địa chỉ `Địa chỉ demo 26/11 — Hà Nội`, ghi chú tổng hợp; Gửi đề nghị | Chi tiết PENDING có trước/đề nghị/hiện tại; official chưa đổi. Đóng rồi reload vẫn có lịch sử |
+| 3 — HR | Logout, login HR, mở chuông và filter chưa đọc, chọn thông báo đề nghị | Mở khung không tự đọc; click tải chi tiết đúng quyền rồi mới read. HR thấy ba cột để đối chiếu |
+| 4 — chấp thuận | Chấp thuận → Xác nhận | Kết luận/người xử lý/thời gian được lưu; action xử lý lại bị gỡ, official thay đúng trường |
+| 5 — owner | Logout, login employee; mở thông báo kết quả, đóng chi tiết rồi reload | Official địa chỉ mới; lịch sử APPROVED và kết luận đúng. Thông báo chung không chứa nội dung đề nghị |
+| 6 — từ chối | Employee gửi thay đổi phone tổng hợp; HR từ chối kèm lý do; owner mở kết quả | Official phone giữ nguyên, lịch sử REJECTED, owner xem được lý do |
+| 7 — kiểm quyền | Employee mở URL HR hoặc ID đề nghị HR; logout rồi Back | Không đọc người khác; không mở mock workspace; Back không phục hồi PII |
+
+Phần chính khoảng8–10phút, phần lỗi chọn thêm nếu cô hỏi: mở cùng một PENDING ở hai tab HR, xử lý tab1 rồi tab2; tab2 phải yêu cầu đối soát, không ghi lần hai. Có thể chuẩn bị hai pending cùng trường: duyệt đầu, đề nghị sau stale; pending khác trường vẫn duyệt được. Demo thao tác tuần tự cho dễ theo dõi; race đồng thời hai connection được chứng minh bằng integration, không gọi hai click UI tuần tự là race DB.
+
+### Bằng chứng browser thực chạy25/11
+
+| ID | Kết quả quan sát trên UI/PG thật |
+|---|---|
+| B01 | Employee gửi request1 address NULL→có; detail PENDING giữ current NULL. HR mở notification, readcount1→0, approve; employee nhận kết quả và official mới/lịch sử APPROVED. Reload/profile GET lấy dữ liệu server |
+| B02 | Request2 phone NULL→`demo-reject`; HR reject có lý do; employee mở notification thấy REJECTED/lý do, phone official vẫn NULL; filter chưa đọc đúng1 |
+| B03 — lỗi đã sửa | Owner HR giữ `/profile`, tab khác duyệt request3: detail APPROVED nhưng sau đóng lịch sử vẫn PENDING. Sửa liên kết DATN-43/45: GET detail hợp lệ tải lại official/lịch sử; terminal xóa thông báo submit cũ. Retest request5 sau **reload bản code mới**: cùng phiên/hai tab, official `demo-sync-v2`, lịch sử APPROVED tự khớp, không cần reload thủ công. Request4 còn giữ closure cũ do HMR nên không dùng làm bằng chứng pass |
+| B04 | Request6/7 cùng phone before: approve6, tab khác còn snapshot6 xử lý nhận already-resolved; approve7 stale, official không bị ghi đè. Request8 address khác trường approve thành công dù phone đã đổi; reload7 rồi reject vẫn được |
+| B05 | Giữ form nháp fullname, đổi tab rồi quay lại vẫn còn bản nháp; hủy/bỏ nội dung không submit. GET lịch sử/official bổ sung không thay form bằng nền mới |
+| B06 | Request9 dùng fault opt-in `PCA43_LOST`: handler commit201 thật rồi đóng socket. FE báo chưa xác định, khóa submit, không tự replay; đóng và GET lịch sử thấy đúng một request9 PENDING, official phone chưa đổi. Đây là fault có kiểm soát, không mất mạng vật lý |
+| B07 | Employee đổi query sang request3 của HR: không tìm thấy self; vào reviewURL bị từ chối. Logout/Back về login. Đổi user bỏ lịch sử/draft cũ. Limited ADMIN+HR deep link/reload vẫn change-password, không chuông/nghiệp vụ; không thay mật khẩu |
+| B08 | Harness SIGUSR2 bỏ HR của fixture đã login: click notification request9 từ danh sách cũ bị từ chối/không mở PII; own read thủ công vẫn được, unread11→10; Escape trả focus chuông; reload gỡ menu HR, catalogURL bị chặn |
+| B09 | Kiểm màn nhỏ: viewport yêu cầu390×844 nhưng runtime đo thực319px; document scrollWidth319, panel287, không tràn. Escape/đóng trả focus chuông; override đã reset. Bằng chứng390px và phân trang hơn20 dòng của DATN-45 giữ riêng, không gọi là chạy lại ở lượt này |
+
+Harness hoàn tất PASS474.04s (package474.519s):3 requests của employee, tổng request ID1–9 đã thao tác trên UI gồm6 của HR;17 notifications/10 unread trước dọn. Guard sau dọn: PG18 đúng owner/system-ID7705732357505970219, DB gốc0bảng,0 DB case. Dừng Vite và đóng các tab thử nghiệm. Không lưu screenshot credential hoặc body hồ sơ thật. Browser Chrome riêng thử đăng nhập/đọc được nhưng click không tác động, Vite ghi lỗi extension `M_ID`; bỏ lượt đó, không nhận kiểm tương tác Chrome pass. In-app browser hoàn tất các ca trên.
+
+**Review và smoke bản cuối:** sub-agent phát hiện thêm nhánh nút “Tải lại chi tiết” chưa dùng đường đồng bộ; đã gom cùng callback với effect, không đổi contract. Tự review và sub-agent đọc lại xác nhận không còn blocker P1/P2 trong diff; sub-agent chạy riêng22 focused tests/typecheck trước lần gom cuối, không thay browser. Agent chính chạy lại `pnpm check` sau gom:214FE+15harness/lint/format/typecheck/build PASS. Smoke PG/browser cuối: mở self detail1 chưa tồn tại nhận404; tab khác cùng HR gửi request1; nút Tải lại chi tiết lấy được PENDING và lịch sử; tab khác approve, owner giữ profile mở notification kết quả rồi đóng: official và lịch sử APPROVED tự khớp. Logout/Back về login. Harness PASS66.48s (package67.036s),0request employee/1request HR,2notifications/1unread; guard sau dọn0case/DB gốc0bảng,5174/18080 không còn listener. Không gọi retry404→có tài nguyên là ca phục hồi DB outage.
+
+### Cổng và ma trận bằng chứng
+
+| Lệnh thực | Kết quả/giới hạn |
+|---|---|
+| `go vet ./...`; `go test ./... -count=1`; `go build ./...` | PASS trước kiểm và chạy lại cả ba sau sửa inventory. Unit không thay PG |
+| `go vet -tags=integration,profileuidemo ./cmd/server` | PASS harness opt-in |
+| `python3 scripts/authdb/manage.py check` | PASS PG18/owner/system-ID/DB gốc0 bảng |
+| `python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-46 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m` | Lượt1 FAIL cleanup vì DB case bỏ lại không có connection; không lỗi nghiệp vụ được ghi nhận từ lượt đó. Sau người dùng cho phép dọn đúng case, lượt2 PASS: migrations14.335s, repository36.359s, HTTP5.377s, server19.682s |
+| Tại `web/`: `pnpm check` | PASS trước sửa213FE+15harness; sau sửa214FE+15harness, lint/format/typecheck/build đạt. Test resource mới kiểm terminal và bỏ kết quả sau clear; browser mới là bằng chứng khép component cùng phiên |
+| `node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs` | PASS49 tests; bốn file ticket yêu cầu là42 tests trong bộ này |
+| `node scripts/check-harness.mjs`; `git diff --check` | PASS kiểm kê464 nguồn và diff sau bổ sung runbook. Chưa kiểm staged/commit vì chưa được giao |
+
+Chi tiết PCA-DB01–10/12 và auth/OAP regression nối tới test thật tại [ma trận DATN-46 PG](../../scripts/authdb/README.md#datn-46--pca-t10--ma-trận-pg-và-regression). Không cộng số unit tests thành số luồng E2E.
+
+Runtime Swagger đã GET qua harness và đối chiếu nguyên operation canonical/no-store: auth5, OAP16, PCA request5, notifications2. Inventory router ghép kiểm29method/path gồm28API+health trong `TestProfileChangeHTTPCompleteInventoryAndSwagger`; đây là adapter/route test có dependency fake, phần thực thi PG ở suite/composition/browser. Ba F4 không publish; render Swagger không thay chứng minh UI/DB.
+
+### FR coverage và giới hạn bàn giao
+
+| FR/AC | Mức bao phủ F1–F3 | Nguồn bằng chứng/giới hạn |
+|---|---|---|
+| FR-009.AC1–2 | Đủ bằng chứng phạm vi đọc official/công tác/lịch sử và quyền self, ứng viên Done sau bàn giao/merge | B01–03/B07, HTTP self/request/PG projections; BR-001 NULL và trường chỉ đọc. Không sửa official trực tiếp |
+| FR-010.AC1–2 | Đủ bằng chứng phạm vi gửi patch/hủy/xem kết quả, ứng viên Done sau bàn giao/merge | B01/B02/B05/B06, PCA-DB04/05; không thêm rút/bổ sung pending |
+| FR-011.AC1–2 | Đủ bằng chứng phạm vi HR duyệt/từ chối/chống stale/terminal, ứng viên Done sau bàn giao/merge | B01/B02/B04, PCA-DB06–09, HTTP quyền Admin-only/Director và lỗi. Không nói tất cả tổ hợp role đã chạy browser |
+| FR-059 | Partial toàn FR | Sự kiện hồ sơ/own/filter/count đã kiểm B01/B02/B08 +PCA-DB10; sự kiện phân công/kỹ năng/effort chưa thuộc PCA |
+| FR-060 | Đủ hành vi trong tài nguyên hồ sơ; Partial toàn phạm vi tài nguyên ứng dụng | GET quyền trước mở/read, own read sau mất quyền, focus B08/B09; chưa khép các miền khác |
+| FR-012/013/064 | Không nhận hoàn tất từ task này | F4/skills/quản trị quyền cũ là đầu ra khác; không dùng số màn để tính toàn app80–85% |
+
+Không diễn tập browser DB vật lý outage hoặc read204 đã commit rồi mất phản hồi; DB timeout503/commit ambiguity được kiểm ở HTTP+PG với fault có kiểm soát, FE lỗi read được kiểm adapter/deferred và bằng chứng DATN-45. Không gắn browser pass cho chúng. Không có HTTPS/Secure-cookie production, Neon/deploy/pentest, Gmail hoặc mọi sự kiện thông báo; không thay credential người dùng. Log quan sát chỉ mã lỗi/request_id chung, không raw SQL/payload; có log hủy GET do điều hướng/HMR, không nhận chúng là bằng chứng outage. Cảnh báo React do đổi dependency array khi HMR đã được loại khỏi lượt retest bằng reload; không gọi là lỗi runtime bản build.
+
+Lỗi B03 được ghi tại đây và bàn giao về consumer DATN-43/45; đã sửa/retest trong diff DATN-46, chưa tạo Bug/Jira tự động. Bước tiếp: Quân đọc diff/thử kịch bản, bàn giao Git khi được yêu cầu; F4 DATN-47/48 là đầu ra riêng rồi mới xem miền tiếp theo theo delivery-plan. Không chốt công thức phân công, tự merge hoặc chuyển Done.
+
+### Dừng, khởi động lại và rollback
+
+`kill -USR1 <PID>` đúng PID harness đã in để đối soát/dọn case; Ctrl+C Vite. Chạy guard và kiểm không còn case trước integration tiếp. Nếu gặp case bỏ lại, đối chiếu owner/connection/tiến trình, xin phép dọn đúng case nếu nguồn không thuộc lượt hiện hành; không DROP wildcard/FORCE hoặc destroy cluster để làm xanh test. Dữ liệu harness mất khi dọn, lần khởi động mới trở về fixture; không hứa lưu demo qua đêm.
+
+Migration000006/preflight/guard/down được kiểm ở PCA-DB01–03; dùng runner trên case hy sinh theo SQL plan, không gọi `cmd/migrate` hoặc down trên DB demo thật. Down từ chối khi có request/key/notification; không phải backup/khôi phục hồ sơ. Notification legacy có dữ liệu chưa có mapping vẫn phải dừng; Neon và kế hoạch backup đích cần quyền/review riêng.

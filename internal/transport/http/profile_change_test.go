@@ -345,7 +345,7 @@ func TestProfileChangeHTTPGatesErrorsAndAllowlist(t *testing.T) {
 func TestProfileChangeHTTPCompleteInventoryAndSwagger(t *testing.T) {
 	actor := catalogHR()
 	clock := csrfTestClock{time.Unix(1800000000, 0)}
-	services := AuthServices{Sessions: actor, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: actor, Clock: clock, Catalogs: &catalogStub{}, Profiles: &profileStub{}, Accounts: &accountStub{}, ProfileChanges: &pcaHTTPStub{}}
+	services := AuthServices{Sessions: actor, Login: auth.NewLoginService(&loginHTTPRepo{}, clock, 8*time.Hour), PasswordChange: actor, Clock: clock, Catalogs: &catalogStub{}, Profiles: &profileStub{}, Accounts: &accountStub{}, ProfileChanges: &pcaHTTPStub{}, Notifications: &notificationStub{}}
 	h, err := NewAuthRouter(fakeHealth{}, "prod", loginTestOrigin, services)
 	if err != nil {
 		t.Fatal(err)
@@ -368,7 +368,7 @@ func TestProfileChangeHTTPCompleteInventoryAndSwagger(t *testing.T) {
 			t.Fatal("Spec JSON sai")
 		}
 		for path, operations := range doc.Paths {
-			if filename == "profile-change-approval.openapi.json" && !strings.Contains(path, "profile-change-requests") {
+			if filename == "profile-change-approval.openapi.json" && !strings.Contains(path, "profile-change-requests") && !strings.HasPrefix(path, "/api/notifications") {
 				continue
 			}
 			for method := range operations {
@@ -378,8 +378,8 @@ func TestProfileChangeHTTPCompleteInventoryAndSwagger(t *testing.T) {
 			}
 		}
 	}
-	if len(expected) != 27 || !reflect.DeepEqual(got, expected) {
-		t.Fatalf("Inventory runtime lệch 5 auth +16 OAP +5 PCA + health: got %v expected %v", got, expected)
+	if len(expected) != 29 || !reflect.DeepEqual(got, expected) {
+		t.Fatalf("Inventory runtime lệch 5 auth +16 OAP +7 PCA + health: got %v expected %v", got, expected)
 	}
 	h, err = NewAuthRouter(fakeHealth{}, "dev", loginTestOrigin, services)
 	if err != nil {
