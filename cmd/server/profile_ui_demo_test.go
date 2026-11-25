@@ -44,11 +44,48 @@ func TestProfileUIDemoServer(t *testing.T) {
 	employee := f.AddAccount(t, authdb.AccountOptions{Email: "employee@example.invalid"})
 	hr := f.AddAccount(t, authdb.AccountOptions{Email: "hr@example.invalid", Roles: []string{"HR"}})
 	f.AddAccount(t, authdb.AccountOptions{Email: "limited@example.invalid", Roles: []string{"HR", "ADMIN"}, MustChangePassword: true})
+	f.AddAccount(t, authdb.AccountOptions{Email: "admin@example.invalid", Roles: []string{"ADMIN"}})
+	// Fault PG chỉ trong harness opt-in; không có endpoint điều khiển runtime.
+	_, err = f.DB.Conn.Exec(t.Context(), `CREATE FUNCTION pca48_ui_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.fullname='PCA48_DB' THEN RAISE EXCEPTION 'fixture cancellation' USING ERRCODE='57014'; END IF; RETURN NEW; END $$; CREATE TRIGGER pca48_ui_failure BEFORE UPDATE ON employees FOR EACH ROW EXECUTE FUNCTION pca48_ui_failure()`)
+	authdb.Require(t, "fault PG UI hành chính", err)
 	_, err = f.DB.Conn.Exec(t.Context(), `UPDATE employees SET address=NULL,phone=NULL WHERE employee_id=$1`, employee.EmployeeID)
 	authdb.Require(t, "fixture NULL UI hồ sơ", err)
 	handler, err := app.AuthHandlerWithMail(&config.Config{AppEnv: "dev", AppOrigin: origin, SessionTTL: 8 * time.Hour}, f.DB.Pool(t), systemClock{}, profileUIMail{})
 	authdb.Require(t, "lắp API UI hồ sơ", err)
 	wrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPatch && strings.HasPrefix(r.URL.Path, "/api/employees/") {
+			body, readErr := io.ReadAll(io.LimitReader(r.Body, 65538))
+			if readErr != nil {
+				http.Error(w, "test body", 500)
+				return
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			var input struct {
+				Changes struct {
+					Fullname string `json:"fullname"`
+				} `json:"changes"`
+			}
+			_ = json.Unmarshal(body, &input)
+			if input.Changes.Fullname == "PCA48_LOST" {
+				output := httptest.NewRecorder()
+				handler.ServeHTTP(output, r)
+				if output.Code == http.StatusOK {
+					connection, _, hijackErr := w.(http.Hijacker).Hijack()
+					if hijackErr == nil {
+						_ = connection.Close()
+					}
+					return
+				}
+				for key, values := range output.Header() {
+					w.Header()[key] = values
+				}
+				w.WriteHeader(output.Code)
+				_, _ = w.Write(output.Body.Bytes())
+				return
+			}
+			handler.ServeHTTP(w, r)
+			return
+		}
 		if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/profile-change-requests") {
 			handler.ServeHTTP(w, r)
 			return
@@ -139,4 +176,11 @@ func TestProfileUIDemoServer(t *testing.T) {
 	err = f.DB.Pool(t).QueryRow(t.Context(), `SELECT count(*),count(*) FILTER (WHERE read_at IS NULL) FROM notifications`).Scan(&notifications, &unread)
 	authdb.Require(t, "đối soát thông báo UI hồ sơ", err)
 	t.Logf("Profile UI đối soát: %d notifications, %d unread", notifications, unread)
+	var administrativeAudits, badActors int
+	err = f.DB.Pool(t).QueryRow(t.Context(), `SELECT count(*),count(*) FILTER (WHERE actor_id<>$1) FROM audit_events WHERE operation='UPDATE_ADMINISTRATIVE_PROFILE'`, hr.UserID).Scan(&administrativeAudits, &badActors)
+	authdb.Require(t, "đối soát actor audit UI hành chính", err)
+	if badActors != 0 {
+		t.Fatal("audit hành chính sai actor fixture")
+	}
+	t.Logf("Profile UI đối soát: %d administrative audits, actor fixture matched", administrativeAudits)
 }

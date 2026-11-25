@@ -307,3 +307,85 @@ Lỗi B03 được ghi tại đây và bàn giao về consumer DATN-43/45; đã 
 `kill -USR1 <PID>` đúng PID harness đã in để đối soát/dọn case; Ctrl+C Vite. Chạy guard và kiểm không còn case trước integration tiếp. Nếu gặp case bỏ lại, đối chiếu owner/connection/tiến trình, xin phép dọn đúng case nếu nguồn không thuộc lượt hiện hành; không DROP wildcard/FORCE hoặc destroy cluster để làm xanh test. Dữ liệu harness mất khi dọn, lần khởi động mới trở về fixture; không hứa lưu demo qua đêm.
 
 Migration000006/preflight/guard/down được kiểm ở PCA-DB01–03; dùng runner trên case hy sinh theo SQL plan, không gọi `cmd/migrate` hoặc down trên DB demo thật. Down từ chối khi có request/key/notification; không phải backup/khôi phục hồ sơ. Notification legacy có dữ liệu chưa có mapping vẫn phải dừng; Neon và kế hoạch backup đích cần quyền/review riêng.
+
+## 9. DATN-48 / PCA-T12 — UI HR hồ sơ hành chính
+
+Nguồn thực thi: main750cae4 đã merge API DATN-47; nhánh `feature/DATN-48-hr-personnel-ui`. Thiết kế vẫn theo proposal PCA/SQL9.4/OpenAPI canonical, không thay FR hoặc mở FR-013. `/personnel/employees` tìm theo mã/họ tên/email và phân trang; `/{employee_id}` tải chi tiết HR riêng. Menu HR cộng quyền theo server; giữ đích login/cổng limited hiện hành. Không có action CV, vô hiệu hóa, quyền/reset hoặc dữ liệu demo trên màn server.
+
+### Chạy và trình bày F4
+
+Dùng DB test sở hữu sau guard; không chạy harness và suite DB cùng lúc. Khi code ở worktree, giữ runner ở checkout có state và dùng `go -C /private/tmp/ai-staffing-DATN-48`; sau merge bỏ `-C`. Không sao chép state hoặc đọc `.env`/Neon.
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-48 test -tags=integration,profileuidemo -p 1 ./cmd/server -run '^TestProfileUIDemoServer$' -count=1 -v -timeout=45m
+```
+
+Tại `web/` worktree:
+
+```sh
+VITE_AUTH_MODE=server TASKASSIGN_API_TARGET=http://127.0.0.1:18080 pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort
+```
+
+Đợi `Profile UI test ready: 18080 PID=...`. Fixture tổng hợp `employee@example.invalid`, `hr@example.invalid`, `limited@example.invalid`, `admin@example.invalid`; mật khẩu ban đầu theo phần8. Đây là DB case dùng một lần, không Gmail thật. `SIGUSR2` đổi HR của đúng fixture, `SIGUSR1` dừng/đối soát/dọn; Ctrl+C dừng Vite. Không dùng cổng5175 nếu không đổi Origin harness tương ứng.
+
+1. HR → Hồ sơ nhân sự → tìm nhân viên → xem chi tiết. List không chứa phone/address; chi tiết mới có liên hệ theo quyền HR.
+2. Chỉnh sửa fullname/phone/address/email/cơ cấu. Code/status chỉ đọc. Bản nháp giữ snapshot lúc mở; không gửi trường không đổi, không gửi actor/role/status/code. Phone trống là NULL; address chưa có giữ nguyên được nhưng không xóa trắng khi sửa. Chọn danh mục thật, gồm các trang sau100 mục.
+3. Lưu → thông báo sau200. Reload đối soát official; email thay đổi thực sự thu hồi mọi phiên của target và dùng email mới khi login. HR sửa chính mình cũng phải login lại. Canonical email không đổi không rewrite padding/audit/revoke từ backend.
+4. Hai tab cùng hồ sơ: sửa tab1, gửi snapshot cũ tab2 → stale, đóng/tải lại; không ghi đè. Đề nghị cùng trường tạo trước direct edit cũng stale khi approve; khác trường vẫn duyệt được.
+5. Mất phản hồi/503 sau PATCH: không nhận success hoặc gửi lại; đóng/tải lại GET đối soát. Kết quả200 đã xác nhận không bị đổi thành thất bại chỉ vì lần GET sau lỗi.401/403 bỏ dữ liệu phiên/quyền cũ, không fallback demo.
+
+Fault chỉ trong harness build tag: fullname `PCA48_DB` gây lỗi PG57014 trong transaction (không là DB vật lý outage); `PCA48_LOST` chạy PATCH qua adapter PG thật,200 rồi đóng socket trước phản hồi. Sau lỗi chỉ dùng GET đối soát. Không dùng marker trên dữ liệu thật. Khi dừng, harness đếm audit hành chính và xác minh actor là HR fixture; không in payload/contact/credential.
+
+Audit được ghi atomically phía server. Không có API đọc audit trong bộ contract này nên không dựng bảng lịch sử giả trên UI. FR-012.AC2 được đối chiếu bằng DB audit, không được mô tả thành màn tra cứu lịch sử đã nối. Kết quả thực chạy và giới hạn được bổ sung sau kiểm; trạng thái Jira/merge không tự đổi.
+
+### Kết quả và giới hạn DATN-48 (25–26/11/2026)
+
+Môi trường: macOS arm64, Go1.27.4, Node24.15.0/pnpm11.19.0, PostgreSQL18 test sở hữu (owner đúng, system-ID7705732357505970219, public_tables0 qua guard). Không dùng `.env`, Neon, Gmail thật hoặc credential người dùng. Lượt offline install thiếu tarball, sandbox registry/Go cache bị chặn đã chạy lại bằng quyền phù hợp; không nhận các lượt lỗi môi trường/typecheck đang sửa là PASS. Giữ dependency/lockfile hiện hành.
+
+| Bằng chứng browser + PG thật ngày25/11 | Kết quả |
+|---|---|
+| HR login/menu → list/detail | Quan sát4 hồ sơ từ DB; list không phone/address; detail user101/employee1001 hiển thị NULL đúng nghĩa. Đích login HR vẫn danh mục. |
+| Sửa fullname/address → reload | Đạt: official mới giữ sau reload; không tạo request/notification. Có thông báo200 sau lưu; phone/department/job_level NULL giữ nguyên. |
+| Hai tab cùng trường | Tab1 lưu, tab2 gửi before cũ → lỗi stale, khóa form và yêu cầu GET đối soát; không ghi đè. |
+| Actor audit và cleanup | Harness PASS2402.079s;2 audit `UPDATE_ADMINISTRATIVE_PROFILE`, actor HR fixture khớp;0 request/notification. DB case dọn; guard sau dọn đạt26/11. Đây không là bằng chứng browser đọc lịch sử audit. |
+| Phần chưa khép ở lượt agent ban đầu | Các ca email/session/quyền/fault/responsive/đề nghị và kiểm form bổ sung chưa hoàn tất khi công cụ browser mất khả dụng. Lượt kiểm thủ công do Quân xác nhận ngày26/11 được ghi riêng bên dưới; không suy PASS từ unit/review. |
+
+Công cụ in-app browser mất khả dụng khi tiếp nối (`Local browser access is unavailable for this chat`), reset vẫn lỗi; native fallback hết phiên/timeout. Chrome do người dùng sử dụng nên tránh thao tác tranh cửa sổ. Lượt harness tự hết40phút và dọn đúng fixture. Không báo chặn do DB; regression PG vẫn đạt và guard sau dọn hợp lệ.
+
+| Cổng thực chạy | Kết quả đúng tầng |
+|---|---|
+| `go vet ./...`, `go test ./... -count=1`, `go build ./...` tại worktree | PASS; unit/build không thay integration. |
+| `python3 scripts/authdb/manage.py check` tại checkout giữ state | PASS trước integration và sau browser cleanup, đúng PG18/owner/system-ID/public_tables0. |
+| `python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-48 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m` | PASS tuần tự:124.346s/170.034s/25.425s/63.223s. Regression auth/OAP/PCA, không chạy song song với harness. |
+| `go vet -tags=integration,profileuidemo ./cmd/server` | PASS kiểm nguồn harness build tag; không nhận compile/vet là fault browser đã chạy. |
+| `pnpm check` tại `web/` | PASS229 FE/model tests (15 focused mới),15 harness tests, lint/format/typecheck/build; không skip. Bao gồm hủy catalog GET theo phiên, không replay và no-op; HTTP fake không thay browser/PG. |
+| Bốn file Node contract/harness theo ticket; `node scripts/check-harness.mjs`; `git diff --check` | PASS42 tests;481 nguồn và diff cuối đạt. Kiểm tĩnh/kiểm kê không thay runtime. |
+
+**PCA-DB11:** đã chạy lại `TestAdministrativeProfileRaceActualApprove` và `TestAdministrativeProfileRaceApproveBeforeDirect` trong `./internal/repository/postgres` của suite trên. Hai connection/barrier quan sát lock, **cả direct edit và Submit/Approve PCA adapter thật**, hai thứ tự cùng/khác trường; không writer giả/sleep ngẫu nhiên. Bằng chứng HTTP/PG email/revoke/audit/rollback từ các test DATN-47 đã được chạy lại trong suite, xem [ma trận PG](../../scripts/authdb/README.md#datn-47--pca-t11--api-hr-sửa-trực-tiếp-hồ-sơ); không đổi chúng thành ca browser đã đạt. Race login đồng thời đổi email chưa có ca trực tiếp; HTTPS/Neon/deploy/DB vật lý outage chưa kiểm.
+
+| FR | Phạm vi bàn giao hiện tại |
+|---|---|
+| FR-012.AC1 | Đủ bằng chứng trong phạm vi bàn giao F4: UI/adapter list/search/pagination/detail và7 trường PATCH; PG/HTTP cùng browser agent và lượt kiểm thủ công do Quân xác nhận26/11. Ứng viên Done sau bàn giao/merge theo workflow, không tự đổi Jira. |
+| FR-012.AC2, BR-001 | Audit đúng actor/atomic/no-op và không tạo employee request được kiểm PG; NULL/address có browser agent, phần kiểm thủ công tiếp nối được Quân xác nhận. Đủ phạm vi AC lưu lịch sử phía server; không mở quyền/status/skills hoặc quảng cáo giao diện audit-read chưa có. Ứng viên Done sau merge/bàn giao. |
+| FR-013/064, toàn app/notifications | Ngoài phạm vi; không suy hoàn thành từ F4. |
+
+Bước tiếp hiện hành: Quân đã xác nhận các ca kiểm thủ công tiếp nối PASS và giao commit/push/tạo PR ngày26/11. Bàn giao Git theo yêu cầu này; merge và Jira Done vẫn do Quân quyết định theo workflow.
+
+**Review cuối:** agent chính đọc diff và sub-agent review độc lập hai lượt; đã sửa lower Unicode email khác Go (chỉ tối ưu no-op ASCII, Unicode để server canonical), class input theo convention, xác nhận bỏ nháp/focus, thêm AbortSignal cho catalog GET và hiển thị no-op. Focused adapter/resource tests15/15 nằm trong229tests. Không có finding P1/P2 còn mở từ review nguồn; review không tự khép browser. Các ca browser còn thiếu ở lượt agent được tiếp nhận từ xác nhận kiểm thủ công của Quân bên dưới. Không tự merge hoặc chuyển Jira Done.
+
+### Tiếp nhận kiểm thủ công và bàn giao Git — 26/11/2026
+
+Sau khi nhận hướng dẫn chạy đúng worktree/harness PG test và checklist trong chat, Quân báo lượt kiểm cơ bản ổn. Agent yêu cầu xác nhận thêm năm nhóm ca quan trọng; Quân xác nhận: “Mình đã thử các ca trên và đều PASS, harness dọn cũng PASS”, rồi giao cập nhật evidence, commit/push/tạo PR. Bảng dưới là **kết quả browser kiểm thủ công do Quân báo**, không phải agent trực tiếp quan sát lại hoặc test tự động. Không thu thập mật khẩu, cookie, CSRF, HAR, ảnh hay payload; không tự đặt PID, thời lượng, số audit/request cho lượt này.
+
+| Nhóm kiểm thủ công theo hướng dẫn | Kết quả do Quân xác nhận |
+|---|---|
+| Email đổi thật và phiên cũ | PASS: phiên cũ hết hiệu lực; login bằng email mới được. Hướng dẫn có cả target và HR tự đổi email; không tự login hoặc đổi mật khẩu. |
+| Direct edit và đề nghị cũ | PASS: cùng trường stale, không ghi đè official mới; khác trường vẫn approve được. Đây là luồng UI tiếp nối; race đồng thời được chứng minh riêng bằng PG hai adapter thật. |
+| `PCA48_DB` | PASS: lỗi PG trong transaction không lưu, không báo success; GET đối soát giữ dữ liệu trước đó. Không gọi là DB vật lý outage. |
+| `PCA48_LOST` | PASS: báo chưa rõ kết quả, không replay; GET thấy dữ liệu đã commit. Đây là đóng socket có kiểm soát sau200 ở harness, không suy mọi dạng lỗi mạng đã kiểm. |
+| Mất HR, Admin-only, limited | PASS: không mở hồ sơ ngoài quyền; limited vẫn ở cổng đổi mật khẩu. |
+| Responsive và focus | PASS theo checklist mobile/focus đã hướng dẫn; không tự gán viewport/thiết bị hoặc ảnh đo từ agent cho lượt thủ công. |
+| Dọn harness | Quân xác nhận PASS; không gán thời lượng hoặc số bản ghi cho lượt này. |
+
+Kết hợp kiểm tự động/PG, browser agent ngày25/11 và xác nhận kiểm thủ công26/11: không còn ca browser chặn đã nêu trong câu hỏi xác nhận; phạm vi F4/FR-012 đủ bàn giao review/merge. Không bổ sung bằng chứng chi tiết chưa được cung cấp cho các kiểm tra mở rộng như trên100 lựa chọn qua browser (đã có adapter test), mọi tổ hợp role, race login–email đồng thời, read204 mất phản hồi, DB vật lý outage, HTTPS/Neon/deploy/pentest. Không nhận FR-013/064 hoặc toàn app.

@@ -2,6 +2,18 @@
 
 ## Hiện trạng
 
+### Brief DATN-48 / PCA-T12 — UI HR hồ sơ hành chính
+
+Brief đã được Quân xác nhận: `/personnel/employees` và `/{id}`, menu HR từ quyền server, giữ đích login/cổng limited. Nguồn: proposal PCA mục4–9, SQL9.4, OpenAPI F4, FR-012 và BR-001. Reuse visual/primitives, adapter async riêng server; patch/before chỉ trường đổi, không rebase draft khi refresh nền. Lỗi chưa rõ kết quả dùng GET đối soát, không tự PATCH lại. Ngoài phạm vi: CV/vô hiệu hóa/quyền/reset, API đọc audit, schema/dependency, Neon/deploy và Git handoff. Tiêu chí: pnpm check, browser PG thật, race hai adapter direct edit–approve, regression Go/PG/contract, tự review và sub-agent review. Chỉ ghi PASS sau thực chạy.
+
+#### Nguồn triển khai và kiểm thực
+
+Nhánh `feature/DATN-48-hr-personnel-ui` từ main750cae4 (PR60 đã merge). File mới: `ServerAdministrativeProfiles.tsx`, `AdministrativeProfileForm.tsx`, `administrative-profile-api.ts`/`administrative-profile-resource.ts` và hai file test cùng miền. Shell/navigation nối menu và URL đã chốt; catalog adapter nhận AbortSignal optional để dọn GET khi đổi phiên/rời màn. Không import demo, thêm dependency hoặc đổi lockfile. Working tree gốc có thay đổi ngoài phạm vi được giữ nguyên.
+
+Bằng chứng/lệnh/giới hạn và kịch bản F4 xem [runbook phần9](../docs/api/auth-runbook.md#9-datn-48--pca-t12--ui-hr-hồ-sơ-hành-chính). Lượt browser ngày25/11/2026 dùng in-app browser/PG18 test thật: HR login → list4 hồ sơ → detail user101/employee1001 phone/address NULL → sửa fullname/address → reload giữ DB; tab1 sửa fullname, tab2 giữ before cũ →409stale khóa gửi lại và có nút GET đối soát. Focus về `personnel-heading` sau lưu/reload quan sát được. Harness kết thúc/dọn PASS2402.079s, đối soát2 audit hành chính đúng HR fixture,0 request/notification. Không suy0 request là đã kiểm regression đề nghị qua UI.
+
+Ngày26/11, công cụ browser báo `Local browser access is unavailable for this chat`; reset không khôi phục, native fallback bị hết phiên/timeout và Chrome đang do người dùng sử dụng nên không tiếp tục tranh quyền điều khiển. **Ở lượt agent ban đầu chưa khép** browser fault PG/mất phản hồi sau commit, email session/no-op, catalog edit/phone NULL sau sửa, role/limited/logout/Back, responsive/dirty-discard và direct edit→approve request cũ. Có unit/HTTP/PG cho nhiều ca tương ứng nhưng không thay bằng chứng browser. Cổng cuối `pnpm check` PASS229 tests FE/model (15 mới),15 tests harness, lint/format/typecheck/build;42 contract/harness tests, kiểm kê481 nguồn và diff check đạt. Tự review/sub-agent hai lượt đã sửa Unicode email/class/focus/discard, thêm abort catalog GET và trạng thái no-op. Tiếp nối26/11: Quân đã kiểm thủ công theo hướng dẫn, xác nhận các nhóm email/session, cùng/khác trường, PGfault/lostPATCH, quyền/limited, mobile/focus và cleanup đều PASS, rồi giao bàn giao Git. Nguồn xác nhận/mức kiểm tại runbook phần9; đủ phạm vi FR-012 để bàn giao/merge, không tự Jira Done hoặc nhận FR-013. Không gọi lượt kiểm của Quân là agent trực tiếp quan sát lại.
+
 ### DATN-46 / PCA-T10 — kiểm xuyên F1–F3
 
 Mục tiêu: nghiệm thu self gửi → HR xử lý → thông báo kết quả và official/lịch sử trên bản ghép `2278de8`, theo proposal PCA mục4–9, OpenAPI canonical và SQL plan PCA-DB01–10/12. Giữ URL/login/limited đã chốt. Đầu ra là runbook demo26/11, ma trận bằng chứng/FR và giới hạn; không mở F4, workflow mới, Neon/deploy hoặc tự bàn giao Git. Tiêu chí: Go/PG/FE/contract/harness và browser thật có kết quả, lỗi chặn được xử lý/retest, tự review cùng sub-agent review trước bàn giao. Kết quả được ghi sau thực chạy.

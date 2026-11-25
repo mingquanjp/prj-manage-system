@@ -11,6 +11,7 @@ import {
   catalogKindAt,
   serverHome,
 } from "./server-navigation"
+import { ServerAdministrativeProfiles } from "../profiles/ServerAdministrativeProfiles"
 import { ServerProfileReviews } from "../profiles/ServerProfileReviews"
 import { ServerPersonalProfile } from "../profiles/ServerPersonalProfile"
 import { ServerAccounts } from "../accounts/ServerAccounts"
@@ -52,9 +53,12 @@ export function ServerWorkspace({
   const reviewsPage =
     location.pathname === "/personnel/profile-requests" ||
     location.pathname.startsWith("/personnel/profile-requests/")
+  const personnelPage =
+    location.pathname === "/personnel/employees" ||
+    location.pathname.startsWith("/personnel/employees/")
   const accountsPage = location.pathname === "/accounts"
   const denied =
-    (reviewsPage && !canReviewServerProfiles(principal)) ||
+    ((reviewsPage || personnelPage) && !canReviewServerProfiles(principal)) ||
     (!!kind && !canReadCatalogs(principal)) ||
     (accountsPage && !canManageAccounts(principal))
   const profilePage = location.pathname === "/profile"
@@ -101,6 +105,15 @@ export function ServerWorkspace({
           </Link>
           {canReviewServerProfiles(principal) && (
             <Link
+              to="/personnel/employees"
+              aria-current={personnelPage ? "page" : undefined}
+              className={`filter-chip ${personnelPage ? "filter-active" : ""}`}
+            >
+              Hồ sơ nhân sự
+            </Link>
+          )}
+          {canReviewServerProfiles(principal) && (
+            <Link
               to="/personnel/profile-requests"
               aria-current={reviewsPage ? "page" : undefined}
               className={`filter-chip ${reviewsPage ? "filter-active" : ""}`}
@@ -138,7 +151,13 @@ export function ServerWorkspace({
               Đang kiểm tra với máy chủ…
             </p>
           )}
-          {reviewsPage && !denied ? (
+          {personnelPage && !denied ? (
+            <ServerAdministrativeProfiles
+              key={`${principal.user_id}:${location.pathname}:${location.search}`}
+              session={session}
+              busy={busy}
+            />
+          ) : reviewsPage && !denied ? (
             <ServerProfileReviews
               key={`${principal.user_id}:${location.pathname}:${location.search}`}
               session={session}
@@ -169,8 +188,8 @@ export function ServerWorkspace({
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {denied
-                  ? reviewsPage
-                    ? "Xét duyệt đề nghị hồ sơ chỉ dành cho HR. Quyền được xác nhận từ máy chủ."
+                  ? reviewsPage || personnelPage
+                    ? "Quản lý hồ sơ nhân sự chỉ dành cho HR. Quyền được xác nhận từ máy chủ."
                     : accountsPage
                       ? "Quản lý tài khoản chỉ dành cho Quản trị viên. Quyền được xác nhận từ máy chủ."
                       : "Danh mục tổ chức chỉ dành cho HR hoặc Quản trị viên. Quyền được xác nhận từ máy chủ."
