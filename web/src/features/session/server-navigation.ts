@@ -88,3 +88,14 @@ export function parseReviewLocation(
   query.pageSize = Number(size)
   return { query }
 }
+
+export function parseAdministrativeLocation(path: string, search: string) {
+  const root = "/personnel/employees"
+  if (path === root) {
+    const query = parseCatalogQuery(search)
+    return query ? { query } : null
+  }
+  const match = /^\/personnel\/employees\/([1-9]\d*)$/.exec(path)
+  const id = match ? Number(match[1]) : 0
+  return reviewId(id) && !search ? { id, query: { q: "", page: 1, pageSize: 20 } } : null
+}

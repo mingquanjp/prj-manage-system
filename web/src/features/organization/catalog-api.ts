@@ -56,7 +56,9 @@ export function createCatalogApi(fetcher: typeof fetch = fetch) {
         credentials: "same-origin",
         cache: "no-store",
         redirect: "error",
-        signal: AbortSignal.timeout(15000),
+        signal: init.signal
+          ? AbortSignal.any([init.signal, AbortSignal.timeout(15000)])
+          : AbortSignal.timeout(15000),
         headers: { Accept: "application/json", ...init.headers },
       })
     } catch {
@@ -116,13 +118,14 @@ export function createCatalogApi(fetcher: typeof fetch = fetch) {
       query: string,
       page: number,
       pageSize: number,
+      signal?: AbortSignal,
     ): Promise<CatalogPage> {
       const params = new URLSearchParams({
         q: query,
         page: String(page),
         page_size: String(pageSize),
       })
-      const value = await json(await request(kind, `?${params}`, {}, 200))
+      const value = await json(await request(kind, `?${params}`, { signal }, 200))
       if (
         !object(value) ||
         !exact(value, ["items", "pagination"]) ||

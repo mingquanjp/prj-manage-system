@@ -1,5 +1,11 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
+## DATN-48 / PCA-T12 — tiếp nối UI HR
+
+Suite PG18 sở hữu chạy lại tuần tự ngày25/11 trên worktree DATN-48 từ main750cae4: migrations124.346s, repository170.034s, HTTP25.425s, server63.223s PASS. Lệnh và bằng chứng đúng tầng tại [runbook F4 phần9](../../docs/api/auth-runbook.md#9-datn-48--pca-t12--ui-hr-hồ-sơ-hành-chính). `TestAdministrativeProfileRaceActualApprove` và `TestAdministrativeProfileRaceApproveBeforeDirect` dùng hai adapter direct edit/Approve thật, cả hai thứ tự và cùng/khác trường; khép phần kiểm lại PCA-DB11 ở tầng PG, không nhận writer có kiểm soát là approve.
+
+Harness `TestProfileUIDemoServer` thêm fixture Admin-only, marker `PCA48_DB` (trigger PG57014) và `PCA48_LOST` (commit200 rồi đóng socket), chỉ opt-in `integration,profileuidemo`. Lượt browser chỉ chạy save/reload/stale, chưa dùng marker, nên không ghi fault browser PASS. Harness hết40phút/dọn PASS2402.079s,2 audit đúng actor HR,0 request/notification; guard26/11 sau cleanup PG18 owner/system-ID/public_tables0 đạt. Lượt agent ban đầu chưa đủ nghiệm thu UI vì browser mất khả dụng. Tiếp nối26/11, Quân xác nhận tự kiểm các nhóm browser còn chặn theo hướng dẫn đều PASS và cleanup PASS; evidence được ghi riêng ở runbook F4, không nhận đó là agent rerun PG hoặc tự đặt số bản ghi. Đủ phạm vi FR-012 bàn giao/merge, không tự Done, tác động schema/Neon hoặc nhận FR-013.
+
 ## DATN-47 / PCA-T11 — API HR sửa trực tiếp hồ sơ
 
 Phạm vi F4 theo [proposal PCA](../../docs/proposals/backend-profile-change-approval.md), [OpenAPI canonical](../../docs/api/profile-change-approval.openapi.json) và SQL plan mục9.4. Ba API HR giữ projection riêng; không mở rộng GET self hoặc quyền Admin-only. DATN-48 tiếp nhận UI; không coi kết quả API là bằng chứng browser.
