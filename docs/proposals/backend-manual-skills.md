@@ -121,20 +121,20 @@ FR-016/017/023/027 là mục tiêu nghiệm thu theo AC, không ghi Done trướ
 
 ## 9. WBS và kế hoạch nhận việc
 
-| WBS | Đầu ra | Consumer |
-|---|---|---|
-| MSK-01 | Bàn giao contract, SQL plan và brief kỹ năng thủ công | MSK-02 |
-| MSK-02 | Triển khai migration kỹ năng và guard legacy trên PostgreSQL test | MSK-03, MSK-05 |
-| MSK-03 | Triển khai CRUD API nhóm kỹ năng và kỹ năng theo quyền Giám đốc | MSK-04, MSK-06 |
-| MSK-04 | Nối UI Giám đốc quản trị danh mục kỹ năng | MSK-10, MSK-12 |
-| MSK-05 | Mở rộng thông báo server cho sự kiện kỹ năng và giữ tương thích PCA | MSK-06, MSK-11 |
-| MSK-06 | Triển khai đọc năng lực, gửi và tra cứu đề nghị kỹ năng chính chủ | MSK-07, MSK-08 |
-| MSK-07 | Triển khai transaction Giám đốc chấp thuận hoặc từ chối kỹ năng | MSK-08 |
-| MSK-08 | Tích hợp sáu API năng lực và đề nghị kỹ năng với PostgreSQL | MSK-09, MSK-10 |
-| MSK-09 | Nối UI năng lực chính thức, gửi đề nghị và lịch sử cá nhân | MSK-11, MSK-12 |
-| MSK-10 | Nối UI Giám đốc đối chiếu và quyết định kỹ năng | MSK-11, MSK-12 |
-| MSK-11 | Nối thông báo kỹ năng tới đúng màn cá nhân hoặc Giám đốc | MSK-12 |
-| MSK-12 | Kiểm xuyên luồng kỹ năng và bàn giao demo ngày 03/12 | Bàn giao D04 |
+| WBS | Ticket | Đầu ra | Consumer |
+|---|---|---|---|
+| MSK-01 | DATN-50 / MSK-T01 | Bàn giao contract, SQL plan và brief kỹ năng thủ công | MSK-02 |
+| MSK-02 | DATN-51 / MSK-T02 | Triển khai migration kỹ năng và guard legacy trên PostgreSQL test | MSK-03, MSK-05 |
+| MSK-03 | DATN-52 / MSK-T03 | Triển khai CRUD API nhóm kỹ năng và kỹ năng theo quyền Giám đốc | MSK-04, MSK-06 |
+| MSK-04 | DATN-53 / MSK-T04 | Nối UI Giám đốc quản trị danh mục kỹ năng | MSK-10, MSK-12 |
+| MSK-05 | DATN-54 / MSK-T05 | Mở rộng thông báo server cho sự kiện kỹ năng và giữ tương thích PCA | MSK-06, MSK-11 |
+| MSK-06 | DATN-55 / MSK-T06 | Triển khai đọc năng lực, gửi và tra cứu đề nghị kỹ năng chính chủ | MSK-07, MSK-08 |
+| MSK-07 | DATN-56 / MSK-T07 | Triển khai transaction Giám đốc chấp thuận hoặc từ chối kỹ năng | MSK-08 |
+| MSK-08 | DATN-57 / MSK-T08 | Tích hợp sáu API năng lực và đề nghị kỹ năng với PostgreSQL | MSK-09, MSK-10 |
+| MSK-09 | DATN-58 / MSK-T09 | Nối UI năng lực chính thức, gửi đề nghị và lịch sử cá nhân | MSK-11, MSK-12 |
+| MSK-10 | DATN-59 / MSK-T10 | Nối UI Giám đốc đối chiếu và quyết định kỹ năng | MSK-11, MSK-12 |
+| MSK-11 | DATN-60 / MSK-T11 | Nối thông báo kỹ năng tới đúng màn cá nhân hoặc Giám đốc | MSK-12 |
+| MSK-12 | DATN-61 / MSK-T12 | Kiểm xuyên luồng kỹ năng và bàn giao demo ngày 03/12 | Bàn giao D04 |
 
 Rank là thứ tự ưu tiên nhận việc; Blocks xác định đầu vào bắt buộc. Từ đợt MSK, triển khai tối đa hai task độc lập đồng thời theo [delivery-plan](../ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk): mỗi task có branch/worktree riêng, DB/browser dùng môi trường chung được kiểm luân phiên.
 
@@ -143,6 +143,17 @@ Mốc dự kiến: 27–28/11 bàn giao thiết kế, 29/11–01/12 triển khai
 ## 10. Bàn giao triển khai
 
 ### Nguồn và Jira
+
+Nguồn bàn giao DATN-50 là [commit merge `1d84eefde6519b27559ed00974383eeb9f4d4aed`](https://github.com/mingquanjp/prj-manage-system/commit/1d84eefde6519b27559ed00974383eeb9f4d4aed) của [PR #66](https://github.com/mingquanjp/prj-manage-system/pull/66). Proposal, OpenAPI MSK/PCA, SQL plan, tickets và brief UI tại commit này khớp bản đã review `7c4b2dc`. Các bổ sung bàn giao bên dưới không thay contract hoặc quyết định MSK-A01–A08.
+
+| Nguồn chuẩn | Phần áp dụng | Task tiếp nhận |
+|---|---|---|
+| Proposal này | Mục 4–8: lựa chọn đã chốt, hành vi và URL; mục 9: WBS → ticket | T02–T12 |
+| [OpenAPI MSK](../api/manual-skills.openapi.json) | 14 thao tác planned: 8 danh mục và 6 năng lực/đề nghị | T03/T06–T10 |
+| [OpenAPI PCA](../api/profile-change-approval.openapi.json) | Hai API thông báo hiện có và các giá trị mở rộng kỹ năng planned | T05/T11 |
+| [SQL/test plan](backend-manual-skills-sql-plan.md) | Mục 1–6: nâng cấp/transaction; mục 7–8: ma trận và lệnh kiểm | T02/T03/T05–T08/T12 |
+| [Brief MSK tại web README](../../web/README.md#brief-msk--kỹ-năng-thủ-công-cho-0312) | Tái sử dụng UI, URL, phân tách server/demo và kiểm theo phiên; chi tiết tại mục 7 proposal | T04/T09–T12 |
+| [Tickets](backend-manual-skills-tickets.md) | 12 task, phạm vi/AC và 19 phụ thuộc | T01–T12 |
 
 Snapshot dùng khi nhập Jira: commit `496054cef48c6f446a86b1789680c6a0a73e36ca`. Ticket giữ nguyên nội dung nhập; proposal hiện hành rút gọn phần bàn giao. [Hướng dẫn importer](../../scripts/jira/README-msk.md) ghi cách đối soát snapshot mà không đổi journal hoặc ghi đè Jira.
 
@@ -166,9 +177,31 @@ Kết quả chuẩn bị ngày 27/11: 61 tests contract/harness/feature-plan và
 
 Giới hạn nguồn: dictionary 5B còn link lịch sử `database-step3b-effort-profile-skills-cv-2026-10-13.md` không có trong repo. Nội dung dictionary áp dụng đã được đọc; kiểm toàn bộ link của tài liệu này còn thiếu, không thuộc kết quả kiểm nguồn MSK ở trên.
 
+### Kiểm bàn giao DATN-50
+
+Ngày 27/11/2026, tại gốc worktree từ `main 1d84eef`, macOS arm64 / Node v24.15.0:
+
+```sh
+node --test scripts/check-manual-skills-contract.test.mjs scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Kết quả: 48/48 tests đạt, không skip; harness kiểm kê 492 nguồn và diff check đạt. Lệnh `check-feature-plan.mjs` đầy đủ ở trên cũng đạt: 14 operation planned, 12 WBS/task, 19 phụ thuộc và một Mermaid parse được. Review độc lập từ PR #66 được dùng lại cho phần thiết kế không đổi; phần bổ sung mục 9–10 đã đối chiếu với tickets và SQL plan. Không có kiểm PostgreSQL, HTTP hoặc browser MSK trong DATN-50; các ca MSK-DB01–12 vẫn thuộc task triển khai tương ứng.
+
 ### Đầu vào cho các task sau
 
-- T02 xác minh PG test/head/drift, mapping approver/source/status/names legacy và actor import; thiếu mapping thì dừng đường nâng cấp có dữ liệu tương ứng.
+DATN-51 / T02 tiếp nhận các mục sau để xác minh trên PostgreSQL test sở hữu. DATN-50 chỉ đối chiếu thiết kế; chưa xác nhận dữ liệu hoặc trạng thái DB thực tế.
+
+| Đầu vào cần xác minh | Nguồn áp dụng | Điều kiện dừng |
+|---|---|---|
+| PG18, owner/system-ID; head dự kiến 000006, dirty/drift và dependency | SQL plan mục 1 | Chưa xác minh môi trường hoặc metadata lệch thiết kế; không force version |
+| Tên nhóm/kỹ năng và `skills.status` legacy | SQL plan mục 1/3 | Tên trắng, padding, trùng sau normalize hoặc skill INACTIVE chưa có mapping được review; không tự sửa/gộp/xóa |
+| `employee_skills.source`, người/thời điểm duyệt và liên kết `employees.user_id` | SQL plan mục 1–2 | Source/enum không hợp lệ, thiếu actor/time hoặc linkage không đủ; không suy user_id từ employee_id, không yêu cầu approver lịch sử còn quyền hiện hành |
+| Actor thực hiện import khi có official cần lưu provenance | SQL plan mục 2 | Chưa xác minh user thực hiện chuyển đổi; fixture phải dùng actor tổng hợp tường minh, không mặc định actor import là approver cũ |
+
+T02 phải kiểm lại guard dưới khóa, bảo toàn dữ liệu và down/dirty theo SQL plan mục 2/6; thu bằng chứng MSK-DB01–03 tại mục 7. Không dùng down thay backup hoặc gọi dữ liệu fixture là mapping môi trường đích.
+
 - T09/T10 dùng URL/semantics input/version tại mục 6–7, giữ dữ liệu theo phiên và dọn ngay khi mất quyền.
 - T12 thu bằng chứng DB/browser, race hai adapter thật, cập nhật runbook/FR coverage và kịch bản báo cáo.
 
