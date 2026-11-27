@@ -60,7 +60,8 @@ test("kiểm kê giữ spec nhúng, Swagger local và nguồn vendor", async () 
 test("kiểm kê giữ công cụ Jira và test offline, không chạy API thật", async () => {
   const files = await requiredFiles()
   for (const path of ["scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
-    "scripts/jira/pca_import.py", "scripts/jira/test_pca_import.py", "scripts/jira/README-pca.md"]) {
+    "scripts/jira/pca_import.py", "scripts/jira/test_pca_import.py", "scripts/jira/README-pca.md",
+    "scripts/jira/msk_import.py", "scripts/jira/test_msk_import.py", "scripts/jira/README-msk.md"]) {
     assert.ok(files.includes(path), `Thiếu nguồn công cụ Jira: ${path}`)
   }
 })

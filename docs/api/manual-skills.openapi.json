@@ -1,0 +1,5194 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Danh mục và đề nghị kỹ năng thủ công",
+    "version": "0.1.0",
+    "description": "MSK14 thao tác PLANNED; thiết kế27/11, chưa triển khai HTTP/PG/UI. Không CV/task/file/supplement/withdraw/remove hoặc Admin bypass. Auth/OAP/PCA canonical giữ riêng. Thông báo reuse hai API PCA với planned enum extension đã mô tả ở canonical PCA."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/skill-categories": {
+      "get": {
+        "operationId": "listSkillCategorys",
+        "summary": "Danh sách skill-categories",
+        "description": "Mọi phiên thường đọc để chọn kỹ năng; count/items cùng RR snapshot, sort name/idASC.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projection allowlist cùng snapshot, không entity/raw JSONB.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requires-business-session": true
+      },
+      "post": {
+        "operationId": "createSkillCategory",
+        "summary": "Tạo skill-categories",
+        "description": "",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sau commit xác nhận trả mục danh mục vừa tạo.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Category"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "DUPLICATE_NAME"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skill-categories/{id}": {
+      "patch": {
+        "operationId": "updateSkillCategory",
+        "summary": "Sửa skill-categories",
+        "description": "So expected_before chính xác; no-op200 không audit. Không đổi nghĩa kỹ năng đã dùng.",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trả mục danh mục sau commit cập nhật; no-op trả200 cùng mục hiện hành, không audit mới.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Category"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "STALE_DATA",
+                            "DUPLICATE_NAME"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryChange"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      },
+      "delete": {
+        "operationId": "deleteSkillCategory",
+        "summary": "Xóa skill-categories",
+        "description": "",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sau commit xóa xác nhận trả204, không body JSON.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "STALE_DATA",
+                            "CATALOG_IN_USE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryDelete"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skills": {
+      "get": {
+        "operationId": "listSkills",
+        "summary": "Danh sách skills",
+        "description": "Mọi phiên thường đọc để chọn kỹ năng; count/items cùng RR snapshot, sort name/idASC.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/Query"
+          },
+          {
+            "$ref": "#/components/parameters/CategoryId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projection allowlist cùng snapshot, không entity/raw JSONB.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requires-business-session": true
+      },
+      "post": {
+        "operationId": "createSkill",
+        "summary": "Tạo skills",
+        "description": "",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sau commit xác nhận trả mục danh mục vừa tạo.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Skill"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "DUPLICATE_NAME"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillCreate"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skills/{id}": {
+      "patch": {
+        "operationId": "updateSkill",
+        "summary": "Sửa skills",
+        "description": "So expected_before chính xác; no-op200 không audit. Không đổi nghĩa kỹ năng đã dùng.",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trả mục danh mục sau commit cập nhật; no-op trả200 cùng mục hiện hành, không audit mới.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Skill"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "STALE_DATA",
+                            "DUPLICATE_NAME"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillChange"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      },
+      "delete": {
+        "operationId": "deleteSkill",
+        "summary": "Xóa skills",
+        "description": "",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sau commit xóa xác nhận trả204, không body JSON.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "STALE_DATA",
+                            "CATALOG_IN_USE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 8192, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillDelete"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 8192,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/employees/{id}/skills": {
+      "get": {
+        "operationId": "readSelfSkills",
+        "summary": "Năng lực chính thức chính chủ",
+        "description": "ID là employee_id; người khác/missing cùng404, kể cả Admin/Director. Không pending. Sort skill name/idASC. Khi có skill_id, page=1/page_size=20 cho lookup trước mở form, total0/1 và item cùng snapshot; absence chỉ suy từ lookup này, không từ trang official đang hiển thị.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/SkillId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projection allowlist cùng snapshot, không entity/raw JSONB.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficialPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requires-business-session": true
+      }
+    },
+    "/api/employees/{id}/skill-change-requests": {
+      "post": {
+        "operationId": "submitSkillChange",
+        "summary": "Gửi đề nghị kỹ năng chính chủ",
+        "description": "Server suy ADD/UPDATE từ before sau so official; MANUAL. Một pending/người/kỹ năng. Key trước stale/pending, chỉ sau commit201; no-op400, không NO_CHANGE/APPROVED giả.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Key"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Sau commit xác nhận trả đề nghị đã tạo; replay submit hợp lệ trả cùng request_id và projection hiện hành, không tạo thêm tác động.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR",
+                            "NO_CHANGES"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "STALE_DATA",
+                            "PENDING_REQUEST_EXISTS",
+                            "IDEMPOTENCY_CONFLICT",
+                            "IDEMPOTENCY_KEY_EXPIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 65536, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 65536,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skill-change-requests": {
+      "get": {
+        "operationId": "listSkillChanges",
+        "summary": "Lịch sử self hoặc hàng chờ Director",
+        "description": "scope=self mặc định; scope=review cần DIRECTOR. Sort requested_at/idDESC. current permission/active recheck; list không giải trình hoặc private profile.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Scope"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/EmployeeId"
+          },
+          {
+            "$ref": "#/components/parameters/SkillId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projection allowlist cùng snapshot, không entity/raw JSONB.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skill-change-requests/{id}": {
+      "get": {
+        "operationId": "readSkillChange",
+        "summary": "Chi tiết self hoặc Director",
+        "description": "scope=self mặc định; review chỉ DIRECTOR; người khác/missing404. before/proposed là giá trị đã gửi, current đọc hiện hành; không raw JSONB.",
+        "x-implementation-status": "planned",
+        "x-required-role": "NORMAL",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Scope"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projection allowlist cùng snapshot, không entity/raw JSONB.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skill-change-requests/{id}/approve": {
+      "post": {
+        "operationId": "approveSkillChange",
+        "summary": "Chấp thuận đề nghị",
+        "description": "Không tự duyệt, kể cả role tổ hợp. PENDING trước version. Cả hai cần reason; expert_opinion chỉ ghi nguồn/nội dung ý kiến ngoài, không giả chữ ký. So before toàn bộ values/absence; official+terminal+notification nguyên tử.",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sau commit xác nhận trả quyết định chấp thuận và current values; lần xử lý tiếp theo bị409 REQUEST_ALREADY_RESOLVED.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_ALREADY_RESOLVED",
+                            "STALE_REQUEST",
+                            "STALE_DATA",
+                            "TARGET_INACTIVE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 65536, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 65536,
+        "x-requires-business-session": true
+      }
+    },
+    "/api/skill-change-requests/{id}/reject": {
+      "post": {
+        "operationId": "rejectSkillChange",
+        "summary": "Từ chối đề nghị",
+        "description": "Không tự duyệt, kể cả role tổ hợp. PENDING trước version. Cả hai cần reason; expert_opinion chỉ ghi nguồn/nội dung ý kiến ngoài, không giả chữ ký. Giữ official, không cần before còn khớp hoặc targetemployeeACTIVE; vẫn kiểm version/quyền.",
+        "x-implementation-status": "planned",
+        "x-required-role": "DIRECTOR",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sau commit xác nhận trả quyết định từ chối, giữ official; lần xử lý tiếp theo bị409 REQUEST_ALREADY_RESOLVED.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "VALIDATION_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHENTICATED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "PAYLOAD_TOO_LARGE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "INTERNAL_ERROR"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SERVICE_UNAVAILABLE",
+                            "COMMIT_OUTCOME_UNKNOWN"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lỗi đã che chi tiết; không Set-Cookie hoặc dữ liệu ngoài quyền.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                },
+                "description": "Mọi kết quả và lỗi."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_ALREADY_RESOLVED",
+                            "STALE_REQUEST"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON strict, UTF-8, không khóa trùng/lạ/trailing JSON/content encoding. Byte thực <= 65536, không chỉ Content-Length.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "x-body-limit-bytes": 65536,
+        "x-requires-business-session": true
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "staffing_session"
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token"
+      }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Đúng APP_ORIGIN đã cấu hình; không suy từ Host hoặc nới CORS."
+      },
+      "Key": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "description": "Chỉ submit; UUIDv4 lowercase;24h. Không auto replay khi mất response."
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "default": 1
+        }
+      },
+      "Size": {
+        "name": "page_size",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Query": {
+        "name": "q",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+          "x-normalized-max-length": 100,
+          "x-normalized-min-length": 0
+        },
+        "description": "Literal %/_, không wildcard. Không duplicate/unknown query."
+      },
+      "CategoryId": {
+        "name": "category_id",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "EmployeeId": {
+        "name": "employee_id",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "description": "Self chỉ được own employee_id; review Director được lọc subject trong quyền."
+      },
+      "SkillId": {
+        "name": "skill_id",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "Scope": {
+        "name": "scope",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "self",
+            "review"
+          ],
+          "default": "self"
+        }
+      },
+      "Status": {
+        "name": "status",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "all",
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "default": "all"
+        }
+      }
+    },
+    "schemas": {
+      "Id": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "Name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "Values": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "proficiency_level": {
+            "type": "string",
+            "enum": [
+              "BASIC",
+              "INTERMEDIATE",
+              "ADVANCED",
+              "EXPERT"
+            ]
+          },
+          "years_experience": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,2})\\.[0-9]$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Giá trị legacy đọc nguyên, không trim/cắt hoặc áp maxLength mới."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proficiency_level",
+          "years_experience",
+          "note"
+        ]
+      },
+      "ProposedValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "proficiency_level": {
+            "type": "string",
+            "enum": [
+              "BASIC",
+              "INTERMEDIATE",
+              "ADVANCED",
+              "EXPERT"
+            ]
+          },
+          "years_experience": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,2})(\\.[0-9])?$",
+                "description": "0..999.9, tối đa một chữ số thập phân; server canonical thành một chữ số, không làm tròn."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "oneOf": [
+              {
+                "type": "string",
+                "x-normalization": "Nếu raw note bằng before.note trong UPDATE thì giữ nguyên; trường hợp khác Go TrimSpace.",
+                "x-normalized-max-length": 2000,
+                "x-normalized-min-length": 0,
+                "description": "ADD hoặc note thực sự đổi: TrimSpace, trắng về null, tối đa2000 code point. UPDATE có proposed.note bằng chính xác expected_before_values.note: giữ raw note legacy, không trim/max mới; before phải so đúng official dưới khóa. Quy tắc cũng áp dụng hash/persist/replay, không có cờ bypass từ client.",
+                "x-normalized-max-length-applies-to": "ADD hoặc raw note khác before.note trong UPDATE"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proficiency_level",
+          "years_experience",
+          "note"
+        ]
+      },
+      "Category": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Skill": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category"
+        ]
+      },
+      "CategoryCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 100,
+            "x-normalized-min-length": 1
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CategoryChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_before": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Giá trị legacy đọc nguyên, không trim/cắt hoặc áp maxLength mới."
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 100,
+            "x-normalized-min-length": 1
+          }
+        },
+        "required": [
+          "expected_before",
+          "name"
+        ]
+      },
+      "CategoryDelete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_before": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Giá trị legacy đọc nguyên, không trim/cắt hoặc áp maxLength mới."
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "expected_before"
+        ]
+      },
+      "SkillCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 100,
+            "x-normalized-min-length": 1
+          },
+          "category_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "name",
+          "category_id"
+        ]
+      },
+      "SkillChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_before": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Giá trị legacy đọc nguyên, không trim/cắt hoặc áp maxLength mới."
+              },
+              "category_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "name",
+              "category_id"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 100,
+            "x-normalized-min-length": 1
+          },
+          "category_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "expected_before",
+          "name",
+          "category_id"
+        ]
+      },
+      "SkillDelete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_before": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Giá trị legacy đọc nguyên, không trim/cắt hoặc áp maxLength mới."
+              },
+              "category_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "name",
+              "category_id"
+            ]
+          }
+        },
+        "required": [
+          "expected_before"
+        ]
+      },
+      "Submit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "skill_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "expected_before_values": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Values"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed_values": {
+            "$ref": "#/components/schemas/ProposedValues"
+          },
+          "explanation": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 2000,
+            "x-normalized-min-length": 1
+          },
+          "external_evidence": {
+            "oneOf": [
+              {
+                "type": "string",
+                "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+                "x-normalized-max-length": 2000,
+                "x-normalized-min-length": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "skill_id",
+          "expected_before_values",
+          "proposed_values",
+          "explanation"
+        ],
+        "description": "Quy tắc note giữ nguyên được xét cùng expected_before_values và proposed_values; schema riêng của ProposedValues không thay kiểm liên kết/before trong transaction."
+      },
+      "Decision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_request_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "reason": {
+            "type": "string",
+            "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+            "x-normalized-max-length": 2000,
+            "x-normalized-min-length": 1
+          },
+          "expert_opinion": {
+            "oneOf": [
+              {
+                "type": "string",
+                "x-normalization": "Go TrimSpace; UTF-8/NUL/duplicate keys kiểm tại biên HTTP",
+                "x-normalized-max-length": 2000,
+                "x-normalized-min-length": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "expected_request_version",
+          "reason"
+        ]
+      },
+      "Employee": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_code": {
+            "type": "string"
+          },
+          "fullname": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Category"
+          }
+        },
+        "required": [
+          "employee_id",
+          "employee_code",
+          "fullname",
+          "position"
+        ]
+      },
+      "Official": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "employee_skill_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "skill": {
+            "$ref": "#/components/schemas/Skill"
+          },
+          "values": {
+            "$ref": "#/components/schemas/Values"
+          },
+          "approved_by": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "employee_skill_id",
+          "employee_id",
+          "skill",
+          "values",
+          "approved_by",
+          "approved_at"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "RequestSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "skill": {
+            "$ref": "#/components/schemas/Skill"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "ADD",
+              "UPDATE"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "const": "MANUAL"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "request_id",
+          "employee",
+          "skill",
+          "operation",
+          "source",
+          "status",
+          "version",
+          "requested_at"
+        ]
+      },
+      "RequestDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "employee": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "skill": {
+            "$ref": "#/components/schemas/Skill"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "ADD",
+              "UPDATE"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "const": "MANUAL"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "before_values": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Values"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed_values": {
+            "$ref": "#/components/schemas/Values"
+          },
+          "current_values": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Values"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "external_evidence": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expert_opinion": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_by": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "resolved_by": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolved_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision_reason": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "employee",
+          "skill",
+          "operation",
+          "source",
+          "status",
+          "version",
+          "requested_at",
+          "before_values",
+          "proposed_values",
+          "current_values",
+          "explanation",
+          "external_evidence",
+          "expert_opinion",
+          "requested_by",
+          "resolved_by",
+          "resolved_at",
+          "decision_reason"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "PENDING"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "resolved_by": {
+                  "type": "null"
+                },
+                "resolved_at": {
+                  "type": "null"
+                },
+                "decision_reason": {
+                  "type": "null"
+                },
+                "expert_opinion": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "resolved_by": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "resolved_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "decision_reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CategoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ]
+      },
+      "SkillPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Skill"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ]
+      },
+      "OfficialPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Official"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "employee_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "employee_id"
+        ]
+      },
+      "RequestPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/RequestSummary"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ]
+      }
+    }
+  }
+}

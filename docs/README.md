@@ -67,6 +67,12 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 - [SQL/test plan hồ sơ](proposals/backend-profile-change-approval-sql-plan.md): preflight, request/idempotency, chuyển notification legacy, khóa/stale/rollback và ma trận kiểm chứng dự kiến; chưa chạy DB, không áp Neon.
 - [Công cụ Jira](../scripts/jira/README.md): diagnose/plan/apply/check khi được giao; token nhập ẩn. Đợt OAP dùng [script/hướng dẫn riêng](../scripts/jira/README-oap.md); đợt PCA dùng [importer PCA](../scripts/jira/README-pca.md). Mỗi đợt có journal riêng; không dùng apply auth hoặc journal đợt khác. Không chạy import lại để cập nhật tiến độ.
 
+### Đợt kỹ năng thủ công — chuẩn bị báo cáo 03/12/2026
+
+[Proposal MSK](proposals/backend-manual-skills.md), [OpenAPI 14 thao tác](api/manual-skills.openapi.json), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [12 ticket](proposals/backend-manual-skills-tickets.md) là nguồn triển khai kỹ năng thủ công cho báo cáo 03/12; [tests contract MSK](../scripts/check-manual-skills-contract.test.mjs) kiểm các ràng buộc tĩnh. URL và phạm vi văn bản đã chốt; API/migration/UI MSK còn planned. FR-024/026 mới nhận phần văn bản; CV/task/tệp và bổ sung/rút thuộc đợt sau.
+
+Jira: Epic DATN-49, task DATN-50–61 theo journal local và xác nhận của Quân ngày 27/11. [Importer MSK](../scripts/jira/README-msk.md) giữ cách đối soát snapshot nguồn; [delivery-plan](ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk) quy định các cặp task làm song song. Chưa nối nghiệp vụ MSK hoặc thay đổi quyền/handler thông báo PCA từ bộ thiết kế này.
+
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 
 - Điểm vào: [bản hợp nhất 33 bảng](design/database-proposal-2026-10-14.md).

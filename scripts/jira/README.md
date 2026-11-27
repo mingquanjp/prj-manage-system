@@ -1,5 +1,7 @@
 # Đưa ticket auth lên Jira DATN
 
+**Đợt MSK (danh mục và đề nghị kỹ năng thủ công):** dùng [hướng dẫn MSK](README-msk.md) và `msk_import.py`, journal `.local/jira-msk/` riêng. Không chạy apply đợt khác để tạo MSK.
+
 **Đợt PCA (đề nghị hồ sơ/HR duyệt/thông báo):** dùng [hướng dẫn PCA](README-pca.md) và `pca_import.py`, journal `.local/jira-pca/` riêng. Không chạy apply auth/OAP để tạo PCA.
 
 **Đợt mới OAP (tổ chức/tài khoản/hồ sơ):** dùng [hướng dẫn OAP](README-oap.md) và `oap_import.py`, journal `.local/jira-oap/` riêng. Tài liệu bên dưới chỉ dành cho đợt auth; không chạy apply auth để tạo OAP.

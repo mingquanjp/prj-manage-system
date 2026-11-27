@@ -31,6 +31,7 @@ export async function requiredFiles(base = root) {
     "scripts/jira/auth_import.py", "scripts/jira/test_auth_import.py", "scripts/jira/README.md",
     "scripts/jira/oap_import.py", "scripts/jira/jira_batch.py", "scripts/jira/test_oap_import.py", "scripts/jira/README-oap.md",
     "scripts/jira/pca_import.py", "scripts/jira/test_pca_import.py", "scripts/jira/README-pca.md",
+    "scripts/jira/msk_import.py", "scripts/jira/test_msk_import.py", "scripts/jira/README-msk.md",
     "docs/ai/workflow.md", "docs/ai/task-template.md", ".github/pull_request_template.md",
     "scripts/check-feature-plan.mjs", "scripts/check-feature-plan.test.mjs",
     "go.mod", "go.sum", "Makefile", "cmd/server/main.go", "cmd/migrate/main.go", "cmd/seed/main.go",

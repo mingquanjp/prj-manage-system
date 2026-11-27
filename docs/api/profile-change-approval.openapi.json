@@ -3709,12 +3709,26 @@
             "enum": [
               "PROFILE_CHANGE_SUBMITTED",
               "PROFILE_CHANGE_APPROVED",
-              "PROFILE_CHANGE_REJECTED"
+              "PROFILE_CHANGE_REJECTED",
+              "SKILL_CHANGE_SUBMITTED",
+              "SKILL_CHANGE_APPROVED",
+              "SKILL_CHANGE_REJECTED"
+            ],
+            "x-planned-values": [
+              "SKILL_CHANGE_SUBMITTED",
+              "SKILL_CHANGE_APPROVED",
+              "SKILL_CHANGE_REJECTED"
             ]
           },
           "resource_type": {
             "type": "string",
-            "const": "PROFILE_CHANGE_REQUEST"
+            "enum": [
+              "PROFILE_CHANGE_REQUEST",
+              "SKILL_CHANGE_REQUEST"
+            ],
+            "x-planned-values": [
+              "SKILL_CHANGE_REQUEST"
+            ]
           },
           "resource_id": {
             "$ref": "#/components/schemas/Id"
@@ -3748,6 +3762,36 @@
           "message",
           "created_at",
           "read_at"
+        ],
+        "description": " Nhóm SKILL_CHANGE_* và resource SKILL_CHANGE_REQUEST là thiết kế planned MSK, chỉ được server trả sau triển khai validator/writer/adapter. PROFILE_CHANGE_* hiện có giữ nguyên; enum mới không là runtime proof.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "notification_type": {
+                  "enum": [
+                    "PROFILE_CHANGE_SUBMITTED",
+                    "PROFILE_CHANGE_APPROVED",
+                    "PROFILE_CHANGE_REJECTED"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "resource_type": {
+                  "const": "PROFILE_CHANGE_REQUEST"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "resource_type": {
+                  "const": "SKILL_CHANGE_REQUEST"
+                }
+              }
+            }
+          }
         ]
       },
       "AdministrativeProfile": {

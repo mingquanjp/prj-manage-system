@@ -6,6 +6,28 @@ Nguồn: [mục lục](../README.md), [62 FR/AC và các điểm mở](../produc
 
 **Chốt tiếp nối 14/11:** tiếp tục triển khai theo FR/AC và bản đồ miền đã có. Công thức gợi ý phục vụ phân công vẫn chưa chốt; các điểm còn mở sẽ thảo luận riêng sau. Không tự chọn trọng số, chuẩn hóa, PerfScore hoặc áp công thức nghiên cứu vào backend. Tra cứu/phân công thủ công và phần nghiệp vụ độc lập có thể làm trước; scorer, điểm/hạng và nghiệm thu FR-044 chờ phương pháp được duyệt. Mốc gợi ý trong lịch là có điều kiện, không ấn định ngày người dùng phải chốt công thức.
 
+## Tiếp nối 27/11/2026 — sau đợt hồ sơ và review code
+
+Main `8fc3ebd` đã merge PCA F1–F4 cùng PR63–65 sửa lỗi/refactor/convention. Bằng chứng hồ sơ đọc tại [runbook](../api/auth-runbook.md) mục8–10 và [web README](../../web/README.md); không dùng các dòng “chưa triển khai” ở snapshot19/11 bên dưới làm trạng thái hiện tại. Migration head repo là000006, không còn000005. Không tự chuyển Jira Done hoặc tăng phần trăm từ merge.
+
+Đợt tiếp theo giữ mốc03/12: [kỹ năng thủ công MSK](../proposals/backend-manual-skills.md), [contract](../api/manual-skills.openapi.json), [SQL plan](../proposals/backend-manual-skills-sql-plan.md), [tickets](../proposals/backend-manual-skills-tickets.md). Quân xác nhận27/11 URL/giữ home và phạm vi chỉ văn bản; không CV/tệp/task/supplement/withdraw. FR016/017/023/027 là mục tiêu kiểm, FR024/026 còn Partial; không nhận toàn D03 hoặc notifications. Kế hoạch tuần27–28/11 thiết kế/review,29/11–01/12 triển khai xuyên tầng,02/12 kiểm/dữ liệu/demo,03/12 báo cáo. Chưa có giờ thực đủ để cam kết toàn đợt trong15–20h; nếu chậm giữ catalog/official read đã kiểm, ghi submit/decision chưa đạt thay vì cắt bảo vệ hoặc fake dữ liệu.
+
+Phần lịch/snapshot gốc được giữ để truy vết. Phần này ưu tiên trạng thái27/11; proposal giữ nghiệp vụ/thiết kế chi tiết, không sao chép lại toàn FR vào lịch.
+
+### Triển khai song song từ đợt MSK
+
+Quân xác nhận ngày 27/11: tối đa hai task độc lập triển khai đồng thời. Rank giữ ưu tiên nhận việc; task chỉ bắt đầu phần phụ thuộc khi đầu vào đã bàn giao. Các cặp MSK:
+
+| Đầu vào đã sẵn sàng | Task có thể chạy đồng thời |
+|---|---|
+| T02 | T03 API danh mục và T05 backend thông báo |
+| T03 và T05 | T04 UI danh mục và T06 nghiệp vụ năng lực/đề nghị |
+| T04 và T08 | T09 UI nhân viên và T10 UI Giám đốc |
+
+T07 → T08 vẫn có thứ tự; T11 chờ T05/T09/T10, T12 chờ các đầu ra UI/thông báo theo Blocks. Mỗi task dùng branch/worktree và PR riêng. Người điều phối chịu trách nhiệm ghép file chung như router/navigation/composition root; task có thể review trong lúc task độc lập khác tiếp tục triển khai.
+
+Unit/FE/kiểm tĩnh chạy riêng theo worktree. Suite PostgreSQL và browser dùng DB/cổng chung chạy luân phiên; không chạy hai suite DB cùng lúc. Mỗi task giữ đủ review, kiểm chứng và phần Quân cần đọc hiểu.
+
 ## 1. Kết quả đối chiếu hiện trạng
 
 **Tiếp nối 19/11/2026 — DATN-35 đã kiểm, chờ bàn giao Git:** OAP đã chạy luồng UI danh mục → tạo → Gmail thật → người dùng tự đổi/login mới → hồ sơ/reload/logout/Back. Bảng dưới cập nhật phần đã nối sau mốc lập kế hoạch14/11. [Runbook xuyên luồng](../api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ kết quả thực/FR/giới hạn; kế hoạch không tự là bằng chứng runtime hoặc trạng thái Done.
