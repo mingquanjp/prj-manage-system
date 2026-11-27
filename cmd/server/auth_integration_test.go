@@ -380,7 +380,7 @@ func TestAuthHTTPPostgresUnavailable(t *testing.T) {
 	}
 }
 
-// Mail port dành riêng suite integration, kiểm Gmail thật theo runbook DATN-32.
+// Port mail giả chỉ kiểm điều phối HTTP, không chứng minh Gmail đã nhận thư.
 type integrationMailSender struct{}
 
 func (integrationMailSender) SendAccount(context.Context, string, org.TemporaryPassword) (org.MailStatus, error) {

@@ -18,6 +18,7 @@
 - Giữ thay đổi có sẵn; không reset, commit, push, deploy hoặc cấp quyền rộng khi chưa được yêu cầu.
 - Feature/fix làm nhánh riêng; feature dùng `feature/<tên>`, bug dùng `bug/<tên>` theo quy ước repo. Không tự chuyển/mất thay đổi người dùng.
 - UI và bình luận code tiếng Việt; định danh kỹ thuật tiếng Anh.
+- Comment theo [quy ước comment](docs/ai/code-comments.md): giải thích lý do/ràng buộc, doc comment nêu contract cho caller; không ghi nhật ký triển khai. Đọc khi viết code và rà lại cùng diff trước bàn giao.
 
 ## Kiến trúc và kiểm tra
 - Đọc [kiến trúc](.claude/docs/architecture.md) trước khi thêm tầng/package; matching không phụ thuộc DB/HTTP.

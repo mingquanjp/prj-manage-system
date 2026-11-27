@@ -95,8 +95,8 @@ type Page struct {
 }
 type DetailQuery struct{ ActorID, RequestID int }
 
-// ActorID chỉ nhận từ nguồn nội bộ đã xác thực. Middleware auth tại T05 kiểm
-// session; adapter vẫn recheck trạng thái/cờ/quyền/liên kết hiện hành trong DB.
+// Repository kiểm trạng thái, quyền và liên kết hiện hành khi xử lý đề nghị trong DB.
+// ActorID đã được xác thực không thay cho bước kiểm quyền tại DB.
 type Repository interface {
 	Submit(context.Context, SubmitCommand) (Detail, error)
 	List(context.Context, ListQuery) (Page, error)

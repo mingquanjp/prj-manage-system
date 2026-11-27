@@ -19,7 +19,7 @@ import (
 func TestNotificationApplicationPostgres(t *testing.T) {
 	a := newAuthApp(t)
 	f := a.fixture
-	// Cả hai nhóm phải còn truy cập được sau khi gộp wiring DATN-41/42.
+	// Bật thông báo vẫn phải giữ các route đề nghị hồ sơ đang hoạt động.
 	for path, count := range map[string]int{"/docs/profile-change.openapi.json": 5, "/docs/notifications.openapi.json": 2} {
 		_, body := a.call(t, "GET", path, nil, "", nil, 200)
 		var spec struct {

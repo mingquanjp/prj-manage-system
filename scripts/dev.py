@@ -92,7 +92,7 @@ def main():
     require_free(5174)
     require_free(8080)
     print('Đang kiểm tra PostgreSQL local sở hữu. Docker Desktop cần đang chạy.', flush=True)
-    # Giữ nguyên mọi guard Docker/URL/owner/major của runner đã review.
+    # Dùng guard của runner để chỉ khởi động DB local đúng owner và phiên bản PostgreSQL.
     authdb.up()
     if processes.stopping:
         return

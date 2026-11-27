@@ -8,8 +8,7 @@ import (
 	"time"
 )
 
-// Nhóm riêng chỉ công bố hai operation thông báo đã lắp dependency.
-// Không phụ thuộc trạng thái triển khai năm API đề nghị ở DATN-41.
+// Nhóm thông báo được bật theo dependency riêng để tài liệu khớp các route đang chạy.
 func swaggerWithNotifications(s AuthServices, enabled bool) http.HandlerFunc {
 	fallback := swaggerWithServices(s.Catalogs != nil, s.Profiles != nil, s.Accounts != nil, s.ProfileChanges != nil)
 	return func(w http.ResponseWriter, r *http.Request) {

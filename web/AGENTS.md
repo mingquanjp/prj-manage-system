@@ -1,5 +1,7 @@
 # Frontend — mở rộng từ pilot đã duyệt
 
+Áp dụng [quy ước comment chung](../docs/ai/code-comments.md); dùng JSDoc khi caller cần tài liệu.
+
 - React/TypeScript/Vite/Tailwind; primitives dùng mô hình shadcn/Radix và token tùy chỉnh. Không bê cấu hình Make sang local.
 - `src/demo/` là adapter dữ liệu mô phỏng, không API/auth thật. Không coi kiểm tra quyền client là bảo mật production.
 - Giữ bảng màu ấm hiện hành, UI tiếng Việt, thao tác bàn phím/focus rõ. Không thêm KPI, roster, reviewer, sprint hay tính năng từ ảnh tham khảo.
