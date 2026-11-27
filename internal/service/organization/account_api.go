@@ -36,10 +36,10 @@ func (s *AccountAPI) Create(ctx context.Context, input CreateAccountInput) (Acco
 		return AccountCreation{}, safeAccountError(err)
 	}
 	status := s.sendCommitted(ctx, result)
-	// Trạng thái không hợp lệ từ adapter giữ kết quả tạo và báo chưa xác định.
 	switch status {
 	case MailAccepted, MailFailed, MailUnknown:
 	default:
+		// Phản hồi ngoài contract không đủ để xác nhận kết quả gửi thư.
 		status = MailUnknown
 	}
 	return AccountCreation{Account: result.Account, Mail: status}, nil
@@ -53,9 +53,10 @@ func (s *AccountAPI) Preview(ctx context.Context, actorID int) (string, error) {
 	return s.reader.Preview(ctx, actorID)
 }
 
-// Đã commit: giữ kết quả tạo cả khi adapter gửi thư gặp lỗi ngoài dự kiến.
 func (s *AccountAPI) sendCommitted(ctx context.Context, result CreateAccountResult) (status MailStatus) {
 	status = MailUnknown
+	// Tài khoản đã lưu thành công; lỗi gửi thư không được báo thành lỗi tạo tài khoản.
+	// Panic không cho biết thư đã gửi hay chưa, nên giữ trạng thái chưa xác định.
 	defer func() {
 		if recover() != nil {
 			status = MailUnknown

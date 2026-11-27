@@ -46,6 +46,7 @@ web/dist/
 !/docs/ai/
 /docs/ai/*
 !/docs/ai/workflow.md
+!/docs/ai/code-comments.md
 !/docs/ai/task-template.md
 !/docs/ai/delivery-plan.md
 !/docs/product/

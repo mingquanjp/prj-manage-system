@@ -78,7 +78,7 @@ func TestProfileChangeSubmitReplayAndRead(t *testing.T) {
 	if again.RequestID != d.RequestID || *again.Current["address"] != "Official mới" || len(again.Current) != 2 {
 		t.Fatal("replay dựng snapshot giả hoặc mất ID")
 	}
-	// Dựng terminal bằng SQL fixture; transaction duyệt thật thuộc DATN-40.
+	// Dựng kết luận bằng SQL để kiểm replay; không chạy transaction HR duyệt.
 	pcExec(t, f, `UPDATE employee_profile_change_requests SET status='REJECTED',resolved_by=$1,resolved_at=clock_timestamp(),decision_reason='Lý do tổng hợp' WHERE request_id=$2`, hr.UserID, d.RequestID)
 	again, e = s.Submit(t.Context(), in)
 	authdb.Require(t, "replay terminal hiện hành", e)

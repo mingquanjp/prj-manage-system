@@ -187,7 +187,7 @@ func TestCatalogDeleteWithAdminReferenceRace(t *testing.T) {
 					deletion <- hs.Delete(ctx, org.CatalogCommand{ActorID: hr.UserID, Kind: spec.kind, ID: item.ID, ExpectedBeforeName: item.Name})
 				}()
 				waitCatalogSignal(t, ctx, entered)
-				// Chỉ mô phỏng bước khóa catalog của create, chưa chứng nhận adapter OAP-T09.
+				// Chỉ mô phỏng bước khóa danh mục, không kiểm transaction tạo tài khoản.
 				create := make(chan error, 1)
 				go func() {
 					var locked int
@@ -252,7 +252,7 @@ func TestCatalogDeleteWaitsForNewReference(t *testing.T) {
 				level = &item.ID
 				authdb.Require(t, "KEY SHARE job_level", tx.QueryRow(ctx, `SELECT job_level_id FROM public.job_levels WHERE job_level_id=$1 FOR KEY SHARE`, item.ID).Scan(&id))
 			}
-			// Chưa có create adapter M2: fixture tổng hợp ghi FK trên schema M1, không cấp mã sản phẩm.
+			// Ghi FK trực tiếp để kiểm xóa danh mục đang được tham chiếu, không chạy luồng cấp mã.
 			_, err = tx.Exec(ctx, `INSERT INTO public.users(user_id,password_hash,system_role,status,must_change_password) OVERRIDING SYSTEM VALUE VALUES (900,$1,'EMPLOYEE','ACTIVE',true)`, f.PasswordHash)
 			authdb.Require(t, "fake create user", err)
 			_, err = tx.Exec(ctx, `INSERT INTO public.employees(user_id,employee_code,fullname,email,position_id,department_id,job_level_id) VALUES(900,'RACE-NEW','Synthetic new employee','new-reference@example.invalid',$1,$2,$3)`, position, department, level)
