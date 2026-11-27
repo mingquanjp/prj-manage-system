@@ -1,68 +1,61 @@
-# Đưa ticket kỹ năng thủ công lên Jira DATN
+# Đối soát bộ ticket MSK trên Jira DATN
 
-[msk_import.py](msk_import.py) đọc trực tiếp [tickets MSK](../../docs/proposals/backend-manual-skills-tickets.md), dùng engine [jira_batch.py](jira_batch.py) và transport/ADF hiện có. Không chép description vào Python, không thêm dependency. Nguồn thiết kế là [proposal](../../docs/proposals/backend-manual-skills.md), [SQL plan](../../docs/proposals/backend-manual-skills-sql-plan.md) và [OpenAPI MSK](../../docs/api/manual-skills.openapi.json); enum thông báo mở rộng nằm trong canonical PCA.
+[Importer MSK](msk_import.py) đọc [tickets](../../docs/proposals/backend-manual-skills-tickets.md), dùng engine [jira_batch.py](jira_batch.py), transport và ADF hiện có. Python 3.9+, thư viện chuẩn; token nhập ẩn trong terminal, không đọc `.env`.
 
-Đích cố định: `https://datn-mingquanjp.atlassian.net`, project **DATN**, board **1**. Bộ này gồm **1 Epic + 12 Task, 12 WBS, 19 Blocks**; Rank T01→T12, khi đủ đầu vào phụ thuộc. Không đoán Jira key. Python **3.9+**, chỉ thư viện chuẩn.
+Đích: `https://datn-mingquanjp.atlassian.net`, project **DATN**, board **1**. Bộ gồm **1 Epic, 12 Task, 19 Blocks**, Rank T01→T12. Quân xác nhận đã nhập ngày 27/11/2026; journal local map Epic DATN-49 và MSK-T01–T12 tới DATN-50–61. Mapping này không thay kết quả `check` online.
 
-## 1. Kiểm offline
+## 1. Snapshot nhập Jira
 
-Nguồn và script hiện ở worktree riêng. Dùng đúng thư mục này, không chạy importer PCA/OAP:
+Nguồn dùng trong lượt nhập nằm tại commit `496054cef48c6f446a86b1789680c6a0a73e36ca`. Proposal hiện hành đã rút gọn phần bàn giao; file tickets chỉ dọn dòng trắng cuối. Nội dung description giữ nguyên, nhưng hash nguồn khác snapshot nên guard sẽ từ chối journal cũ nếu chạy online từ bản mới.
+
+Để đối soát bộ đã nhập, tạo checkout riêng từ snapshot. Chọn đường dẫn mới nếu thư mục dưới đây đã tồn tại:
 
 ```sh
-cd /private/tmp/ai-staffing-skill-planning
+git fetch origin 496054cef48c6f446a86b1789680c6a0a73e36ca
+git worktree add --detach /private/tmp/ai-staffing-msk-import-check 496054cef48c6f446a86b1789680c6a0a73e36ca
+cd /private/tmp/ai-staffing-msk-import-check
+python3 scripts/jira/msk_import.py --mode check
+```
+
+`check` chỉ đọc, tìm issue theo source labels và đối soát 13 issue, nội dung/type/parent/assignee/labels/19 Blocks/Rank. Không cần sao chép journal sang checkout kiểm mới. Lượt nhập ban đầu dùng đường dẫn nguồn chờ remote, vì vậy giữ nguyên cách gọi trên, không thêm `--source-base`.
+
+Giữ journal gốc `.local/jira-msk/state.json`; không xóa/sửa fingerprint để vượt guard. Dọn checkout kiểm sau khi dùng bằng `git worktree remove /private/tmp/ai-staffing-msk-import-check` từ checkout còn lại; chỉ thực hiện khi thư mục sạch.
+
+## 2. Kiểm offline và metadata
+
+Chạy tại gốc checkout chứa bộ MSK:
+
+```sh
 python3 scripts/jira/msk_import.py --mode plan --offline
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/jira -p 'test_*.py' -v
 ```
 
-Sau khi bàn giao/merge, có thể chạy tại checkout chứa cùng bộ nguồn. Giữ cùng checkout/journal trong một lượt import.
+Offline kiểm Rank/WBS/phụ thuộc và chuyển description sang ADF; không hỏi token, gọi Jira hoặc tạo journal. `--manifest-out /tmp/datn-msk-manifest.json` xuất bản đọc thêm vào file mới mode 0600, không ghi đè hoặc dùng làm nguồn chỉnh tay.
 
-Offline không hỏi token, gọi Jira hoặc tạo journal. Nó kiểm Rank/WBS/phụ thuộc, chuyển description sang ADF và giữ bảng hai cột/checklist/lệnh. Muốn đọc toàn manifest, thêm `--manifest-out /tmp/datn-msk-manifest.json`: chọn file mới, mode0600, không ghi đè hoặc dùng manifest làm nguồn thứ hai.
+`python3 scripts/jira/msk_import.py --mode diagnose` chỉ đọc metadata site/DATN-12/board, không dùng nguồn/journal. Nếu token có scope cần gateway, thêm cùng `--cloud-id UUID_SITE_DATN` vào lệnh online theo [hướng dẫn chung](README.md).
 
-## 2. Kiểm Jira thật — chỉ đọc
+## 3. Các mode và phạm vi ghi
 
-Tại cùng thư mục:
+- `plan`: đọc metadata/quyền và đối soát bộ ticket trước khi tạo; không sửa Jira.
+- `apply`: chỉ dùng cho lượt tạo còn thiếu sau khi kiểm nguồn, journal và plan. Hỏi `YES`; tạo issue, Blocks và Rank. Bộ MSK hiện đã nhập, không dùng apply để cập nhật description hoặc tiến độ.
+- `check`: chỉ đọc và đối soát toàn bộ; chạy từ snapshot nhập như mục 1.
+- `diagnose`: chỉ đọc cấu hình site/board.
 
-```sh
-python3 scripts/jira/msk_import.py --mode diagnose
-python3 scripts/jira/msk_import.py --mode plan
-```
+Apply không ghi đè/xóa ticket đã có hoặc gửi comment/status/priority/sprint/deadline/estimate/remaining/actual. Các đợt auth/OAP/PCA giữ field và thứ tự tương đối; Rank MSK có thể đổi vị trí tương đối với chúng.
 
-Nhập email Atlassian và API token qua prompt ẩn trong terminal tương tác; không gửi vào chat, đặt trong command, file hoặc Git. Script không đọc `.env`. Diagnose xác minh site/DATN-12/board; plan đối soát quyền, metadata, parent, assignee, label, Blocks và Rank, không sửa Jira. Nếu cần gateway cho token có scope, dùng cùng `--cloud-id UUID_SITE_DATN` trong mọi lệnh online theo [hướng dẫn chung](README.md).
+Khi một lượt nhập mới thực sự dùng link remote, `--source-base` phải là URL GitHub blob với SHA 40 ký tự, đúng repo `mingquanjp/prj-manage-system` và khớp tám nguồn local. Giữ cùng source-base/nội dung trong cả lượt; script không tự push hoặc xác minh commit đã có trên remote.
 
-Plan tìm đúng bộ qua `datn-msk-v1`, `source-msk-epic` và `source-msk-t01`…`t12`. T01 bàn giao thiết kế đã có; không tính lại thành remaining. Không đổi priority/status hoặc tự chuyển Done.
+## 4. Journal và khôi phục lỗi
 
-## 3. Tạo và đối soát
+Journal cố định `.local/jira-msk/state.json`, mode 0600, Git-ignore, lock độc quyền và từ chối symlink. Fingerprint gồm tám nguồn và cấu hình/source-base. Không dùng journal auth/OAP/PCA cho MSK.
 
-Sau khi đọc kết quả plan, người dùng chủ động chạy:
+- Mất phản hồi create: đối soát Jira theo mã/label/nội dung, chờ search index nếu cần. Chỉ khi xác minh chưa tồn tại mới dùng `--mode apply --retry-create MSK-Txx` (Epic: `MSK-EPIC`), xác nhận `RETRY MSK-Txx` rồi `YES`.
+- Mất phản hồi link: đối soát hai đầu; thiếu link cần xác minh rồi xác nhận `RETRY LINK` ở lượt apply mới. Rank mất phản hồi: dừng và plan lại trước khi apply có chủ ý.
+- Duplicate/drift/sai parent/nội dung/link đảo hoặc ngoài manifest: dừng để review; script không tự ghi đè/xóa.
+- Chỉ dọn lock cũ sau khi xác nhận process đã kết thúc; giữ state. Không đảm bảo exactly-once nếu ép retry hoặc chạy nhiều process.
 
-```sh
-python3 scripts/jira/msk_import.py --mode apply
-python3 scripts/jira/msk_import.py --mode check
-```
+Chi tiết transport/redaction và khôi phục dùng chung tại [README Jira](README.md), [README PCA](README-pca.md).
 
-Apply hỏi **YES**, tạo phần còn thiếu với parent Epic, assignee tài khoản được xác minh, ba labels mỗi issue; thêm19 Blocks và xếp Rank12 Task. Chỉ có các thao tác ghi create issue/issueLink/Rank. Không ghi đè hoặc xóa ticket đã có, gửi comment, status/priority/sprint/deadline/estimate/remaining/actual. Các đợt cũ giữ field và thứ tự tương đối; vị trí MSK so với chúng có thể thay đổi khi Rank.
+## 5. Kiểm chứng
 
-Check chỉ đọc, kiểm đủ13 issue, nội dung/type/parent/assignee/labels/19 Blocks/Rank. Không chứng minh ứng dụng đã chạy; không dùng importer đồng bộ tiến độ hoặc sửa nội dung Jira sau khi bắt đầu làm.
-
-Nguồn chưa commit/push được mô tả bằng đường dẫn repo kèm “link remote chờ bàn giao”. Khi có commit nguồn đã push và mở được, thêm cùng giá trị sau vào plan/apply/check:
-
-```text
---source-base https://github.com/mingquanjp/prj-manage-system/blob/FULL_COMMIT_SHA
-```
-
-Thay bằng SHA40 ký tự thật. Script kiểm tám nguồn local khớp commit local, gồm canonical notification PCA; không tự push hoặc xác minh commit đã có trên remote. Giữ nguyên source-base và nội dung nguồn trong suốt lượt import.
-
-## 4. Journal và lỗi chưa rõ kết quả
-
-Journal cố định **`.local/jira-msk/state.json`**, mode0600, Git-ignore, lock độc quyền và từ chối symlink. Không dùng/xóa journal auth/OAP/PCA. Fingerprint gồm tám nguồn và cấu hình/source-base; nguồn đổi sau apply sẽ dừng để review, không sửa fingerprint để vượt guard.
-
-- Mất phản hồi create: đọc lại Jira theo mã/label/nội dung; chưa thấy trên search thì chờ index và xác minh, không tự POST lại. Chỉ khi chắc issue chưa tồn tại mới dùng `--mode apply --retry-create MSK-Txx` (Epic: `MSK-EPIC`), xác nhận **RETRY MSK-Txx**, rồi **YES**.
-- Mất phản hồi link: đối soát hai đầu; thiếu link cần xác minh rồi xác nhận **RETRY LINK** ở lượt apply mới. Rank mất phản hồi: dừng, plan lại trước apply có chủ ý.
-- Duplicate/drift/sai parent/nội dung/link đảo hoặc ngoài manifest: dừng, không tự ghi đè/xóa. Không hứa exactly-once khi chạy nhiều process hoặc ép retry.
-- Chỉ dọn đúng lock cũ sau khi chắc process đã kết thúc; giữ state. Không xóa journal để nhập lại hoặc chạy importer đợt khác.
-
-Chi tiết transport/redaction/metadata và cơ chế khôi phục dùng chung tại [README chung](README.md) và [README PCA](README-pca.md).
-
-## 5. Bằng chứng và giới hạn
-
-Kiểm offline/Jira giả chứng minh chuyển nguồn→ADF, parser từ chối nguồn lệch, read-only plan/check, apply/rerun, journal riêng, lost-create và giữ nội dung/thứ tự OAP/PCA. Regression engine hiện hữu kiểm các lỗi link/Rank, transport và token TTY. Kết quả thực chạy được ghi tại proposal phần10; chưa gọi Jira thật trong lượt chuẩn bị script. Chỉ kết quả plan/apply/check của người dùng trên site thực mới xác nhận lượt nhập Jira.
+Bộ tests offline/Jira giả kiểm nguồn → ADF, parser/Rank/WBS/phụ thuộc, plan/check chỉ đọc, apply/rerun, journal riêng, lost-create và giữ các đợt cũ. Regression engine kiểm thêm lỗi link/Rank, transport và token TTY. Kết quả chuẩn bị và giới hạn tại [proposal mục 10](../../docs/proposals/backend-manual-skills.md#10-bàn-giao-triển-khai); chỉ kết quả plan/apply/check từ site thật xác nhận nội dung Jira hiện tại.

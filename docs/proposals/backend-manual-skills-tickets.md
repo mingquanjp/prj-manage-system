@@ -844,4 +844,3 @@ CV/storage/task, công thức phân công, Neon/HTTPS/deploy/pentest toàn app v
 [Proposal](backend-manual-skills.md) mục 3/7–10; [OpenAPI](../api/manual-skills.openapi.json) toàn bộ và [notification PCA](../api/profile-change-approval.openapi.json); [SQL/test plan](backend-manual-skills-sql-plan.md) mục 7–8; [FR](../product/functional-requirements.md) FR-016/017/023/024/026/027, phần FR-059/060; [delivery-plan](../ai/delivery-plan.md).
 
 **Truy vết nhập Jira:** `MSK-T12`; nguồn `docs/proposals/backend-manual-skills-tickets.md`.
-

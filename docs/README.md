@@ -69,9 +69,9 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 ### Đợt kỹ năng thủ công — chuẩn bị báo cáo 03/12/2026
 
-[Proposal MSK](proposals/backend-manual-skills.md) tái sử dụng quyết định D03 đã chốt; URL/phạm vi văn bản được Quân xác nhận27/11. [OpenAPI14 thao tác planned](api/manual-skills.openapi.json) và [kiểm contract tĩnh MSK](../scripts/check-manual-skills-contract.test.mjs), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [bộ12 task](proposals/backend-manual-skills-tickets.md) là bộ thiết kế, chưa có API/migration/UI runtime hoặc Jira mới. Thông báo mở rộng enum planned tại canonical PCA; không làm thay đổi kết quả triển khai PCA hiện có. FR024/026 chỉ phần văn bản, CV/task/tệp và supplement/withdraw tiếp nối; công thức phân công chưa chốt.
+[Proposal MSK](proposals/backend-manual-skills.md), [OpenAPI 14 thao tác](api/manual-skills.openapi.json), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [12 ticket](proposals/backend-manual-skills-tickets.md) là nguồn triển khai kỹ năng thủ công cho báo cáo 03/12; [tests contract MSK](../scripts/check-manual-skills-contract.test.mjs) kiểm các ràng buộc tĩnh. URL và phạm vi văn bản đã chốt; API/migration/UI MSK còn planned. FR-024/026 mới nhận phần văn bản; CV/task/tệp và bổ sung/rút thuộc đợt sau.
 
-[Importer MSK](../scripts/jira/README-msk.md) chuẩn bị1 Epic/12 Task/19 Blocks từ nguồn đã review; dùng engine hiện có và journal riêng. Plan offline không gọi Jira, apply chỉ khi người dùng chủ động chạy và xác nhận; không nhập lại auth/OAP/PCA hoặc đồng bộ tiến độ.
+Jira: Epic DATN-49, task DATN-50–61 theo journal local và xác nhận của Quân ngày 27/11. [Importer MSK](../scripts/jira/README-msk.md) giữ cách đối soát snapshot nguồn; [delivery-plan](ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk) quy định các cặp task làm song song. Chưa nối nghiệp vụ MSK hoặc thay đổi quyền/handler thông báo PCA từ bộ thiết kế này.
 
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 

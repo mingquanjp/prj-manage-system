@@ -14,6 +14,20 @@ Main `8fc3ebd` đã merge PCA F1–F4 cùng PR63–65 sửa lỗi/refactor/conve
 
 Phần lịch/snapshot gốc được giữ để truy vết. Phần này ưu tiên trạng thái27/11; proposal giữ nghiệp vụ/thiết kế chi tiết, không sao chép lại toàn FR vào lịch.
 
+### Triển khai song song từ đợt MSK
+
+Quân xác nhận ngày 27/11: tối đa hai task độc lập triển khai đồng thời. Rank giữ ưu tiên nhận việc; task chỉ bắt đầu phần phụ thuộc khi đầu vào đã bàn giao. Các cặp MSK:
+
+| Đầu vào đã sẵn sàng | Task có thể chạy đồng thời |
+|---|---|
+| T02 | T03 API danh mục và T05 backend thông báo |
+| T03 và T05 | T04 UI danh mục và T06 nghiệp vụ năng lực/đề nghị |
+| T04 và T08 | T09 UI nhân viên và T10 UI Giám đốc |
+
+T07 → T08 vẫn có thứ tự; T11 chờ T05/T09/T10, T12 chờ các đầu ra UI/thông báo theo Blocks. Mỗi task dùng branch/worktree và PR riêng. Người điều phối chịu trách nhiệm ghép file chung như router/navigation/composition root; task có thể review trong lúc task độc lập khác tiếp tục triển khai.
+
+Unit/FE/kiểm tĩnh chạy riêng theo worktree. Suite PostgreSQL và browser dùng DB/cổng chung chạy luân phiên; không chạy hai suite DB cùng lúc. Mỗi task giữ đủ review, kiểm chứng và phần Quân cần đọc hiểu.
+
 ## 1. Kết quả đối chiếu hiện trạng
 
 **Tiếp nối 19/11/2026 — DATN-35 đã kiểm, chờ bàn giao Git:** OAP đã chạy luồng UI danh mục → tạo → Gmail thật → người dùng tự đổi/login mới → hồ sơ/reload/logout/Back. Bảng dưới cập nhật phần đã nối sau mốc lập kế hoạch14/11. [Runbook xuyên luồng](../api/auth-runbook.md#7-datn-35--oap-t13--demo-xuyên-ui-db-và-gmail) giữ kết quả thực/FR/giới hạn; kế hoạch không tự là bằng chứng runtime hoặc trạng thái Done.

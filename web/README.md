@@ -2,10 +2,11 @@
 
 ## Hiện trạng
 
-
 ### Brief MSK — kỹ năng thủ công cho 03/12
 
-Đợt chuẩn bị thiết kế, chưa code UI: tái sử dụng màn/primitives kỹ năng theo [proposal MSK mục7](../docs/proposals/backend-manual-skills.md#7-brief-ui-và-url). Quân chốt27/11 /skills, /skill-reviews, /skill-catalogs/categories và /skill-catalogs/skills, chi tiết request_id sau GET kiểm quyền, giữ home/login/limited hiện hành. Chỉ văn bản; không CV/tệp/task/supplement/withdraw hoặc fallback demo. Cổng nghiệm thu khi triển khai gồm pnpm check và browser với PG thật; hiện chưa nhận MSK runtime PASS. 403 mất quyền phải bỏ dữ liệu đặc quyền ngay kể cả me tiếp theo503.
+Tái sử dụng màn/primitives kỹ năng theo [proposal mục 7](../docs/proposals/backend-manual-skills.md#7-brief-ui-và-url). URL: `/skills`, `/skill-reviews`, `/skill-catalogs/categories`, `/skill-catalogs/skills`; `request_id` chỉ mở chi tiết sau GET kiểm quyền. Giữ home/login/cổng đổi mật khẩu hiện hành.
+
+Đợt này chỉ nhận văn bản, chưa nối CV/tệp/task hoặc bổ sung/rút pending. Tách adapter server/demo; khi mất quyền phải dọn dữ liệu đặc quyền ngay, kể cả `/auth/me` tiếp theo lỗi 503. Cổng nghiệm thu UI là `pnpm check` và browser với PostgreSQL thật. Thứ tự và cặp task song song tại [delivery-plan](../docs/ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk).
 
 ### Brief sửa lỗi sau review — 27/11/2026
 

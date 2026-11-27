@@ -1,6 +1,6 @@
 # Danh mục kỹ năng, đề nghị thủ công và Giám đốc xét duyệt
 
-Ngày 27/11/2026. Đợt D03 cho báo cáo 03/12; mã nguồn thiết kế **MSK**, chưa có Jira key. Đây là thiết kế để triển khai, không là kết quả DB/HTTP/browser đã đạt. Base đối chiếu `main 8fc3ebd` sau merge PR63–65.
+Ngày 27/11/2026. Đợt D03 cho báo cáo 03/12; mã thiết kế **MSK**, Epic **DATN-49**, task **DATN-50–61**. Đây là bộ thiết kế trước triển khai. Base đối chiếu `main 8fc3ebd` sau merge PR63–65.
 
 ## 1. Nguồn và hiện trạng
 
@@ -136,58 +136,40 @@ FR-016/017/023/027 là mục tiêu nghiệm thu theo AC, không ghi Done trướ
 | MSK-11 | Nối thông báo kỹ năng tới đúng màn cá nhân hoặc Giám đốc | MSK-12 |
 | MSK-12 | Kiểm xuyên luồng kỹ năng và bàn giao demo ngày 03/12 | Bàn giao D04 |
 
-Rank không thay dependency; chi tiết tại tickets. Không đặt estimate/remaining/actual hoặc đếm lại công sức thiết kế. Dự kiến27–28/11 thiết kế,29/11–01/12 triển khai,02/12 regression/rehearsal,03/12demo; đây là lịch mục tiêu, không nghiệm thu/đo effort. Quân đọc hiểu/review phần quan trọng; checkpoint tự viết chỉ giao khi đã chốt brief riêng.
+Rank là thứ tự ưu tiên nhận việc; Blocks xác định đầu vào bắt buộc. Từ đợt MSK, triển khai tối đa hai task độc lập đồng thời theo [delivery-plan](../ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk): mỗi task có branch/worktree riêng, DB/browser dùng môi trường chung được kiểm luân phiên.
 
-## 10. Bàn giao và review
+Mốc dự kiến: 27–28/11 bàn giao thiết kế, 29/11–01/12 triển khai, 02/12 regression và tập demo, 03/12 báo cáo. Quân review/kiểm chứng phần quan trọng; checkpoint Go tự viết được xác định trong brief nhận việc.
 
-### 10.1. Quyền và nguồn quyết định
+## 10. Bàn giao triển khai
 
-Quân giao trọn bộ chuẩn bị bằng skill trong chat27/11; xác nhận cùng ngày URL/phạm vi văn bản ở MSK-A05/A06. Các lựa chọn kỹ thuật trong contract/SQL là thiết kế đề xuất của đợt, không gán thành chốt cũ hoặc runtime đã sẵn sàng. Bộ này chưa cấp quyền chạy migration, DB thật, viết nghiệp vụ, Jira hoặc Git. Môi trường đọc nguồn: main8fc3ebd trong worktree `/private/tmp/ai-staffing-skill-planning`, giữ nguyên checkout gốc đang có thay đổi.
+### Nguồn và Jira
 
-### 10.2. Hai lượt review
+Snapshot dùng khi nhập Jira: commit `496054cef48c6f446a86b1789680c6a0a73e36ca`. Ticket giữ nguyên nội dung nhập; proposal hiện hành rút gọn phần bàn giao. [Hướng dẫn importer](../../scripts/jira/README-msk.md) ghi cách đối soát snapshot mà không đổi journal hoặc ghi đè Jira.
 
-- Lượt proposal: tự đối chiếu nguồn + sub-agent chỉ đọc độc lập. P2 về403 rồi me503 có thể giữ dữ liệu đặc quyền đã sửa mục6.4; reviewer kiểm lại xác nhận khép.
-- Lượt bộ bàn giao: hai sub-agent độc lập rà backend/SQL/contract và UI/tickets/FR/dependencies. P2 lookup official ngoài trang đã sửa: GET skill_id riêng trước dựng before, không suy absence từ page. P3 giao sai consumer DB05/09 đã sửa T03/T06 và T06/T07; P3 số khóa JSON đã tách HTTP3 khóa, persisted4 khóa gồm schema_version. Các reviewer đã kiểm lại phần sửa và chưa còn P1/P2/P3 chặn đã nêu.
-- Tự review thêm: sửa method own notification-read về POST hiện hữu,403 theo middlewareFORBIDDEN; ghép resource/type notification đúng cặp. Import audit dùng actor vận hành được xác minh riêng với approver lịch sử. Không mở thêm role/quy trình hoặc tự bịa mapping legacy.
-- Phạm vi thực đọc: proposal/SQL/tickets/OpenAPI MSK và notification PCA, workflow kỹ năng/FR016–028/dictionary6–9/roles/domain rules, migrations000001/000004/000006 và ports/transport PCA–notification, UI instructions/screen contracts/delivery-plan. Review nguồn không thay runtime hoặc phê duyệt GitHub; không khẳng định không thể còn lỗi.
-- Review bổ sung theo yêu cầu Quân27/11: ba sub-agent chỉ đọc, chia nghiệp vụ/FR, HTTP–SQL và UI–tickets, sau đó kiểm lại phần sửa. Đã khép1P2 note legacy và4P3: audit quyết định trùng bảng miền, years phải giữ text, mô tả replay áp sai route, sort sai tên cột. Đã đồng bộ proposal/canonical/SQL/T06–T09/ma trận kiểm; không thêm dependency, framework, endpoint hoặc audit trùng. Quy tắc code đơn giản/reuse tại mục5 và quy ước tickets; migration vẫn giữ guard/mapping chưa xác minh. Không còn finding đã nêu đang mở sau kiểm lại, không xem đây là bảo đảm runtime không lỗi.
+Quân xác nhận bộ ticket đã lên Jira ngày 27/11/2026. Mapping từ journal local: Epic [DATN-49](https://datn-mingquanjp.atlassian.net/browse/DATN-49); MSK-T01–T12 lần lượt là DATN-50–61. Bắt đầu bằng [DATN-50](https://datn-mingquanjp.atlassian.net/browse/DATN-50) bàn giao thiết kế, sau đó [DATN-51](https://datn-mingquanjp.atlassian.net/browse/DATN-51) migration.
 
-- Review nội dung Jira ngày 27/11: biên tập Epic/12 task với đầu vào, AC, ca kiểm và nguồn riêng; tách nhật ký/lời nhắc điều phối khỏi description. Hai sub-agent kiểm lại nghiệp vụ/khả năng đọc và HTTP–SQL/phụ thuộc; không còn finding P1/P2/P3. Rank/12 WBS/19 Blocks và phạm vi đã duyệt giữ nguyên.
+### Review và kiểm chứng thiết kế
 
-### 10.3. Lệnh kiểm tĩnh và giới hạn
+Proposal, OpenAPI MSK/PCA, SQL/test plan, brief UI và tickets đã được đối chiếu với workflow kỹ năng, FR-016–028, quyền và dictionary áp dụng. Các lượt review độc lập về nghiệp vụ, HTTP–SQL và UI/phụ thuộc đã xử lý các finding; nội dung cuối giữ đúng note legacy, lookup official ngoài trang, lịch sử quyết định, input năm và quyền hiện hành.
 
-Từ gốc worktree:
+Lệnh kiểm từ gốc repo:
 
 ```sh
 node scripts/check-feature-plan.mjs --proposal docs/proposals/backend-manual-skills.md --tickets docs/proposals/backend-manual-skills-tickets.md --openapi docs/api/manual-skills.openapi.json --sql-plan docs/proposals/backend-manual-skills-sql-plan.md --source .claude/docs/skill_approval_workflow.md --source docs/product/functional-requirements.md
 node --test scripts/check-manual-skills-contract.test.mjs scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-feature-plan.test.mjs
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/jira -p 'test_*.py' -v
 node scripts/check-harness.mjs
 git diff --check
 ```
 
-Đã chạy lại27/11 sau review bổ sung:61 tests PASS không skip; feature-plan kiểm14 operation planned,12 WBS/12 task/19 cạnh và một sequence Mermaid. Parser ban đầu bắt dấu chấm phẩy trong Note làm lỗi cú pháp, đã sửa và kiểm lại đạt. Sơ đồ đã render bằng bundle Mermaid VS Code local và xem trực quan qua in-app browser, kiểm lại sau bỏ audit trùng; đây là preview tài liệu tĩnh, không UI nghiệp vụ. Preview local đã dừng/dọn, không cài dependency hoặc gửi dữ liệu ra ngoài. Harness kiểm nguồn và diff đạt; hash cuối lấy từ đầu ra feature-plan sau sửa, không chèn hash tự tham chiếu proposal.
+Kết quả chuẩn bị ngày 27/11: 61 tests contract/harness/feature-plan và 86 tests Jira offline đạt; kiểm cấu trúc đủ 14 operation planned, 12 WBS/task, 19 cạnh và một sequence Mermaid. Sơ đồ được preview bằng bundle Mermaid local. Kiểm tĩnh/HTTP giả không chứng minh API, migration hay UI MSK đã chạy; MSK-DB01–12 là các ca phải kiểm khi triển khai. SQL plan là thiết kế, không phải migration thực thi độc lập.
 
-Kiểm mở rộng thêm toàn bộ liên kết dictionary5B bằng `--source` dừng ở tham chiếu lịch sử `database-step3b-effort-profile-skills-cv-2026-10-13.md` không có trong snapshot main; đây là liên kết cũ tại dictionary dòng14, không phải nguồn MSK mới. Chưa sửa tài liệu lịch sử ngoài đợt và không nhận lượt kiểm mở rộng đó PASS. Nội dung dictionary áp dụng đã đọc trực tiếp; hash trong bảng dưới chỉ nhận diện nội dung.
+Giới hạn nguồn: dictionary 5B còn link lịch sử `database-step3b-effort-profile-skills-cv-2026-10-13.md` không có trong repo. Nội dung dictionary áp dụng đã được đọc; kiểm toàn bộ link của tài liệu này còn thiếu, không thuộc kết quả kiểm nguồn MSK ở trên.
 
-OpenAPI checker chỉ kiểm inventory/ref và các invariant trong tests, không là OAS/JSON Schema validator tổng quát. SQL plan là thiết kế/pseudocode có guard, chưa DDL chạy; MSK-DB01–12 đều là ca phải thu bằng chứng khi code. Không chạy Go/PG/FE app hoặc browser nghiệp vụ từ đợt này. Không có API/migration/UI MSK được nhận PASS, không tự nâng FR Done. Chưa nhập Jira/commit/push.
+### Đầu vào cho các task sau
 
-Snapshot SHA-256 sau xử lý findings (chỉ nhận diện nội dung, không thay review/approval):
+- T02 xác minh PG test/head/drift, mapping approver/source/status/names legacy và actor import; thiếu mapping thì dừng đường nâng cấp có dữ liệu tương ứng.
+- T09/T10 dùng URL/semantics input/version tại mục 6–7, giữ dữ liệu theo phiên và dọn ngay khi mất quyền.
+- T12 thu bằng chứng DB/browser, race hai adapter thật, cập nhật runbook/FR coverage và kịch bản báo cáo.
 
-| Nguồn | SHA-256 |
-|---|---|
-| `docs/api/manual-skills.openapi.json` | `d6551d0dd5426a0601222895cfa8b695acd4e754a82a4d26d66e30c859cec62e` |
-| `docs/proposals/backend-manual-skills-sql-plan.md` | `9604c8682308af9d761b228f746e982f866e1801c0b72d8d91589a80e1371459` |
-| `docs/proposals/backend-manual-skills-tickets.md` | `bc1a84e6aafe3b1aedb2cf40885fb41050c62e0b146529984b1e0c054520e081` |
-| `docs/api/profile-change-approval.openapi.json` | `1d9436e734e7c7b9599e7373c4cbee2c4fb4805eb6055050fa7bad1aa3e1bcaf` |
-| `.claude/docs/skill_approval_workflow.md` | `a0c098c3d3983ae9f38129d0ee5ef295a9f526f8c12242eb7d6cc9b913583e1b` |
-| `docs/product/functional-requirements.md` | `9cf93d1e23a9fbdaf67de2173bfe3a8e390a53345da812fd449ddcfcdd1a1235` |
-| `AGENTS.md` | `f735a944e9898839fb296f18c213ffdaf0967e400ca68066feea3089f5f62a91` |
-| `docs/design/database-step5b-supporting-dictionary-2026-10-14.md` | `972122972fefbe84c5a8359f92a2bd193522f113ba61416d56d928aae61ec49f` |
-
-### 10.4. Đầu vào tiếp nhận và bước kế
-
-T02 nhận quyền môi trường test/head/drift, mapping legacy approver/source/status/names và actor import có xác minh; thiếu thì dừng đúng đường nâng đó, không chặn việc thiết kế phần độc lập. T09/T10 giữ semantics input/official/version và clear403; T12 thu bằng chứng thật/race hai adapter, cập nhật FR/runbook. Tệp/CV/task/supplement/withdraw và công thức tiếp tục ở đợt riêng; không yêu cầu chọn provider ngay để làm MANUAL.
-
-Importer MSK đã được chuẩn bị27/11 theo bước tiếp Quân đồng ý: [hướng dẫn chạy](../../scripts/jira/README-msk.md), [script](../../scripts/jira/msk_import.py) và [tests offline](../../scripts/jira/test_msk_import.py). Dùng engine/transport/ADF hiện có, prompt token và export có sẵn, journal riêng .local/jira-msk; không đổi engine hoặc importer đợt cũ. Đã chạy `PYTHONDONTWRITEBYTECODE=1 python3 scripts/jira/msk_import.py --mode plan --offline` đạt1 Epic/12 Task/12 WBS/19 Blocks; toàn bộ `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/jira -p 'test_*.py' -v` đạt86 tests (10 MSK mới), 61 tests contract/harness đạt, kiểm kê492 nguồn và diff đạt. Đây là offline/Jira giả, không là kết quả site thật. Chưa dùng token, gọi API Jira, ghi journal thật, commit hoặc push.
-
-Bước tiếp là Quân chạy plan trên Jira để đọc/đối soát trước apply có chủ ý theo hướng dẫn; nếu cần link remote thì bàn giao nguồn qua GitHub trước, dùng cùng source-base suốt lượt. Sau khi check Jira thật mới ghi mapping DATN thực và nhận task theo Rank/đầu vào. Không tạo task review hoặc scaffold để ghi công sức thiết kế đã có; không đoán mã DATN.
+CV/tệp/task, bổ sung/rút pending và công thức phân công tiếp tục ở đợt riêng.
