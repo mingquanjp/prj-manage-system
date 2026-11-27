@@ -102,6 +102,17 @@ test("DTO exact/self/null/state/patch; chặn PII người khác và field ngoà
     resolved_at: detail.requested_at,
   }
   assert.doesNotThrow(() => parseRequestDetail(approved, 25))
+  const rejected = { ...approved, status: "REJECTED", decision_reason: "Cần bổ sung thông tin" }
+  assert.doesNotThrow(() => parseRequestDetail(rejected, 25))
+  for (const variant of [
+    { ...detail, decision_reason: "Chưa xử lý" },
+    { ...approved, resolved_by: null },
+    { ...approved, decision_reason: "Không được có lý do từ chối" },
+    { ...rejected, resolved_by: 0 },
+    { ...rejected, decision_reason: "   " },
+  ]) {
+    assert.throws(() => parseRequestDetail(variant, 25), /INVALID_RESPONSE/)
+  }
   assert.doesNotThrow(() =>
     parseRequestDetail(
       {

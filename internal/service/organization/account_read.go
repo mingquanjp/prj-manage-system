@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/mail"
 	"strings"
+	"unicode/utf8"
 
 	"ai-staffing/internal/service/auth"
 )
@@ -40,9 +41,17 @@ func ValidateListAccounts(q ListAccountsQuery) (ListAccountsQuery, error) {
 	if q.ActorID < 1 || int64(q.ActorID) > math.MaxInt32 {
 		return q, ErrUnauthenticated
 	}
-	base, err := ValidateListCatalog(ListCatalogQuery{ActorID: q.ActorID, Kind: Departments, Page: q.Page, PageSize: q.PageSize, Query: q.Query})
-	q.Query = base.Query
-	return q, err
+	if q.Page < 1 || q.Page > math.MaxInt32 || q.PageSize < 1 || q.PageSize > 100 {
+		return q, ErrValidation
+	}
+	if !utf8.ValidString(q.Query) || strings.ContainsRune(q.Query, 0) {
+		return q, ErrValidation
+	}
+	q.Query = strings.TrimSpace(q.Query)
+	if utf8.RuneCountInString(q.Query) > 100 {
+		return q, ErrValidation
+	}
+	return q, nil
 }
 
 func (s *AccountReadService) List(ctx context.Context, q ListAccountsQuery) (AccountPage, error) {

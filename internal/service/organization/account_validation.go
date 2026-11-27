@@ -31,31 +31,41 @@ func ValidateAccountInput(c CreateAccountInput) (CreateAccountInput, error) {
 	if c.PositionID < 1 || int64(c.PositionID) > math.MaxInt32 {
 		return CreateAccountInput{}, ErrValidation
 	}
-	for _, p := range []**int{&c.DepartmentID, &c.JobLevelID} {
-		if *p != nil {
-			n := **p
-			if n < 1 || int64(n) > math.MaxInt32 {
-				return CreateAccountInput{}, ErrValidation
-			}
-			*p = &n
+	if c.DepartmentID != nil {
+		departmentID := *c.DepartmentID
+		if departmentID < 1 || int64(departmentID) > math.MaxInt32 {
+			return CreateAccountInput{}, ErrValidation
 		}
+		c.DepartmentID = &departmentID
 	}
-	for _, field := range []struct {
-		p     **string
-		limit int
-	}{{&c.Phone, 20}, {&c.Address, 0}} {
-		if *field.p == nil {
-			continue
-		}
-		raw := **field.p
-		if !utf8.ValidString(raw) || strings.ContainsRune(raw, 0) {
+	if c.JobLevelID != nil {
+		jobLevelID := *c.JobLevelID
+		if jobLevelID < 1 || int64(jobLevelID) > math.MaxInt32 {
 			return CreateAccountInput{}, ErrValidation
 		}
-		value := strings.TrimSpace(raw)
-		if value == "" || (field.limit > 0 && utf8.RuneCountInString(value) > field.limit) {
+		c.JobLevelID = &jobLevelID
+	}
+	if c.Phone != nil {
+		phone := *c.Phone
+		if !utf8.ValidString(phone) || strings.ContainsRune(phone, 0) {
 			return CreateAccountInput{}, ErrValidation
 		}
-		*field.p = &value
+		phone = strings.TrimSpace(phone)
+		if phone == "" || utf8.RuneCountInString(phone) > 20 {
+			return CreateAccountInput{}, ErrValidation
+		}
+		c.Phone = &phone
+	}
+	if c.Address != nil {
+		address := *c.Address
+		if !utf8.ValidString(address) || strings.ContainsRune(address, 0) {
+			return CreateAccountInput{}, ErrValidation
+		}
+		address = strings.TrimSpace(address)
+		if address == "" {
+			return CreateAccountInput{}, ErrValidation
+		}
+		c.Address = &address
 	}
 	seen := map[string]bool{}
 	for _, role := range c.SystemRoles {

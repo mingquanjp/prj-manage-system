@@ -8,7 +8,7 @@ import { createProfileResource } from "./profile-resource"
 import { ProfileInformation } from "./ProfileInformation"
 import { createProfileRequestsApi } from "./profile-requests-api"
 import { createProfileRequestsResource } from "./profile-requests-resource"
-import { buildProfileRequest, type ProfileValues } from "./profile-request-input"
+import type { ProfileValues } from "./profile-request-input"
 import { ServerProfileChangeForm } from "./ServerProfileChangeForm"
 import {
   ServerProfileRequestBadge,
@@ -37,10 +37,10 @@ export function ServerPersonalProfile({
   const [page, setPage] = useState(1)
   const [before, setBefore] = useState<ProfileValues | null>(null)
   const selected = params.get("request_id")
-  const requestId =
-    selected && /^[1-9]\d*$/.test(selected) && Number(selected) <= 2147483647
-      ? Number(selected)
-      : null
+  let requestId: number | null = null
+  if (selected && /^[1-9]\d*$/.test(selected) && Number(selected) <= 2147483647) {
+    requestId = Number(selected)
+  }
   const { user_id: userId, employee_id: employeeId } = principal
   const recheckSession = useCallback(() => {
     setBefore(null)
@@ -83,6 +83,15 @@ export function ServerPersonalProfile({
   const reloadList = () => requests.loadList(employeeId, page, recheckSession)
   const reloadProfile = () =>
     resource.load({ user_id: userId, employee_id: employeeId }, recheckSession)
+  let blockedMessage =
+    "Tải lịch sử và mở chi tiết để đối chiếu. Chỉ mở bản nháp mới khi bạn đã kiểm tra kết quả; hệ thống không gửi lại đề nghị cũ."
+  if (requestState.submission === "stale") {
+    blockedMessage = "Tải lại hồ sơ trước khi mở bản nháp mới; nội dung trước đó không tự áp lại."
+  }
+  let emptyHistoryMessage = "Trang này không có đề nghị; hãy quay lại trang trước."
+  if (requestState.list.data?.total === 0) {
+    emptyHistoryMessage = "Chưa có đề nghị. Khi cần thay đổi, chọn Đề nghị cập nhật."
+  }
   return (
     <section className="mx-auto w-full max-w-5xl" aria-busy={busy || state.phase === "loading"}>
       <div className="mb-6">
@@ -94,9 +103,8 @@ export function ServerPersonalProfile({
           Thông tin cá nhân và công tác chính thức từ hệ thống.
         </p>
       </div>
-      {state.phase === "loading" ? (
-        <p role="status">Đang tải và kiểm tra hồ sơ với máy chủ…</p>
-      ) : state.phase === "error" ? (
+      {state.phase === "loading" && <p role="status">Đang tải và kiểm tra hồ sơ với máy chủ…</p>}
+      {state.phase === "error" && (
         <div className="rounded-xl border border-border bg-white p-5">
           <p role="alert" className="text-sm leading-6">
             {state.message}
@@ -114,7 +122,8 @@ export function ServerPersonalProfile({
             Tải lại hồ sơ
           </Button>
         </div>
-      ) : profile ? (
+      )}
+      {state.phase === "ready" && profile && (
         <>
           <ProfileInformation
             profile={{
@@ -162,11 +171,7 @@ export function ServerPersonalProfile({
             )}
             {blocked && !before && (
               <div className="mb-4 space-y-3 text-sm">
-                <p>
-                  {requestState.submission === "stale"
-                    ? "Tải lại hồ sơ trước khi mở bản nháp mới; nội dung trước đó không tự áp lại."
-                    : "Tải lịch sử và mở chi tiết để đối chiếu. Chỉ mở bản nháp mới khi bạn đã kiểm tra kết quả; hệ thống không gửi lại đề nghị cũ."}
-                </p>
+                <p>{blockedMessage}</p>
                 <Button
                   variant="outline"
                   disabled={busy || requestState.list.phase !== "ready"}
@@ -190,16 +195,16 @@ export function ServerPersonalProfile({
             >
               Tải lại lịch sử
             </Button>
-            {requestState.list.phase === "loading" ? (
+            {requestState.list.phase === "loading" && (
               <p role="status">Đang tải lịch sử đề nghị…</p>
-            ) : requestState.list.phase === "error" ? (
-              <p role="alert">{requestState.list.message}</p>
-            ) : requestState.list.data ? (
+            )}
+            {requestState.list.phase === "error" && <p role="alert">{requestState.list.message}</p>}
+            {requestState.list.phase === "ready" && requestState.list.data && (
               <>
                 <p className="mb-3 text-sm text-muted-foreground">
                   {requestState.list.data.total} đề nghị · Trang {page}
                 </p>
-                {requestState.list.data.items.length ? (
+                {requestState.list.data.items.length > 0 && (
                   <ul className="space-y-3">
                     {requestState.list.data.items.map((entry) => (
                       <li
@@ -224,11 +229,10 @@ export function ServerPersonalProfile({
                       </li>
                     ))}
                   </ul>
-                ) : (
+                )}
+                {requestState.list.data.items.length === 0 && (
                   <p className="border-t border-border pt-4 text-sm text-muted-foreground">
-                    {requestState.list.data.total === 0
-                      ? "Chưa có đề nghị. Khi cần thay đổi, chọn Đề nghị cập nhật."
-                      : "Trang này không có đề nghị; hãy quay lại trang trước."}
+                    {emptyHistoryMessage}
                   </p>
                 )}
                 <div className="mt-4 flex gap-2">
@@ -248,18 +252,17 @@ export function ServerPersonalProfile({
                   </Button>
                 </div>
               </>
-            ) : null}
+            )}
           </section>
         </>
-      ) : null}
+      )}
       {before && (
         <ServerProfileChangeForm
           before={before}
           busy={busy}
           blocked={blocked}
           onClose={() => setBefore(null)}
-          onSubmit={async (values, explanation) => {
-            const input = buildProfileRequest(before, values, explanation)
+          onSubmit={async (input) => {
             const result = await requests.submit(
               (post) => session.catalogMutation(post),
               (token, signal) => api.submit(employeeId, input, crypto.randomUUID(), token, signal),
@@ -291,11 +294,11 @@ export function ServerPersonalProfile({
             document.getElementById("profile-heading")?.focus()
           }}
         >
-          {!requestId ? (
-            <p role="alert">Mã đề nghị không hợp lệ.</p>
-          ) : requestState.detail.phase === "loading" ? (
+          {!requestId && <p role="alert">Mã đề nghị không hợp lệ.</p>}
+          {requestId && requestState.detail.phase === "loading" && (
             <p role="status">Đang tải chi tiết đề nghị…</p>
-          ) : requestState.detail.phase === "error" ? (
+          )}
+          {requestId && requestState.detail.phase === "error" && (
             <>
               <p role="alert">{requestState.detail.message}</p>
               <Button
@@ -308,9 +311,10 @@ export function ServerPersonalProfile({
                 Tải lại chi tiết
               </Button>
             </>
-          ) : requestState.detail.data ? (
+          )}
+          {requestId && requestState.detail.phase === "ready" && requestState.detail.data && (
             <ServerProfileRequestDetails request={requestState.detail.data} />
-          ) : null}
+          )}
         </Dialog>
       )}
     </section>

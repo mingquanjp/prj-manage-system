@@ -87,7 +87,7 @@ func ValidateListCatalog(q ListCatalogQuery) (ListCatalogQuery, error) {
 	if q.ActorID < 1 {
 		return q, ErrUnauthenticated
 	}
-	if !q.Kind.Valid() || q.Page < 1 || q.Page > math.MaxInt32 || q.PageSize < 1 || q.PageSize > 100 || (q.Page-1) > math.MaxInt64/int64(q.PageSize) {
+	if !q.Kind.Valid() || q.Page < 1 || q.Page > math.MaxInt32 || q.PageSize < 1 || q.PageSize > 100 {
 		return q, ErrValidation
 	}
 	if !utf8.ValidString(q.Query) || strings.ContainsRune(q.Query, 0) {

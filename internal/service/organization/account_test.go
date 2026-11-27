@@ -51,10 +51,15 @@ func TestValidateAccountInput(t *testing.T) {
 		{"position missing", func(c *CreateAccountInput) { c.PositionID = 0 }},
 		{"id overflow", func(c *CreateAccountInput) { c.PositionID = math.MaxInt32 + 1 }},
 		{"department zero", func(c *CreateAccountInput) { n := 0; c.DepartmentID = &n }},
+		{"department overflow", func(c *CreateAccountInput) { n := math.MaxInt32 + 1; c.DepartmentID = &n }},
 		{"level negative", func(c *CreateAccountInput) { n := -1; c.JobLevelID = &n }},
+		{"level overflow", func(c *CreateAccountInput) { n := math.MaxInt32 + 1; c.JobLevelID = &n }},
 		{"phone blank", func(c *CreateAccountInput) { s := "\t "; c.Phone = &s }},
 		{"phone21", func(c *CreateAccountInput) { s := strings.Repeat("1", 21); c.Phone = &s }},
+		{"phone invalid utf8", func(c *CreateAccountInput) { s := string([]byte{255}); c.Phone = &s }},
+		{"phone nul", func(c *CreateAccountInput) { s := "1\x00"; c.Phone = &s }},
 		{"address blank", func(c *CreateAccountInput) { s := "\u00a0"; c.Address = &s }},
+		{"address invalid utf8", func(c *CreateAccountInput) { s := string([]byte{255}); c.Address = &s }},
 		{"address nul", func(c *CreateAccountInput) { s := "a\x00"; c.Address = &s }},
 		{"role PM", func(c *CreateAccountInput) { c.SystemRoles = []string{"PM"} }},
 		{"role employee", func(c *CreateAccountInput) { c.SystemRoles = []string{"EMPLOYEE"} }},
@@ -82,10 +87,14 @@ func TestValidateAccountInput(t *testing.T) {
 	if err != nil || got.CompanyEmail != "new.employee@example.invalid" || got.Fullname != strings.Repeat("ệ", 100) || *got.Phone != strings.Repeat("1", 20) || *got.Address != "Địa chỉ tổng hợp" || !reflect.DeepEqual(got.SystemRoles, []string{"ADMIN", "HR", "DIRECTOR"}) {
 		t.Fatal("chuẩn hóa/biên input sai")
 	}
+	if phone != " "+strings.Repeat("1", 20)+" " || address != "  Địa chỉ tổng hợp  " {
+		t.Fatal("validation không được sửa dữ liệu caller")
+	}
 	id = 8
 	phone = "changed"
+	address = "changed"
 	c.SystemRoles[0] = "changed"
-	if *got.DepartmentID != 3 || *got.JobLevelID != 3 || *got.Phone != strings.Repeat("1", 20) || got.SystemRoles[2] != "DIRECTOR" {
+	if *got.DepartmentID != 3 || *got.JobLevelID != 3 || *got.Phone != strings.Repeat("1", 20) || *got.Address != "Địa chỉ tổng hợp" || got.SystemRoles[2] != "DIRECTOR" {
 		t.Fatal("command không được giữ pointer/slice caller")
 	}
 	got, err = ValidateAccountInput(validAccountInput())

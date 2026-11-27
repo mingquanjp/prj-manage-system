@@ -9,17 +9,14 @@ export const serverProfileRequestLabels = {
 } as const
 
 export function ServerProfileRequestBadge({ status }: { status: RequestDetail["status"] }) {
+  let statusClassName = "bg-accent text-muted-foreground"
+  if (status === "APPROVED") {
+    statusClassName = "bg-success-soft text-success"
+  } else if (status === "PENDING") {
+    statusClassName = "bg-warning-soft text-warning"
+  }
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-md px-2 py-1 text-xs font-medium",
-        status === "APPROVED"
-          ? "bg-success-soft text-success"
-          : status === "PENDING"
-            ? "bg-warning-soft text-warning"
-            : "bg-accent text-muted-foreground",
-      )}
-    >
+    <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium", statusClassName)}>
       {serverProfileRequestLabels[status]}
     </span>
   )
