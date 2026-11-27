@@ -143,7 +143,7 @@ func run(ctx context.Context) (result error) {
 	if err != nil {
 		return errors.New("không lắp được auth local")
 	}
-	srv := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
+	srv := app.NewHTTPServer("", handler)
 	done := make(chan error, 1)
 	go func() { done <- srv.Serve(listener) }()
 	fmt.Println("Backend local sẵn sàng: 127.0.0.1:8080; mở FE tại http://127.0.0.1:5174. Swagger: http://127.0.0.1:8080/docs/; Ctrl+C để dừng.")

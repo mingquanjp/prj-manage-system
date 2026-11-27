@@ -389,3 +389,47 @@ Sau khi nhận hướng dẫn chạy đúng worktree/harness PG test và checkli
 | Dọn harness | Quân xác nhận PASS; không gán thời lượng hoặc số bản ghi cho lượt này. |
 
 Kết hợp kiểm tự động/PG, browser agent ngày25/11 và xác nhận kiểm thủ công26/11: không còn ca browser chặn đã nêu trong câu hỏi xác nhận; phạm vi F4/FR-012 đủ bàn giao review/merge. Không bổ sung bằng chứng chi tiết chưa được cung cấp cho các kiểm tra mở rộng như trên100 lựa chọn qua browser (đã có adapter test), mọi tổ hợp role, race login–email đồng thời, read204 mất phản hồi, DB vật lý outage, HTTPS/Neon/deploy/pentest. Không nhận FR-013/064 hoặc toàn app.
+
+## 10. Sửa lỗi tìm kiếm và hạn đọc request — 27/11/2026
+
+Nhánh `bug/profile-search-request-timeout` từ main `68eb83a` xử lý bốn finding của lượt review27/11, tách khỏi refactor và convention chưa commit ở checkout gốc. Không thêm biến môi trường, dependency, route hoặc migration.
+
+- Nút Tìm kiếm hồ sơ nhân sự dùng `type="submit"`, click và Enter cùng đi qua form hiện hành. Primitive Button vẫn mặc định button để không đổi hành vi các nút Hủy/điều hướng khác.
+- `internal/app.NewHTTPServer` dùng chung cho `cmd/server` và `cmd/localdev`: đọc header tối đa10s, đọc toàn request gồm header/body tối đa15s, ghi30s và idle60s. Hạn đọc ngăn client giữ body dang dở; không thay deadline xử lý service/DB/mail hoặc giới hạn body auth/OAP8KiB và PCA64KiB. Đây là cấu hình cho các route hiện hành, không phải thiết kế upload tương lai.
+- Comment RejectInput phân biệt input nội bộ với lý do được trả qua projection có quyền; comment health bỏ ước lượng Neon cold start. Không thay DTO hoặc quyền.
+
+### Kiểm thực chạy
+
+Môi trường: macOS arm64, Go1.27.4, Node24.15.0, pnpm11.19.0 và PostgreSQL18 test sở hữu. Guard trước/sau xác nhận đúng owner/cluster, DB test gốc0bảng; không dùng `.env`, Neon hoặc DB localdev. Snapshot kiểm tại `/private/tmp/ai-staffing-review-fixes`; runner giữ state sở hữu ở checkout gốc.
+
+| Kiểm | Kết quả và tầng bằng chứng |
+|---|---|
+| `go vet ./...`; `go test -race ./... -count=1`; `go build ./...` | PASS trên bản sửa. Không gọi unit/race detector là browser hoặc mọi lịch xen kẽ DB. |
+| `go test ./internal/app -run '^TestHTTPServer' -count=1 -v -timeout=20s` | PASS TCP Content-Length/chunked dang dở kết thúc do deadline; body đầy đủ vẫn xử lý sau cửa sổ đọc. Test rút ngắn read deadline để chạy nhanh; không có DB. |
+| Sub-agent chạy `go test -race ./internal/app -run '^TestHTTPServer' -count=3 -timeout=30s` | PASS7.459s, lặp ba lượt các ca TCP và cleanup. |
+| Kiểm bổ sung đúng15s với router/login handler thật, overlay ngoài repo | Content-Length/chunked đều kết thúc15.003s,400/no-store/không cookie; Login use case không được gọi. Package PASS15.484s. Port giả chỉ chứng minh HTTP chặn trước nghiệp vụ, không là bằng chứng DB/bcrypt. |
+| `pnpm check` tại `web/` | PASS229 FE/model/adapter tests,15 harness tests, lint/format/typecheck/build; không skip. Không thêm test tĩnh chỉ kiểm một prop JSX. |
+| `node --test scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs`; `node scripts/check-harness.mjs`; `git diff --check` | PASS42 tests,483 nguồn và diff; không thay HTTP/PG/browser. |
+
+Lệnh bổ sung đã chạy cho kiểm login đúng15s (artifact tạm của lượt kiểm, không là nguồn test đã commit):
+
+```sh
+go test -overlay /private/tmp/review-fixes-full-timeout/overlay.json ./internal/app -run '^TestFullReadTimeoutWithLoginHandler$' -count=1 -v -timeout=45s
+```
+
+Nguồn regression bền vững là `internal/app/server_test.go`; thử nghiệm overlay dùng `NewHTTPServer` không rút ngắn timeout và `NewAuthRouter`, hai ca chỉ TCP loopback chạy song song, không DB.
+
+**Browser agent với PostgreSQL thật:** chạy harness opt-in và Vite của nhánh sửa, FE127.0.0.1:5174 → backend18080; fixture HR tổng hợp, không Gmail. Từ Hồ sơ nhân sự4dòng: nhập email employee rồi click Tìm kiếm → URL có q/page1 và đúng1hồ sơ employee; thay bằng email HR rồi Enter → đúng1hồ sơ HR; reload giữ URL/từ khóa/kết quả; Đăng xuất → login cùng thông báo đã đăng xuất. Agent quan sát trực tiếp, không thay bằng SSR hoặc mock HTTP. Lượt này chỉ đọc dữ liệu hồ sơ, không sửa nghiệp vụ; login/logout vẫn thay đổi phiên. Harness đối soát0request/0notification/0audit; SIGUSR1 dừng/dọn PASS150.34s. Vite riêng đã dừng, không kill tiến trình khác.
+
+Trong lúc browser chuyển/rời màn, harness có một số log mã INTERNAL_ERROR; không xuất dữ liệu thô hoặc quan sát lỗi trên các kết quả tìm kiếm/đăng xuất nêu trên. Lượt này chưa đối chiếu từng log để kết luận nguyên nhân, không nhận chất lượng phân loại log toàn hệ thống đã được nghiệm thu.
+
+Sau dọn browser, chạy tuần tự:
+
+```sh
+python3 scripts/authdb/manage.py check
+python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-review-fixes test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+```
+
+Cả bốn package PASS: migrations14.291s, repository41.175s, HTTP6.337s, server21.355s. Không chạy suite DB cùng lúc với harness browser hoặc một suite DB khác. Regression auth/OAP/PCA giữ các ca body/permission/transaction hiện có; không suy đã kiểm lại toàn bộ luồng browser.
+
+Agent chính tự review diff; hai sub-agent review độc lập không còn finding chặn trong phạm vi bốn điểm sửa. Review hỗ trợ không phải phê duyệt GitHub hoặc runtime proof. Chưa kiểm lại toàn bộ F1–F4 qua browser, mail thật, HTTPS/Neon/deploy/pentest hoặc mọi tình huống mạng; không tự commit/push/PR/merge/Done.

@@ -97,7 +97,9 @@ export function ServerAdministrativeProfiles({
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          <Button disabled={locked || [...search].length > 100}>Tìm kiếm</Button>
+          <Button type="submit" disabled={locked || [...search].length > 100}>
+            Tìm kiếm
+          </Button>
         </form>
       )}
       {state.page && (

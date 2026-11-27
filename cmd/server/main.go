@@ -58,13 +58,7 @@ func startServer(cfg *config.Config) error {
 		return err
 	}
 
-	srv := &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler:           handler,
-		ReadHeaderTimeout: 10 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
+	srv := app.NewHTTPServer(fmt.Sprintf(":%d", cfg.HTTPPort), handler)
 
 	errCh := make(chan error, 1)
 	go func() {

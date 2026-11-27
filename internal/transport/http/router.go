@@ -60,8 +60,7 @@ func newRouter(pool healthChecker, sessions authSessionService, protection authP
 	return r
 }
 
-// healthHandler kiểm tra cả tiến trình lẫn kết nối cơ sở dữ liệu. Trên Neon
-// free tier, lần gọi đầu sau khi compute ngủ có thể mất khoảng một giây.
+// healthHandler báo trạng thái tiến trình và khả năng kết nối cơ sở dữ liệu.
 func healthHandler(pool healthChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
