@@ -11,9 +11,11 @@
 
 ## Convention và cổng chất lượng
 
+- Áp dụng [quy tắc code đơn giản chung](../AGENTS.md#viết-code-đơn-giản); dưới đây là cách áp dụng riêng cho frontend.
+- JSX dùng `&&` cho vùng hiển thị có điều kiện; nhiều trạng thái thì tính nội dung bằng `if/else` trước khi render, tránh lồng nhiều nhánh trong JSX. Chỉ tách component khi có trách nhiệm UI rõ ràng.
 - Component PascalCase; biến/hàm camelCase, hook useX; boolean is/has/can. Tên chỉ rõ đơn vị phút/giờ khi dễ nhầm. Không đổi tên hàng loạt chỉ để đẹp.
 - Giữ code theo feature; type/helper ở gần nơi dùng, chỉ đưa ra dùng chung khi có nhu cầu thực. Import tương đối trong feature, alias cho đường dẫn xa; tránh barrel re-export hàng loạt. Không thêm tầng rỗng.
 - State dẫn xuất tính từ nguồn hiện có; không giữ nhiều bản có thể lệch nhau. Hàm cập nhật state/reducer phải thuần; thời điểm/ID phát sinh tại biên thao tác.
-- UI/bình luận tiếng Việt, định danh tiếng Anh; bình luận giải thích lý do/ràng buộc, không chép lại code. Refactor giữ nguyên hành vi và không tự chốt nghiệp vụ còn mở.
+- UI/bình luận tiếng Việt, định danh tiếng Anh; bình luận giải thích lý do/ràng buộc, không chép lại code.
 - `pnpm lint` và `pnpm format:check` chỉ đọc; `pnpm format` ghi lại định dạng. Không thêm eslint-disable, tăng ngưỡng cảnh báo hoặc loại file nguồn chỉ để cổng xanh; ngoại lệ cần lý do và review.
 - Chuẩn công cụ, phạm vi formatter và check theo rủi ro xem README; không áp dụng giới hạn dòng/tham số máy móc thay review trách nhiệm.

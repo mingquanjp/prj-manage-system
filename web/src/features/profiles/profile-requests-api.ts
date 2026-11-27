@@ -138,16 +138,19 @@ export function parseRequestDetail(
     )
   )
     invalid()
-  if (
-    value.status === "PENDING"
-      ? value.resolved_by !== null || value.decision_reason !== null
-      : !id(value.resolved_by) ||
-        (value.status === "APPROVED"
-          ? value.decision_reason !== null
-          : !text(value.decision_reason, 1, 2000) ||
-            trimProfileText(value.decision_reason as string) === "")
-  )
-    invalid()
+  if (value.status === "PENDING") {
+    if (value.resolved_by !== null || value.decision_reason !== null) invalid()
+  } else {
+    if (!id(value.resolved_by)) invalid()
+    if (value.status === "APPROVED") {
+      if (value.decision_reason !== null) invalid()
+    } else if (
+      !text(value.decision_reason, 1, 2000) ||
+      trimProfileText(value.decision_reason as string) === ""
+    ) {
+      invalid()
+    }
+  }
   return value as unknown as RequestDetail
 }
 export function parseRequestPage(value: unknown, employeeId: number, page: number): RequestPage {

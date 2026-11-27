@@ -11,13 +11,22 @@
 - Khi chuẩn bị/tiếp nối một đợt feature từ delivery-plan/FR: dùng [skill lập kế hoạch](.agents/skills/datn-feature-planning/SKILL.md); không áp toàn quy trình cho một ticket code đã có brief.
 
 ## Phạm vi và an toàn
-- Chỉ làm đợt người dùng đã giao; trước sửa ghi ngắn mục tiêu, nguồn, ngoài phạm vi, tiêu chí đạt.
+- Chỉ làm đợt người dùng đã giao; trước sửa ghi ngắn mục tiêu, nguồn, ngoài phạm vi, tiêu chí đạt. Refactor giữ nguyên hành vi; phát hiện ngoài phạm vi thì báo riêng, không tự sửa hàng loạt code cũ.
 - Không tự đổi nghiệp vụ/schema/công thức hoặc chọn dependency cho mục chưa chốt.
 - Không chạy migration/seed/reset hoặc truy cập DB thật từ tác vụ tài liệu/UI. Không đọc/in bí mật `.env`.
 - Không sửa tài liệu gốc `docs/thesis-context/` hoặc export `/Users/quanjp/Documents/DATN` từ công việc trong repo này.
 - Giữ thay đổi có sẵn; không reset, commit, push, deploy hoặc cấp quyền rộng khi chưa được yêu cầu.
 - Feature/fix làm nhánh riêng; feature dùng `feature/<tên>`, bug dùng `bug/<tên>` theo quy ước repo. Không tự chuyển/mất thay đổi người dùng.
 - UI và bình luận code tiếng Việt; định danh kỹ thuật tiếng Anh.
+
+## Viết code đơn giản
+
+- Ưu tiên code dễ đọc, dễ giải thích khi bảo vệ đồ án: tên rõ nghĩa, luồng trực tiếp; chấp nhận dài hơn nếu dễ hiểu hơn.
+- Dùng `if/else` thay toán tử ba ngôi cho code mới hoặc phần đang sửa.
+- Ưu tiên thư viện chuẩn và công cụ đã có; không tự viết lại chức năng được hỗ trợ phù hợp hoặc thêm dependency chỉ để rút ngắn code.
+- Chỉ tách hàm/abstraction khi có trách nhiệm rõ hoặc nhu cầu dùng lại thực tế. Không dựng helper/framework tổng quát cho vài trường cố định; có thể lặp đoạn ngắn nếu dễ hiểu hơn.
+- Tránh xử lý và lưu dữ liệu trùng lặp; dựng payload một lần rồi truyền tiếp. Giữ kiểm tra cần thiết tại từng ranh giới frontend/API/backend.
+- Chỉ xử lý ngoại lệ có căn cứ từ yêu cầu hoặc tác động thực tế; không thêm nhánh dự phòng giả định. Giữ bảo vệ quyền, dữ liệu, transaction, chống gửi trùng và kết quả thao tác chưa xác định dù ít xảy ra.
 
 ## Kiến trúc và kiểm tra
 - Đọc [kiến trúc](.claude/docs/architecture.md) trước khi thêm tầng/package; matching không phụ thuộc DB/HTTP.
@@ -26,6 +35,7 @@
 - `node --test scripts/check-harness.test.mjs` và `node scripts/check-harness.mjs`: test harness/kiểm kê nguồn; thêm `--staged` cho script khi chuẩn bị bàn giao Git. Không kiểm chứng ngữ nghĩa nghiệp vụ.
 - Backend: `go vet ./...`, `go test ./... -count=1`, `go build ./...` khi có thay đổi Go; kiểm tra môi trường trước, không tự cấp DB test thật.
 - `make check` có fmt/tidy sửa file; không dùng như lệnh chỉ đọc hoặc cổng frontend.
+- Kiểm tra theo rủi ro và chạy cổng bắt buộc của phạm vi; tận dụng test hiện có, bổ sung cho hành vi có thể bị ảnh hưởng, không viết test chỉ lặp cấu trúc implementation.
 - Bàn giao: đã sửa, check thực chạy/kết quả, chưa kiểm tra, điểm mở và bước kế tiếp. Không gọi mock là API/transaction thật.
 
 ## Commit attribution

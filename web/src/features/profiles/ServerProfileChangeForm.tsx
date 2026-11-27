@@ -2,7 +2,18 @@ import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { profileFields, profileFieldLabels } from "@/models/profile"
-import { buildProfileRequest, type ProfileValues } from "./profile-request-input"
+import {
+  buildProfileRequest,
+  type ProfileRequestInput,
+  type ProfileValues,
+} from "./profile-request-input"
+
+const fieldHints = {
+  fullname: "Từ 1 đến 100 ký tự Unicode sau khi bỏ khoảng trắng đầu/cuối.",
+  phone: "Tối đa 20 ký tự Unicode; để trống để xóa số điện thoại.",
+  address:
+    "Tối đa 2000 ký tự Unicode. Có thể giữ nguyên địa chỉ chưa cập nhật khi sửa trường khác; không gửi địa chỉ trắng hoặc xóa địa chỉ đã có.",
+}
 
 export function ServerProfileChangeForm({
   before: initialBefore,
@@ -14,7 +25,7 @@ export function ServerProfileChangeForm({
   before: ProfileValues
   busy: boolean
   blocked?: boolean
-  onSubmit: (values: ProfileValues, explanation: string) => Promise<void>
+  onSubmit: (input: ProfileRequestInput) => Promise<void>
   onClose: () => void
 }) {
   // Giữ nền lúc mở form để refresh nền không thay bản nháp hoặc che stale.
@@ -29,6 +40,18 @@ export function ServerProfileChangeForm({
   const disabled = busy || submitting || blocked
   const changed = profileFields.some((field) => (values[field] ?? "") !== (before[field] ?? ""))
   const dirty = changed || Boolean(explanation)
+  let submitLabel = "Gửi đề nghị"
+  if (submitting) submitLabel = "Đang gửi…"
+  let discardTitle = "Bỏ nội dung chưa gửi?"
+  let discardDescription =
+    "Đóng bản nháp không gửi thêm đề nghị và không thay đổi hồ sơ chính thức."
+  let discardLabel = "Bỏ nội dung"
+  if (blocked) {
+    discardTitle = "Đóng nội dung đề nghị?"
+    discardDescription =
+      "Đóng không gửi thêm đề nghị. Hãy tải lại hồ sơ và lịch sử để đối soát trước khi mở bản nháp mới."
+    discardLabel = "Đóng và đối soát"
+  }
   const requestClose = () => {
     if (sending.current || busy) return
     if (dirty) setDiscard(true)
@@ -37,19 +60,24 @@ export function ServerProfileChangeForm({
   async function submit() {
     if (sending.current || busy || blocked) return
     setError("")
+    let input: ProfileRequestInput
     try {
-      buildProfileRequest(before, values, explanation)
+      input = buildProfileRequest(before, values, explanation)
     } catch (issue) {
-      setError(issue instanceof Error ? issue.message : "Hãy kiểm tra nội dung đề nghị.")
+      let message = "Hãy kiểm tra nội dung đề nghị."
+      if (issue instanceof Error) message = issue.message
+      setError(message)
       requestAnimationFrame(() => errorRef.current?.focus())
       return
     }
     sending.current = true
     setSubmitting(true)
     try {
-      await onSubmit(values, explanation)
+      await onSubmit(input)
     } catch (issue) {
-      setError(issue instanceof Error ? issue.message : "Chưa thể gửi đề nghị.")
+      let message = "Chưa thể gửi đề nghị."
+      if (issue instanceof Error) message = issue.message
+      setError(message)
       requestAnimationFrame(() => errorRef.current?.focus())
     } finally {
       sending.current = false
@@ -86,12 +114,10 @@ export function ServerProfileChangeForm({
             Bạn có thể đề nghị sửa họ tên, số điện thoại và địa chỉ. Email công ty và thông tin công
             tác do HR quản lý.
           </p>
-          {profileFields.map((field) => (
-            <div key={field}>
-              <label className="field-label mb-2 block" htmlFor={`server-profile-${field}`}>
-                {profileFieldLabels[field]}
-              </label>
-              {field === "address" ? (
+          {profileFields.map((field) => {
+            let control
+            if (field === "address") {
+              control = (
                 <textarea
                   id={`server-profile-${field}`}
                   className="field workspace-field min-h-20 w-full"
@@ -100,34 +126,41 @@ export function ServerProfileChangeForm({
                   onChange={(event) => setValues({ ...values, address: event.target.value })}
                   aria-describedby="server-profile-address-hint"
                 />
-              ) : (
+              )
+            } else {
+              let inputType = "text"
+              if (field === "phone") inputType = "tel"
+              control = (
                 <input
                   id={`server-profile-${field}`}
                   className="field workspace-field w-full"
-                  type={field === "phone" ? "tel" : "text"}
+                  type={inputType}
                   value={values[field] ?? ""}
                   disabled={disabled}
-                  onChange={(event) =>
-                    setValues({
-                      ...values,
-                      [field]: field === "phone" && !event.target.value ? null : event.target.value,
-                    })
-                  }
+                  onChange={(event) => {
+                    let value: string | null = event.target.value
+                    if (field === "phone" && !value) value = null
+                    setValues({ ...values, [field]: value })
+                  }}
                   aria-describedby={`server-profile-${field}-hint`}
                 />
-              )}
-              <p
-                id={`server-profile-${field}-hint`}
-                className="mt-2 text-xs leading-5 text-muted-foreground"
-              >
-                {field === "address"
-                  ? "Tối đa 2000 ký tự Unicode. Có thể giữ nguyên địa chỉ chưa cập nhật khi sửa trường khác; không gửi địa chỉ trắng hoặc xóa địa chỉ đã có."
-                  : field === "phone"
-                    ? "Tối đa 20 ký tự Unicode; để trống để xóa số điện thoại."
-                    : "Từ 1 đến 100 ký tự Unicode sau khi bỏ khoảng trắng đầu/cuối."}
-              </p>
-            </div>
-          ))}
+              )
+            }
+            return (
+              <div key={field}>
+                <label className="field-label mb-2 block" htmlFor={`server-profile-${field}`}>
+                  {profileFieldLabels[field]}
+                </label>
+                {control}
+                <p
+                  id={`server-profile-${field}-hint`}
+                  className="mt-2 text-xs leading-5 text-muted-foreground"
+                >
+                  {fieldHints[field]}
+                </p>
+              </div>
+            )
+          })}
           <div>
             <label className="field-label mb-2 block" htmlFor="server-profile-explanation">
               Ghi chú cho HR <span className="font-normal text-muted-foreground">(tùy chọn)</span>
@@ -157,7 +190,7 @@ export function ServerProfileChangeForm({
               Hủy
             </Button>
             <Button type="submit" disabled={disabled || !changed}>
-              {submitting ? "Đang gửi…" : "Gửi đề nghị"}
+              {submitLabel}
             </Button>
           </div>
         </form>
@@ -177,18 +210,14 @@ export function ServerProfileChangeForm({
           else if (trigger && !trigger.disabled) trigger.focus()
           else document.getElementById("profile-heading")?.focus()
         }}
-        title={blocked ? "Đóng nội dung đề nghị?" : "Bỏ nội dung chưa gửi?"}
-        description={
-          blocked
-            ? "Đóng không gửi thêm đề nghị. Hãy tải lại hồ sơ và lịch sử để đối soát trước khi mở bản nháp mới."
-            : "Đóng bản nháp không gửi thêm đề nghị và không thay đổi hồ sơ chính thức."
-        }
+        title={discardTitle}
+        description={discardDescription}
       >
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={() => setDiscard(false)}>
             Tiếp tục chỉnh sửa
           </Button>
-          <Button onClick={onClose}>{blocked ? "Đóng và đối soát" : "Bỏ nội dung"}</Button>
+          <Button onClick={onClose}>{discardLabel}</Button>
         </div>
       </Dialog>
     </>

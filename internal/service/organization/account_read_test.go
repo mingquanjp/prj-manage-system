@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -31,12 +32,25 @@ func TestAccountReadDefaultsAndValidation(t *testing.T) {
 	if err != nil || repo.q.Page != 1 || repo.q.PageSize != 20 || repo.q.Query != "%_" || page.Items[0].CompanyEmail != "example@example.invalid" {
 		t.Fatal("list không giữ default/normalize/projection")
 	}
+	_, err = s.List(t.Context(), ListAccountsQuery{
+		ActorID: 3, Page: math.MaxInt32, PageSize: 100,
+		Query: "\u0085" + strings.Repeat("ệ", 100) + "\u3000",
+	})
+	if err != nil || repo.q.Offset() != 214748364600 || repo.q.Query != strings.Repeat("ệ", 100) {
+		t.Fatal("sai giới hạn phân trang hoặc chuẩn hóa bộ lọc Unicode")
+	}
 	for _, q := range []ListAccountsQuery{
 		{ActorID: 3, Page: -1}, {ActorID: 3, Page: math.MaxInt32 + 1}, {ActorID: 3, PageSize: 101},
+		{ActorID: 3, PageSize: -1}, {ActorID: 3, Query: strings.Repeat("ệ", 101)},
 		{ActorID: 3, Query: string([]byte{255})}, {ActorID: 3, Query: "a\x00b"},
 	} {
 		if _, err = s.List(t.Context(), q); !errors.Is(err, ErrValidation) {
 			t.Fatal("query sai phải từ chối")
+		}
+	}
+	for _, actorID := range []int{0, math.MaxInt32 + 1} {
+		if _, err = s.List(t.Context(), ListAccountsQuery{ActorID: actorID}); !errors.Is(err, ErrUnauthenticated) {
+			t.Fatal("actor sai không được tra cứu tài khoản")
 		}
 	}
 	if _, err = s.Preview(t.Context(), 0); !errors.Is(err, ErrUnauthenticated) {

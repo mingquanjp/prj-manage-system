@@ -135,27 +135,26 @@ export function createProfileRequestsResource(api: ProfileRequestsApi) {
         const uncertain =
           posted && (!(error instanceof AuthError) || error.status === 0 || error.status >= 500)
         const stale = error instanceof AuthError && error.code === "STALE_DATA"
-        const message = uncertain
-          ? "Chưa xác định kết quả gửi đề nghị. Hãy đóng form và tải lịch sử để đối soát; không gửi lại theo phỏng đoán."
-          : requestErrorMessage(error)
+        const nextState: State = {
+          ...state,
+          submission: "error",
+          message: requestErrorMessage(error),
+        }
         if (uncertain) {
           ++listGeneration
           listController?.abort()
+          nextState.list = {
+            phase: "error",
+            message: "Hãy tải lại lịch sử để đối soát lần gửi chưa rõ kết quả.",
+          }
+          nextState.submission = "uncertain"
+          nextState.message =
+            "Chưa xác định kết quả gửi đề nghị. Hãy đóng form và tải lịch sử để đối soát; không gửi lại theo phỏng đoán."
+        } else if (stale) {
+          nextState.submission = "stale"
         }
-        set({
-          ...state,
-          ...(uncertain
-            ? {
-                list: {
-                  phase: "error" as const,
-                  message: "Hãy tải lại lịch sử để đối soát lần gửi chưa rõ kết quả.",
-                },
-              }
-            : {}),
-          submission: uncertain ? "uncertain" : stale ? "stale" : "error",
-          message,
-        })
-        throw new Error(message, { cause: error })
+        set(nextState)
+        throw new Error(nextState.message, { cause: error })
       }
     },
     allowNewDraft() {
