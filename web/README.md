@@ -2,6 +2,11 @@
 
 ## Hiện trạng
 
+
+### Brief MSK — kỹ năng thủ công cho 03/12
+
+Đợt chuẩn bị thiết kế, chưa code UI: tái sử dụng màn/primitives kỹ năng theo [proposal MSK mục7](../docs/proposals/backend-manual-skills.md#7-brief-ui-và-url). Quân chốt27/11 /skills, /skill-reviews, /skill-catalogs/categories và /skill-catalogs/skills, chi tiết request_id sau GET kiểm quyền, giữ home/login/limited hiện hành. Chỉ văn bản; không CV/tệp/task/supplement/withdraw hoặc fallback demo. Cổng nghiệm thu khi triển khai gồm pnpm check và browser với PG thật; hiện chưa nhận MSK runtime PASS. 403 mất quyền phải bỏ dữ liệu đặc quyền ngay kể cả me tiếp theo503.
+
 ### Brief sửa lỗi sau review — 27/11/2026
 
 Mục tiêu: nút Tìm kiếm tại `/personnel/employees` submit đúng form; server và localdev có hạn đọc toàn request để body dang dở không giữ kết nối vô hạn. Nguồn: finding R1/R2 của lượt review27/11, contract PCA F4 và cấu hình HTTP hiện hành. Đồng thời làm rõ comment RejectInput và health theo quy ước đã chốt. Ngoài phạm vi: nghiệp vụ/quyền/schema/dependency, đổi primitive Button, refactor đang có và Git handoff. Tiêu chí: kiểm click/Enter phù hợp, test TCP body dang dở/đầy đủ, Go/FE/contract/regression PG, tự review và sub-agent review; [kết quả thực chạy và giới hạn](../docs/api/auth-runbook.md#10-sửa-lỗi-tìm-kiếm-và-hạn-đọc-request--27112026) đã ghi sau kiểm.

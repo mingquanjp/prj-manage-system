@@ -67,6 +67,12 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 - [SQL/test plan hồ sơ](proposals/backend-profile-change-approval-sql-plan.md): preflight, request/idempotency, chuyển notification legacy, khóa/stale/rollback và ma trận kiểm chứng dự kiến; chưa chạy DB, không áp Neon.
 - [Công cụ Jira](../scripts/jira/README.md): diagnose/plan/apply/check khi được giao; token nhập ẩn. Đợt OAP dùng [script/hướng dẫn riêng](../scripts/jira/README-oap.md); đợt PCA dùng [importer PCA](../scripts/jira/README-pca.md). Mỗi đợt có journal riêng; không dùng apply auth hoặc journal đợt khác. Không chạy import lại để cập nhật tiến độ.
 
+### Đợt kỹ năng thủ công — chuẩn bị báo cáo 03/12/2026
+
+[Proposal MSK](proposals/backend-manual-skills.md) tái sử dụng quyết định D03 đã chốt; URL/phạm vi văn bản được Quân xác nhận27/11. [OpenAPI14 thao tác planned](api/manual-skills.openapi.json) và [kiểm contract tĩnh MSK](../scripts/check-manual-skills-contract.test.mjs), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [bộ12 task](proposals/backend-manual-skills-tickets.md) là bộ thiết kế, chưa có API/migration/UI runtime hoặc Jira mới. Thông báo mở rộng enum planned tại canonical PCA; không làm thay đổi kết quả triển khai PCA hiện có. FR024/026 chỉ phần văn bản, CV/task/tệp và supplement/withdraw tiếp nối; công thức phân công chưa chốt.
+
+[Importer MSK](../scripts/jira/README-msk.md) chuẩn bị1 Epic/12 Task/19 Blocks từ nguồn đã review; dùng engine hiện có và journal riêng. Plan offline không gọi Jira, apply chỉ khi người dùng chủ động chạy và xác nhận; không nhập lại auth/OAP/PCA hoặc đồng bộ tiến độ.
+
 ## 3. Database — không đọc lại toàn bộ bước 1–5
 
 - Điểm vào: [bản hợp nhất 33 bảng](design/database-proposal-2026-10-14.md).

@@ -64,6 +64,9 @@ web/dist/
 !/docs/proposals/backend-profile-change-approval.md
 !/docs/proposals/backend-profile-change-approval-sql-plan.md
 !/docs/proposals/backend-profile-change-approval-tickets.md
+!/docs/proposals/backend-manual-skills.md
+!/docs/proposals/backend-manual-skills-sql-plan.md
+!/docs/proposals/backend-manual-skills-tickets.md
 !/docs/api/
 /docs/api/*
 !/docs/api/embed.go
@@ -73,6 +76,7 @@ web/dist/
 !/docs/api/auth.openapi.json
 !/docs/api/organization-accounts-profile.openapi.json
 !/docs/api/profile-change-approval.openapi.json
+!/docs/api/manual-skills.openapi.json
 !/docs/business-baseline-2026-10-13.md
 !/docs/business-baseline-2026-10-20.md
 !/docs/design/database-review-decisions-2026-10-14.md
@@ -97,6 +101,7 @@ web/dist/
 /.local/jira-auth/
 /.local/jira-oap/
 /.local/jira-pca/
+/.local/jira-msk/
 __pycache__/
 *.pyc
 
