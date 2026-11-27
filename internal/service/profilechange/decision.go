@@ -8,7 +8,8 @@ import (
 	"unicode/utf8"
 )
 
-// RejectInput chỉ nhận actor từ nguồn server; reason không dùng làm log/DTO.
+// RejectInput nhận actor từ nguồn server và không được serialize trực tiếp vào DTO/log.
+// Lý do từ chối chỉ được trả qua projection sau khi kiểm quyền.
 type RejectInput struct {
 	ActorID, RequestID int
 	Reason             string

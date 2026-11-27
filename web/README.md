@@ -2,6 +2,10 @@
 
 ## Hiện trạng
 
+### Brief sửa lỗi sau review — 27/11/2026
+
+Mục tiêu: nút Tìm kiếm tại `/personnel/employees` submit đúng form; server và localdev có hạn đọc toàn request để body dang dở không giữ kết nối vô hạn. Nguồn: finding R1/R2 của lượt review27/11, contract PCA F4 và cấu hình HTTP hiện hành. Đồng thời làm rõ comment RejectInput và health theo quy ước đã chốt. Ngoài phạm vi: nghiệp vụ/quyền/schema/dependency, đổi primitive Button, refactor đang có và Git handoff. Tiêu chí: kiểm click/Enter phù hợp, test TCP body dang dở/đầy đủ, Go/FE/contract/regression PG, tự review và sub-agent review; [kết quả thực chạy và giới hạn](../docs/api/auth-runbook.md#10-sửa-lỗi-tìm-kiếm-và-hạn-đọc-request--27112026) đã ghi sau kiểm.
+
 ### Brief DATN-48 / PCA-T12 — UI HR hồ sơ hành chính
 
 Brief đã được Quân xác nhận: `/personnel/employees` và `/{id}`, menu HR từ quyền server, giữ đích login/cổng limited. Nguồn: proposal PCA mục4–9, SQL9.4, OpenAPI F4, FR-012 và BR-001. Reuse visual/primitives, adapter async riêng server; patch/before chỉ trường đổi, không rebase draft khi refresh nền. Lỗi chưa rõ kết quả dùng GET đối soát, không tự PATCH lại. Ngoài phạm vi: CV/vô hiệu hóa/quyền/reset, API đọc audit, schema/dependency, Neon/deploy và Git handoff. Tiêu chí: pnpm check, browser PG thật, race hai adapter direct edit–approve, regression Go/PG/contract, tự review và sub-agent review. Chỉ ghi PASS sau thực chạy.
