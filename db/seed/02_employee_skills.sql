@@ -1,19 +1,18 @@
 -- Hồ sơ năng lực chính thức của nhân sự mẫu.
 --
--- Tất cả bản ghi đều đánh dấu đã được tài khoản mẫu admin@company.vn xác nhận, vì engine
--- đề xuất chỉ được phép dùng dữ liệu đã duyệt (UC003.1 dữ liệu đầu vào #3).
+-- Dữ liệu mẫu dùng tài khoản admin@company.vn làm người xác nhận tường minh;
+-- đây không phải lịch sử đề nghị hoặc bằng chứng phê duyệt của người dùng thật.
 
 INSERT INTO employee_skills (
     employee_id, skill_id, proficiency_level, years_experience,
-    source, approved_by_employee_id, approved_at
+    approved_by, approved_at
 )
 SELECT
     e.employee_id,
     s.skill_id,
     v.level::proficiency_level,
     v.years,
-    'MANUAL'::skill_source,
-    admin.employee_id,
+    admin.user_id,
     now()
 FROM (VALUES
     -- Backend Developer — Senior
@@ -151,5 +150,5 @@ FROM (VALUES
 ) AS v(company_email, skill_name, level, years)
 JOIN employees e   ON lower(btrim(e.email)) = v.company_email
 JOIN skills    s   ON s.skill_name    = v.skill_name
-CROSS JOIN LATERAL (SELECT employee_id FROM employees WHERE lower(btrim(email)) = 'admin@company.vn') AS admin
+CROSS JOIN LATERAL (SELECT user_id FROM employees WHERE lower(btrim(email)) = 'admin@company.vn') AS admin
 ON CONFLICT ON CONSTRAINT uq_employee_skills DO NOTHING;

@@ -31,8 +31,8 @@ func TestPrepareHeadLocaldev(t *testing.T) {
 	var version int
 	var dirty bool
 	authdb.Require(t, "head localdev", db.Conn.QueryRow(ctx, `SELECT version,dirty FROM schema_migrations`).Scan(&version, &dirty))
-	if version != migrations.PCAVersion || dirty {
-		t.Fatal("localdev chưa ở head PCA sạch")
+	if version != migrations.MSKVersion || dirty {
+		t.Fatal("localdev chưa ở head kỹ năng sạch")
 	}
 	rows, err := db.Conn.Query(ctx, `SELECT u.password_hash,u.system_role,u.must_change_password,e.email,r.role_code
  FROM users u JOIN employees e USING(user_id) JOIN user_roles r USING(user_id) ORDER BY u.user_id`)

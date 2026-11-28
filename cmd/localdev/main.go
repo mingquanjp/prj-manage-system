@@ -187,7 +187,11 @@ func prepare(ctx context.Context, cfg *pgx.ConnConfig, systemID string) error {
 		_ = d.Close()
 		return errors.New("không mở được nguồn migration")
 	}
-	m, err := migrate.NewWithInstance("iofs", source, "pgx", migrations.WithPCAPreflight(migrations.WithM2Preflight(migrations.WithM1Preflight(d, sqlDB, nil), sqlDB), sqlDB))
+	guarded := migrations.WithM1Preflight(d, sqlDB, nil)
+	guarded = migrations.WithM2Preflight(guarded, sqlDB)
+	guarded = migrations.WithPCAPreflight(guarded, sqlDB)
+	guarded = migrations.WithMSKPreflight(guarded, sqlDB, 0)
+	m, err := migrate.NewWithInstance("iofs", source, "pgx", guarded)
 	if err != nil {
 		_ = source.Close()
 		_ = d.Close()

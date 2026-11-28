@@ -17,7 +17,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 )
 
-func TestM1EmptyAndSeed(t *testing.T) {
+func TestM1EmptyAndReferenceSeed(t *testing.T) {
 	db := authdb.NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
 	authdb.Require(t, "bootstrap đến auth", m.Migrate(3))
@@ -38,17 +38,11 @@ func TestM1EmptyAndSeed(t *testing.T) {
 			expectState(t, db.Conn, "23514", insert, "\u00a0")
 		})
 	}
-	entries, err := fs.ReadDir(seed.FS, ".")
-	authdb.Require(t, "đọc nguồn seed", err)
+	// Seed năng lực đi theo head; mốc M1 chỉ kiểm seed danh mục còn tương thích.
+	content, err := fs.ReadFile(seed.FS, "01_reference.sql")
+	authdb.Require(t, "đọc seed danh mục", err)
 	for range 2 {
-		for _, entry := range entries {
-			if !strings.HasSuffix(entry.Name(), ".sql") {
-				continue
-			}
-			content, err := fs.ReadFile(seed.FS, entry.Name())
-			authdb.Require(t, "đọc SQL seed", err)
-			exec(t, db.Conn, string(content))
-		}
+		exec(t, db.Conn, string(content))
 	}
 }
 

@@ -18,21 +18,22 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 )
 
+// Các ca này kiểm chuyển đổi PCA v6; head mới không được thay mốc nguồn/đích.
 func TestPCAEmptyDownUp(t *testing.T) {
 	db := authdb.NewCase(t)
 	m := db.OpenMigrator(t, migrations.FS)
-	authdb.Require(t, "nâng empty tới PCA", m.Up())
+	authdb.Require(t, "nâng empty tới PCA", m.Migrate(migrations.PCAVersion))
 	head(t, m, migrations.PCAVersion)
 	assertPCAPresent(t, db, true)
-	if !errors.Is(m.Up(), migrate.ErrNoChange) {
-		t.Fatal("up head phải không thay đổi")
+	if !errors.Is(m.Migrate(migrations.PCAVersion), migrate.ErrNoChange) {
+		t.Fatal("nâng lại cùng mốc PCA phải không thay đổi")
 	}
 	var n int
 	authdb.Require(t, "cấp notification ID trước down", db.Conn.QueryRow(context.Background(), `SELECT nextval(pg_get_serial_sequence('public.notifications','notification_id'))`).Scan(&n))
 	authdb.Require(t, "down PCA empty", m.Steps(-1))
 	head(t, m, migrations.M2Version)
 	assertPCAPresent(t, db, false)
-	authdb.Require(t, "up PCA lại", m.Up())
+	authdb.Require(t, "up PCA lại", m.Migrate(migrations.PCAVersion))
 	head(t, m, migrations.PCAVersion)
 	var next int
 	authdb.Require(t, "sequence giữ high water", db.Conn.QueryRow(context.Background(), `SELECT nextval(pg_get_serial_sequence('public.notifications','notification_id'))`).Scan(&next))
@@ -60,7 +61,7 @@ func TestPCALegacyPreservesAuthOAP(t *testing.T) {
 	db, m := pcaLegacy(t)
 	before := m2Snapshot(t, db)
 	assertM2Sequence(t, db, 1, false)
-	authdb.Require(t, "nâng legacy tới PCA", m.Up())
+	authdb.Require(t, "nâng legacy tới PCA", m.Migrate(migrations.PCAVersion))
 	head(t, m, migrations.PCAVersion)
 	sameJSON(t, before, m2Snapshot(t, db))
 	assertM2Sequence(t, db, 1, false)
@@ -98,7 +99,7 @@ func TestPCAPreflightRefusesBeforeDirty(t *testing.T) {
 			before := m2Snapshot(t, db)
 			var notifications string
 			authdb.Require(t, "snapshot notifications chỉ trong bộ nhớ", db.Conn.QueryRow(context.Background(), `SELECT coalesce(jsonb_agg(to_jsonb(n)),'[]')::text FROM notifications n`).Scan(&notifications))
-			if err := m.Up(); err == nil || !strings.HasPrefix(err.Error(), "PCA:") {
+			if err := m.Migrate(migrations.PCAVersion); err == nil || !strings.HasPrefix(err.Error(), "PCA:") {
 				t.Fatal("preflight phải từ chối trước dirty")
 			}
 			head(t, m, migrations.M2Version)
@@ -114,7 +115,7 @@ const pcaInsert = `INSERT INTO employee_profile_change_requests(employee_id,requ
 
 func TestPCAJSONStateFKAndIndexes(t *testing.T) {
 	db, m := pcaLegacy(t)
-	authdb.Require(t, "nâng PCA", m.Up())
+	authdb.Require(t, "nâng PCA", m.Migrate(migrations.PCAVersion))
 	assertPCAPresent(t, db, true)
 	goodBefore := `{"schema_version":1,"address":null}`
 	goodAfter := `{"schema_version":1,"address":"Địa chỉ tổng hợp"}`
@@ -180,7 +181,7 @@ func TestPCADownRefusesEachHistoryTable(t *testing.T) {
 	for _, table := range []string{"request", "key", "notification"} {
 		t.Run(table, func(t *testing.T) {
 			db, m := pcaLegacy(t)
-			authdb.Require(t, "nâng PCA", m.Up())
+			authdb.Require(t, "nâng PCA", m.Migrate(migrations.PCAVersion))
 			switch table {
 			case "request":
 				exec(t, db.Conn, pcaInsert, `{"schema_version":1,"phone":null}`, `{"schema_version":1,"phone":"123"}`)
@@ -231,7 +232,7 @@ func TestPCADDLFailureAndTOCTOUGuard(t *testing.T) {
 				exec(t, db.Conn, `SELECT pg_advisory_lock(638020)`)
 				defer db.Conn.Exec(context.Background(), `SELECT pg_advisory_unlock(638020)`)
 				result := make(chan error, 1)
-				go func() { result <- broken.Up() }()
+				go func() { result <- broken.Migrate(migrations.PCAVersion) }()
 				// Chờ server xác nhận connection migration đã tới barrier, không sleep.
 				for {
 					var waiting bool
@@ -254,7 +255,7 @@ func TestPCADDLFailureAndTOCTOUGuard(t *testing.T) {
 					t.Fatal("DDL guard không kết thúc")
 				}
 			} else {
-				upErr = broken.Up()
+				upErr = broken.Migrate(migrations.PCAVersion)
 			}
 			if upErr == nil {
 				t.Fatal("guard/fault phải thất bại")
@@ -274,7 +275,7 @@ func TestPCADDLFailureAndTOCTOUGuard(t *testing.T) {
 			}
 			retry := db.OpenMigrator(t, migrations.FS)
 			var dirty migrate.ErrDirty
-			if !errors.As(retry.Up(), &dirty) || dirty.Version != migrations.PCAVersion {
+			if !errors.As(retry.Migrate(migrations.PCAVersion), &dirty) || dirty.Version != migrations.PCAVersion {
 				t.Fatal("không được tự force/retry DB dirty")
 			}
 		})
@@ -335,7 +336,7 @@ func assertPCAPresent(t *testing.T, db *authdb.Case, present bool) {
 
 func TestPCADownDDLFailureRollsBack(t *testing.T) {
 	db, m := pcaLegacy(t)
-	authdb.Require(t, "nâng PCA", m.Up())
+	authdb.Require(t, "nâng PCA", m.Migrate(migrations.PCAVersion))
 	before := m2Snapshot(t, db)
 	m.Close(t)
 	source := fstest.MapFS{}
@@ -371,7 +372,7 @@ func TestPCADownRefusesUnknownDependency(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("dependency-%d", len(ddl)), func(t *testing.T) {
 			db, m := pcaLegacy(t)
-			authdb.Require(t, "nâng PCA", m.Up())
+			authdb.Require(t, "nâng PCA", m.Migrate(migrations.PCAVersion))
 			exec(t, db.Conn, ddl)
 			if m.Steps(-1) == nil {
 				t.Fatal("down không được xóa dependency chưa review")

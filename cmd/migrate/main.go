@@ -7,11 +7,13 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strconv"
 
 	"ai-staffing/internal/config"
 	"ai-staffing/migrations"
@@ -19,7 +21,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	pgxdriver "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
@@ -29,9 +32,9 @@ func main() {
 }
 
 func run() error {
-	command := "up"
-	if len(os.Args) > 1 {
-		command = os.Args[1]
+	command, importActorID, err := migrationArguments(os.Args[1:])
+	if err != nil {
+		return err
 	}
 	if err := validateCommand(command); err != nil {
 		return err
@@ -53,10 +56,12 @@ func run() error {
 		return fmt.Errorf("không đọc được thư mục migrations: %w", err)
 	}
 
-	db, err := sql.Open("pgx", cfg.Database.DirectURL)
+	connection, err := pgx.ParseConfig(cfg.Database.DirectURL)
 	if err != nil {
-		return errors.New("DB_POOL_INIT_FAILED: không mở được kết nối migration")
+		return errors.New("DB_POOL_INIT_FAILED: không đọc được cấu hình migration")
 	}
+	connection.RuntimeParams["app.msk_import_actor_id"] = strconv.Itoa(importActorID)
+	db := stdlib.OpenDB(*connection)
 	defer db.Close()
 
 	driver, err := pgxdriver.WithInstance(db, &pgxdriver.Config{})
@@ -64,7 +69,11 @@ func run() error {
 		return errors.New("DB_CONNECT_FAILED: không khởi tạo được driver migration")
 	}
 
-	m, err := migrate.NewWithInstance("iofs", source, "postgres", migrations.WithPCAPreflight(migrations.WithM2Preflight(migrations.WithM1Preflight(driver, db, nil), db), db))
+	guarded := migrations.WithM1Preflight(driver, db, nil)
+	guarded = migrations.WithM2Preflight(guarded, db)
+	guarded = migrations.WithPCAPreflight(guarded, db)
+	guarded = migrations.WithMSKPreflight(guarded, db, importActorID)
+	m, err := migrate.NewWithInstance("iofs", source, "postgres", guarded)
 	if err != nil {
 		return fmt.Errorf("không khởi tạo được migrate: %w", err)
 	}
@@ -110,4 +119,23 @@ func validateCommand(command string) error {
 	default:
 		return fmt.Errorf("lệnh không hợp lệ: %q (dùng up | down | down-all | version)", command)
 	}
+}
+
+// migrationArguments kiểm đầu vào trước khi cấu hình có thể mở kết nối DB.
+func migrationArguments(args []string) (string, int, error) {
+	command := "up"
+	if len(args) > 0 {
+		command = args[0]
+		args = args[1:]
+	}
+	flags := flag.NewFlagSet("migrate", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	actor := flags.Int("msk-import-actor", 0, "user_id người thực hiện import đã xác minh")
+	if err := flags.Parse(args); err != nil || flags.NArg() != 0 {
+		return "", 0, errors.New("tham số migration không hợp lệ")
+	}
+	if *actor < 0 || int64(*actor) > 2147483647 || (*actor != 0 && command != "up") {
+		return "", 0, errors.New("actor import chỉ nhận user_id dương cho lệnh up")
+	}
+	return command, *actor, nil
 }
