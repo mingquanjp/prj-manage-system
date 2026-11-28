@@ -1198,3 +1198,77 @@ Tự review và sub-agent source/test review đã xử lý regression mock Swagg
 **Tiếp nối bàn giao24/11/2026:** đã rebase nhánh DATN-42 lên `origin/main` tại54b75ab, chứa PR54/DATN-41 đã merge. Hợp nhất composition/router/Swagger và tài liệu hai task; fallback giữ cờ ProfileChanges, hai nhóm Swagger vẫn có5operation request và2operation notification. Hai notification operation chuyển sang implemented trong canonical/checker, ba HR/F4 vẫn planned. `TestNotificationApplicationPostgres` kiểm thêm cả hai URL Swagger qua composition root thật; không chỉ render/VM.
 
 Kiểm lại bản tích hợp: Go vet/unit/build đạt,49 contract/harness/Swagger tests đạt, integration4package tuần tự đạt: migrations15.609s, repository49.513s, HTTP5.548s, server23.947s. Runner `up` chỉ khởi động lại container test sở hữu đang dừng; `check` xác minh PG18/owner/DBgốc0bảng trước suite. Harness442file và diff/staged checks được kiểm trước commit bàn giao. Sub-agent rà lại tương thích không còn góp ý chặn; giới hạn chưa gộp DATN-41 của snapshot23/11 đã được khép, các giới hạn UI/browser/F4/Neon/HTTPS/deploy vẫn giữ. Commit/push/PR do người dùng giao trong lượt bàn giao này; không tự merge hoặc chuyển Jira Done.
+
+## DATN-54 / MSK-T05 — thông báo kỹ năng
+
+Hai API thông báo hiện có đọc được cả sự kiện hồ sơ và kỹ năng. Mỗi loại được kiểm đúng resource tương ứng; sai cặp được trả lỗi chung, không trả nội dung. Read vẫn chỉ dựa trên chủ thông báo và phiên thường, không cấp quyền mở đề nghị. Không thêm endpoint, migration, dependency hoặc polling.
+
+Nguồn: [MSK mục 6.3](../../docs/proposals/backend-manual-skills.md#63-thông-báo), [canonical PCA](../../docs/api/profile-change-approval.openapi.json). Bản kiểm từ main `c72d3bd` sau PR #68, ngày 28/11/2026; macOS arm64, Go 1.27.4, Node 24.15.0, PostgreSQL 18.
+
+### Chạy lại
+
+Chạy runner ở checkout giữ state PG18 sở hữu; thay đường dẫn worktree nếu cần. Các suite DB chạy lần lượt.
+
+```sh
+python3 scripts/authdb/manage.py check
+GOCACHE=/private/tmp/ai-staffing-DATN-54-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-54 test -tags=integration -p 1 ./internal/repository/postgres ./cmd/server -run '^TestSkillNotification' -count=1 -timeout=5m
+GOCACHE=/private/tmp/ai-staffing-DATN-54-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-54 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+```
+
+Tại gốc worktree, các lệnh Go dùng `GOCACHE=/private/tmp/ai-staffing-DATN-54-go-cache`:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go vet -tags=integration ./internal/repository/postgres ./internal/transport/http ./cmd/server
+node --test scripts/check-manual-skills-contract.test.mjs scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+### Kết quả và phạm vi kiểm
+
+| Ca | Bằng chứng thực chạy |
+|---|---|
+| Sáu loại trộn, user ID khác employee ID, own-read sau mất role, đọc lặp giữ read_at | `TestSkillNotificationMixedOwnRead`, `TestSkillNotificationApplicationPostgres` |
+| Filter, page rỗng, total/unread/items cùng snapshot khi insert/read xen giữa | `TestSkillNotificationMixedSnapshot` dùng connection khác và điểm đồng bộ giữa count/items; kiểm DB sau mutation |
+| Cặp type/resource hoặc type không hợp lệ | `TestSkillNotificationInvalidPersistedPair`, HTTP trả500 không lộ message hoặc tên trường DB |
+| Rollback và mất xác nhận commit | `TestSkillNotificationCommitFault` kiểm trạng thái PG sau lỗi; wrapper mất phản hồi không đại diện mọi sự cố mạng |
+| Quyền, limited, Origin/CSRF, body/no-store, 503/500 và writer hồ sơ | Regression `TestNotificationApplicationPostgres` cùng các test thông báo hiện có |
+
+Focused PG đạt: repository 2.614s, server 0.934s. Regression bốn package đạt lần lượt 24.076s / 47.368s / 6.731s / 21.535s. Go vet/test/build và tagged vet đạt; 56/56 kiểm contract/harness/Swagger đạt, không skip. Guard sau suite xác nhận PG18 đúng owner/system-ID, DB gốc không có bảng. DB case do fixture tạo và dọn qua runner; không dùng `.env`, DATABASE_URL hoặc Neon thay thế.
+
+Các dòng thông báo kỹ năng trong phép kiểm là fixture cho API đọc/read. Việc gửi và duyệt đề nghị tạo thông báo thật thuộc MSK-T06/T07; UI mở đúng tài nguyên thuộc MSK-T11. Không nhận bằng chứng các phần đó từ lượt này.
+
+### Kiểm bản ghép DATN-52 và DATN-54
+
+Bản ghép kiểm tại `/private/tmp/ai-staffing-MSK-52-54-check` từ cùng main `c72d3bd`, chứa diff của hai ticket. Source Go của DATN-52 được đối chiếu khớp bản ghép; DATN-54 chỉ mở validator thông báo và canonical/Swagger tương ứng.
+
+```sh
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache go -C /private/tmp/ai-staffing-MSK-52-54-check test ./... -count=1
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./cmd/server -run '^(TestSkillCatalogApplication|TestSkillNotificationApplication|TestAuthHTTPPostgresLifecycle|TestProfileChangeApplicationComposition|TestAdministrativeProfileApplicationComposition|TestNotificationApplicationPostgres)$' -count=1 -timeout=5m
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./cmd/server -run '^Test(SkillCatalogApplication|SkillNotificationApplication)' -count=1 -timeout=5m
+```
+
+Unit toàn bản ghép và 57 kiểm contract/harness/Swagger đạt. HTTP/PG bản ghép đạt: hồi quy auth/hồ sơ/thông báo 14.240s; năm nhóm API mới 14.263s. Các lượt DB chạy tuần tự. Đây là bằng chứng API/PostgreSQL, không phải browser hoặc writer gửi/duyệt kỹ năng.
+
+Kiểm bổ sung bằng Go race detector trên cùng nguồn:
+
+```sh
+GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache go -C /private/tmp/ai-staffing-DATN-52 test -race ./internal/service/skillcatalog ./internal/repository/postgres ./internal/transport/http -count=1
+GOCACHE=/private/tmp/ai-staffing-DATN-54-go-cache go -C /private/tmp/ai-staffing-DATN-54 test -race ./internal/service/notification ./internal/transport/http -count=1
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -race -tags=integration -p 1 ./internal/repository/postgres ./cmd/server -run '^Test(SkillCatalog|SkillNotification)' -count=1 -timeout=5m
+```
+
+Các nhóm unit và HTTP/PostgreSQL trên đạt, không phát hiện data race trong lượt chạy; PG repository 18.249s, server 29.090s. Kiểm cleanup tiếp nối đạt 0.768s, đúng PG18/owner/system-ID, DB gốc rỗng và không còn DB case. Source review độc lập service/repository và HTTP/thông báo không có finding mới; review không thay bằng chứng runtime. Giới hạn về writer submit/decision và browser vẫn giữ nguyên.
+
+
+Kiểm cleanup cuối chỉ đọc metadata (chạy qua runner tại checkout giữ state):
+
+```sh
+python3 scripts/authdb/manage.py check
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=30s
+```
+
+Guard và phép kiểm cleanup đạt (0.690s): PG18 đúng owner/system-ID, DB gốc không có bảng và không còn DB case `auth_case_*`. Không cần xóa cưỡng bức hoặc force version.

@@ -3713,20 +3713,12 @@
               "SKILL_CHANGE_SUBMITTED",
               "SKILL_CHANGE_APPROVED",
               "SKILL_CHANGE_REJECTED"
-            ],
-            "x-planned-values": [
-              "SKILL_CHANGE_SUBMITTED",
-              "SKILL_CHANGE_APPROVED",
-              "SKILL_CHANGE_REJECTED"
             ]
           },
           "resource_type": {
             "type": "string",
             "enum": [
               "PROFILE_CHANGE_REQUEST",
-              "SKILL_CHANGE_REQUEST"
-            ],
-            "x-planned-values": [
               "SKILL_CHANGE_REQUEST"
             ]
           },
@@ -3763,7 +3755,7 @@
           "created_at",
           "read_at"
         ],
-        "description": " Nhóm SKILL_CHANGE_* và resource SKILL_CHANGE_REQUEST là thiết kế planned MSK, chỉ được server trả sau triển khai validator/writer/adapter. PROFILE_CHANGE_* hiện có giữ nguyên; enum mới không là runtime proof.",
+        "description": "Thông báo chính chủ cho đề nghị hồ sơ hoặc kỹ năng, chỉ gồm nội dung sự kiện và tài nguyên liên quan. API đọc và đánh dấu đã đọc không thực hiện gửi hoặc quyết định đề nghị.",
         "allOf": [
           {
             "if": {

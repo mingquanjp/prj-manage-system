@@ -192,3 +192,9 @@ Backend ứng dụng công bố thêm nhóm **Đề nghị hồ sơ** tại `/do
 Đăng nhập phiên thường rồi lấy CSRF như hướng dẫn trên. Gửi đề nghị cần `Idempotency-Key` UUIDv4 mới, body theo canonical và đúng employee_id chính chủ; approve dùng `{}`, reject dùng `{reason}` và phải là HR hiện hành. Không lấy user_id thay employee_id. Khi mất phản hồi mutation, GET danh sách/chi tiết để đối soát, không tự gửi lại. Body PCA tối đa65536 byte thực đọc; auth/OAP vẫn8192.
 
 Go httptest/HTTP+PostgreSQL test, inventory router và test bootstrap VM đạt ngày23/11/2026; nguồn/lệnh/giới hạn tại [runbook DATN-41](../../scripts/authdb/README.md#datn-41--pca-t05--năm-api-đề-nghị-hồ-sơ). Chưa kiểm browser rendering/CSRF qua Swagger cho PCA hoặc nối UI PCA; không dùng spec render thay runtime proof.
+
+## DATN-54 — thông báo hồ sơ và kỹ năng
+
+Nhóm Swagger **Thông báo hồ sơ và kỹ năng** dùng hai API chính chủ hiện có: GET danh sách và POST đánh dấu đã đọc. Canonical PCA giữ sáu loại sự kiện và hai resource tương ứng; không thêm endpoint hoặc quyền xem đề nghị từ thao tác read.
+
+Dữ liệu kỹ năng cần được tạo bởi luồng gửi/duyệt khi các luồng đó được nối. Fixture trong [runbook DATN-54](../../scripts/authdb/README.md#datn-54--msk-t05--thông-báo-kỹ-năng) chỉ kiểm đọc/read trên PostgreSQL test, không nhận là luồng gửi/duyệt hoặc UI thông báo đã hoàn thành.
