@@ -19,10 +19,12 @@ function parameter(value) {
   return value
 }
 
-test('inventory và ref toàn bộ tồn tại, chỉ thao tác planned, không mở workflow ngoài đợt', () => {
+test('inventory và ref đủ 14 thao tác; tám API danh mục đã triển khai, sáu API đề nghị còn planned', () => {
   assert.equal(inspectOpenAPI(spec).length, 14)
   for (const {path, op} of operations) {
-    assert.equal(op['x-implementation-status'], 'planned')
+    let status = 'planned'
+    if (['/api/skill-categories', '/api/skill-categories/{id}', '/api/skills', '/api/skills/{id}'].includes(path)) status = 'implemented'
+    assert.equal(op['x-implementation-status'], status)
     assert.doesNotMatch(path, /withdraw|supplement|upload|reset|remove/)
   }
   assert.deepEqual(schemas.RequestSummary.properties.source, {type:'string', const:'MANUAL'})

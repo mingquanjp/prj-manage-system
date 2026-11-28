@@ -26,7 +26,7 @@ test("bootstrap Swagger chặn cấu hình ngoài và chỉ gửi API đã tri�
     URL,
     window: { location: { href: "http://localhost:8080/docs/?url=https://evil.invalid/spec", origin: "http://localhost:8080" }, addEventListener: (_, fn) => { ready = fn() } },
     fetch: async (url, options) => {
-      if (["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json"].includes(url)) return { ok: false, status: 404 }
+      if (["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json", "/docs/skill-catalog.openapi.json"].includes(url)) return { ok: false, status: 404 }
       assert.equal(url, "/docs/openapi.json")
       assert.equal(options.credentials, "same-origin")
       assert.equal(options.cache, "no-store")
@@ -88,7 +88,7 @@ for (const profiles of [false, true]) test(`Swagger chọn đúng ${profiles ? 1
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async (url) => ["/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json"].includes(url) ? { ok: false, status: 404 } : ({ ok: true, json: async () => url === "/docs/openapi.json" ? auth : catalogs }),
+    fetch: async (url) => ["/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json", "/docs/skill-catalog.openapi.json"].includes(url) ? { ok: false, status: 404 } : ({ ok: true, json: async () => url === "/docs/openapi.json" ? auth : catalogs }),
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -119,7 +119,7 @@ test("Swagger cho phép ID ở giữa đường dẫn PCA và chặn operation c
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async url => ["/docs/catalog.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : pca },
+    fetch: async url => ["/docs/catalog.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json", "/docs/skill-catalog.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : pca },
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -144,7 +144,7 @@ test("Swagger notification dùng đúng suffix read và không mở API PCA chư
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async url => ["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/administrative-profile.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : notifications },
+    fetch: async url => ["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/administrative-profile.openapi.json", "/docs/skill-catalog.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : notifications },
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -164,7 +164,7 @@ test("Swagger HR công bố ba operation F4 riêng và giữ allowlist cùng ori
   vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
     URL,
     window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
-    fetch: async url => ["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : administrative },
+    fetch: async url => ["/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/skill-catalog.openapi.json"].includes(url) ? { ok: false, status: 404 } : { ok: true, json: async () => url === "/docs/openapi.json" ? auth : administrative },
     document: { getElementById: () => selector, createElement: () => ({}) },
     SwaggerUIBundle: value => { config = value },
   })
@@ -173,4 +173,35 @@ test("Swagger HR công bố ba operation F4 riêng và giữ allowlist cùng ori
   assert.equal(config.spec, administrative)
   for (const [url, method] of [["/api/employees?q=demo", "GET"], ["/api/employees/42/administrative-profile", "GET"], ["/api/employees/42", "PATCH"], ["/docs/administrative-profile.openapi.json", "GET"]]) assert.doesNotThrow(() => config.requestInterceptor({ url, method }))
   for (const [url, method] of [["/api/employees/42", "GET"], ["/api/employees", "POST"], ["/api/employees/0", "PATCH"], ["/api/employees/2147483648/administrative-profile", "GET"], ["/api/employees/42/administrative-profile/extra", "GET"], ["https://other.invalid/api/employees/42", "PATCH"]]) assert.throws(() => config.requestInterceptor({ url, method }))
+})
+
+test("Swagger danh mục kỹ năng chỉ cho tám operation, không mở đề nghị planned", async () => {
+  let ready, config, change
+  const options = []
+  const selector = { value: "auth", append(option) { options.push(option) }, addEventListener(_, fn) { change = fn } }
+  const auth = JSON.parse(await readFile(new URL("../docs/api/auth.openapi.json", import.meta.url)))
+  const skillCatalogs = JSON.parse(await readFile(new URL("../docs/api/manual-skills.openapi.json", import.meta.url)))
+  skillCatalogs.paths = Object.fromEntries(Object.entries(skillCatalogs.paths).filter(([path]) => ["/api/skill-categories", "/api/skill-categories/{id}", "/api/skills", "/api/skills/{id}"].includes(path)))
+  vm.runInNewContext(await readFile(new URL("init.js", base), "utf8"), {
+    URL,
+    window: { location: { href: "http://127.0.0.1:8080/docs/", origin: "http://127.0.0.1:8080" }, addEventListener: (_, fn) => { ready = fn() } },
+    fetch: async url => {
+      if (url === "/docs/openapi.json") return { ok: true, json: async () => auth }
+      if (url === "/docs/skill-catalog.openapi.json") return { ok: true, json: async () => skillCatalogs }
+      return { ok: false, status: 404 }
+    },
+    document: { getElementById: () => selector, createElement: () => ({}) },
+    SwaggerUIBundle: value => { config = value },
+  })
+  await ready
+  assert.ok(options.some(option => option.value === "skillCatalogs"))
+  selector.value = "skillCatalogs"
+  change()
+  assert.equal(config.spec, skillCatalogs)
+  for (const collection of ["skill-categories", "skills"]) {
+    for (const method of ["GET", "POST"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}?q=%25`, method }))
+    for (const method of ["PATCH", "DELETE"]) assert.doesNotThrow(() => config.requestInterceptor({ url: `/api/${collection}/42`, method }))
+  }
+  assert.doesNotThrow(() => config.requestInterceptor({ url: "/docs/skill-catalog.openapi.json", method: "GET" }))
+  for (const [url, method] of [["/api/skills/42", "GET"], ["/api/skills/0", "PATCH"], ["/api/skill-categories/2147483648", "DELETE"], ["/api/skills/42/extra", "PATCH"], ["/api/employees/42/skills", "GET"], ["/api/skill-change-requests", "GET"], ["/api/skill-change-requests/42/approve", "POST"], ["https://other.invalid/api/skills", "GET"]]) assert.throws(() => config.requestInterceptor({ url, method }))
 })

@@ -208,3 +208,5 @@ T02 phải kiểm lại guard dưới khóa, bảo toàn dữ liệu và down/di
 DATN-51 / MSK-T02 triển khai migration `000007_manual_skills`, guard dùng chung trước dirty/trong DDL và fixture legacy với actor import tường minh. [Runbook PostgreSQL MSK](../../scripts/authdb/README.md#datn-51--msk-t02--migration-kỹ-năng) giữ lệnh, ma trận MSK-DB01–03, kết quả thực chạy và giới hạn cho DATN-52/DATN-54. Không thay snapshot thiết kế hoặc coi fixture là mapping dữ liệu đích.
 
 CV/tệp/task, bổ sung/rút pending và công thức phân công tiếp tục ở đợt riêng.
+
+DATN-52 / MSK-T03 cung cấp tám API danh mục cho MSK-T04/T06. [Runbook danh mục](../../scripts/authdb/README.md#datn-52--msk-t03--api-danh-mục-kỹ-năng) giữ DTO, giao thức khóa, fixture và kết quả HTTP/PostgreSQL; race xóa kỹ năng–submit được kiểm tiếp bằng adapter submit thật tại MSK-T06.

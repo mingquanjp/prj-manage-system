@@ -16,6 +16,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (notifications) specs.notifications = notifications
     const administrativeProfiles = await load("/docs/administrative-profile.openapi.json", true)
     if (administrativeProfiles) specs.administrativeProfiles = administrativeProfiles
+    const skillCatalogs = await load("/docs/skill-catalog.openapi.json", true)
+    if (skillCatalogs) specs.skillCatalogs = skillCatalogs
     const operations = []
     for (const spec of Object.values(specs)) {
       for (const [path, methods] of Object.entries(spec.paths)) {
@@ -45,7 +47,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       requestInterceptor(request) {
         const target = new URL(request.url, window.location.href)
         const method = (request.method || "GET").toUpperCase()
-        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json"].includes(target.pathname)
+        const specRequest = method === "GET" && ["/docs/openapi.json", "/docs/catalog.openapi.json", "/docs/profile-change.openapi.json", "/docs/notifications.openapi.json", "/docs/administrative-profile.openapi.json", "/docs/skill-catalog.openapi.json"].includes(target.pathname)
         const allowed = operations.some(([verb, path]) => {
           if (verb !== method) return false
           if (!path.includes("{id}")) return path === target.pathname
@@ -79,6 +81,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       const option = document.createElement("option")
       option.value = "notifications"
       option.textContent = "Thông báo hồ sơ chính chủ"
+      selector.append(option)
+    }
+    if (skillCatalogs) {
+      const option = document.createElement("option")
+      option.value = "skillCatalogs"
+      option.textContent = "Danh mục kỹ năng"
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))

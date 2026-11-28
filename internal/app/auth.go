@@ -13,6 +13,7 @@ import (
 	"ai-staffing/internal/service/notification"
 	"ai-staffing/internal/service/organization"
 	"ai-staffing/internal/service/profilechange"
+	"ai-staffing/internal/service/skillcatalog"
 	httptransport "ai-staffing/internal/transport/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,6 +73,11 @@ func applicationServices(cfg *config.Config, pool *pgxpool.Pool, clock auth.Cloc
 		return httptransport.AuthServices{}, err
 	}
 	services.Catalogs = organization.NewCatalogService(repository)
+	skillCatalogs, err := postgres.NewSkillCatalogRepository(pool, 10*time.Second)
+	if err != nil {
+		return httptransport.AuthServices{}, err
+	}
+	services.SkillCatalogs = skillcatalog.NewService(skillCatalogs)
 	profile, err := postgres.NewProfileRepository(pool, 10*time.Second)
 	if err != nil {
 		return httptransport.AuthServices{}, err
