@@ -14,6 +14,7 @@ type AuthServices struct {
 	Login                  loginUseCase
 	PasswordChange         passwordChangeUseCase
 	Catalogs               catalogUseCase
+	SkillCatalogs          skillCatalogUseCase
 	Profiles               profileUseCase
 	Accounts               accountUseCase
 	ProfileChanges         profileChangeUseCase
@@ -69,6 +70,9 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 	if services.Catalogs != nil {
 		registerCatalogRoutes(router, services.Sessions, services.Catalogs, protection)
 	}
+	if services.SkillCatalogs != nil {
+		registerSkillCatalogRoutes(router, services.Sessions, services.SkillCatalogs, protection)
+	}
 	if services.Profiles != nil || services.Accounts != nil || services.ProfileChanges != nil || services.AdministrativeProfiles != nil {
 		registerEmployeeRoutes(router, services.Sessions, services.Profiles, services.Accounts, protection, services.ProfileChanges, services.AdministrativeProfiles)
 	}
@@ -83,8 +87,8 @@ func newAuthRouter(health healthChecker, appEnv, appOrigin string, services Auth
 		registerNotificationRoutes(router, services.Sessions, services.Notifications, protection)
 	}
 	if appEnv == "dev" {
-		router.HandleFunc("/docs", swaggerWithNotifications(services, services.Notifications != nil))
-		router.HandleFunc("/docs/*", swaggerWithNotifications(services, services.Notifications != nil))
+		router.HandleFunc("/docs", swaggerWithSkillCatalogs(services))
+		router.HandleFunc("/docs/*", swaggerWithSkillCatalogs(services))
 	}
 	return router, nil
 }

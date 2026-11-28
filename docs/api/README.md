@@ -53,6 +53,12 @@ Origin/Cookie do trình duyệt quản lý. Để Swagger không chặn form vì
 
 UI tiếng Anh là giao diện gốc của Swagger; hướng dẫn và mô tả nghiệp vụ bằng tiếng Việt. UI không có tài khoản tự cấp, không tự mở quyền nghiệp vụ, không tự fetch spec ngoài. `requestInterceptor` chỉ cho contract local và các operation auth/danh mục đã công bố cùng origin, gồm PATCH/DELETE item hợp lệ; `validatorUrl=null`, `queryConfigEnabled=false`, không Petstore/validator/CDN khi chạy.
 
+## DATN-52 — tám API danh mục kỹ năng
+
+Swagger dev có nhóm **Danh mục kỹ năng** tại `/docs/skill-catalog.openapi.json`, lọc tám operation nhóm kỹ năng/kỹ năng từ canonical MSK khi dependency đã lắp. Mọi phiên thường được GET để chọn; chỉ Giám đốc được POST/PATCH/DELETE. Production không mở nhóm tài liệu này.
+
+Đăng nhập Giám đốc, lấy CSRF từ phiên hiện hành, tạo nhóm rồi tạo kỹ năng thuộc nhóm. Trước PATCH/DELETE, đọc tên và category_id hiện hành để gửi đúng `expected_before`. No-op không sinh audit; stale hoặc còn tham chiếu trả409. Các API năng lực/đề nghị kỹ năng chưa được công bố. Lệnh, kết quả HTTP/PG và giới hạn ở [runbook DATN-52](../../scripts/authdb/README.md#datn-52--msk-t03--api-danh-mục-kỹ-năng).
+
 ## DATN-47 — ba API HR hồ sơ hành chính
 
 Khi composition root đã lắp dependency F4, Swagger dev có nhóm **Hồ sơ hành chính HR** từ `/docs/administrative-profile.openapi.json`. Spec được lọc từ [canonical PCA](profile-change-approval.openapi.json), chỉ gồm GET list, GET administrative-profile và PATCH employee. Giữ nguyên các nhóm auth/OAP/đề nghị/thông báo; không mở tài liệu production.

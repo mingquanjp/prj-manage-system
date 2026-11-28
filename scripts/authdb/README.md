@@ -1,5 +1,90 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
+
+## DATN-52 / MSK-T03 — API danh mục kỹ năng
+
+Nguồn: [MSK mục 5–6.2](../../docs/proposals/backend-manual-skills.md), [canonical MSK](../../docs/api/manual-skills.openapi.json), [SQL/test plan mục 3/5/7](../../docs/proposals/backend-manual-skills-sql-plan.md). Tám API nhóm kỹ năng/kỹ năng cho mọi phiên thường đọc, chỉ Giám đốc ghi; mutation kiểm lại quyền dưới khóa và ghi audit cùng transaction. Không thêm migration hoặc dependency.
+
+### Chạy lại
+
+Bản kiểm từ main `c72d3bd` sau PR #68; ngày 28/11/2026, macOS arm64, Go 1.27.4, Node 24.15.0, PostgreSQL 18. Chạy runner tại checkout giữ state test sở hữu; thay đường dẫn worktree khi chạy lại. Các suite PG chạy lần lượt.
+
+```sh
+python3 scripts/authdb/manage.py check
+GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-52 test -tags=integration -p 1 ./internal/repository/postgres -run '^TestSkillCatalog' -count=1 -timeout=5m
+GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-52 test -tags=integration -p 1 ./cmd/server -run '^TestSkillCatalogApplication' -count=1 -timeout=5m
+GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-52 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server -count=1 -timeout=5m
+```
+
+Tại gốc worktree, các lệnh Go dùng `GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache`:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go vet -tags=integration ./internal/repository/postgres ./internal/transport/http ./cmd/server
+node --test scripts/check-manual-skills-contract.test.mjs scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs scripts/check-swagger.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+### Ma trận kiểm
+
+| Ca | Bằng chứng thực chạy |
+|---|---|
+| MSK-DB04: CRUD, quyền hiện hành, tên Unicode100/101, raw before, no-op, FK request terminal/official inactive độc lập | `TestSkillCatalogCRUDPermissionsAndReferences` và `TestSkillCatalogApplicationPostgresCRUDAndRoles` |
+| Tìm literal `%`/`_`, lọc nhóm, name/id order, count/items cùng snapshot và page rỗng | `TestSkillCatalogSnapshotLiteralAndAudit`; connection khác ghi xen giữa count/items |
+| MSK-DB05 phần danh mục: unique race và xóa nhóm–tạo kỹ năng, hai thứ tự | `TestSkillCatalogConcurrentUniqueAndCategoryReference`: hai adapter thật, hai actor/connection và barrier; kiểm không orphan |
+| Quyền/cờ/trạng thái đổi trong lúc chờ khóa; skill chuyển nhóm sau snapshot | `TestSkillCatalogActorChangeAndCategoryMoveStale`; không ghi theo before cũ |
+| Audit đúng actor/entity/before-after; lỗi CREATE/UPDATE/DELETE, audit bỏ qua và commit trì hoãn | `TestSkillCatalogCRUDPermissionsAndReferences`, `TestSkillCatalogSnapshotLiteralAndAudit`, `TestSkillCatalogApplicationAuditFailure`; đối soát dữ liệu PG sau lỗi |
+| Commit xác nhận rollback khác mất phản hồi | Unit `TestSkillCatalogCommitClassification` và PG fault trong `TestSkillCatalogSnapshotLiteralAndAudit`; commit thật rồi wrapper làm mất phản hồi không là mọi sự cố mạng |
+| MSK-DB11 phần tám API: strict JSON/UTF-8/duplicate key, query, quyền, Origin/CSRF, DTO/no-store/no-cookie, body8192/8193 không Content-Length | `TestSkillCatalogHTTPStrictBody`, `TestSkillCatalogHTTPRolesQueriesAndErrors`, `TestSkillCatalogApplicationChunkedBodiesAndSecurity` |
+| DB500/timeout503, hoạt động lại sau nhả khóa | `TestSkillCatalogApplicationDatabaseFailures` qua production composition và PostgreSQL thật |
+| Router/Swagger | `TestSkillCatalogCompleteRouteInventory` kiểm40 operation gồm các route cũ và health; `TestSkillCatalogSwaggerCanonicalSubset`, `TestSkillCatalogSwaggerDependencyAndDevGate` cùng Node Swagger tests |
+
+Focused PG đạt: repository 1.654s; HTTP/server 12.430s. Regression bốn package đạt lần lượt migrations 24.716s / repository 73.188s / HTTP 11.766s / server 42.897s; gồm auth/OAP/PCA. Go vet/test/build và tagged vet đạt. Contract/harness/Swagger đạt 57/57 tests, không skip; kiểm kê 506 nguồn và diff check đạt. Mỗi DB case do fixture tạo/dọn qua runner. Không đọc `.env` hoặc dùng DATABASE_URL/Neon thay môi trường test.
+
+Tám operation danh mục được công bố từ canonical tại `/docs/skill-catalog.openapi.json` khi dependency đã lắp và APP_ENV=dev. Sáu operation năng lực/đề nghị vẫn planned, không xuất trong nhóm Swagger này. Bằng chứng HTTP/PG không thay kiểm browser.
+
+### Đầu ra và giới hạn
+
+MSK-T04 nhận DTO/list/filter và lỗi cho UI; MSK-T06 nhận giao thức khóa cùng fixture tham chiếu. Xóa kỹ năng–submit bằng adapter submit thật phải kiểm tiếp ở MSK-T06. Các request fixture tại ticket này chỉ chứng minh FK; không nhận đó là luồng gửi/duyệt, UI hoặc Neon.
+
+
+
+### Kiểm bản ghép DATN-52 và DATN-54
+
+Bản ghép kiểm tại `/private/tmp/ai-staffing-MSK-52-54-check` từ cùng main `c72d3bd`, chứa diff của hai ticket. Source Go của DATN-52 được đối chiếu khớp bản ghép; DATN-54 chỉ mở validator thông báo và canonical/Swagger tương ứng.
+
+```sh
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache go -C /private/tmp/ai-staffing-MSK-52-54-check test ./... -count=1
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./cmd/server -run '^(TestSkillCatalogApplication|TestSkillNotificationApplication|TestAuthHTTPPostgresLifecycle|TestProfileChangeApplicationComposition|TestAdministrativeProfileApplicationComposition|TestNotificationApplicationPostgres)$' -count=1 -timeout=5m
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./cmd/server -run '^Test(SkillCatalogApplication|SkillNotificationApplication)' -count=1 -timeout=5m
+```
+
+Unit toàn bản ghép và 57 kiểm contract/harness/Swagger đạt. HTTP/PG bản ghép đạt: hồi quy auth/hồ sơ/thông báo 14.240s; năm nhóm API mới 14.263s. Các lượt DB chạy tuần tự. Đây là bằng chứng API/PostgreSQL, không phải browser hoặc writer gửi/duyệt kỹ năng.
+
+Kiểm bổ sung bằng Go race detector trên cùng nguồn:
+
+```sh
+GOCACHE=/private/tmp/ai-staffing-DATN-52-go-cache go -C /private/tmp/ai-staffing-DATN-52 test -race ./internal/service/skillcatalog ./internal/repository/postgres ./internal/transport/http -count=1
+GOCACHE=/private/tmp/ai-staffing-DATN-54-go-cache go -C /private/tmp/ai-staffing-DATN-54 test -race ./internal/service/notification ./internal/transport/http -count=1
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -race -tags=integration -p 1 ./internal/repository/postgres ./cmd/server -run '^Test(SkillCatalog|SkillNotification)' -count=1 -timeout=5m
+```
+
+Các nhóm unit và HTTP/PostgreSQL trên đạt, không phát hiện data race trong lượt chạy; PG repository 18.249s, server 29.090s. Kiểm cleanup tiếp nối đạt 0.768s, đúng PG18/owner/system-ID, DB gốc rỗng và không còn DB case. Source review độc lập service/repository và HTTP/thông báo không có finding mới; review không thay bằng chứng runtime. Giới hạn về writer submit/decision và browser vẫn giữ nguyên.
+
+
+
+Kiểm cleanup cuối chỉ đọc metadata (chạy qua runner tại checkout giữ state):
+
+```sh
+python3 scripts/authdb/manage.py check
+GOCACHE=/private/tmp/ai-staffing-MSK-combined-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-MSK-52-54-check test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=30s
+```
+
+Guard và phép kiểm cleanup đạt (0.690s): PG18 đúng owner/system-ID, DB gốc không có bảng và không còn DB case `auth_case_*`. Không cần xóa cưỡng bức hoặc force version.
+
 ## DATN-51 / MSK-T02 — migration kỹ năng
 
 Nguồn: [proposal MSK mục 4–5/10](../../docs/proposals/backend-manual-skills.md), [SQL/test plan mục 1–4/6–8](../../docs/proposals/backend-manual-skills-sql-plan.md). Nhánh từ `main 4b4971d` sau PR #67. Migration tiến thêm `000007_manual_skills`; SQL 000001–000006 giữ nguyên.

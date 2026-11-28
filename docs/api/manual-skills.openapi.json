@@ -3,7 +3,7 @@
   "info": {
     "title": "Danh mục và đề nghị kỹ năng thủ công",
     "version": "0.1.0",
-    "description": "MSK14 thao tác PLANNED; thiết kế27/11, chưa triển khai HTTP/PG/UI. Không CV/task/file/supplement/withdraw/remove hoặc Admin bypass. Auth/OAP/PCA canonical giữ riêng. Thông báo reuse hai API PCA với planned enum extension đã mô tả ở canonical PCA."
+    "description": "Contract danh mục và đề nghị kỹ năng thủ công, gồm 14 thao tác. Trạng thái triển khai được ghi tại từng operation; thông báo dùng hai API trong canonical PCA. Auth/OAP giữ contract riêng. Phạm vi văn bản hiện hành không gồm CV, task, tệp hoặc bổ sung/rút đề nghị; quyền Admin không thay quyền Giám đốc."
   },
   "servers": [
     {
@@ -16,7 +16,7 @@
         "operationId": "listSkillCategorys",
         "summary": "Danh sách skill-categories",
         "description": "Mọi phiên thường đọc để chọn kỹ năng; count/items cùng RR snapshot, sort name/idASC.",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "NORMAL",
         "security": [
           {
@@ -222,7 +222,7 @@
         "operationId": "createSkillCategory",
         "summary": "Tạo skill-categories",
         "description": "",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
@@ -534,7 +534,7 @@
         "operationId": "updateSkillCategory",
         "summary": "Sửa skill-categories",
         "description": "So expected_before chính xác; no-op200 không audit. Không đổi nghĩa kỹ năng đã dùng.",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
@@ -880,7 +880,7 @@
         "operationId": "deleteSkillCategory",
         "summary": "Xóa skill-categories",
         "description": "",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
@@ -1221,7 +1221,7 @@
         "operationId": "listSkills",
         "summary": "Danh sách skills",
         "description": "Mọi phiên thường đọc để chọn kỹ năng; count/items cùng RR snapshot, sort name/idASC.",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "NORMAL",
         "security": [
           {
@@ -1430,7 +1430,7 @@
         "operationId": "createSkill",
         "summary": "Tạo skills",
         "description": "",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
@@ -1774,7 +1774,7 @@
         "operationId": "updateSkill",
         "summary": "Sửa skills",
         "description": "So expected_before chính xác; no-op200 không audit. Không đổi nghĩa kỹ năng đã dùng.",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
@@ -2120,7 +2120,7 @@
         "operationId": "deleteSkill",
         "summary": "Xóa skills",
         "description": "",
-        "x-implementation-status": "planned",
+        "x-implementation-status": "implemented",
         "x-required-role": "DIRECTOR",
         "security": [
           {
