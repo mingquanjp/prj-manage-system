@@ -90,7 +90,7 @@ func (s *Service) List(ctx context.Context, q ListQuery) (Page, error) {
 		return Page{}, ErrPersistence
 	}
 	for _, n := range p.Items {
-		if !validID(n.ID) || !validID(n.ResourceID) || n.ResourceType != "PROFILE_CHANGE_REQUEST" || (n.Type != "PROFILE_CHANGE_SUBMITTED" && n.Type != "PROFILE_CHANGE_APPROVED" && n.Type != "PROFILE_CHANGE_REJECTED") || !utf8.ValidString(n.Message) || strings.ContainsRune(n.Message, 0) || utf8.RuneCountInString(n.Message) < 1 || utf8.RuneCountInString(n.Message) > 200 || n.CreatedAt.IsZero() || (n.ReadAt != nil && n.ReadAt.Before(n.CreatedAt)) || (q.Filter == "unread" && n.ReadAt != nil) {
+		if !validID(n.ID) || !validID(n.ResourceID) || !validResourcePair(n.Type, n.ResourceType) || !utf8.ValidString(n.Message) || strings.ContainsRune(n.Message, 0) || utf8.RuneCountInString(n.Message) < 1 || utf8.RuneCountInString(n.Message) > 200 || n.CreatedAt.IsZero() || (n.ReadAt != nil && n.ReadAt.Before(n.CreatedAt)) || (q.Filter == "unread" && n.ReadAt != nil) {
 			return Page{}, ErrPersistence
 		}
 	}
@@ -99,6 +99,18 @@ func (s *Service) List(ctx context.Context, q ListQuery) (Page, error) {
 	}
 	return p, nil
 }
+
+func validResourcePair(notificationType, resourceType string) bool {
+	switch notificationType {
+	case "PROFILE_CHANGE_SUBMITTED", "PROFILE_CHANGE_APPROVED", "PROFILE_CHANGE_REJECTED":
+		return resourceType == "PROFILE_CHANGE_REQUEST"
+	case "SKILL_CHANGE_SUBMITTED", "SKILL_CHANGE_APPROVED", "SKILL_CHANGE_REJECTED":
+		return resourceType == "SKILL_CHANGE_REQUEST"
+	default:
+		return false
+	}
+}
+
 func (s *Service) MarkRead(ctx context.Context, q ReadCommand) error {
 	if err := ValidateRead(q); err != nil {
 		return err

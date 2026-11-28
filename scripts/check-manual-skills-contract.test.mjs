@@ -95,10 +95,20 @@ test('key chỉ submit; role mutation và conflict theo từng thao tác', () =>
   }
 })
 
-test('notification canonical giữ kiểu hồ sơ và đánh dấu mở rộng kỹ năng planned', () => {
-  const notification = Object.values(pca.components.schemas).find(s => s.properties?.notification_type)
-  const types = notification.properties.notification_type
-  for (const type of ['PROFILE_CHANGE_SUBMITTED','PROFILE_CHANGE_APPROVED','PROFILE_CHANGE_REJECTED']) assert.ok(types.enum.includes(type))
-  for (const type of types['x-planned-values']) assert.ok(types.enum.includes(type))
-  assert.deepEqual(notification.properties.resource_type['x-planned-values'], ['SKILL_CHANGE_REQUEST'])
+test('notification canonical hỗ trợ đúng các cặp hồ sơ/kỹ năng cho đọc và đánh dấu đọc', () => {
+  const notification = pca.components.schemas.Notification
+  assert.deepEqual(notification.properties.notification_type.enum, [
+    'PROFILE_CHANGE_SUBMITTED','PROFILE_CHANGE_APPROVED','PROFILE_CHANGE_REJECTED',
+    'SKILL_CHANGE_SUBMITTED','SKILL_CHANGE_APPROVED','SKILL_CHANGE_REJECTED',
+  ])
+  assert.deepEqual(notification.properties.resource_type.enum, ['PROFILE_CHANGE_REQUEST','SKILL_CHANGE_REQUEST'])
+  assert.equal(notification.properties.notification_type['x-planned-values'], undefined)
+  assert.equal(notification.properties.resource_type['x-planned-values'], undefined)
+  assert.deepEqual(notification.allOf[0].if.properties.notification_type.enum, [
+    'PROFILE_CHANGE_SUBMITTED','PROFILE_CHANGE_APPROVED','PROFILE_CHANGE_REJECTED',
+  ])
+  assert.equal(notification.allOf[0].then.properties.resource_type.const, 'PROFILE_CHANGE_REQUEST')
+  assert.equal(notification.allOf[0].else.properties.resource_type.const, 'SKILL_CHANGE_REQUEST')
+  assert.equal(pca.paths['/api/notifications'].get['x-implementation-status'], 'implemented')
+  assert.equal(pca.paths['/api/notifications/{id}/read'].post['x-implementation-status'], 'implemented')
 })

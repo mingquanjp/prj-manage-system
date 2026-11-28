@@ -72,10 +72,24 @@ func TestNotificationSwaggerOperationInventory(t *testing.T) {
 			t.Fatal("dev spec không chạy")
 		}
 		var spec struct {
-			Paths map[string]map[string]json.RawMessage `json:"paths"`
+			Paths      map[string]map[string]json.RawMessage `json:"paths"`
+			Components struct {
+				Schemas map[string]struct {
+					Properties map[string]struct {
+						Enum    []string `json:"enum"`
+						Planned []string `json:"x-planned-values"`
+					} `json:"properties"`
+				} `json:"schemas"`
+			} `json:"components"`
 		}
 		if json.Unmarshal(w.Body.Bytes(), &spec) != nil || len(spec.Paths) != 2 || len(spec.Paths["/api/notifications"]) != 1 || len(spec.Paths["/api/notifications/{id}/read"]) != 1 || spec.Paths["/api/notifications"]["get"] == nil || spec.Paths["/api/notifications/{id}/read"]["post"] == nil {
 			t.Fatal("Swagger quảng cáo route chưa chạy")
+		}
+		notification := spec.Components.Schemas["Notification"]
+		types := notification.Properties["notification_type"]
+		resources := notification.Properties["resource_type"]
+		if len(types.Enum) != 6 || len(resources.Enum) != 2 || len(types.Planned) != 0 || len(resources.Planned) != 0 {
+			t.Fatal("Swagger chưa mô tả đủ loại thông báo đọc được")
 		}
 	}
 	w := httptest.NewRecorder()

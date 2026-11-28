@@ -62,5 +62,5 @@ func notificationSwaggerSpec() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return selectedSwaggerDocument(doc, "TaskAssign — Thông báo hồ sơ", "Hai API thông báo chính chủ đã được lắp vào router này.")
+	return selectedSwaggerDocument(doc, "TaskAssign — Thông báo hồ sơ và kỹ năng", "Hai API đọc và đánh dấu thông báo chính chủ; luồng tạo thông báo kỹ năng được triển khai cùng nghiệp vụ gửi và duyệt đề nghị.")
 }

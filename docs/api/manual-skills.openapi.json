@@ -3,7 +3,7 @@
   "info": {
     "title": "Danh mục và đề nghị kỹ năng thủ công",
     "version": "0.1.0",
-    "description": "MSK14 thao tác PLANNED; thiết kế27/11, chưa triển khai HTTP/PG/UI. Không CV/task/file/supplement/withdraw/remove hoặc Admin bypass. Auth/OAP/PCA canonical giữ riêng. Thông báo reuse hai API PCA với planned enum extension đã mô tả ở canonical PCA."
+    "description": "Contract danh mục và đề nghị kỹ năng thủ công, gồm 14 thao tác. Trạng thái triển khai được ghi tại từng operation; thông báo dùng hai API trong canonical PCA. Auth/OAP giữ contract riêng. Phạm vi văn bản hiện hành không gồm CV, task, tệp hoặc bổ sung/rút đề nghị; quyền Admin không thay quyền Giám đốc."
   },
   "servers": [
     {

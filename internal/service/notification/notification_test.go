@@ -56,3 +56,38 @@ func TestProjectionFailsClosedAndErrorPreserved(t *testing.T) {
 		t.Fatal("mất kết quả commit chưa rõ")
 	}
 }
+
+func TestProjectionAcceptsProfileAndSkillTypes(t *testing.T) {
+	now := time.Now()
+	items := []Item{}
+	for _, family := range []string{"PROFILE", "SKILL"} {
+		for _, event := range []string{"SUBMITTED", "APPROVED", "REJECTED"} {
+			items = append(items, Item{ID: len(items) + 1, Type: family + "_CHANGE_" + event, ResourceType: family + "_CHANGE_REQUEST", ResourceID: 7, Message: "Có cập nhật đề nghị.", CreatedAt: now})
+		}
+	}
+	r := &stub{page: Page{Page: 1, PageSize: 20, Total: 6, UnreadCount: 6, Items: items}}
+	p, err := NewService(r).List(t.Context(), ListQuery{ActorID: 1})
+	if err != nil || len(p.Items) != 6 || p.Total != 6 || p.UnreadCount != 6 {
+		t.Fatal("projection trộn hồ sơ và kỹ năng bị chặn")
+	}
+}
+
+func TestProjectionRejectsInvalidTypeResourcePairs(t *testing.T) {
+	for _, tc := range []struct{ notificationType, resourceType string }{
+		{"PROFILE_CHANGE_SUBMITTED", "SKILL_CHANGE_REQUEST"},
+		{"SKILL_CHANGE_APPROVED", "PROFILE_CHANGE_REQUEST"},
+		{"SKILL_CHANGE_REJECTED", "EMPLOYEE"},
+		{"SKILL_CHANGE_OTHER", "SKILL_CHANGE_REQUEST"},
+		{"TASK_EVENT", "SKILL_CHANGE_REQUEST"},
+		{"", "SKILL_CHANGE_REQUEST"},
+		{"SKILL_CHANGE_SUBMITTED", ""},
+	} {
+		t.Run(tc.notificationType+"/"+tc.resourceType, func(t *testing.T) {
+			r := &stub{page: Page{Page: 1, PageSize: 20, Total: 1, UnreadCount: 1, Items: []Item{{ID: 1, Type: tc.notificationType, ResourceType: tc.resourceType, ResourceID: 7, Message: "Có cập nhật đề nghị.", CreatedAt: time.Now()}}}}
+			p, err := NewService(r).List(t.Context(), ListQuery{ActorID: 1})
+			if !errors.Is(err, ErrPersistence) || len(p.Items) != 0 {
+				t.Fatal("cặp loại và tài nguyên sai không được trả nội dung")
+			}
+		})
+	}
+}

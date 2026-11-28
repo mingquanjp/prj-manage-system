@@ -78,7 +78,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (notifications) {
       const option = document.createElement("option")
       option.value = "notifications"
-      option.textContent = "Thông báo hồ sơ chính chủ"
+      option.textContent = "Thông báo hồ sơ và kỹ năng"
       selector.append(option)
     }
     selector.addEventListener("change", () => render(specs[selector.value]))
