@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -177,7 +178,7 @@ func (r *Migrator) Close(t *testing.T) {
 
 func (db *Case) OpenMigrator(t *testing.T, source fs.FS) *Migrator {
 	t.Helper()
-	return db.openMigrator(t, source, db.cfg, nil)
+	return db.openMigrator(t, source, db.cfg, nil, 0)
 }
 
 // OpenMappedMigrator truyền mapping tổng hợp trên connection của case test.
@@ -187,7 +188,15 @@ func (db *Case) OpenMappedMigrator(t *testing.T, source fs.FS, approved map[stri
 	payload, err := json.Marshal(approved)
 	Require(t, "mã hóa mapping fixture", err)
 	cfg.RuntimeParams["app.oap_m1_job_levels"] = string(payload)
-	return db.openMigrator(t, source, cfg, approved)
+	return db.openMigrator(t, source, cfg, approved, 0)
+}
+
+// OpenMSKMigrator truyền actor import tổng hợp trên mọi connection của case.
+func (db *Case) OpenMSKMigrator(t *testing.T, source fs.FS, actorID int) *Migrator {
+	t.Helper()
+	cfg := db.cfg.Copy()
+	cfg.RuntimeParams["app.msk_import_actor_id"] = strconv.Itoa(actorID)
+	return db.openMigrator(t, source, cfg, nil, actorID)
 }
 
 func (db *Case) CheckM1(t *testing.T, approved map[string]string) error {
@@ -199,7 +208,7 @@ func (db *Case) CheckM1(t *testing.T, approved map[string]string) error {
 	return migrations.CheckM1(ctx, sqlDB, approved)
 }
 
-func (db *Case) openMigrator(t *testing.T, source fs.FS, cfg *pgx.ConnConfig, approved map[string]string) *Migrator {
+func (db *Case) openMigrator(t *testing.T, source fs.FS, cfg *pgx.ConnConfig, approved map[string]string, importActorID int) *Migrator {
 	t.Helper()
 	// Dùng đúng driver hiện hành; không loader/CLI dotenv, không SQL version thủ công.
 	sqlDB := stdlibDB(t, cfg)
@@ -210,7 +219,11 @@ func (db *Case) openMigrator(t *testing.T, source fs.FS, cfg *pgx.ConnConfig, ap
 	Require(t, "driver migration", err)
 	src, err := iofs.New(source, ".")
 	Require(t, "nguồn migration", err)
-	m, err := migrate.NewWithInstance("iofs", src, "pgx", migrations.WithPCAPreflight(migrations.WithM2Preflight(migrations.WithM1Preflight(d, sqlDB, approved), sqlDB), sqlDB))
+	guarded := migrations.WithM1Preflight(d, sqlDB, approved)
+	guarded = migrations.WithM2Preflight(guarded, sqlDB)
+	guarded = migrations.WithPCAPreflight(guarded, sqlDB)
+	guarded = migrations.WithMSKPreflight(guarded, sqlDB, importActorID)
+	m, err := migrate.NewWithInstance("iofs", src, "pgx", guarded)
 	Require(t, "runner migration", err)
 	r := &Migrator{migrationEngine: m}
 	t.Cleanup(func() { r.Close(t) })

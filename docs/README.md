@@ -69,7 +69,7 @@ Chuẩn bị backend: [dự thảo FR và tiêu chí nghiệm thu](product/funct
 
 ### Đợt kỹ năng thủ công — chuẩn bị báo cáo 03/12/2026
 
-[Proposal MSK](proposals/backend-manual-skills.md), [OpenAPI 14 thao tác](api/manual-skills.openapi.json), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [12 ticket](proposals/backend-manual-skills-tickets.md) là nguồn triển khai kỹ năng thủ công cho báo cáo 03/12; [tests contract MSK](../scripts/check-manual-skills-contract.test.mjs) kiểm các ràng buộc tĩnh. URL và phạm vi văn bản đã chốt; API/migration/UI MSK còn planned. FR-024/026 mới nhận phần văn bản; CV/task/tệp và bổ sung/rút thuộc đợt sau.
+[Proposal MSK](proposals/backend-manual-skills.md), [OpenAPI 14 thao tác](api/manual-skills.openapi.json), [SQL/test plan](proposals/backend-manual-skills-sql-plan.md) và [12 ticket](proposals/backend-manual-skills-tickets.md) là nguồn triển khai kỹ năng thủ công cho báo cáo 03/12; [tests contract MSK](../scripts/check-manual-skills-contract.test.mjs) kiểm các ràng buộc tĩnh. URL và phạm vi văn bản đã chốt; API/UI MSK còn planned. DATN-51 bổ sung migration 000007, preflight/guard và fixture; cách chạy, kết quả PostgreSQL test và giới hạn tại [runbook MSK](../scripts/authdb/README.md#datn-51--msk-t02--migration-kỹ-năng). FR-024/026 mới nhận phần văn bản; CV/task/tệp và bổ sung/rút thuộc đợt sau.
 
 Jira: Epic DATN-49, task DATN-50–61 theo journal local và xác nhận của Quân ngày 27/11. [Importer MSK](../scripts/jira/README-msk.md) giữ cách đối soát snapshot nguồn; [delivery-plan](ai/delivery-plan.md#triển-khai-song-song-từ-đợt-msk) quy định các cặp task làm song song. Chưa nối nghiệp vụ MSK hoặc thay đổi quyền/handler thông báo PCA từ bộ thiết kế này.
 

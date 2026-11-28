@@ -1,5 +1,68 @@
 # PostgreSQL test cho auth — DATN-6 / AUTH-T05
 
+## DATN-51 / MSK-T02 — migration kỹ năng
+
+Nguồn: [proposal MSK mục 4–5/10](../../docs/proposals/backend-manual-skills.md), [SQL/test plan mục 1–4/6–8](../../docs/proposals/backend-manual-skills-sql-plan.md). Nhánh từ `main 4b4971d` sau PR #67. Migration tiến thêm `000007_manual_skills`; SQL 000001–000006 giữ nguyên.
+
+### Cách chạy và đầu vào
+
+Chạy runner tại checkout đang giữ state PG18 sở hữu. Worktree dưới đây là đường dẫn của lượt DATN-51; thay bằng worktree nhận bàn giao khi chạy lại. Không chạy suite đồng thời với suite PG/browser khác.
+
+```sh
+python3 scripts/authdb/manage.py check
+GOCACHE=/private/tmp/ai-staffing-DATN-51-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-51 test -tags=integration -p 1 ./migrations ./internal/repository/postgres ./internal/transport/http ./cmd/server ./cmd/seed ./cmd/localdev -count=1 -timeout=5m
+```
+
+Runner cấp kết nối test đã xác minh; không gọi `cmd/migrate` hoặc nạp `.env` để thay thế. DB case do fixture tạo và dọn; sau suite chạy lại `check` để xác minh DB gốc vẫn rỗng và đúng cluster/owner. Không DROP/FORCE/prune DB bỏ lại chưa xác minh.
+
+`Case.OpenMSKMigrator(t, migrations.FS, importActorID)` nhận user ID tổng hợp tường minh cho fixture legacy. Actor 0 chỉ hợp lệ khi không có official cần archive. Không mặc định actor import là người duyệt cũ. Khi chuẩn bị vận hành trên môi trường riêng đã được cho phép, CLI nhận `up --msk-import-actor=<user_id>`; đây chỉ là kênh truyền ID đã xác minh, không thay bước đối chiếu mapping hoặc cho phép áp Neon.
+
+Preflight chạy trước dirty dưới advisory lock; cùng guard được kiểm lại dưới table lock trong DDL. Tên trắng/padding/trùng, skill INACTIVE, schema/dependency lệch, approval/link/time không đủ hoặc thiếu actor import đều dừng để review. Guard kiểm cả đích audit để không mất provenance trước khi bỏ cột cũ.
+
+### Bằng chứng MSK-DB01–03
+
+| Ca | Test thực | Phạm vi |
+|---|---|---|
+| MSK-DB01 | `TestMSKEmptyDownUp`, `TestMSKRequestJSONStateFKAndIndexes`, `TestMSKLegacyNoteExceptionAndNameBoundaries` | Đi qua lịch sử tới head 7; CHECK JSON/NULL/state, FK/index/unique pending và note legacy |
+| MSK-DB02 | `TestMSKLegacyPreservesValuesApprovalAndExistingDomains`, `TestMSKPreflightRefusesBeforeDirty`, `TestMSKNameNormalizationParityWithPostgres` | User ID khác employee ID, actor import khác người duyệt cũ, snapshot auth/OAP/PCA, tên/approval/dependency và Go–PG lower |
+| MSK-DB03 | `TestMSKDownRefusesEachDataKindBeforeDDL`, `TestMSKDownRefusesUnreviewedDependency`, `TestMSKDDLFailureAndPostPreflightGuard`, `TestMSKDownDDLFailureRollsBack` | Down rỗng/có dữ liệu, dependency lạ, fault DDL và barrier sau preflight; metadata dirty đo riêng |
+
+Kết quả thực chạy ngày 28/11/2026, macOS arm64, Go 1.27.4 / Node 24.15.0 / PostgreSQL 18:
+
+- Guard trước/sau suite đạt: owner `ai_staffing_test`, system-ID `7705732357505970219`, DB gốc `public_tables=0`.
+- Focused `-run '^TestMSK'` trên package migrations đạt 11.678s: 10 nhóm kiểm, gồm 35 ca preflight từ chối và các ca JSON/state/FK/down/fault. Đây là PG thật, không phải unit hoặc compile-only.
+- Lượt regression cuối theo lệnh sáu package ở trên đạt tuần tự: migrations 26.490s; repository 48.411s; HTTP 6.887s; server 21.502s; seed 0.834s; localdev 0.679s. Bao gồm auth/OAP/PCA hiện có, seed head 7 và giữ fixture lịch sử đúng mốc. Test M1 chỉ chạy seed danh mục tương thích; seed năng lực hiện hành được kiểm ở `cmd/seed`.
+- Các lệnh Go và Node bên dưới đạt; contract/harness 48/48 tests, không skip; kiểm kê 496 nguồn và diff check đạt. Tagged vet bổ sung cho migrations/migrate/seed/localdev/test utility cũng đạt.
+- Tự review và review độc lập đã xử lý các lỗi guard audit, FK/UNIQUE, enum khác schema và dependency khi down; các ca hồi quy tương ứng đạt trong suite PG. Review không thay bằng chứng runtime.
+
+Tại gốc worktree DATN-51; các lệnh Go của lượt này dùng `GOCACHE=/private/tmp/ai-staffing-DATN-51-go-cache`:
+
+```sh
+go vet ./...
+go test ./... -count=1
+go build ./...
+go vet -tags=integration ./migrations ./cmd/migrate ./cmd/seed ./cmd/localdev ./internal/testutil/authdb
+node --test scripts/check-manual-skills-contract.test.mjs scripts/check-profile-contract.test.mjs scripts/check-organization-contract.test.mjs scripts/check-auth-contract.test.mjs scripts/check-harness.test.mjs
+node scripts/check-harness.mjs
+git diff --check
+```
+
+Kiểm cleanup bổ sung sau sáu package (chỉ đọc metadata, không tạo/dọn DB):
+
+```sh
+GOCACHE=/private/tmp/ai-staffing-DATN-51-go-cache python3 scripts/authdb/manage.py run -- go -C /private/tmp/ai-staffing-DATN-51 test -tags=integration -p 1 ./internal/repository/postgres -run '^TestAuthRepositoryRootRemainsEmpty$' -count=1 -timeout=30s
+```
+
+Cleanup bổ sung đạt 0.293s: DB gốc rỗng, không còn DB case `auth_case_*`. Không dùng FORCE/prune hoặc xóa DB ngoài fixture.
+
+### Bảo toàn và rollback
+
+Nâng legacy map `approved_by_employee_id` qua `employees.user_id`, giữ official ID/giá trị/note/thời điểm và ghi `SKILL_LEGACY_IMPORTED` bằng actor import riêng. Không yêu cầu người duyệt lịch sử còn quyền/trạng thái hiện hành; không tạo đề nghị giả. Trigger `updated_at` được tạm tắt riêng cho backfill trong transaction để không thay thời điểm cũ.
+
+Down chỉ dành DB case hy sinh: từ chối nếu còn skill, official, request, key, notification hoặc audit MSK. Không suy lại source/status cũ, không xóa dữ liệu để làm down thành công. Lỗi DDL rollback schema/data nhưng driver có thể giữ metadata dirty; không force version. Down không thay backup/restore.
+
+Đầu ra cho DATN-52/DATN-54 là schema/fixture/guard; chưa có API/UI MSK, mapping dữ liệu đích, kiểm Neon hoặc luồng CV/task. Fixture tổng hợp không phải bằng chứng mapping môi trường thật.
+
 ## DATN-48 / PCA-T12 — tiếp nối UI HR
 
 Suite PG18 sở hữu chạy lại tuần tự ngày25/11 trên worktree DATN-48 từ main750cae4: migrations124.346s, repository170.034s, HTTP25.425s, server63.223s PASS. Lệnh và bằng chứng đúng tầng tại [runbook F4 phần9](../../docs/api/auth-runbook.md#9-datn-48--pca-t12--ui-hr-hồ-sơ-hành-chính). `TestAdministrativeProfileRaceActualApprove` và `TestAdministrativeProfileRaceApproveBeforeDirect` dùng hai adapter direct edit/Approve thật, cả hai thứ tự và cùng/khác trường; khép phần kiểm lại PCA-DB11 ở tầng PG, không nhận writer có kiểm soát là approve.

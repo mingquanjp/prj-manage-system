@@ -57,13 +57,17 @@ func TestSeedHeadIsIdempotentAndPreservesExisting(t *testing.T) {
 		t.Fatal("seed lại đã đổi dữ liệu hoặc tiêu thụ thêm mã")
 	}
 	var ok bool
-	authdb.Require(t, "kiểm schema seed M2", db.Conn.QueryRow(t.Context(), `SELECT
+	authdb.Require(t, "kiểm schema seed hiện hành", db.Conn.QueryRow(t.Context(), `SELECT
   (SELECT count(*)=20 AND bool_and(system_role='EMPLOYEE') FROM users)
   AND (SELECT count(*)=20 AND bool_and(employee_code ~ '^EMP[0-9]{6,}$') FROM employees)
-  AND (SELECT count(*)>0 FROM employee_skills)
+  AND (SELECT count(*)>0 AND bool_and(approved_by IS NOT NULL AND approved_at IS NOT NULL) FROM employee_skills)
+  AND (SELECT bool_and(s.approved_by=e.user_id) FROM employee_skills s
+       CROSS JOIN employees e WHERE lower(btrim(e.email))='admin@company.vn')
+  AND NOT EXISTS(SELECT 1 FROM employee_skill_change_requests)
+  AND NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='employee_skills' AND column_name IN ('source','approved_by_employee_id'))
   AND NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='username')`).Scan(&ok))
 	if !ok {
-		t.Fatal("seed chưa đúng schema M2")
+		t.Fatal("seed chưa đúng schema kỹ năng hiện hành")
 	}
 }
 
@@ -104,7 +108,7 @@ func TestSeedM1LegacyUpgradePreservesExistingAndSequence(t *testing.T) {
  OVERRIDING SYSTEM VALUE SELECT 201,101,'EMP001','Synthetic legacy admin','  AdMiN@Company.vn  ',position_id FROM positions;
  INSERT INTO user_roles(user_id,role_code) VALUES(101,'ADMIN'),(101,'HR')`)
 	authdb.Require(t, "dựng tài khoản legacy", err)
-	authdb.Require(t, "nâng legacy M1 lên M2", m.Up())
+	authdb.Require(t, "nâng legacy M1 lên head hiện hành", m.Up())
 	m.Close(t)
 	original := func() string {
 		t.Helper()
@@ -119,7 +123,7 @@ func TestSeedM1LegacyUpgradePreservesExistingAndSequence(t *testing.T) {
 	seedSynthetic(t, db, "synthetic replacement credential")
 	seedSynthetic(t, db, "synthetic second replacement credential")
 	if original() != before {
-		t.Fatal("seed M2 đã đổi dữ liệu tài khoản legacy")
+		t.Fatal("seed đã đổi dữ liệu tài khoản legacy")
 	}
 	var ok bool
 	authdb.Require(t, "dải cấp mã sau legacy và seed lại", db.Conn.QueryRow(ctx, `SELECT
@@ -129,7 +133,8 @@ func TestSeedM1LegacyUpgradePreservesExistingAndSequence(t *testing.T) {
   AND (SELECT count(*)=20 FROM users)
   AND (SELECT count(*)=19 AND bool_and(system_role='EMPLOYEE') FROM users WHERE user_id<>101)
   AND NOT EXISTS(SELECT 1 FROM employees WHERE employee_code='EMP000001')
-  AND EXISTS(SELECT 1 FROM employee_skills WHERE approved_by_employee_id=201)`).Scan(&ok))
+  AND EXISTS(SELECT 1 FROM employee_skills WHERE approved_by=101)
+  AND NOT EXISTS(SELECT 1 FROM employee_skills WHERE approved_by<>101)`).Scan(&ok))
 	if !ok {
 		t.Fatal("seed sau nâng legacy cấp lại mã, reset sequence hoặc mất liên kết kỹ năng")
 	}
